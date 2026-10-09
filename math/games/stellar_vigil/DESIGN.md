@@ -92,3 +92,16 @@ Tests automatisés : `math/games/stellar_vigil/tests` (26 tests : logique du cie
 - Résultat pré-généré dans le book (événement `saverWheel` : segments, segment, saved, floor, topUp, total) ; aucun choix du joueur.
 - Effet réel : quasi absente en jeu de base (un bonus déclenché rapporte rarement moins de 1x), fréquente en achat de bonus (le plus souvent sous 80x).
 - À formuler clairement dans les règles du jeu : elle ne garantit pas un remboursement, elle l'offre sur 3 segments sur 8.
+
+## 10. Répartition du RTP par composante (100 000 simulations, `tools/rtp_breakdown.py`)
+| Composante | Mode base (part de la mise) | Mode achat (part du prix d'achat) |
+|---|---|---|
+| Gains ways | 43,3 % | 1,8 % |
+| Étoiles à valeur (jeu de base) | 3,8 % | 0,1 % |
+| Nuits du bonus (étoiles et constellations) | 43,5 % | 71,7 % |
+| Multiplicateurs de zone | 5,4 % | 21,4 % |
+| Roue de sauvegarde | 0,0 % | 1,0 % |
+| **Total** | **96,0 %** | **96,0 %** |
+
+Autres mesures : bonus déclenché 1 spin sur 150 ; spins gagnants 28,4 % (1 sur 3,5) ; roue tournée 67,3 % des achats mais seulement 1 spin sur 330 000 en jeu de base ; gain max 1 fois sur 10 millions (base) et 1 sur 125 000 achats.
+Lecture : le bonus porte environ la moitié du RTP en jeu de base ; le mode achat a plus de poids sur les zones (21,4 % contre 5,4 % rapporté au prix) : l'optimiseur y favorise des résultats plus volatils que le bonus déclenché, à moyenne comparable (74,5x contre 73x).

@@ -46,6 +46,15 @@
   .pointer{position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:20px solid var(--gold);filter:drop-shadow(0 0 6px var(--gold));z-index:2}
   .wheeltitle{font-weight:800;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
   .wheelmsg{min-height:44px;margin-top:14px;font-weight:700}
+  .rules{position:fixed;inset:0;background:rgba(5,8,25,.92);z-index:20;overflow:auto;padding:16px}
+  .rules .card{max-width:620px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .rules h2{margin:0 0 8px;color:var(--gold);font-size:17px;text-transform:uppercase;letter-spacing:.06em}
+  .rules h3{margin:14px 0 4px;font-size:14px}
+  .rules ul{margin:4px 0;padding-left:18px;color:var(--ink)}
+  .rules li{margin:3px 0}
+  .rules .warn{color:var(--dim);font-size:12px;margin-top:12px}
+  .tools{display:flex;gap:8px;margin-top:8px}
+  .tools button{flex:0 0 auto;padding:8px 12px;font-size:13px}
   .hidden{display:none}
 </style>
 </head>
@@ -78,8 +87,30 @@
     <button id="spin">Tourner</button>
     <button id="buy" class="alt">Acheter le bonus (80×)</button>
   </div>
+  <div class="tools"><button class="alt" id="rulesbtn">Règles</button><button class="alt" id="mutebtn">Son : activé</button></div>
   <div class="note">Symboles provisoires (art à créer). Chaque tour tire un résultat pondéré parmi un échantillon exporté du moteur ; ce n'est pas le jeu final Stake Engine.</div>
 </div>
+<div class="rules hidden" id="rules"><div class="card">
+  <h2>Règles — Stellar Vigil</h2>
+  <h3>Jeu de base</h3>
+  <ul><li>Grille 5 × 4, 1 024 façons de gagner, gains de gauche à droite.</li>
+  <li>L'Étoile filante (wild) apparaît sur les colonnes 2 à 4 et remplace tous les symboles sauf la Lunette.</li>
+  <li>Une Étoile à valeur peut tomber sur n'importe quelle colonne et paie sur place de 0,2× à 10× la mise.</li></ul>
+  <h3>Nuit des Constellations</h3>
+  <ul><li>3, 4 ou 5 Lunettes déclenchent 10, 12 ou 15 nuits. Le nombre de nuits est fixe.</li>
+  <li>Chaque nuit, de 0 à 3 étoiles tombent sur un ciel de 5 × 5 ; elles y restent jusqu'à la fin du bonus.</li>
+  <li>Des étoiles voisines forment une constellation : chaque étoile gagne un niveau de valeur par lien, jusqu'à +3. Une étoile qui relie deux constellations ajoute un niveau de plus (conjonction).</li>
+  <li>Compléter une zone paie un multiplicateur fixe, une seule fois par bonus : Horizon (ligne du bas) 20×, Méridien (colonne centrale) 100×, Quadrature (les 4 coins) 1 000×, Firmament (ciel complet) 10 000×. Ces multiplicateurs ne sont pas progressifs.</li></ul>
+  <h3>Roue de sauvegarde</h3>
+  <ul><li>En fin de bonus, si le total est inférieur à ce que vous avez payé pour y entrer (votre mise, ou le prix d'achat de 80×), la roue tourne.</li>
+  <li>3 segments sur 8 relèvent le total exactement jusqu'à ce montant. Les 5 autres n'ajoutent rien : la roue n'est pas un remboursement garanti.</li>
+  <li>Sur un bonus déclenché en jeu normal, la roue tourne très rarement, car le total dépasse presque toujours la mise.</li></ul>
+  <h3>Chiffres</h3>
+  <ul><li>RTP théorique : 96,0 % dans tous les modes. Gain maximum : 10 000× la mise, extrêmement rare (environ 1 fois sur 10 millions en jeu normal).</li>
+  <li>Le bonus se déclenche environ 1 spin sur 150 ; environ 28 % des spins gagnent.</li></ul>
+  <p class="warn">Démo à argent fictif : symboles et sons provisoires. Les résultats rejoués proviennent du moteur de maths mais ne constituent pas le jeu final soumis à Stake Engine.</p>
+  <div class="ctl"><button id="rulesclose">Fermer</button></div>
+</div></div>
 <script src="books.js"></script>
 <script>
 const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -96,6 +127,29 @@ const SYM={
 const starSvg=`<svg viewBox="0 0 40 40"><path d="M20 3l5 12 13 1-10 8 3 13-11-7-11 7 3-13-10-8 13-1z" fill="#8fd3ff"/></svg>`;
 const fmt=c=>(c/100).toFixed(2);
 let bal=1000, busy=false;
+// --- Sons synthétisés (aucun fichier audio) ---
+let actx=null, muted=false;
+try{muted=localStorage.getItem('sv_muted')==='1'}catch(e){}
+function audio(){ if(muted) return null; try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); return actx }catch(e){ return null } }
+function tone(freq,dur=.15,type='sine',vol=.08,when=0,slideTo=null){
+  const c=audio(); if(!c) return; const t=c.currentTime+when, o=c.createOscillator(), g=c.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t); if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t+dur+.02);
+}
+const SFX={
+  reveal:()=>{tone(220,.06,'triangle',.05);tone(330,.06,'triangle',.04,.07)},
+  win:()=>{[523,659,784].forEach((f,i)=>tone(f,.18,'sine',.07,i*.09))},
+  star:(v)=>tone(500+Math.min(900,v*4),.18,'sine',.06),
+  link:()=>tone(300,.35,'sawtooth',.03,0,900),
+  zone:()=>{[392,523,659,784,1046].forEach((f,i)=>tone(f,.3,'triangle',.07,i*.1))},
+  trigger:()=>{[262,330,392,523].forEach((f,i)=>tone(f,.25,'triangle',.07,i*.12))},
+  night:()=>tone(180,.2,'sine',.05,0,120),
+  tick:()=>tone(900,.03,'square',.03),
+  saved:()=>{[523,659,784,1046].forEach((f,i)=>tone(f,.25,'sine',.08,i*.1))},
+  empty:()=>tone(220,.4,'sine',.06,0,150)
+};
+function sfx(name,arg){ try{ SFX[name](arg) }catch(e){} }
 const ZONES=[['Horizon','Ligne du bas',20],['Meridien','Colonne centrale',100],['Quadrature','Les 4 coins',1000],['Firmament','Ciel complet',10000]];
 
 function buildBoard(){const b=$('base');b.innerHTML='';for(let r=0;r<4;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`b${c}_${r}`;b.appendChild(d)}}
@@ -128,8 +182,10 @@ async function spinWheel(e){
       `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="${saved?9:8}" font-weight="800" fill="${saved?'#10142b':'#8a93c4'}" transform="rotate(${((i+.5)*360/n).toFixed(1)} ${lx.toFixed(1)} ${ly.toFixed(1)})">${saved?'SAUVÉE':'—'}</text>`}).join('');
   msg.textContent=`Total du bonus sous ${(e.floor/100).toFixed(0)}× : la roue peut sauver la mise`;
   box.classList.remove('hidden'); await sleep(900);
+  let t=0, step=60; while(t<3200){ setTimeout(()=>sfx('tick'),t); t+=step; step*=1.07 }
   svg.getBoundingClientRect(); svg.style.transition=''; svg.style.transform=`rotate(${360*5-(e.segment+.5)*360/n}deg)`;
   await sleep(3500);
+  sfx(e.saved?'saved':'empty');
   msg.textContent=e.saved?`Mise sauvée ! +${(e.topUp/100).toFixed(1)}×  → total ${(e.total/100).toFixed(1)}×`:'Pas de sauvegarde cette fois';
   msg.style.color=e.saved?'var(--gold)':'var(--dim)';
   await sleep(2200); box.classList.add('hidden');
@@ -138,15 +194,15 @@ async function playEvents(book,bet){
   let nights=0, total=0;
   for(const e of book.events){
     switch(e.type){
-    case 'reveal': view(false); show(e.board); banner(''); await sleep(450); break;
-    case 'winInfo': e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); banner('Gain '+fmt(e.totalWin*bet)+'  ×'+(e.totalWin/100)); await sleep(900); break;
-    case 'freeSpinTrigger': banner('NUIT DES CONSTELLATIONS — '+e.totalFs+' nuits'); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win')); await sleep(1400); buildSky(); view(true); break;
-    case 'nightStart': nights=e.night; banner(`Nuit ${e.night} / ${e.totalNights}`); await sleep(350); break;
-    case 'starsLanded': drawStars(e.stars); await sleep(600); break;
-    case 'constellationsUpdate': drawStars(e.stars); drawLinks(e.constellations); if(e.conjunctions) banner(`Conjonction ×${e.conjunctions} !`); await sleep(650); break;
-    case 'zonesComplete': e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); banner('PALIER '+e.zones.map(z=>z.name+' '+(z.win/100)+'×').join(' + ')); await sleep(1300); break;
+    case 'reveal': sfx('reveal'); view(false); show(e.board); banner(''); await sleep(450); break;
+    case 'winInfo': sfx('win'); e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); banner('Gain '+fmt(e.totalWin*bet)+'  ×'+(e.totalWin/100)); await sleep(900); break;
+    case 'freeSpinTrigger': sfx('trigger'); banner('NUIT DES CONSTELLATIONS — '+e.totalFs+' nuits'); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win')); await sleep(1400); buildSky(); view(true); break;
+    case 'nightStart': sfx('night'); nights=e.night; banner(`Nuit ${e.night} / ${e.totalNights}`); await sleep(350); break;
+    case 'starsLanded': e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*120)); drawStars(e.stars); await sleep(600); break;
+    case 'constellationsUpdate': if(e.constellations.length) sfx('link'); drawStars(e.stars); drawLinks(e.constellations); if(e.conjunctions) banner(`Conjonction ×${e.conjunctions} !`); await sleep(650); break;
+    case 'zonesComplete': sfx('zone'); e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); banner('PALIER '+e.zones.map(z=>z.name+' '+(z.win/100)+'×').join(' + ')); await sleep(1300); break;
     case 'nightPayout': total=e.total; banner(`Nuit ${nights} : +${(e.amount/100).toFixed(1)}×  (total ${(e.total/100).toFixed(1)}×)`); await sleep(500); break;
-    case 'starPrizes': e.stars.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win')); banner('Étoiles : +'+(e.total/100).toFixed(1)+'×'); await sleep(900); break;
+    case 'starPrizes': sfx('win'); e.stars.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win')); banner('Étoiles : +'+(e.total/100).toFixed(1)+'×'); await sleep(900); break;
     case 'saverWheel': await spinWheel(e); break;
     case 'freeSpinEnd': banner('Fin du bonus : '+(e.amount/100).toFixed(1)+'×'); await sleep(1200); break;
     case 'finalWin': break;
@@ -170,6 +226,10 @@ buildBoard(); buildSky();
 // preview board on load
 (function(){const b=BOOKS.base.find(x=>x.events[0].type==='reveal'); show(b.events[0].board)})();
 $('spin').onclick=()=>play('base'); $('buy').onclick=()=>play('bonus');
+$('rulesbtn').onclick=()=>$('rules').classList.remove('hidden'); $('rulesclose').onclick=()=>$('rules').classList.add('hidden');
+function paintMute(){ $('mutebtn').textContent='Son : '+(muted?'coupé':'activé') }
+$('mutebtn').onclick=()=>{ muted=!muted; try{localStorage.setItem('sv_muted',muted?'1':'0')}catch(e){} paintMute(); if(!muted) sfx('win') };
+paintMute();
 // query helpers for automated screenshots
 const q=new URLSearchParams(location.search);
 if(q.get('auto')==='bonus'){setTimeout(()=>play('bonus'),300)}

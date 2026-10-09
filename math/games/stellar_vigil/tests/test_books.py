@@ -114,3 +114,17 @@ def test_stats_summary_rtp_is_on_target():
         rtps[mode] = mean / COST[mode]
         assert abs(rtps[mode] - 0.96) < 0.005, (mode, rtps[mode])
     assert abs(rtps["base"] - rtps["bonus"]) < 0.005
+
+
+def test_payout_equals_sum_of_components(mode_data):
+    """ways + base stars + bonus nights (zones included) + saver top-up == payout, until the win cap."""
+    _, books, _ = mode_data
+    for b in books:
+        ev = b["events"]
+        parts = (
+            sum(e["totalWin"] for e in ev if e["type"] == "winInfo")
+            + sum(e["total"] for e in ev if e["type"] == "starPrizes")
+            + sum(e["amount"] for e in ev if e["type"] == "nightPayout")
+            + sum(e["topUp"] for e in ev if e["type"] == "saverWheel")
+        )
+        assert b["payoutMultiplier"] == min(parts, WINCAP_CENTS), b["id"]

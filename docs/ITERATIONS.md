@@ -14,3 +14,11 @@
 - Démo : roue animée, étoiles à valeur, nouveaux noms ; books ré-exportés depuis la bibliothèque à 100 000.
 - Incident : le worker a redémarré pendant l'itération ; la routine s'est déclenchée deux fois (15:12 et 18:12 UTC), une seule itération a été jouée. Une commande précédente, interrompue, avait déjà appliqué une partie des modifications : doublons nettoyés avant de relancer.
 - Pour l'itération suivante : mesurer la répartition du RTP par composante (ways, étoiles, bonus, roue, zones), puis régler le coût du bonus buy et la table des gains ; audio procédural dans la démo ; texte de règles.
+
+## Itération 2 (2026-10-09, 21:12-21:35 UTC)
+- Mesure : répartition du RTP par composante sur 100 000 simulations (outil versionné `tools/rtp_breakdown.py`).
+  Base : ways 43,3 %, étoiles 3,8 %, nuits 43,5 %, zones 5,4 % ; achat : nuits 71,7 %, zones 21,4 %, roue 1,0 %.
+- Test de comptabilité (ways + étoiles + nuits + top-up = paiement) sur 200 000 books : passe. 28 tests au total.
+- Démo : sons synthétisés avec bouton, écran de règles ; 0 erreur JavaScript détectée (le son n'a pas pu être écouté).
+- Découverte : la roue ne tourne presque jamais sur un bonus déclenché en jeu de base. Aucun changement de maths fait : décision produit demandée (question n°8).
+- Pour l'itération suivante : si la décision n'est pas donnée, préparer les deux variantes de plancher en configuration et mesurer leur coût en RTP sans les activer ; calage du coût de l'achat de bonus.

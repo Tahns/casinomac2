@@ -1,5 +1,41 @@
 # SWOT — Stellar Vigil
 
+## v4 — fin de l'itération 2 (2026-10-09, 21:12-21:35 UTC)
+
+**Corrigé et mesuré depuis la v3**
+- **RTP réparti par composante, mesuré** sur 100 000 simulations (outil `tools/rtp_breakdown.py`, tableau dans `DESIGN.md` §10).
+- **Comptabilité des événements garantie** : un test vérifie sur 200 000 books que ways + étoiles + nuits + top-up de la roue = paiement final (le front-end peut s'y fier). 28 tests au total.
+- **Démo** : son synthétisé (aucun fichier audio, bouton couper/activer) et écran de règles honnête (RTP, gain max très rare, roue non garantie). Aucune erreur JavaScript détectée au chargement ; le rendu sonore lui-même n'a pas pu être écouté ici.
+
+### Forces
+- Moteur complet, reproductible et mesuré par composante ; tests verts ; RTP 96,0 % dans les deux modes.
+- Mécanique originale ; bonus déterministe compatible avec les résultats pré-générés de Stake.
+- Démo jouable avec roue, sons et règles.
+
+### Faiblesses (restantes)
+- **Découverte** : la roue de sauvegarde ne tourne quasiment jamais sur un bonus déclenché en jeu de base (1 spin sur 330 000), car son plancher (la mise, 1x) est presque toujours dépassé. Elle n'est réellement visible qu'en achat de bonus (67 % des achats). À trancher par l'utilisateur (voir `OPEN_QUESTIONS.md` n°8).
+- Mode achat plus volatil que le bonus déclenché à moyenne comparable (zones 21,4 % contre 5,4 %).
+- Front-end Svelte/PixiJS non commencé ; art et sons de production absents.
+- Coût de l'achat de bonus (80x) et table des gains toujours provisoires.
+- Queue extrême non validée ; 71,6 % de spins sans gain en jeu de base.
+
+### Opportunités
+- Plateforme en croissance (chiffres rapportés par Engine, non vérifiés) ; aucun clone de Huff N' Puff trouvé dessus.
+- Thème libre de licences ; déclinaisons possibles.
+- La roue peut devenir un vrai argument de rétention si son plancher est rendu pertinent en jeu de base.
+
+### Menaces
+- Brevets : persistance des étoiles et roue « jusqu'au plancher » à faire examiner par un conseil.
+- CGU Stake : licence large pour 36 mois renouvelables ; clauses de résiliation/indemnisation non lues.
+- Maths figées après approbation (atténué : tests + validation à 100 000 + mesure par composante).
+- Règles Stake incomplètes (RTP min/max, fichiers, juridictions).
+- Noms proches : Stellar Jackpots, Moon Princess Stargazing, « Vault ».
+- Saturation du marché ; risque de ressemblance avec Huff N' Puff.
+
+---
+
+# SWOT — Stellar Vigil
+
 ## v3 — fin de l'itération 1 (2026-10-09)
 
 **Corrigé et mesuré depuis la v2**

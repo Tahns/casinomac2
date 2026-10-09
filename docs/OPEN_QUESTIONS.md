@@ -8,3 +8,5 @@
 
 6. **Roue de sauvegarde** : à soumettre au conseil en brevets avec le brevet « iterative awards » (award calculé à partir d'un total précédent). Et à décrire sans ambiguïté dans les règles : elle ne garantit pas le remboursement.
 7. **Gain max** : 10 000x existe mais survient environ 1 fois sur 10 millions ; décider si le supprimer de la communication ou le rendre plus accessible (changement de maths).
+
+8. **Roue de sauvegarde en jeu de base** : elle ne tourne presque jamais sur un bonus déclenché (plancher = 1x). Options : (a) laisser tel quel, la roue est une fonction du mode achat ; (b) plancher fixe sur les bonus déclenchés (par ex. 25x), plus visible mais ce n'est plus une « mise sauvée » au sens strict (à renommer, ex. « minimum de bonus ») ; (c) plancher proportionnel au nombre de Lunettes. Ça modifie les maths et le coût en RTP ; à décider avant la soumission.
