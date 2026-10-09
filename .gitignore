@@ -1,0 +1,8 @@
+env/
+__pycache__/
+*.pyc
+node_modules/
+.svelte-kit/
+math/games/*/library/
+math/uploads/
+.env
