@@ -1,7 +1,7 @@
 # Stellar Vigil — conception (nom provisoire)
 
 Slot original pour Stake Engine. Univers : un observatoire isolé, une nuit où le ciel s'ouvre.
-Statut : conception v0.1, aucun code de jeu encore. Les noms sont à vérifier (marques) avant publication.
+Statut : v0.2, moteur de base + bonus implémentés et calibrés sur 10 000 simulations par mode (voir §8). Les noms sont à vérifier (marques) avant publication.
 
 ## 1. Décisions
 | Sujet | Choix |
@@ -26,14 +26,14 @@ Statut : conception v0.1, aucun code de jeu encore. Les noms sont à vérifier (
 - Symboles bas : A, K, Q, J.
 - **Étoile Filante (wild)** : colonnes 2 à 4, remplace tout sauf Lunette.
 - **Lunette (scatter)** : 3 ou plus déclenchent la Nuit des Constellations (10 nuits).
-- **Étoiles à valeur** : en jeu de base, une étoile peut tomber seule avec une valeur (1x à 25x la mise), payée sur place. Elle sert d'amorce visuelle et d'anticipation du bonus.
+- **Étoiles à valeur en jeu de base** : prévues, pas encore implémentées (amorce visuelle du bonus).
 
 ## 4. Bonus : la Nuit des Constellations
 Grille de ciel 5x5. **10 nuits fixes** (pas de compteur qui se remet à zéro). À chaque nuit, de nouvelles étoiles tombent, chacune avec une valeur.
 
 ### Cœur du système : l'adjacence
 - Deux étoiles voisines (orthogonal ou diagonale) sont **reliées** et forment une constellation.
-- Une constellation de n étoiles applique à chacune de ses étoiles un bonus de chaîne : +1 niveau de valeur par lien (la valeur suit une échelle fixe, pas un multiplicateur global).
+- Une constellation de n étoiles applique à chacune de ses étoiles un bonus de chaîne : +1 niveau de valeur par lien, plafonné à +3 (la valeur suit une échelle fixe de 0,2x à 50x, pas un multiplicateur global).
 - Une étoile isolée garde sa valeur de base : c'est le risque et la tension de chaque nuit.
 - Une nouvelle étoile qui fusionne deux constellations déclenche une « conjonction » : la chaîne fusionnée gagne un niveau supplémentaire.
 
@@ -71,3 +71,15 @@ Mode d'achat « Nuit étoilée » : le coût sera fixé après simulation pour t
 3. Calibrage : distributions, optimiseur Rust, RTP 96 % et volatilité haute, PAR sheet.
 4. Front-end : application Svelte/PixiJS à partir de `web-sdk`, animations d'étoiles et de liaisons.
 5. Bet Replay, tests de format, préparation de la soumission.
+
+## 8. État du calibrage (10 000 simulations par mode, après optimiseur)
+| | Mode base | Mode achat « bonus » (coût 80x) |
+|---|---|---|
+| RTP | 96,0 % | 96,0 % |
+| Gain moyen | 0,96x | 76,8x |
+| Fréquence de gain | 1 spin sur 3,5 (28 % de spins gagnants) | 100 % |
+| Écart-type | 9,1 | 70,6 |
+| Gain max | 10 000x | 10 000x |
+
+Limites : 10 000 simulations ne suffisent pas pour juger la queue (le gain max n'apparaît que dans quelques livres). La doc Stake recommande plus de 100 000 simulations par mode pour la production. Le chiffre de volatilité et la fréquence réelle du bonus restent à valider à cette échelle.
+Le coût du bonus buy (80x) est provisoire.
