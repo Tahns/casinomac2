@@ -72,36 +72,44 @@ Mode d'achat « Nuit étoilée » : le coût sera fixé après simulation pour t
 4. Front-end : application Svelte/PixiJS à partir de `web-sdk`, animations d'étoiles et de liaisons.
 5. Bet Replay, tests de format, préparation de la soumission.
 
-## 8. État du calibrage (100 000 simulations par mode, après optimiseur)
+## 8. État du calibrage (100 000 simulations par mode, après optimiseur, v0.4)
 | | Mode base | Mode achat « bonus » (coût 80x) |
 |---|---|---|
 | RTP | 96,0 % | 96,0 % |
 | Gain moyen | 0,96x | 76,8x |
+| Médiane | 0x | 71,6x |
 | Spins sans gain | 71,6 % | 0,1 % |
-| Écart-type | 10,1 | 95,9 |
-| Part des résultats sous la mise payée | 97,7 % | 65,4 % |
-| Fréquence du gain max (10 000x) | environ 1 sur 10 millions | |
+| Écart-type | 9,3 | 65,6 |
+| Part des résultats sous la mise payée | 97,4 % | 57,0 % |
+| Fréquence du gain max (10 000x) | environ 1 sur 10 millions | environ 1 sur 125 000 achats |
 
-Lecture honnête : le gain max de 10 000x existe mais il est extrêmement rare (environ 1 sur 10 millions en jeu de base) ; il ne faut pas le présenter comme un gain courant.
+Lecture honnête : le gain max de 10 000x existe mais il est extrêmement rare en jeu normal ; il ne faut pas le présenter comme un gain courant.
 Limites : 100 000 simulations valident le RTP et les distributions courantes, pas la queue extrême. Le coût du bonus buy (80x) et la table des gains restent provisoires.
-Tests automatisés : `math/games/stellar_vigil/tests` (26 tests : logique du ciel, intégrité des books, cohérence de la roue, RTP des tables de poids, absence du mot « jackpot »).
+Tests automatisés : `math/games/stellar_vigil/tests` (33 tests : logique du ciel, intégrité des books, comptabilité, cohérence de la roue, RTP des tables de poids, garde-fous de forme, absence du mot « jackpot »).
 
-## 9. Roue de sauvegarde (wager saver), ajoutée en v0.3
-- Tourne **à la fin du bonus uniquement si le total du bonus est inférieur à ce que le joueur a payé pour y entrer** : la mise (1x) quand le bonus est déclenché, le prix d'achat (80x) quand il est acheté.
-- 8 segments, 3 « sauvée » : si la roue s'arrête sur l'un d'eux, le total du bonus est relevé exactement au plancher ; sinon rien n'est ajouté.
-- Résultat pré-généré dans le book (événement `saverWheel` : segments, segment, saved, floor, topUp, total) ; aucun choix du joueur.
-- Effet réel : quasi absente en jeu de base (un bonus déclenché rapporte rarement moins de 1x), fréquente en achat de bonus (le plus souvent sous 80x).
-- À formuler clairement dans les règles du jeu : elle ne garantit pas un remboursement, elle l'offre sur 3 segments sur 8.
+## 9. Roue de sauvegarde (wager saver), v0.4
+- Tourne à la fin du bonus **si le total est inférieur à un plancher** : 25x la mise pour un bonus **déclenché** en jeu normal (« minimum de bonus ») ; 80x, soit le prix payé, pour un bonus **acheté** (« mise sauvée »). Valeurs dans `game_config.py` (`saver_floor`).
+- 8 segments, 3 « sauvée » : si la roue s'arrête sur l'un d'eux, le total du bonus est relevé exactement au plancher ; sinon rien n'est ajouté. Ce n'est pas un remboursement garanti.
+- Résultat pré-généré dans le book (événement `saverWheel`) ; aucun choix du joueur.
+- Mesuré à 100 000 simulations : environ 1 bonus déclenché sur 9 fait tourner la roue (1 spin sur 1 309) ; 63 % des achats la font tourner. Coût en RTP : 0,1 % en base, 3,2 % en achat.
+- Historique : en v0.3 le plancher était la mise (1x) pour les bonus déclenchés ; la roue n'y tournait que 1 fois sur 330 000 spins (décision utilisateur : la rendre utile).
 
-## 10. Répartition du RTP par composante (100 000 simulations, `tools/rtp_breakdown.py`)
+## 10. Volatilité du mode achat et reproductibilité de l'optimiseur
+- L'optimiseur Rust n'est **pas reproductible** : deux lancements aux réglages identiques donnent des poids différents (empreintes des tables différentes). Une exécution a même donné un mode achat très volatil (écart-type 210, 85 % des achats sous le prix) alors que rien n'avait changé côté achat.
+- Réglage retenu : bornes `min_m2m=1.5`, `max_m2m=3` pour le mode achat (au lieu de 4 à 8). Résultat à 100 000 simulations : médiane 71,6x pour 80x payés, écart-type 65,6, 57 % des achats sous le prix, 0,1 % entre 500x et 2 000x.
+- Garde-fous : `tests/test_quality_gates.py` rejette une exécution dont le mode achat a une médiane sous la moitié du prix, un rapport moyenne/médiane au-dessus de 2, plus de 75 % d'achats sous le prix, ou un taux de gain en base hors de 22-40 %.
+- **Avant soumission** : choisir une exécution qui passe les garde-fous, puis **archiver ses fichiers de publication** (ils ne se régénèrent pas à l'identique).
+- Conséquence de conception : le mode achat est plus calme que le bonus déclenché en jeu normal (où 18 % du RTP vient de gains de 100x à 1 000x et 2 % de gains au-dessus de 1 000x). Ce n'est pas interdit, mais l'écart est à assumer côté communication.
+
+## 11. Répartition du RTP par composante (100 000 simulations, `tools/rtp_breakdown.py`)
 | Composante | Mode base (part de la mise) | Mode achat (part du prix d'achat) |
 |---|---|---|
-| Gains ways | 43,3 % | 1,8 % |
-| Étoiles à valeur (jeu de base) | 3,8 % | 0,1 % |
-| Nuits du bonus (étoiles et constellations) | 43,5 % | 71,7 % |
-| Multiplicateurs de zone | 5,4 % | 21,4 % |
-| Roue de sauvegarde | 0,0 % | 1,0 % |
+| Gains ways | 42,9 % | 2,2 % |
+| Étoiles à valeur (jeu de base) | 4,2 % | 0,1 % |
+| Nuits du bonus (étoiles et constellations) | 43,8 % | 79,1 % |
+| Multiplicateurs de zone | 5,1 % | 11,4 % |
+| Roue de sauvegarde | 0,1 % | 3,2 % |
 | **Total** | **96,0 %** | **96,0 %** |
 
-Autres mesures : bonus déclenché 1 spin sur 150 ; spins gagnants 28,4 % (1 sur 3,5) ; roue tournée 67,3 % des achats mais seulement 1 spin sur 330 000 en jeu de base ; gain max 1 fois sur 10 millions (base) et 1 sur 125 000 achats.
-Lecture : le bonus porte environ la moitié du RTP en jeu de base ; le mode achat a plus de poids sur les zones (21,4 % contre 5,4 % rapporté au prix) : l'optimiseur y favorise des résultats plus volatils que le bonus déclenché, à moyenne comparable (74,5x contre 73x).
+Autres mesures : bonus déclenché 1 spin sur 150 ; spins gagnants 28,4 % (1 sur 3,5) ; roue tournée 1 spin sur 1 309 en base (environ 1 bonus sur 9) et 63 % des achats.
+`tools/payout_distribution.py` donne les percentiles et la part de RTP par tranche de gain.

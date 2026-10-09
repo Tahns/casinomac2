@@ -13,7 +13,7 @@ GAME_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PUB = os.path.join(GAME_DIR, "library", "publish_files")
 WINCAP_CENTS = 10000 * 100
 COST = {"base": 1.0, "bonus": 80.0}
-SAVER_FLOOR_CENTS = {"base": 100, "bonus": 8000}
+SAVER_FLOOR_CENTS = {"base": 2500, "bonus": 8000}
 
 pytestmark = pytest.mark.skipif(not os.path.isdir(PUB), reason="library not generated (run run.py)")
 
@@ -128,3 +128,9 @@ def test_payout_equals_sum_of_components(mode_data):
             + sum(e["topUp"] for e in ev if e["type"] == "saverWheel")
         )
         assert b["payoutMultiplier"] == min(parts, WINCAP_CENTS), b["id"]
+
+
+def test_wheel_is_reachable_in_base_mode():
+    """With the 25x floor the wheel must appear on triggered bonuses, not only on purchased ones."""
+    books, _ = load("base")
+    assert any(e["type"] == "saverWheel" for b in books for e in b["events"])

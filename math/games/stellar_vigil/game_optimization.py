@@ -108,8 +108,8 @@ class OptimizationSetup:
                 "parameters": ConstructParameters(
                     num_show=5000,
                     num_per_fence=10000,
-                    min_m2m=4,
-                    max_m2m=8,
+                    min_m2m=1.5,
+                    max_m2m=3,
                     pmb_rtp=1.0,
                     sim_trials=5000,
                     test_spins=[10, 20, 50],

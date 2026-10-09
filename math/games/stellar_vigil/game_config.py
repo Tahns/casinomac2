@@ -68,7 +68,7 @@ class GameConfig(Config):
         # what the player paid to enter it (the bet when triggered, the price when bought).
         # A 'saved' segment tops the bonus total up to that amount. 3 of 8 segments are 'saved'.
         self.saver_segments = ["saved", "empty", "saved", "empty", "empty", "saved", "empty", "empty"]
-        self.saver_floor = {"base": 1.0, "bonus": 80.0}
+        self.saver_floor = {"base": 25.0, "bonus": 80.0}
 
         self.special_symbols = {"wild": ["W"], "scatter": ["S"], "multiplier": [], "prize": ["ST"]}
         # Etoile a valeur (jeu de base): gain paye sur place, en multiples de la mise.

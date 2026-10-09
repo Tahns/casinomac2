@@ -22,3 +22,11 @@
 - Démo : sons synthétisés avec bouton, écran de règles ; 0 erreur JavaScript détectée (le son n'a pas pu être écouté).
 - Découverte : la roue ne tourne presque jamais sur un bonus déclenché en jeu de base. Aucun changement de maths fait : décision produit demandée (question n°8).
 - Pour l'itération suivante : si la décision n'est pas donnée, préparer les deux variantes de plancher en configuration et mesurer leur coût en RTP sans les activer ; calage du coût de l'achat de bonus.
+
+## Itération 3 (2026-10-09/10, déclenchée par la réponse « Oui » de l'utilisateur)
+- Décision : « Oui » interprété comme option (b) : plancher de 25x sur les bonus déclenchés (config `saver_floor`).
+- Mesuré à 100 000 simulations : roue en base 1 spin sur 1 309 (environ 1 bonus sur 9), 63 % des achats ; coût RTP 0,1 % (base) et 3,2 % (achat) ; RTP 96,0 % partout.
+- Incident évité : une exécution de l'optimiseur a donné un mode achat très volatil (écart-type 210). Cause : optimiseur non reproductible. Correctif : bornes `min_m2m=1.5`, `max_m2m=3`. Résultat : médiane 71,6x, écart-type 65,6.
+- Constat : deux lancements aux réglages identiques produisent des tables de poids différentes (empreintes différentes). Garde-fous ajoutés ; archivage à décider (question n°9).
+- Outils ajoutés : `tools/payout_distribution.py`. Tests : 33 passent (+ garde-fous de forme, + roue atteignable en base).
+- Pour l'itération suivante : construire le front-end ? (hors portée de ce passage : décision d'effort) ; sinon mesurer la sensibilité du coût d'achat (60x/80x/100x), tester des tables de gains alternatives, ajouter un test de reproductibilité des simulations (même graine, mêmes books).
