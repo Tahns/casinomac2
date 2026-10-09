@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stellar Vigil — démo</title>
+<style>
+  :root{--bg:#0a0e1f;--panel:#121832;--line:#2a3566;--gold:#f3c969;--ink:#e9ecff;--dim:#8a93c4;--star:#8fd3ff;--win:#7dffb2}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 50% -10%,#1b2450,var(--bg));color:var(--ink);font:15px/1.4 system-ui,sans-serif;min-height:100vh}
+  .wrap{max-width:760px;margin:0 auto;padding:16px}
+  h1{font-size:20px;margin:4px 0 2px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+  .sub{color:var(--dim);font-size:12px;margin-bottom:12px}
+  .hud{display:flex;gap:8px;margin-bottom:10px}
+  .hud div{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .hud b{display:block;font-size:11px;color:var(--dim);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+  .hud span{font-size:18px;font-weight:700}
+  .stage{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;position:relative}
+  .grid{display:grid;gap:6px}
+  .cell{aspect-ratio:1;background:#0d1230;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;transition:transform .15s,box-shadow .2s}
+  .cell svg{width:72%;height:72%}
+  .cell.win{box-shadow:0 0 0 2px var(--win),0 0 18px var(--win);transform:scale(1.04);z-index:2}
+  .cell.scat{box-shadow:0 0 0 2px var(--gold),0 0 18px var(--gold)}
+  .sky .cell{background:#070a1c}
+  .star{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:pop .35s ease-out}
+  .star svg{width:46%;height:46%;filter:drop-shadow(0 0 6px var(--star))}
+  .star small{font-size:11px;font-weight:700;color:var(--ink)}
+  @keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+  svg.links{position:absolute;inset:0;pointer-events:none;width:100%;height:100%}
+  .zones{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+  .zone{background:#0d1230;border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;font-size:11px;color:var(--dim)}
+  .zone b{display:block;color:var(--ink);font-size:13px}
+  .zone.done{border-color:var(--gold);color:var(--gold)}
+  .banner{min-height:26px;margin:10px 0 0;text-align:center;font-weight:700;color:var(--gold)}
+  .ctl{display:flex;gap:8px;margin-top:10px}
+  button{flex:1;font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px;cursor:pointer;color:#10142b;background:var(--gold)}
+  button.alt{background:#2a3566;color:var(--ink)}
+  button:disabled{opacity:.45;cursor:default}
+  .bet{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0 10px}
+  .bet select{background:transparent;color:var(--ink);border:0;font:inherit}
+  .note{color:var(--dim);font-size:11px;margin-top:10px}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Stellar Vigil</h1>
+  <div class="sub">Démo jouable — rejoue de vrais résultats du moteur de maths (RTP 96 %). Argent fictif.</div>
+  <div class="hud">
+    <div><b>Solde</b><span id="bal">1000.00</span></div>
+    <div><b>Mise</b><span id="betv">1.00</span></div>
+    <div><b>Dernier gain</b><span id="last">0.00</span></div>
+  </div>
+  <div class="stage">
+    <div id="base" class="grid" style="grid-template-columns:repeat(5,1fr)"></div>
+    <div id="skywrap" class="hidden" style="position:relative">
+      <div id="sky" class="grid sky" style="grid-template-columns:repeat(5,1fr)"></div>
+      <svg id="links" class="links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="zones hidden" id="zones"></div>
+    <div class="banner" id="banner">Prêt</div>
+  </div>
+  <div class="ctl">
+    <div class="bet"><span class="sub" style="margin:0">Mise</span>
+      <select id="betsel"><option>0.20</option><option>0.50</option><option selected>1.00</option><option>2.00</option><option>5.00</option><option>10.00</option></select></div>
+    <button id="spin">Tourner</button>
+    <button id="buy" class="alt">Acheter le bonus (80×)</button>
+  </div>
+  <div class="note">Symboles provisoires (art à créer). Chaque tour tire un résultat pondéré parmi un échantillon exporté du moteur ; ce n'est pas le jeu final Stake Engine.</div>
+</div>
+<script src="books.js"></script>
+<script>
+const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const COL=['#f3c969','#9ec5ff','#ff9a8a','#c8a4ff'];
+const SYM={
+ H1:()=>`<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="none" stroke="#f3c969" stroke-width="2.5"/><circle cx="20" cy="20" r="8" fill="none" stroke="#f3c969" stroke-width="1.5"/><path d="M20 5v30M5 20h30" stroke="#f3c969" stroke-width="1.5"/></svg>`,
+ H2:()=>`<svg viewBox="0 0 40 40"><path d="M27 6a15 15 0 1 0 0 28 12 12 0 1 1 0-28z" fill="#cfd8ff"/></svg>`,
+ H3:()=>`<svg viewBox="0 0 40 40"><path d="M6 34L26 14" stroke="#ff9a8a" stroke-width="4" stroke-linecap="round"/><circle cx="27" cy="13" r="7" fill="#ffd9b0"/></svg>`,
+ H4:()=>`<svg viewBox="0 0 40 40"><path d="M10 6h20M10 34h20M12 6l16 28M28 6L12 34" fill="none" stroke="#c8a4ff" stroke-width="3"/></svg>`,
+ W:()=>`<svg viewBox="0 0 40 40"><path d="M20 3l5 12 13 1-10 8 3 13-11-7-11 7 3-13-10-8 13-1z" fill="#7dffb2"/></svg>`,
+ S:()=>`<svg viewBox="0 0 40 40"><rect x="5" y="16" width="24" height="9" rx="3" fill="#f3c969"/><circle cx="31" cy="20.5" r="6" fill="#8fd3ff"/><path d="M14 26l-5 10M20 26l5 10" stroke="#f3c969" stroke-width="3"/></svg>`,
+};
+['A','K','Q','J'].forEach((t,i)=>{SYM['L'+(i+1)]=()=>`<svg viewBox="0 0 40 40"><text x="20" y="29" text-anchor="middle" font-size="26" font-weight="800" fill="${['#9ec5ff','#8fd3c8','#b6a9ff','#ffb48a'][i]}" font-family="Georgia,serif">${t}</text></svg>`});
+const starSvg=`<svg viewBox="0 0 40 40"><path d="M20 3l5 12 13 1-10 8 3 13-11-7-11 7 3-13-10-8 13-1z" fill="#8fd3ff"/></svg>`;
+const fmt=c=>(c/100).toFixed(2);
+let bal=1000, busy=false;
+const ZONES=[['Lueur','Ligne du bas',20],['Aurore','Colonne centrale',100],['Zenith','Les 4 coins',1000],['Voute','Ciel complet',10000]];
+
+function buildBoard(){const b=$('base');b.innerHTML='';for(let r=0;r<4;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`b${c}_${r}`;b.appendChild(d)}}
+function buildSky(){const s=$('sky');s.innerHTML='';for(let r=0;r<5;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`s${c}_${r}`;s.appendChild(d)}
+  $('links').innerHTML='';
+  $('zones').innerHTML=ZONES.map(z=>`<div class="zone" id="z${z[0]}"><b>${z[2]}×</b>${z[0]}<br>${z[1]}</div>`).join('')}
+function show(board){ // board[reel] has 6 entries: pad,4 visible,pad
+  for(let c=0;c<5;c++)for(let r=0;r<4;r++){const el=$(`b${c}_${r}`);const s=board[c][r+1];el.className='cell'+(s.scatter?' scat':'');el.innerHTML=(SYM[s.name]||(()=>''))()}}
+function view(sky){$('base').classList.toggle('hidden',sky);$('skywrap').classList.toggle('hidden',!sky);$('zones').classList.toggle('hidden',!sky)}
+function banner(t){$('banner').textContent=t}
+
+function drawStars(stars){
+  stars.forEach(s=>{const el=$(`s${s.reel}_${s.row}`);el.innerHTML=`<div class="star">${starSvg}<small>${(s.value/100)}×</small></div>`});
+}
+function drawLinks(cons){
+  const g=$('links');g.innerHTML='';
+  const p=(c,r)=>[(c+.5)*20,(r+.5)*20];
+  cons.forEach((comp,i)=>{const set=new Set(comp.map(x=>x.reel+','+x.row));
+    comp.forEach(a=>comp.forEach(b=>{if((a.reel<b.reel||(a.reel==b.reel&&a.row<b.row))&&Math.abs(a.reel-b.reel)<=1&&Math.abs(a.row-b.row)<=1){
+      const [x1,y1]=p(a.reel,a.row),[x2,y2]=p(b.reel,b.row);
+      g.insertAdjacentHTML('beforeend',`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${COL[i%4]}" stroke-width="1.1" stroke-linecap="round" opacity=".9"/>`)}}))});
+}
+async function playEvents(book,bet){
+  let nights=0, total=0;
+  for(const e of book.events){
+    switch(e.type){
+    case 'reveal': view(false); show(e.board); banner(''); await sleep(450); break;
+    case 'winInfo': e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); banner('Gain '+fmt(e.totalWin*bet)+'  ×'+(e.totalWin/100)); await sleep(900); break;
+    case 'freeSpinTrigger': banner('NUIT DES CONSTELLATIONS — '+e.totalFs+' nuits'); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win')); await sleep(1400); buildSky(); view(true); break;
+    case 'nightStart': nights=e.night; banner(`Nuit ${e.night} / ${e.totalNights}`); await sleep(350); break;
+    case 'starsLanded': drawStars(e.stars); await sleep(600); break;
+    case 'constellationsUpdate': drawStars(e.stars); drawLinks(e.constellations); if(e.conjunctions) banner(`Conjonction ×${e.conjunctions} !`); await sleep(650); break;
+    case 'zonesComplete': e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); banner('JACKPOT '+e.zones.map(z=>z.name+' '+(z.win/100)+'×').join(' + ')); await sleep(1300); break;
+    case 'nightPayout': total=e.total; banner(`Nuit ${nights} : +${(e.amount/100).toFixed(1)}×  (total ${(e.total/100).toFixed(1)}×)`); await sleep(500); break;
+    case 'freeSpinEnd': banner('Fin du bonus : '+(e.amount/100).toFixed(1)+'×'); await sleep(1200); break;
+    case 'finalWin': break;
+    }
+  }
+}
+async function play(kind){
+  if(busy)return; busy=true; $('spin').disabled=$('buy').disabled=true;
+  const bet=parseFloat($('betsel').value); $('betv').textContent=bet.toFixed(2);
+  const cost=kind==='bonus'?80*bet:bet;
+  if(bal<cost){banner('Solde insuffisant');busy=false;$('spin').disabled=$('buy').disabled=false;return}
+  bal-=cost; $('bal').textContent=bal.toFixed(2);
+  const pool=BOOKS[kind], book=pool[Math.floor(Math.random()*pool.length)];
+  await playEvents(book,bet);
+  const win=book.win/100*bet; bal+=win;
+  $('bal').textContent=bal.toFixed(2); $('last').textContent=win.toFixed(2);
+  banner(win>0?`Gain total : ${win.toFixed(2)}  (${(book.win/100).toFixed(2)}×)`:'Pas de gain');
+  await sleep(800); view(false); busy=false; $('spin').disabled=$('buy').disabled=false;
+}
+buildBoard(); buildSky();
+// preview board on load
+(function(){const b=BOOKS.base.find(x=>x.events[0].type==='reveal'); show(b.events[0].board)})();
+$('spin').onclick=()=>play('base'); $('buy').onclick=()=>play('bonus');
+// query helpers for automated screenshots
+const q=new URLSearchParams(location.search);
+if(q.get('auto')==='bonus'){setTimeout(()=>play('bonus'),300)}
+</script>
+</body>
+</html>
