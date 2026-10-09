@@ -39,6 +39,13 @@
   .bet{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0 10px}
   .bet select{background:transparent;color:var(--ink);border:0;font:inherit}
   .note{color:var(--dim);font-size:11px;margin-top:10px}
+  .wheelbox{position:absolute;inset:0;background:rgba(5,8,25,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;z-index:5;text-align:center;padding:12px}
+  .wheelbox.hidden{display:none}
+  .wheelwrap{position:relative;width:min(70vw,260px);height:min(70vw,260px)}
+  #wheelsvg{width:100%;height:100%;transition:transform 3.2s cubic-bezier(.12,.75,.12,1)}
+  .pointer{position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:20px solid var(--gold);filter:drop-shadow(0 0 6px var(--gold));z-index:2}
+  .wheeltitle{font-weight:800;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+  .wheelmsg{min-height:44px;margin-top:14px;font-weight:700}
   .hidden{display:none}
 </style>
 </head>
@@ -59,6 +66,11 @@
     </div>
     <div class="zones hidden" id="zones"></div>
     <div class="banner" id="banner">Prêt</div>
+    <div class="wheelbox hidden" id="wheelbox">
+      <div class="wheeltitle">Roue de sauvegarde</div>
+      <div class="wheelwrap"><div class="pointer"></div><svg id="wheelsvg" viewBox="-100 -100 200 200"></svg></div>
+      <div class="wheelmsg" id="wheelmsg"></div>
+    </div>
   </div>
   <div class="ctl">
     <div class="bet"><span class="sub" style="margin:0">Mise</span>
@@ -84,14 +96,14 @@ const SYM={
 const starSvg=`<svg viewBox="0 0 40 40"><path d="M20 3l5 12 13 1-10 8 3 13-11-7-11 7 3-13-10-8 13-1z" fill="#8fd3ff"/></svg>`;
 const fmt=c=>(c/100).toFixed(2);
 let bal=1000, busy=false;
-const ZONES=[['Lueur','Ligne du bas',20],['Aurore','Colonne centrale',100],['Zenith','Les 4 coins',1000],['Voute','Ciel complet',10000]];
+const ZONES=[['Horizon','Ligne du bas',20],['Meridien','Colonne centrale',100],['Quadrature','Les 4 coins',1000],['Firmament','Ciel complet',10000]];
 
 function buildBoard(){const b=$('base');b.innerHTML='';for(let r=0;r<4;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`b${c}_${r}`;b.appendChild(d)}}
 function buildSky(){const s=$('sky');s.innerHTML='';for(let r=0;r<5;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`s${c}_${r}`;s.appendChild(d)}
   $('links').innerHTML='';
   $('zones').innerHTML=ZONES.map(z=>`<div class="zone" id="z${z[0]}"><b>${z[2]}×</b>${z[0]}<br>${z[1]}</div>`).join('')}
 function show(board){ // board[reel] has 6 entries: pad,4 visible,pad
-  for(let c=0;c<5;c++)for(let r=0;r<4;r++){const el=$(`b${c}_${r}`);const s=board[c][r+1];el.className='cell'+(s.scatter?' scat':'');el.innerHTML=(SYM[s.name]||(()=>''))()}}
+  for(let c=0;c<5;c++)for(let r=0;r<4;r++){const el=$(`b${c}_${r}`);const s=board[c][r+1];el.className='cell'+(s.scatter?' scat':'');el.innerHTML=s.name==='ST'?`<div class="star">${starSvg}<small>${s.prize}×</small></div>`:(SYM[s.name]||(()=>''))()}}
 function view(sky){$('base').classList.toggle('hidden',sky);$('skywrap').classList.toggle('hidden',!sky);$('zones').classList.toggle('hidden',!sky)}
 function banner(t){$('banner').textContent=t}
 
@@ -106,6 +118,22 @@ function drawLinks(cons){
       const [x1,y1]=p(a.reel,a.row),[x2,y2]=p(b.reel,b.row);
       g.insertAdjacentHTML('beforeend',`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${COL[i%4]}" stroke-width="1.1" stroke-linecap="round" opacity=".9"/>`)}}))});
 }
+function wheelPath(i,n,r){const a0=(i*360/n-90)*Math.PI/180,a1=((i+1)*360/n-90)*Math.PI/180;
+  return `M0 0 L${(r*Math.cos(a0)).toFixed(2)} ${(r*Math.sin(a0)).toFixed(2)} A${r} ${r} 0 0 1 ${(r*Math.cos(a1)).toFixed(2)} ${(r*Math.sin(a1)).toFixed(2)} Z`}
+async function spinWheel(e){
+  const n=e.segments.length, svg=$('wheelsvg'), box=$('wheelbox'), msg=$('wheelmsg');
+  svg.style.transition='none'; svg.style.transform='rotate(0deg)';
+  svg.innerHTML=e.segments.map((t,i)=>{const mid=((i+.5)*360/n-90)*Math.PI/180, lx=62*Math.cos(mid), ly=62*Math.sin(mid), saved=t==='saved';
+    return `<path d="${wheelPath(i,n,96)}" fill="${saved?'#f3c969':(i%2?'#1a2350':'#232d63')}" stroke="#0a0e1f" stroke-width="2"/>`+
+      `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="${saved?9:8}" font-weight="800" fill="${saved?'#10142b':'#8a93c4'}" transform="rotate(${((i+.5)*360/n).toFixed(1)} ${lx.toFixed(1)} ${ly.toFixed(1)})">${saved?'SAUVÉE':'—'}</text>`}).join('');
+  msg.textContent=`Total du bonus sous ${(e.floor/100).toFixed(0)}× : la roue peut sauver la mise`;
+  box.classList.remove('hidden'); await sleep(900);
+  svg.getBoundingClientRect(); svg.style.transition=''; svg.style.transform=`rotate(${360*5-(e.segment+.5)*360/n}deg)`;
+  await sleep(3500);
+  msg.textContent=e.saved?`Mise sauvée ! +${(e.topUp/100).toFixed(1)}×  → total ${(e.total/100).toFixed(1)}×`:'Pas de sauvegarde cette fois';
+  msg.style.color=e.saved?'var(--gold)':'var(--dim)';
+  await sleep(2200); box.classList.add('hidden');
+}
 async function playEvents(book,bet){
   let nights=0, total=0;
   for(const e of book.events){
@@ -116,8 +144,10 @@ async function playEvents(book,bet){
     case 'nightStart': nights=e.night; banner(`Nuit ${e.night} / ${e.totalNights}`); await sleep(350); break;
     case 'starsLanded': drawStars(e.stars); await sleep(600); break;
     case 'constellationsUpdate': drawStars(e.stars); drawLinks(e.constellations); if(e.conjunctions) banner(`Conjonction ×${e.conjunctions} !`); await sleep(650); break;
-    case 'zonesComplete': e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); banner('JACKPOT '+e.zones.map(z=>z.name+' '+(z.win/100)+'×').join(' + ')); await sleep(1300); break;
+    case 'zonesComplete': e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); banner('PALIER '+e.zones.map(z=>z.name+' '+(z.win/100)+'×').join(' + ')); await sleep(1300); break;
     case 'nightPayout': total=e.total; banner(`Nuit ${nights} : +${(e.amount/100).toFixed(1)}×  (total ${(e.total/100).toFixed(1)}×)`); await sleep(500); break;
+    case 'starPrizes': e.stars.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win')); banner('Étoiles : +'+(e.total/100).toFixed(1)+'×'); await sleep(900); break;
+    case 'saverWheel': await spinWheel(e); break;
     case 'freeSpinEnd': banner('Fin du bonus : '+(e.amount/100).toFixed(1)+'×'); await sleep(1200); break;
     case 'finalWin': break;
     }
@@ -143,6 +173,7 @@ $('spin').onclick=()=>play('base'); $('buy').onclick=()=>play('bonus');
 // query helpers for automated screenshots
 const q=new URLSearchParams(location.search);
 if(q.get('auto')==='bonus'){setTimeout(()=>play('bonus'),300)}
+if(q.get('auto')==='wheel'){const b=BOOKS.bonus.find(x=>x.events.some(e=>e.type==='saverWheel'&&e.saved)); const e=b.events.find(e=>e.type==='saverWheel'); buildSky(); view(true); setTimeout(()=>spinWheel(e),200)}
 </script>
 </body>
 </html>

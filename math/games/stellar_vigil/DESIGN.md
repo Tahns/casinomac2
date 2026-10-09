@@ -1,7 +1,7 @@
 # Stellar Vigil — conception (nom provisoire)
 
 Slot original pour Stake Engine. Univers : un observatoire isolé, une nuit où le ciel s'ouvre.
-Statut : v0.2, moteur de base + bonus implémentés et calibrés sur 10 000 simulations par mode (voir §8). Les noms sont à vérifier (marques) avant publication.
+Statut : v0.3, moteur de base + bonus + roue de sauvegarde, calibrés et validés sur 100 000 simulations par mode (voir §8). Les noms sont à vérifier (marques) avant publication.
 
 ## 1. Décisions
 | Sujet | Choix |
@@ -9,7 +9,7 @@ Statut : v0.2, moteur de base + bonus implémentés et calibrés sur 10 000 simu
 | Univers | Observatoire et constellations (aucun lien avec Huff N' Puff) |
 | Volatilité | Haute |
 | Gain max | 10 000x la mise |
-| Jackpots | **Paliers fixes** (multiples de la mise), jamais progressifs |
+| Paliers de zone | **Multiplicateurs fixes** (multiples de la mise), jamais progressifs ; pas de vocabulaire « jackpot » (jeux Stake stateless) |
 | Rémunération Stake | 7,5 % du GGR attendu (garanti, sans dette) |
 | RTP cible | 96,0 % dans tous les modes (à ajuster si Stake impose une fourchette) |
 
@@ -26,7 +26,7 @@ Statut : v0.2, moteur de base + bonus implémentés et calibrés sur 10 000 simu
 - Symboles bas : A, K, Q, J.
 - **Étoile Filante (wild)** : colonnes 2 à 4, remplace tout sauf Lunette.
 - **Lunette (scatter)** : 3 ou plus déclenchent la Nuit des Constellations (10 nuits).
-- **Étoiles à valeur en jeu de base** : prévues, pas encore implémentées (amorce visuelle du bonus).
+- **Étoile à valeur (symbole ST)** : peut tomber sur n'importe quelle bobine ; paie sur place 0,2x à 10x la mise (poids 40/30/18/8/3/1), en plus des gains ways.
 
 ## 4. Bonus : la Nuit des Constellations
 Grille de ciel 5x5. **10 nuits fixes** (pas de compteur qui se remet à zéro). À chaque nuit, de nouvelles étoiles tombent, chacune avec une valeur.
@@ -37,14 +37,14 @@ Grille de ciel 5x5. **10 nuits fixes** (pas de compteur qui se remet à zéro). 
 - Une étoile isolée garde sa valeur de base : c'est le risque et la tension de chaque nuit.
 - Une nouvelle étoile qui fusionne deux constellations déclenche une « conjonction » : la chaîne fusionnée gagne un niveau supplémentaire.
 
-### Jackpots à paliers fixes, par zones
+### Multiplicateurs fixes par zones (jamais progressifs)
 Compléter une zone du ciel paie immédiatement un palier. Les zones se cumulent.
 | Palier | Zone à remplir | Gain fixe |
 |---|---|---|
-| Lueur | Une ligne du bas (Horizon) | 20x |
-| Aurore | Colonne centrale (Méridien) | 100x |
-| Zénith | Les quatre coins | 1 000x |
-| Voûte | Les 25 cases | 10 000x (gain max) |
+| Horizon | Une ligne du bas (Horizon) | 20x |
+| Meridien | Colonne centrale (Méridien) | 100x |
+| Quadrature | Les quatre coins | 1 000x |
+| Firmament | Les 25 cases | 10 000x (gain max) |
 
 ### Fin de bonus
 Les gains s'additionnent au fil des nuits ; la dernière nuit est jouée en intégralité (pas de révélation différée à la façon des maisons). Total plafonné à 10 000x.
@@ -72,14 +72,23 @@ Mode d'achat « Nuit étoilée » : le coût sera fixé après simulation pour t
 4. Front-end : application Svelte/PixiJS à partir de `web-sdk`, animations d'étoiles et de liaisons.
 5. Bet Replay, tests de format, préparation de la soumission.
 
-## 8. État du calibrage (10 000 simulations par mode, après optimiseur)
+## 8. État du calibrage (100 000 simulations par mode, après optimiseur)
 | | Mode base | Mode achat « bonus » (coût 80x) |
 |---|---|---|
 | RTP | 96,0 % | 96,0 % |
 | Gain moyen | 0,96x | 76,8x |
-| Fréquence de gain | 1 spin sur 3,5 (28 % de spins gagnants) | 100 % |
-| Écart-type | 9,1 | 70,6 |
-| Gain max | 10 000x | 10 000x |
+| Spins sans gain | 71,6 % | 0,1 % |
+| Écart-type | 10,1 | 95,9 |
+| Part des résultats sous la mise payée | 97,7 % | 65,4 % |
+| Fréquence du gain max (10 000x) | environ 1 sur 10 millions | |
 
-Limites : 10 000 simulations ne suffisent pas pour juger la queue (le gain max n'apparaît que dans quelques livres). La doc Stake recommande plus de 100 000 simulations par mode pour la production. Le chiffre de volatilité et la fréquence réelle du bonus restent à valider à cette échelle.
-Le coût du bonus buy (80x) est provisoire.
+Lecture honnête : le gain max de 10 000x existe mais il est extrêmement rare (environ 1 sur 10 millions en jeu de base) ; il ne faut pas le présenter comme un gain courant.
+Limites : 100 000 simulations valident le RTP et les distributions courantes, pas la queue extrême. Le coût du bonus buy (80x) et la table des gains restent provisoires.
+Tests automatisés : `math/games/stellar_vigil/tests` (26 tests : logique du ciel, intégrité des books, cohérence de la roue, RTP des tables de poids, absence du mot « jackpot »).
+
+## 9. Roue de sauvegarde (wager saver), ajoutée en v0.3
+- Tourne **à la fin du bonus uniquement si le total du bonus est inférieur à ce que le joueur a payé pour y entrer** : la mise (1x) quand le bonus est déclenché, le prix d'achat (80x) quand il est acheté.
+- 8 segments, 3 « sauvée » : si la roue s'arrête sur l'un d'eux, le total du bonus est relevé exactement au plancher ; sinon rien n'est ajouté.
+- Résultat pré-généré dans le book (événement `saverWheel` : segments, segment, saved, floor, topUp, total) ; aucun choix du joueur.
+- Effet réel : quasi absente en jeu de base (un bonus déclenché rapporte rarement moins de 1x), fréquente en achat de bonus (le plus souvent sous 80x).
+- À formuler clairement dans les règles du jeu : elle ne garantit pas un remboursement, elle l'offre sur 3 segments sur 8.

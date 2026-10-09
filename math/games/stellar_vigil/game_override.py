@@ -1,4 +1,5 @@
 from game_executables import GameExecutables
+from src.calculations.statistics import get_random_outcome
 
 
 class GameStateOverride(GameExecutables):
@@ -8,8 +9,11 @@ class GameStateOverride(GameExecutables):
         super().reset_book()
 
     def assign_special_sym_function(self):
-        # No symbol carries a multiplier or other attribute in this game.
-        self.special_symbol_functions = {}
+        self.special_symbol_functions = {"ST": [self.assign_star_prize]}
+
+    def assign_star_prize(self, symbol):
+        """Give a base-game Etoile its fixed prize (multiple of the bet)."""
+        symbol.assign_attribute({"prize": get_random_outcome(self.config.star_values)})
 
     def check_game_repeat(self):
         """Verify final simulation outcomes satisfied all distribution/criteria conditions."""

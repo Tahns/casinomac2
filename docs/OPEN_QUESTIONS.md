@@ -5,3 +5,6 @@
 3. **Règles Stake non publiées** : fourchette de RTP (source communautaire non officielle : 90-98 %, écart entre modes < 0,5 %), max win, limites de fichiers, exigences par juridiction. À demander au support / Discord.
 4. **Marques** : vérifier le titre « Stellar Vigil » et les noms de paliers à l'EUIPO / INPI / USPTO. Noms proches repérés : Stellar Jackpots, Moon Princess Stargazing (mécanique voisine), « Vault » (très utilisé).
 5. **Art, musique, sons** : à créer ou licencier par écrit ; garder les preuves. Aucune génération payante sans accord.
+
+6. **Roue de sauvegarde** : à soumettre au conseil en brevets avec le brevet « iterative awards » (award calculé à partir d'un total précédent). Et à décrire sans ambiguïté dans les règles : elle ne garantit pas le remboursement.
+7. **Gain max** : 10 000x existe mais survient environ 1 fois sur 10 millions ; décider si le supprimer de la communication ou le rendre plus accessible (changement de maths).

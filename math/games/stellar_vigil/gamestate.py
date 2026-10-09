@@ -16,6 +16,7 @@ class GameState(GameStateOverride):
 
             # Evaluate base-game board
             self.evaluate_ways_board()
+            self.evaluate_star_prizes()
 
             self.win_manager.update_gametype_wins(self.gametype)
             # Three or more Lunettes open the Nuit des Constellations
@@ -36,4 +37,5 @@ class GameState(GameStateOverride):
             self.play_constellation_night(sky, self.fs)
             if self.evaluate_wincap():
                 break
+        self.play_saver_wheel()
         self.end_freespin()

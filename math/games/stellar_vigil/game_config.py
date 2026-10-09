@@ -63,7 +63,16 @@ class GameConfig(Config):
         }
 
         self.include_padding = True
-        self.special_symbols = {"wild": ["W"], "scatter": ["S"], "multiplier": []}
+
+        # Roue de Sauvegarde (wager saver): spun at the end of a bonus whose total is below
+        # what the player paid to enter it (the bet when triggered, the price when bought).
+        # A 'saved' segment tops the bonus total up to that amount. 3 of 8 segments are 'saved'.
+        self.saver_segments = ["saved", "empty", "saved", "empty", "empty", "saved", "empty", "empty"]
+        self.saver_floor = {"base": 1.0, "bonus": 80.0}
+
+        self.special_symbols = {"wild": ["W"], "scatter": ["S"], "multiplier": [], "prize": ["ST"]}
+        # Etoile a valeur (jeu de base): gain paye sur place, en multiples de la mise.
+        self.star_values = {0.2: 40, 0.5: 30, 1: 18, 2: 8, 5: 3, 10: 1}
 
         # Number of nights (fixed, never reset) by Lunette count.
         self.freespin_triggers = {

@@ -2,7 +2,7 @@
 
 A 5x5 sky receives new stars each night. Neighbouring stars (8-neighbourhood) form
 constellations; every star's value level rises with the size of its constellation.
-Completing sky zones pays fixed jackpot tiers (never progressive).
+Completing sky zones pays fixed multipliers (never progressive).
 """
 
 import random
@@ -16,12 +16,12 @@ TOP_LEVEL = len(LADDER) - 1
 # A constellation lifts each of its stars by at most this many levels.
 CHAIN_CAP = 3
 
-# Fixed jackpot tiers, in multiples of the bet.
+# Fixed zone multipliers (never progressive), in multiples of the bet.
 ZONES = {
-    "Lueur": {"cells": [(r, GRID - 1) for r in range(GRID)], "win": 20},
-    "Aurore": {"cells": [(GRID // 2, row) for row in range(GRID)], "win": 100},
-    "Zenith": {"cells": [(0, 0), (GRID - 1, 0), (0, GRID - 1), (GRID - 1, GRID - 1)], "win": 1000},
-    "Voute": {"cells": [(r, c) for r in range(GRID) for c in range(GRID)], "win": 10000},
+    "Horizon": {"cells": [(r, GRID - 1) for r in range(GRID)], "win": 20},
+    "Meridien": {"cells": [(GRID // 2, row) for row in range(GRID)], "win": 100},
+    "Quadrature": {"cells": [(0, 0), (GRID - 1, 0), (0, GRID - 1), (GRID - 1, GRID - 1)], "win": 1000},
+    "Firmament": {"cells": [(r, c) for r in range(GRID) for c in range(GRID)], "win": 10000},
 }
 
 

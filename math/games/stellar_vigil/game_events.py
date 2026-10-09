@@ -64,3 +64,31 @@ def night_payout_event(gamestate, amount: float) -> None:
             "total": _cents(gamestate.win_manager.freegame_wins, gamestate.config.wincap),
         }
     )
+
+
+def star_prizes_event(gamestate, stars) -> None:
+    """stars: [(reel,row,value)] -> positions include the top padding row (+1)."""
+    gamestate.book.add_event(
+        {
+            "index": len(gamestate.book.events),
+            "type": "starPrizes",
+            "stars": [{"reel": r, "row": row + 1, "value": int(round(v * 100))} for r, row, v in stars],
+            "total": _cents(sum(v for _, _, v in stars), gamestate.config.wincap),
+        }
+    )
+
+
+def saver_wheel_event(gamestate, segment: int, saved: bool, floor: float, top_up: float) -> None:
+    """Wager-saver wheel: segment index on the wheel, whether it saved the wager, and the top-up paid."""
+    gamestate.book.add_event(
+        {
+            "index": len(gamestate.book.events),
+            "type": "saverWheel",
+            "segments": gamestate.config.saver_segments,
+            "segment": segment,
+            "saved": saved,
+            "floor": _cents(floor, gamestate.config.wincap),
+            "topUp": _cents(top_up, gamestate.config.wincap),
+            "total": _cents(gamestate.win_manager.freegame_wins, gamestate.config.wincap),
+        }
+    )

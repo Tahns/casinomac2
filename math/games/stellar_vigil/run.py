@@ -1,4 +1,5 @@
-"""Main file for generating results for sample ways-pay game."""
+"""Main file for generating results for Stellar Vigil. Set SV_SIMS (e.g. 1e5) to change the simulation count."""
+import os
 from gamestate import GameState
 from game_config import GameConfig
 from game_optimization import OptimizationSetup
@@ -17,8 +18,8 @@ if __name__ == "__main__":
     profiling = False
 
     num_sim_args = {
-        "base": int(1e4),
-        "bonus": int(1e4),
+        "base": int(float(os.environ.get("SV_SIMS", "1e4"))),
+        "bonus": int(float(os.environ.get("SV_SIMS", "1e4"))),
     }
 
     run_conditions = {
