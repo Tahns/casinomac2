@@ -1,5 +1,7 @@
 # Spécification : deux roues (demande utilisateur, itération 12)
 
+> **CORRECTION (analyse de Huff N' Puff, sources : FanDuel, casinos.com, gambling.com, Indian Gaming).** Dans H&P la roue 1 (3+ scies) mène à un bonus (Buzz Saw / Mansions / Mega Hat), à un prix fixe ou à un segment *Upgrade*. La roue 2 (« Super/Ultra Wheel », déclenchée par scies + scie dorée ou par le segment Upgrade) ne contient que les versions *Super* des bonus et les gros prix. L'upgrade améliore donc **le type de bonus**, pas le total final. La section « Roue 2 » ci-dessous (multiplicateur sur gros total) était une mauvaise lecture : à remplacer par « roue d'Aurore = versions Supérieures des variantes de ciel » (ex. Ciel Dense+ : plus d'étoiles par nuit, niveaux riches). Les sources divergent sur les détails exacts de déclenchement.
+
 Demande : « une roue au dessus des bonus et une autre roue avec upgrade des gros bonus » (structure à deux roues, comme dans Huff N' Puff). Version originale pour Stellar Vigil. Rien n'est implémenté dans le jeu par défaut : tout se fait derrière un réglage (`TWO_WHEELS = False` par défaut).
 
 ## Roue 1 : « Roue des Saisons » (avant le bonus)
