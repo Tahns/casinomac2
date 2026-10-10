@@ -176,3 +176,26 @@ Corrections :
 Résultat à 100 000 simulations : 6,06 % des spins hors bonus paient au moins la mise (1 sur 17, contre 1 sur 64) ; 3,2 % paient de 2x à 5x ; 93 % des spins rapportent moins que la mise (98 % avant).
 Une table encore plus basse (×0,3) donnait 8,9 % mais viole la règle des 0,1x : la limite de granularité du format est un plafond à cette approche.
 Hit rate : relever la fréquence de gain (1 spin sur 3,0 ou 2,7) augmente surtout les gains sous la mise (pertes déguisées en gains) ; non adopté.
+
+## 13. Ce que vit le joueur : sessions simulées (`tools/session_sim.py`)
+Sessions simulées à partir des tables publiées, comme le fait le RGS (20 000 sessions par ligne, bibliothèque à 100 000 simulations, profil A, répartition du RTP « default »).
+**Jeu de base** (mise fixe, résultat en mises, budget de départ 100 mises) :
+| Spins | Sessions gagnantes | Médiane | 10 % pires | 10 % meilleures | Budget épuisé | Voit le bonus |
+|---|---|---|---|---|---|---|
+| 20 | 22,5 % | -13,1 | -18,4 | +31,6 | 0 % | 12,5 % |
+| 50 | 29,1 % | -22,0 | -41,2 | +65,8 | 0 % | 28,4 % |
+| 200 | 38,5 % | -30,8 | -121,0 | +127,1 | 26,8 % | 73,8 % |
+| 1 000 | 37,5 % | -75,7 | -330,8 | +260,9 | 73,3 % | 99,9 % |
+**Achat de bonus** (résultat en prix d'achat, budget de départ 10 achats) : 1 achat : 37,9 % gagnant, médiane -0,2 ; 20 achats : 36,4 %, médiane -1,1 ; 100 achats : 28,0 %, médiane -4,4, budget épuisé dans 30,4 % des cas.
+Lecture honnête : le RTP de 96 % est une moyenne dominée par des événements rares. Une session typique de 20 spins perd environ les deux tiers de la mise ; la moitié du RTP vient du bonus, qu'une session courte ne voit que 1 fois sur 8. C'est le profil d'une slot à bonus rare et haute volatilité, à communiquer comme tel.
+
+### Levier de produit : répartition du RTP entre jeu de base et bonus
+`ACTIVE_RTP_SPLIT` dans `game_config.py` (un tampon dans `library/profile.json` en garde la trace).
+| | default (45,9 % base / 50,0 % bonus) | base_heavy (54,9 % / 41,0 %) |
+|---|---|---|
+| Spins hors bonus qui paient la mise | 1 sur 17 | 1 sur 9 |
+| Session de 20 spins : gagnante / médiane | 22,5 % / -13,1 | 24,0 % / -9,4 |
+| Session de 200 spins : budget de 100 mises épuisé | 26,8 % | 13,0 % |
+| Session de 1 000 spins : budget épuisé | 73,3 % | 66,3 % |
+| Gain moyen d'un bonus déclenché | environ 75x | environ 61x |
+`base_heavy` a été mesuré sur une seule exécution à 10 000 simulations (indicatif : un seul tirage de l'optimiseur, 6 000 sessions) ; à reconfirmer à 100 000 avant adoption. Il adoucit l'expérience sans supprimer la volatilité (le bonus garde 38 % du RTP) mais réduit le gain moyen du bonus et donc le spectacle des gros gains. Choix de produit : voir `OPEN_QUESTIONS.md` n°13 et n°14.

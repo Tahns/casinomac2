@@ -37,11 +37,15 @@ def test_tools_read_the_same_costs():
 
 
 def test_library_was_built_with_the_active_profile():
-    from game_config import ACTIVE_PROFILE, BONUS_BUY_COST
+    from game_config import ACTIVE_PROFILE, ACTIVE_RTP_SPLIT, BONUS_BUY_COST
 
     stamp = os.path.join(GAME_DIR, "library", "profile.json")
     if not os.path.exists(stamp):
         pytest.skip("library predates the profile stamp: rerun run.py")
     with open(stamp) as f:
         built = json.load(f)
-    assert built == {"profile": ACTIVE_PROFILE, "bonus_buy_cost": BONUS_BUY_COST}, "library built with another profile or price"
+    assert built == {
+        "profile": ACTIVE_PROFILE,
+        "bonus_buy_cost": BONUS_BUY_COST,
+        "rtp_split": ACTIVE_RTP_SPLIT,
+    }, "library built with another profile, price or RTP split"

@@ -1,5 +1,6 @@
 """Set conditions/parameters for optimization program program"""
 
+from game_config import BASE_RTP_SHARE, BONUS_RTP_SHARE
 from optimization_program.optimization_config import (
     ConstructScaling,
     ConstructParameters,
@@ -27,9 +28,9 @@ class OptimizationSetup:
                     ).return_dict(),
                     "0": ConstructConditions(rtp=0, av_win=0, search_conditions=0).return_dict(),
                     "freegame": ConstructConditions(
-                        rtp=0.50, hr=150, search_conditions={"symbol": "scatter"}
+                        rtp=BONUS_RTP_SHARE, hr=150, search_conditions={"symbol": "scatter"}
                     ).return_dict(),
-                    "basegame": ConstructConditions(hr=3.6, rtp=0.459).return_dict(),
+                    "basegame": ConstructConditions(hr=3.6, rtp=BASE_RTP_SHARE).return_dict(),
                 },
                 "scaling": ConstructScaling(
                     [

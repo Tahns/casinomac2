@@ -6,6 +6,14 @@ from src.config.betmode import BetMode
 # Price of the bonus buy, in multiples of the bet (also the wager-saver floor in buy mode).
 BONUS_BUY_COST = 80.0
 
+# Share of the 96 % RTP asked of the optimizer: (base game without bonus, bonus triggered from the base game).
+#   default    : 45.9 % base, 50.0 % bonus. Bonus-heavy: high volatility (median 20-spin session: -13 stakes).
+#   base_heavy : 54.9 % base, 41.0 % bonus. Measured (DESIGN.md section 13): 1 spin without bonus in 9 pays the
+#                stake instead of 1 in 17, and 200-spin ruin of a 100-stake bankroll halves (26.8 % -> 13.0 %).
+RTP_SPLITS = {"default": (0.459, 0.50), "base_heavy": (0.549, 0.41)}
+ACTIVE_RTP_SPLIT = "default"
+BASE_RTP_SHARE, BONUS_RTP_SHARE = RTP_SPLITS[ACTIVE_RTP_SPLIT]
+
 # Bonus profiles: stars per night, star value levels (index into constellation.LADDER), clustering, and the number
 # of nights by Lunette count (3/4/5).
 #   A (default): denser sky, 10/12/15 nights. Natural bonus (about 106x for an 80x purchase) is richer than its

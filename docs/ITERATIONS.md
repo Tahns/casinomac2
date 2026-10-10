@@ -72,3 +72,10 @@
 - Résultat à 100 000 simulations (exécution acceptée) : 6,06 % des spins hors bonus paient la mise, RTP 96,0 % partout, médiane achat 64,4x. 41 tests passent.
 - Incident : un lancement de l'outil de retirage a été coupé par mon propre délai pendant une écriture ; relancé en arrière-plan avant d'utiliser la bibliothèque (acceptation à la première tentative).
 - Pour l'itération suivante : revoir la durée et la fréquence des Lunettes dans le jeu de base ; tester davantage de symboles de bas niveau (si faisable sans casser les 1 024 ways) ; mesurer la variance d'un échantillon de 20 spins consécutifs (expérience du joueur) ; pas de front-end sans décision de l'utilisateur.
+
+## Itération 9 (2026-10-10, 15:12-15:40 UTC)
+- Nouvel outil `session_sim.py` (sessions simulées à partir des tables, échantillonnage comme le RGS). Deux erreurs de mon outil corrigées avant d'utiliser ses chiffres (libellé des unités en mode achat, seuil de ruine du mode achat). 3 tests ajoutés (échantillonnage = RTP des tables, seuil de ruine).
+- Mesures (20 000 sessions, profil A, répartition default) : 20 spins 22,5 % gagnantes / médiane -13,1 ; 50 spins 29,1 % / -22,0 ; 200 spins 38,5 % / -30,8 / ruine 26,8 % ; 1 000 spins 37,5 % / -75,7 / ruine 73,3 % ; achat : 1 achat 37,9 % gagnant, 100 achats ruine 30,4 %.
+- Variante `base_heavy` (RTP base 54,9 % / bonus 41,0 %), 10 000 simulations, un tirage de l'optimiseur, 6 000 sessions : hors bonus ≥ mise 1 sur 9, 20 spins 24,0 % / -9,4, 200 spins ruine 13,0 %, 1 000 spins ruine 66,3 %. Adoucit l'expérience ; bonus moyen 61x au lieu de 75x. Non adoptée (volatilité haute demandée) ; sélectionnable par `ACTIVE_RTP_SPLIT`.
+- Le tampon `library/profile.json` inclut `rtp_split` ; la bibliothèque courante (accepte, 100 000) est stampée « default ». 44 tests passent.
+- Pour l'itération suivante : confirmer base_heavy à 100 000 simulations avec plusieurs tirages de l'optimiseur ; mesurer l'effet de la roue de sauvegarde sur les sessions en mode achat ; ne pas démarrer le front-end sans décision de l'utilisateur.

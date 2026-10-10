@@ -1,5 +1,43 @@
 # SWOT — Stellar Vigil
 
+## v11 — fin de l'itération 9 (2026-10-10, 15:12-15:40 UTC)
+
+**Corrigé et mesuré depuis la v10**
+- **Expérience joueur mesurée pour la première fois** (sessions simulées, 20 000 par ligne) : sur 20 spins, 22,5 % de sessions gagnantes et une médiane de -13 mises ; sur 200 spins, 26,8 % des sessions épuisent un budget de 100 mises ; en achat, 30,4 % épuisent 10 prix sur 100 achats. Chiffres dans `DESIGN.md` §13.
+- **Levier de produit chiffré et rendu sélectionnable** : la répartition du RTP entre jeu de base et bonus (`ACTIVE_RTP_SPLIT`). Variante « base_heavy » : 1 spin hors bonus sur 9 paie la mise (au lieu de 1 sur 17) et la ruine à 200 spins passe de 26,8 % à 13,0 % (un seul tirage à 10 000 simulations, indicatif). Défaut inchangé.
+- **Erreurs de mon outil trouvées avant publication des chiffres** : libellé en mises/prix d'achat et seuil de ruine du mode achat erronés (0 % partout) ; corrigés, et ajout de tests d'échantillonnage. 44 tests passent.
+- Le tampon de génération couvre maintenant aussi la répartition du RTP.
+
+### Forces
+- Moteur complet, déterministe, mesuré par composante, par distribution et par session ; 44 tests verts.
+- Chaîne d'outils reproductible : génération, acceptation automatique, RTP, distributions, forme du jeu de base, sessions, gel, démo.
+- Compromis de volatilité chiffrés et réversibles par réglages (profil, répartition, freinage).
+- Mécanique originale ; roue utile dans les deux modes ; démo jouable.
+
+### Faiblesses (restantes)
+- **Expérience de session rude** (jeu de base) : médiane de 20 spins à -13 mises ; le défaut actuel est le plus volatil des deux répartitions.
+- **Optimiseur toujours non reproductible** ; géré par le retirage et les garde-fous ; archive de ~85 Mo à héberger (question n°9).
+- Queue du mode achat mince ; mode achat plus calme que le bonus déclenché (question n°10).
+- Front-end Svelte/PixiJS non commencé ; art et sons de production absents.
+- La variante base_heavy n'est mesurée qu'à 10 000 simulations.
+
+### Opportunités
+- Plateforme en croissance (chiffres rapportés par Engine, non vérifiés) ; aucun clone de Huff N' Puff trouvé dessus.
+- Un mode de jeu plus doux (base_heavy) peut cibler les joueurs à sessions courtes sans toucher à l'identité du bonus.
+- Thème libre de licences ; déclinaisons possibles.
+
+### Menaces
+- Brevets : persistance des étoiles et roue « jusqu'au plancher » à faire examiner par un conseil.
+- CGU Stake : licence large pour 36 mois renouvelables ; clauses de résiliation/indemnisation non lues.
+- Maths figées après approbation (atténué par les tests, l'acceptation et le gel).
+- Règles Stake incomplètes (RTP min/max, fichiers, juridictions) ; une règle de format (0,1x) n'a été découverte que par essai.
+- Noms proches : Stellar Jackpots, Moon Princess Stargazing, « Vault ».
+- Saturation du marché ; une expérience de session rude peut peser sur la rétention ; risque de ressemblance avec Huff N' Puff.
+
+---
+
+# SWOT — Stellar Vigil
+
 ## v10 — fin de l'itération 8 (2026-10-10, 12:12-13:30 UTC)
 
 **Corrigé et mesuré depuis la v9**
