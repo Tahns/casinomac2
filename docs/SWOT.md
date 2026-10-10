@@ -1,5 +1,42 @@
 # SWOT — Stellar Vigil
 
+## v7 — fin de l'itération 5 (2026-10-10, 03:12-04:15 UTC)
+
+**Corrigé et mesuré depuis la v6**
+- **Marge du prix d'achat mesurée** : avant optimisation un bonus acheté vaut en moyenne **106x** (médiane 80x). Étude du prix : 80x et 90x donnent un profil sain ; 100x échoue deux fois sur deux aux garde-fous (médiane 47x puis 38x). On garde 80x.
+- **Bruit de l'optimiseur chiffré** : deux exécutions à 100 000 simulations aux réglages identiques donnent une médiane du mode achat de 71,6x puis 51,2x ; les deux passent les garde-fous. Les documents donnent désormais des plages, pas un chiffre unique.
+- **Fiabilité des contrôles** : le prix est une constante unique, lue depuis la configuration par les outils et les tests ; un test détecte une bibliothèque générée avec une autre configuration (cela m'est arrivé pendant les essais de prix). 39 tests passent.
+
+### Forces
+- Moteur complet, déterministe, mesuré par composante, validé à 100 000 simulations ; 39 tests verts avec garde-fous de forme et contrôle de cohérence.
+- Chaîne d'outils reproductible (génération, mesures, gel et vérification, démo) ; le prix d'achat a été choisi sur des mesures.
+- Mécanique originale ; bonus déterministe compatible avec les résultats pré-générés de Stake.
+- Roue utile dans les deux modes ; démo jouable avec sons et règles.
+
+### Faiblesses (restantes)
+- **Optimiseur non reproductible**, avec une dispersion mesurée (médiane achat 51x à 72x) : atténué par les garde-fous et l'outil de gel, pas supprimé ; archive de ~85 Mo à héberger (question n°9).
+- Le bonus naturel est plus riche que son prix (106x contre 80x) : la forme du mode achat dépend donc beaucoup de l'optimiseur, et la zone Quadrature (1 000x) est trop fréquente avant optimisation (à revoir côté profils de nuit si on veut un mode achat moins « écrasé »).
+- Mode achat plus calme que le bonus déclenché (question n°10).
+- Front-end Svelte/PixiJS non commencé ; art et sons de production absents.
+- Table des gains toujours provisoire ; queue extrême non validée ; 71,6 % de spins sans gain en base.
+
+### Opportunités
+- Plateforme en croissance (chiffres rapportés par Engine, non vérifiés) ; aucun clone de Huff N' Puff trouvé dessus.
+- Thème libre de licences ; déclinaisons possibles.
+- Réduire la fréquence naturelle des zones Quadrature permettrait un mode achat plus fidèle au bonus déclenché sans écrasement par l'optimiseur.
+
+### Menaces
+- Brevets : persistance des étoiles et roue « jusqu'au plancher » à faire examiner par un conseil.
+- CGU Stake : licence large pour 36 mois renouvelables ; clauses de résiliation/indemnisation non lues.
+- Maths figées après approbation : une erreur découverte après coup ne se corrige pas (atténué par les tests et le gel).
+- Règles Stake incomplètes (RTP min/max, fichiers, juridictions).
+- Noms proches : Stellar Jackpots, Moon Princess Stargazing, « Vault ».
+- Saturation du marché ; risque de ressemblance avec Huff N' Puff.
+
+---
+
+# SWOT — Stellar Vigil
+
 ## v6 — fin de l'itération 4 (2026-10-10, 00:12-00:50 UTC)
 
 **Corrigé et mesuré depuis la v5**

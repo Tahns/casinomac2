@@ -38,3 +38,11 @@
 - README du jeu. 36 tests passent (110 s à 100 000 simulations).
 - Non fait : calage du coût d'achat (la table de critères n'est pas dans la bibliothèque, donc pas de mesure de la valeur naturelle du bonus).
 - Pour l'itération suivante : exporter la table de critères pour mesurer la marge du coût d'achat ; tester des tables de gains alternatives (taux de gain en base) ; relire l'écran de règles ; ne pas démarrer le front-end Svelte sans décision d'effort de l'utilisateur.
+
+## Itération 5 (2026-10-10, 03:12-04:15 UTC)
+- Mesure : avant optimisation, bonus acheté = 106x en moyenne (médiane 80x) pour un prix de 80x ; la zone Quadrature (1 000x) est dans environ 1 % des bonus naturels.
+- Étude du prix d'achat : 80x (3 exécutions) et 90x (1) passent les garde-fous ; 100x échoue 2 fois sur 2 (médiane 47x puis 38x). Prix conservé : 80x.
+- Bruit de l'optimiseur : médiane du mode achat 71,6x puis 51,2x sur deux exécutions à 100 000 simulations identiques en réglages. Docs mis à jour avec des plages.
+- Refactor : constante unique `BONUS_BUY_COST` ; outils et tests lisent les coûts depuis la configuration/l'index. Nouveau test de cohérence bibliothèque/configuration. 39 tests passent (148 s).
+- Démo : `books.js` régénéré depuis la nouvelle bibliothèque ; texte des règles ajusté ; 0 erreur JavaScript.
+- Pour l'itération suivante : tester une réduction de la fréquence de la zone Quadrature dans les profils de nuit (sans changer les zones) et mesurer l'effet sur la forme du mode achat ; table des gains alternative (taux de gain en base) ; ne pas démarrer le front-end Svelte sans décision d'effort de l'utilisateur.

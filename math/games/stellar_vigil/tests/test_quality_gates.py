@@ -5,13 +5,14 @@ regeneration must be checked against these gates before its files are accepted.
 """
 
 import csv
+import json
 import os
 
 import pytest
 
 GAME_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PUB = os.path.join(GAME_DIR, "library", "publish_files")
-COST = {"base": 1.0, "bonus": 80.0}
+COST = {m["name"]: float(m["cost"]) for m in json.load(open(os.path.join(PUB, "index.json")))["modes"]} if os.path.isdir(PUB) else {}
 
 pytestmark = pytest.mark.skipif(not os.path.isdir(PUB), reason="library not generated (run run.py)")
 

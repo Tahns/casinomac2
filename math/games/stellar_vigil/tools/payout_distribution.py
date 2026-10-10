@@ -4,11 +4,19 @@ Usage (from math/):  env/bin/python games/stellar_vigil/tools/payout_distributio
 """
 
 import csv
+import json
 import os
 import sys
 
 PUB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "library", "publish_files")
-COST = {"base": 1.0, "bonus": 80.0}
+
+
+def _costs():
+    with open(os.path.join(PUB, "index.json")) as f:
+        return {m["name"]: float(m["cost"]) for m in json.load(f)["modes"]}
+
+
+COST = _costs()
 SLICES = {
     "base": [(0, 0.001), (0.001, 1), (1, 5), (5, 20), (20, 100), (100, 1000), (1000, 10001)],
     "bonus": [(0, 40), (40, 80), (80, 200), (200, 500), (500, 2000), (2000, 10001)],

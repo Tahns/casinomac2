@@ -7,13 +7,15 @@ import os
 
 import pytest
 
+from game_config import GameConfig
+
 zstandard = pytest.importorskip("zstandard")
 
 GAME_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PUB = os.path.join(GAME_DIR, "library", "publish_files")
 WINCAP_CENTS = 10000 * 100
-COST = {"base": 1.0, "bonus": 80.0}
-SAVER_FLOOR_CENTS = {"base": 2500, "bonus": 8000}
+COST = {m["name"]: float(m["cost"]) for m in json.load(open(os.path.join(PUB, "index.json")))["modes"]} if os.path.isdir(PUB) else {}
+SAVER_FLOOR_CENTS = {k: int(round(v * 100)) for k, v in GameConfig().saver_floor.items()}
 
 pytestmark = pytest.mark.skipif(not os.path.isdir(PUB), reason="library not generated (run run.py)")
 

@@ -13,7 +13,14 @@ import os
 import zstandard
 
 PUB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "library", "publish_files")
-COST = {"base": 1.0, "bonus": 80.0}
+
+
+def _costs():
+    with open(os.path.join(PUB, "index.json")) as f:
+        return {m["name"]: float(m["cost"]) for m in json.load(f)["modes"]}
+
+
+COST = _costs()
 
 
 def breakdown(mode: str) -> dict:

@@ -3,6 +3,9 @@ from src.config.config import Config
 from src.config.distributions import Distribution
 from src.config.betmode import BetMode
 
+# Price of the bonus buy, in multiples of the bet (also the wager-saver floor in buy mode).
+BONUS_BUY_COST = 80.0
+
 # Star-level weights (index into constellation.LADDER) and nightly star counts per bonus profile.
 LEVELS_STD = {0: 30, 1: 25, 2: 18, 3: 12, 4: 8, 5: 4, 6: 2, 7: 1}
 LEVELS_RICH = {0: 10, 1: 14, 2: 16, 3: 16, 4: 14, 5: 12, 6: 8, 7: 6, 8: 3, 9: 1}
@@ -68,7 +71,7 @@ class GameConfig(Config):
         # what the player paid to enter it (the bet when triggered, the price when bought).
         # A 'saved' segment tops the bonus total up to that amount. 3 of 8 segments are 'saved'.
         self.saver_segments = ["saved", "empty", "saved", "empty", "empty", "saved", "empty", "empty"]
-        self.saver_floor = {"base": 25.0, "bonus": 80.0}
+        self.saver_floor = {"base": 25.0, "bonus": BONUS_BUY_COST}
 
         self.special_symbols = {"wild": ["W"], "scatter": ["S"], "multiplier": [], "prize": ["ST"]}
         # Etoile a valeur (jeu de base): gain paye sur place, en multiples de la mise.
@@ -145,7 +148,7 @@ class GameConfig(Config):
             ),
             BetMode(
                 name="bonus",
-                cost=80.0,
+                cost=BONUS_BUY_COST,
                 rtp=self.rtp,
                 max_win=mode_maxwins["bonus"],
                 auto_close_disabled=False,
