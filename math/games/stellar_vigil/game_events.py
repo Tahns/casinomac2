@@ -78,14 +78,12 @@ def star_prizes_event(gamestate, stars) -> None:
     )
 
 
-def saver_wheel_event(gamestate, segment: int, saved: bool, floor: float, top_up: float) -> None:
-    """Wager-saver wheel: segment index on the wheel, whether it saved the wager, and the top-up paid."""
+def saver_wheel_event(gamestate, saved: bool, floor: float, top_up: float) -> None:
+    """Wager-saver wheel result. The visual (segments) is the front-end's job: it uses the measured real odds."""
     gamestate.book.add_event(
         {
             "index": len(gamestate.book.events),
             "type": "saverWheel",
-            "segments": gamestate.config.saver_segments,
-            "segment": segment,
             "saved": saved,
             "floor": _cents(floor, gamestate.config.wincap),
             "topUp": _cents(top_up, gamestate.config.wincap),

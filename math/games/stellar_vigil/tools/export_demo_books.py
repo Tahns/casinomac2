@@ -43,8 +43,11 @@ def main():
             sel += random.sample([b for b in books if has(b, "saverWheel", saved=saved)], per)
         out[mode] = [{"win": b["payoutMultiplier"], "events": b["events"]} for b in sel]
         print(mode, len(sel), "books,", sum(has(b, "saverWheel") for b in sel), "with the wheel")
+    with open(os.path.join(GAME_DIR, "library", "configs", "saver_odds.json")) as f:
+        odds = json.load(f)
     with open(OUT, "w") as f:
         f.write("window.BOOKS=" + json.dumps(out, separators=(",", ":")) + ";")
+        f.write("window.SAVER_ODDS=" + json.dumps({k: odds[k] for k in ("base", "bonus")}, separators=(",", ":")) + ";")
     print("written", OUT)
 
 

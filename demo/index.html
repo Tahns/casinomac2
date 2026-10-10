@@ -142,8 +142,8 @@
   <li>Compléter une zone paie un multiplicateur fixe, une seule fois par bonus : Horizon (ligne du bas) 20×, Méridien (colonne centrale) 100×, Quadrature (les 4 coins) 1 000×, Firmament (ciel complet) 10 000×. Ces multiplicateurs ne sont pas progressifs.</li></ul>
   <h3>Roue de sauvegarde</h3>
   <ul><li>En fin de bonus, si le total est inférieur à un plancher, la roue tourne. Plancher : 25× la mise pour un bonus déclenché en jeu normal ; 80× (le prix payé) pour un bonus acheté.</li>
-  <li>3 segments sur 8 relèvent le total exactement jusqu'au plancher. Les 5 autres n'ajoutent rien : la roue n'est pas un remboursement garanti.</li>
-  <li>Environ 1 bonus déclenché sur 7 et 6 achats sur 10 font tourner la roue.</li></ul>
+  <li>La roue relève le total exactement jusqu'au plancher si elle tombe sur « sauvée ». Chance réelle mesurée sur ce jeu : environ <b id="oddsBuy">?</b> en achat, <b id="oddsBase">?</b> sur un bonus déclenché. Ce n'est pas un remboursement garanti.</li>
+  <li>La roue tourne dans environ <b id="spinBase">?</b> des bonus déclenchés et <b id="spinBuy">?</b> des achats.</li></ul>
   <h3>Chiffres</h3>
   <ul><li>RTP théorique : 96,0 % dans tous les modes. Gain maximum : 10 000× la mise, extrêmement rare (environ 1 fois sur 10 millions en jeu normal).</li>
   <li>Le bonus se déclenche environ 1 spin sur 150 ; environ 28 % des spins gagnent.</li></ul>
@@ -231,16 +231,22 @@ function drawLinks(cons){
 }
 function wheelPath(i,n,r){const a0=(i*360/n-90)*Math.PI/180,a1=((i+1)*360/n-90)*Math.PI/180;
   return `M0 0 L${(r*Math.cos(a0)).toFixed(2)} ${(r*Math.sin(a0)).toFixed(2)} A${r} ${r} 0 0 1 ${(r*Math.cos(a1)).toFixed(2)} ${(r*Math.sin(a1)).toFixed(2)} Z`}
+// La roue est dessinée avec les VRAIES probabilités mesurées sur le jeu (window.SAVER_ODDS), pas avec des segments inventés.
+function wheelOdds(e){const o=(window.SAVER_ODDS||{})[e.floor>=6000?'bonus':'base']||{p_save_given_spin:.05};return o.p_save_given_spin}
 async function spinWheel(e){
-  const n=e.segments.length, svg=$('wheelsvg'), box=$('wheelbox'), msg=$('wheelmsg');
+  const n=40, p=wheelOdds(e), k=Math.max(1,Math.round(p*n)), svg=$('wheelsvg'), box=$('wheelbox'), msg=$('wheelmsg');
+  const savedIdx=[...Array(k)].map((_,m)=>Math.floor(m*n/k+n/(2*k)));
+  const others=[...Array(n).keys()].filter(x=>!savedIdx.includes(x));
+  const pool=e.saved?savedIdx:others, segment=pool[Math.floor(Math.random()*pool.length)];
   svg.style.transition='none'; svg.style.transform='rotate(0deg)';
-  svg.innerHTML=e.segments.map((t,i)=>{const mid=((i+.5)*360/n-90)*Math.PI/180, lx=62*Math.cos(mid), ly=62*Math.sin(mid), saved=t==='saved';
-    return `<path d="${wheelPath(i,n,96)}" fill="${saved?'url(#rim)':(i%2?'#18204f':'#242f6a')}" stroke="#0a0e1f" stroke-width="2"/>`+
-      `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="${saved?9:8}" font-weight="800" fill="${saved?'#10142b':'#8a93c4'}" transform="rotate(${((i+.5)*360/n).toFixed(1)} ${lx.toFixed(1)} ${ly.toFixed(1)})">${saved?'SAUVÉE':'—'}</text>`}).join('');
-  msg.textContent=`Total du bonus sous ${(e.floor/100).toFixed(0)}× : la roue peut le relever à ${(e.floor/100).toFixed(0)}×`;
+  svg.innerHTML=[...Array(n).keys()].map(i=>{const saved=savedIdx.includes(i), mid=((i+.5)*360/n-90)*Math.PI/180, lx=70*Math.cos(mid), ly=70*Math.sin(mid);
+    return `<path d="${wheelPath(i,n,96)}" fill="${saved?'url(#rim)':(i%2?'#18204f':'#242f6a')}" stroke="#0a0e1f" stroke-width="1.2"/>`+
+      ''}).join('');
+  msg.textContent=`Sous ${(e.floor/100).toFixed(0)}× : les segments dorés relèvent le bonus à ${(e.floor/100).toFixed(0)}×. Chance réelle ≈ ${(p*100).toFixed(1)} %`;
+  msg.style.color='var(--ink)';
   box.classList.remove('hidden'); await sleep(900);
   let t=0, step=60; while(t<3200){ setTimeout(()=>sfx('tick'),t); t+=step; step*=1.07 }
-  svg.getBoundingClientRect(); svg.style.transition=''; svg.style.transform=`rotate(${360*5-(e.segment+.5)*360/n}deg)`;
+  svg.getBoundingClientRect(); svg.style.transition=''; svg.style.transform=`rotate(${360*5-(segment+.5)*360/n}deg)`;
   await sleep(3500);
   sfx(e.saved?'saved':'empty');
   msg.textContent=e.saved?`${e.floor>=8000?'Mise sauvée !':'Minimum de bonus atteint !'} +${(e.topUp/100).toFixed(1)}×  → total ${(e.total/100).toFixed(1)}×`:'Pas de sauvegarde cette fois';
@@ -280,6 +286,7 @@ async function play(kind){
   await sleep(800); view(false); busy=false; $('spin').disabled=$('buy').disabled=false;
 }
 buildBoard(); buildSky();
+try{const o=window.SAVER_ODDS||{}, pc=x=>Math.round(x*100)+' %'; if(o.bonus){$('oddsBuy').textContent=pc(o.bonus.p_save_given_spin);$('spinBuy').textContent=pc(o.bonus.p_spin_given_bonus);$('oddsBase').textContent=pc(o.base.p_save_given_spin);$('spinBase').textContent=pc(o.base.p_spin_given_bonus)}}catch(e){}
 // preview board on load
 (function(){const b=BOOKS.base.find(x=>x.events[0].type==='reveal'); show(b.events[0].board)})();
 $('spin').onclick=()=>play('base'); $('buy').onclick=()=>play('bonus');

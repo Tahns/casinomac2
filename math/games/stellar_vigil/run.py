@@ -66,3 +66,9 @@ if __name__ == "__main__":
 
     if run_conditions["run_format_checks"]:
         execute_all_tests(config)
+
+    # Publish the real wheel odds measured on this library (the front-end draws the wheel from them)
+    import subprocess
+    import sys
+
+    subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools", "saver_odds.py")], check=True)

@@ -20,7 +20,7 @@ Les sorties vont dans `games/stellar_vigil/library/` (ignoré par git). Les fich
 
 ## Vérifier
 ```
-env/bin/python -m pytest games/stellar_vigil/tests -q      # 44 tests (~2 min avec une bibliothèque à 100 000)
+env/bin/python -m pytest games/stellar_vigil/tests -q      # 46 tests (~3 min avec une bibliothèque à 100 000)
 ```
 - `test_constellation.py` : logique du ciel (chaînes, conjonctions, zones, absence du mot « jackpot »).
 - `test_books.py` : intégrité des résultats publiés (indices, paiements, comptabilité, roue, RTP).
@@ -32,6 +32,8 @@ env/bin/python -m pytest games/stellar_vigil/tests -q      # 44 tests (~2 min av
 |---|---|
 | `tools/base_win_shape.py` | forme des gains du jeu de base, naturelle et optimisée (détecte les haltères) |
 | `tools/session_sim.py [--sessions N]` | sessions simulées : probabilité d'être gagnant après N spins, médiane, ruine d'un budget |
+| `tools/saver_odds.py` | mesure et publie les vraies chances de la roue de sauvegarde (`library/configs/saver_odds.json`) ; appelé par `reoptimize.py` et `run.py` |
+| `tools/wheel_effect.py` | ce que la roue change réellement pour le joueur, avec et sans son rattrapage |
 | `tools/rtp_breakdown.py [--natural]` | répartition du RTP par composante ; `--natural` : avant optimisation |
 | `tools/reoptimize.py [--max-attempts N] [--no-stop] [--log FICHIER]` | relance seulement l'optimiseur jusqu'à une exécution qui passe les garde-fous ; `--no-stop --log` mesure la dispersion |
 | `tools/payout_distribution.py [base\|bonus]` | percentiles et part de RTP par tranche de gain |

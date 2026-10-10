@@ -91,6 +91,10 @@ def main() -> int:
             with open(args.log, "a") as f:
                 f.write(json.dumps(record) + "\n")
         if ok and not args.no_stop:
+            spec2 = importlib.util.spec_from_file_location("saver_odds", os.path.join(GAME_DIR, "tools", "saver_odds.py"))
+            odds = importlib.util.module_from_spec(spec2)
+            spec2.loader.exec_module(odds)
+            print("   saver odds:", {k: v for k, v in odds.write().items() if k != "lut_sha256"})
             print(f"ACCEPTED on attempt {attempt}")
             return 0
     if args.no_stop:

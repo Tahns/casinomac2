@@ -68,12 +68,11 @@ class GameExecutables(GameCalculations):
         total = self.win_manager.freegame_wins
         if total >= floor or self.wincap_triggered:
             return
-        segment = random.randrange(len(self.config.saver_segments))
-        saved = self.config.saver_segments[segment] == "saved"
+        saved = random.random() < self.config.saver_draw_probability
         top_up = floor - total if saved else 0.0
         if top_up > 0:
             self.win_manager.reset_spin_win()
             self.win_manager.update_spinwin(top_up)
             self.win_manager.update_gametype_wins(self.gametype)
-        saver_wheel_event(self, segment, saved, floor, top_up)
+        saver_wheel_event(self, saved, floor, top_up)
         self.record({"wheel": "saved" if saved else "empty", "gametype": self.gametype})

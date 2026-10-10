@@ -93,7 +93,7 @@ def test_saver_wheel_is_consistent(mode_data):
         assert len(wheels) <= 1
         for w in wheels:
             assert w["floor"] == floor
-            assert w["segments"][w["segment"]] == ("saved" if w["saved"] else "empty")
+            assert set(w) >= {"saved", "floor", "topUp", "total"} and "segments" not in w
             nights = sum(e["amount"] for e in b["events"] if e["type"] == "nightPayout")
             assert nights < floor  # the wheel is only offered below the floor
             if w["saved"]:

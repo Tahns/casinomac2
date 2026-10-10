@@ -111,10 +111,13 @@ class GameConfig(Config):
 
         self.include_padding = True
 
-        # Roue de Sauvegarde (wager saver): spun at the end of a bonus whose total is below
-        # what the player paid to enter it (the bet when triggered, the price when bought).
-        # A 'saved' segment tops the bonus total up to that amount. 3 of 8 segments are 'saved'.
-        self.saver_segments = ["saved", "empty", "saved", "empty", "empty", "saved", "empty", "empty"]
+        # Roue de Sauvegarde (wager saver): spun at the end of a bonus whose total is below a floor (25x for a bonus
+        # triggered from the base game, the purchase price for a bought bonus). If it saves, the total is topped up
+        # to the floor. `saver_draw_probability` is only the draw used while SIMULATING the books; the optimizer
+        # then re-weights the books, so the odds a player really gets are different (about 5 % instead of 37.5 % in
+        # buy mode). The real odds are measured on the final library (tools/saver_odds.py) and the front-end draws
+        # the wheel from them: the math never dictates how many segments are "saved".
+        self.saver_draw_probability = 0.375
         self.saver_floor = {"base": 25.0, "bonus": BONUS_BUY_COST}
 
         self.special_symbols = {"wild": ["W"], "scatter": ["S"], "multiplier": [], "prize": ["ST"]}

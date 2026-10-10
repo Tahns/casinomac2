@@ -29,3 +29,6 @@ Légende : [LU] lu sur une page officielle (via un outil de lecture qui résume)
 
 ## Règle de format découverte par les essais (lue dans le code du SDK, `utils/rgs_verification.py`)
 Chaque paiement doit être un multiple de 0,1x la mise (« Payout values must be in increments of 10 », en centièmes). Conséquence : toute valeur de la table des gains, des étoiles, des paliers et de la roue doit être un multiple de 0,1x ; la granularité minimale d'un gain est 0,1x. Vérifié : la table actuelle passe la vérification de format ; une table mise à l'échelle sans arrondi échoue.
+
+## Honnêteté des visuels de hasard (principe de conception, à faire confirmer par Stake / un conseil)
+Un dessin de hasard (roue, par exemple) ne doit pas annoncer d'autres chances que celles du jeu. Ici le moteur a d'abord annoncé 37,5 % de chances de « sauvée » alors que la chance réelle, après pondération de l'optimiseur, était de 2,5 % à 7,3 % ; corrigé (la roue est dessinée avec les chances mesurées, `DESIGN.md` §9). Le même risque existe pour tout futur effet visuel dont le résultat est tiré avant pondération : vérifier que la probabilité affichée est la probabilité finale. [SUPPOSÉ] : cette exigence n'est pas décrite dans les pages officielles Stake lues ; elle relève des règles générales sur la présentation des probabilités.

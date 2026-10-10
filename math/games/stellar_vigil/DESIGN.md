@@ -89,12 +89,12 @@ Lecture honnête : le gain max de 10 000x existe mais il est extrêmement rare e
 Limites : 100 000 simulations valident le RTP et les distributions courantes, pas la queue extrême.
 Tests automatisés : `math/games/stellar_vigil/tests` (41 tests : logique du ciel, intégrité des books, comptabilité, roue, RTP, garde-fous de forme du bonus et du jeu de base, déterminisme, cohérence bibliothèque/configuration/profil, absence du mot « jackpot »).
 
-## 9. Roue de sauvegarde (wager saver), v0.4
-- Tourne à la fin du bonus **si le total est inférieur à un plancher** : 25x la mise pour un bonus **déclenché** en jeu normal (« minimum de bonus ») ; 80x, soit le prix payé, pour un bonus **acheté** (« mise sauvée »). Valeurs dans `game_config.py` (`saver_floor`).
-- 8 segments, 3 « sauvée » : si la roue s'arrête sur l'un d'eux, le total du bonus est relevé exactement au plancher ; sinon rien n'est ajouté. Ce n'est pas un remboursement garanti.
-- Résultat pré-généré dans le book (événement `saverWheel`) ; aucun choix du joueur.
-- Mesuré à 100 000 simulations (deux exécutions) : environ 1 bonus déclenché sur 7 à 9 fait tourner la roue (1 spin sur 1 039 à 1 309) ; 63 à 64 % des achats. Coût en RTP : 0,1 % en base, 1,5 à 3,2 % en achat.
-- Historique : en v0.3 le plancher était la mise (1x) pour les bonus déclenchés ; la roue n'y tournait que 1 fois sur 330 000 spins (décision utilisateur : la rendre utile).
+## 9. Roue de sauvegarde (wager saver), v0.9
+- Tourne à la fin du bonus **si le total est inférieur à un plancher** : 25x la mise pour un bonus **déclenché** en jeu normal (« minimum de bonus ») ; 80x, soit le prix payé, pour un bonus **acheté** (« mise sauvée »). Valeurs : `saver_floor` dans `game_config.py`.
+- Si elle sauve, le total du bonus est relevé exactement au plancher ; sinon rien n'est ajouté. Ce n'est pas un remboursement garanti. Résultat pré-généré dans le book (événement `saverWheel` : `saved`, `floor`, `topUp`, `total`) ; aucun choix du joueur.
+- **Les segments ne sont plus décidés par les maths** (correction v0.9). Avant, le moteur dessinait 3 segments « sauvée » sur 8 (37,5 %). Mais l'optimiseur re-pondère les livres, et les livres où la roue sauve paient exactement le plancher : il les écrase. Chance réelle mesurée sur le jeu final : **2,5 % en achat** (roue tournée dans 62,5 % des achats), **7,3 % sur un bonus déclenché** (roue tournée dans 13,2 % des bonus). Le dessin d'origine annonçait donc environ 8 fois trop. Aujourd'hui `tools/saver_odds.py` mesure ces chances sur la bibliothèque finale et les publie dans `library/configs/saver_odds.json` (avec l'empreinte des tables, un test détecte un fichier périmé) ; le front-end dessine la roue à partir d'elles (40 segments, nombre de segments dorés proportionnel à la vraie chance) et les affiche dans les règles. `reoptimize.py` les republie à chaque exécution acceptée.
+- Effet réel (`tools/wheel_effect.py`) : en achat, un achat sur 62 fait tourner la roue pour rien ; elle sauve dans 1,6 % des achats (gain moyen de 42x quand elle sauve) ; la part d'achats qui rapportent au moins le prix passe de 37,5 % à 39,1 %. Coût en RTP : 0,83 % en achat, 0,06 % en jeu de base. **La roue est donc surtout décorative** (question n°15).
+- Historique : v0.3 plancher = mise (1x), roue quasi jamais vue en jeu de base ; v0.4 plancher de 25x ; v0.9 vraies probabilités.
 
 ## 10. Volatilité du mode achat et reproductibilité de l'optimiseur
 - L'optimiseur Rust n'est **pas reproductible** : deux lancements aux réglages identiques donnent des poids différents (empreintes des tables différentes). Une exécution a même donné un mode achat très volatil (écart-type 210, 85 % des achats sous le prix) alors que rien n'avait changé côté achat.
@@ -190,12 +190,13 @@ Sessions simulées à partir des tables publiées, comme le fait le RGS (20 000 
 Lecture honnête : le RTP de 96 % est une moyenne dominée par des événements rares. Une session typique de 20 spins perd environ les deux tiers de la mise ; la moitié du RTP vient du bonus, qu'une session courte ne voit que 1 fois sur 8. C'est le profil d'une slot à bonus rare et haute volatilité, à communiquer comme tel.
 
 ### Levier de produit : répartition du RTP entre jeu de base et bonus
-`ACTIVE_RTP_SPLIT` dans `game_config.py` (un tampon dans `library/profile.json` en garde la trace).
+`ACTIVE_RTP_SPLIT` dans `game_config.py` (un tampon dans `library/profile.json` en garde la trace). Mesuré à **100 000 simulations** (sessions : 20 000 par ligne ; variante : exécution acceptée après 5 tirages de l'optimiseur dont 2 acceptables).
 | | default (45,9 % base / 50,0 % bonus) | base_heavy (54,9 % / 41,0 %) |
 |---|---|---|
-| Spins hors bonus qui paient la mise | 1 sur 17 | 1 sur 9 |
-| Session de 20 spins : gagnante / médiane | 22,5 % / -13,1 | 24,0 % / -9,4 |
-| Session de 200 spins : budget de 100 mises épuisé | 26,8 % | 13,0 % |
-| Session de 1 000 spins : budget épuisé | 73,3 % | 66,3 % |
+| Spins hors bonus qui paient la mise | 1 sur 17 (6,1 %) | 1 sur 14 (7,2 %), 1 sur 10 à 1 sur 14 selon le tirage |
+| Session de 20 spins : gagnante / médiane | 22,5 % / -13,1 | 27,1 % / -11,0 |
+| Session de 50 spins : gagnante / médiane | 29,1 % / -22,0 | 33,6 % / -16,7 |
+| Session de 200 spins : gagnante / budget de 100 mises épuisé | 38,5 % / 26,8 % | 40,7 % / 16,2 % |
+| Session de 1 000 spins : budget épuisé | 73,3 % | 65,3 % |
 | Gain moyen d'un bonus déclenché | environ 75x | environ 61x |
-`base_heavy` a été mesuré sur une seule exécution à 10 000 simulations (indicatif : un seul tirage de l'optimiseur, 6 000 sessions) ; à reconfirmer à 100 000 avant adoption. Il adoucit l'expérience sans supprimer la volatilité (le bonus garde 38 % du RTP) mais réduit le gain moyen du bonus et donc le spectacle des gros gains. Choix de produit : voir `OPEN_QUESTIONS.md` n°13 et n°14.
+La variante adoucit nettement l'expérience sans supprimer la volatilité (le bonus garde environ 40 % du RTP) : la ruine à 200 spins passe de 26,8 % à 16,2 %. Correction : l'estimation à 10 000 simulations (13,0 % de ruine, 1 spin sur 9) était trop optimiste. Le mode achat n'est pas modifié par ce réglage ; ses chiffres de session varient d'une exécution de l'optimiseur à l'autre (par exemple 100 achats : 28 % à 32 % de sessions gagnantes, 30 % à 40 % de budgets épuisés). Choix de produit : voir `OPEN_QUESTIONS.md` n°13 et n°14.
