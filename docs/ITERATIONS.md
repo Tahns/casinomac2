@@ -86,3 +86,10 @@
 - Correction : `saver_segments` supprimé des maths ; événement `saverWheel` réduit à `saved/floor/topUp/total` ; `saver_odds.py` mesure et publie les vraies chances (avec empreinte des tables) ; `reoptimize.py` et `run.py` l'appellent ; démo dessinée à partir des vraies chances (40 segments) ; règles dynamiques. 2 tests ajoutés (fraîcheur et validité des odds) ; 46 passent (161 s).
 - Régénération complète à 100 000 simulations, acceptée à la première tentative (médiane achat 53,9x, 6,28 % des spins hors bonus paient la mise).
 - Pour l'itération suivante : si la question n°15 n'est pas tranchée, chiffrer l'option (c) en prototype sur une copie (critères distincts pour la roue) ; vérifier qu'aucun autre effet visuel n'annonce de fausses probabilités ; ne pas démarrer le front-end sans décision de l'utilisateur.
+
+## Itération 11 (2026-10-10, 21:11-21:40 UTC)
+- Mesure sans régénération : coût en RTP d'une roue à 37,5 % de chance = 15,0 % du prix d'achat (12,0x sur 80x, avant optimisation), proportionnel à la chance ; à comparer aux 0,83 % actuels (2,5 % de chance réelle). Ajouté à `DESIGN.md` §9 et à la question n°15.
+- Tests de cohérence démo/bibliothèque/configuration (`test_demo_consistency.py`, 4 tests) : empreinte de la bibliothèque embarquée dans `books.js`, taux de gain (28 %) et fréquence du bonus (1 sur 150) dans les règles, nombre de nuits, RTP et multiplicateurs. Mutation vérifiée : un chiffre falsifié fait échouer le test ; fichier restauré.
+- Vérification : aucun autre visuel de hasard n'annonce de probabilités.
+- Aucun crédit Higgsfield dépensé (le solde reste 153,43).
+- Pour l'itération suivante : rien de neuf à régénérer ; relire les garde-fous du dépôt (hygiène : taille des fichiers versionnés, historique) ; si aucune décision n'arrive sur les questions n°9 à n°15, préparer le dossier de décision complet (une page) plutôt que d'ajouter des mesures.

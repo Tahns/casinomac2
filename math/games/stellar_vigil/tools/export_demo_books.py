@@ -47,7 +47,7 @@ def main():
         odds = json.load(f)
     with open(OUT, "w") as f:
         f.write("window.BOOKS=" + json.dumps(out, separators=(",", ":")) + ";")
-        f.write("window.SAVER_ODDS=" + json.dumps({k: odds[k] for k in ("base", "bonus")}, separators=(",", ":")) + ";")
+        f.write("window.SAVER_ODDS=" + json.dumps({k: odds[k] for k in ("base", "bonus", "lut_sha256")}, separators=(",", ":")) + ";")
     print("written", OUT)
 
 

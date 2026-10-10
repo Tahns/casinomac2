@@ -1,5 +1,41 @@
 # SWOT — Stellar Vigil
 
+## v13 — fin de l'itération 11 (2026-10-10, 21:11-21:40 UTC)
+
+**Corrigé et mesuré depuis la v12**
+- **Option (c) de la question n°15 chiffrée sans rien régénérer** : une roue qui sauve vraiment 37,5 % du temps coûterait environ **15 points de RTP** en mode achat (12,0x sur 80x, mesuré avant optimisation) ; le coût est à peu près proportionnel à la chance (4 points pour 10 %). Décision de produit mieux informée.
+- **Démo, règles et bibliothèque verrouillées par des tests** : la démo embarque l'empreinte de la bibliothèque dont elle vient ; les règles doivent annoncer le vrai taux de gain (28 %), la vraie fréquence du bonus (1 spin sur 150), le bon nombre de nuits, le RTP et les multiplicateurs de zone. Un test échoue si la démo est périmée ; **vérifié par falsification** (changer « 150 » en « 100 » fait échouer le test). 50 tests au total.
+- **Vérification des autres visuels de hasard** : aucun autre effet visuel n'annonce de probabilités ; les valeurs des étoiles viennent des événements réels.
+
+### Forces
+- Moteur complet, déterministe, mesuré de plusieurs façons (composantes, distributions, sessions, effet de chaque mécanique) ; 50 tests verts.
+- Démo cohérente avec la bibliothèque et avec la configuration, vérifiée automatiquement ; visuels de hasard alignés sur les vraies probabilités.
+- Nouvelle direction artistique (art IA) avec provenance documentée.
+- Compromis chiffrés et réversibles par réglages.
+
+### Faiblesses (restantes)
+- **La roue de sauvegarde est presque sans valeur** (2,5 % de chance réelle en achat) ; la rendre généreuse coûterait 4 à 15 points de RTP (question n°15).
+- **Expérience de session rude** (jeu de base) ; réglage plus doux disponible mais non adopté (question n°14).
+- **Optimiseur toujours non reproductible** ; archive de ~85 Mo à héberger (question n°9).
+- Queue du mode achat mince (question n°10).
+- Droits sur l'art IA non vérifiés (`ART_PROVENANCE.md`) ; musique et sons de production absents ; front-end Svelte/PixiJS non commencé.
+
+### Opportunités
+- Plateforme en croissance (chiffres rapportés par Engine, non vérifiés) ; aucun clone de Huff N' Puff trouvé dessus.
+- Supprimer la roue simplifierait le jeu et retirerait un risque de brevet.
+- Un mode de jeu plus doux (base_heavy) pour les sessions courtes.
+
+### Menaces
+- Probabilités affichées : tout nouvel effet de hasard tiré avant pondération peut mentir (principe noté dans `STAKE_COMPLIANCE.md`).
+- Brevets : persistance des étoiles et roue « jusqu'au plancher » à faire examiner par un conseil.
+- Droits des images IA et conditions de Higgsfield à vérifier ; CGU Stake (licence large, 36 mois renouvelables, clauses non lues).
+- Maths figées après approbation (atténué par les tests, l'acceptation et le gel).
+- Règles Stake incomplètes ; noms proches (Stellar Jackpots, Moon Princess Stargazing, « Vault ») ; saturation du marché ; ressemblance avec Huff N' Puff.
+
+---
+
+# SWOT — Stellar Vigil
+
 ## v12 — fin de l'itération 10 (2026-10-10, 18:12-19:10 UTC)
 
 **Corrigé et mesuré depuis la v11**
