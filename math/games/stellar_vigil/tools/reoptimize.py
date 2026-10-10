@@ -80,7 +80,12 @@ def main() -> int:
         execute_all_tests(config)  # also refreshes library/stats_summary.json
         print(f"attempt {attempt}: optimizer + analysis took {time.time() - t:.0f}s", flush=True)
         ok = gates_pass()
-        record = {"attempt": attempt, "passed": ok, **bonus_stats()}
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("base_win_shape", os.path.join(GAME_DIR, "tools", "base_win_shape.py"))
+        shape = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(shape)
+        record = {"attempt": attempt, "passed": ok, **bonus_stats(), "base_ge1x": round(shape.non_bonus_ge1(), 4)}
         print("   ", record, flush=True)
         if args.log:
             with open(args.log, "a") as f:

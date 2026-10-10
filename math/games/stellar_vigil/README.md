@@ -20,7 +20,7 @@ Les sorties vont dans `games/stellar_vigil/library/` (ignoré par git). Les fich
 
 ## Vérifier
 ```
-env/bin/python -m pytest games/stellar_vigil/tests -q      # 40 tests (~2 min avec une bibliothèque à 100 000)
+env/bin/python -m pytest games/stellar_vigil/tests -q      # 41 tests (~2 min avec une bibliothèque à 100 000)
 ```
 - `test_constellation.py` : logique du ciel (chaînes, conjonctions, zones, absence du mot « jackpot »).
 - `test_books.py` : intégrité des résultats publiés (indices, paiements, comptabilité, roue, RTP).
@@ -30,6 +30,7 @@ env/bin/python -m pytest games/stellar_vigil/tests -q      # 40 tests (~2 min av
 ## Outils (`tools/`)
 | Commande | Rôle |
 |---|---|
+| `tools/base_win_shape.py` | forme des gains du jeu de base, naturelle et optimisée (détecte les haltères) |
 | `tools/rtp_breakdown.py [--natural]` | répartition du RTP par composante ; `--natural` : avant optimisation |
 | `tools/reoptimize.py [--max-attempts N] [--no-stop] [--log FICHIER]` | relance seulement l'optimiseur jusqu'à une exécution qui passe les garde-fous ; `--no-stop --log` mesure la dispersion |
 | `tools/payout_distribution.py [base\|bonus]` | percentiles et part de RTP par tranche de gain |

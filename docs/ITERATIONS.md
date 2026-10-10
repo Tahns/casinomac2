@@ -62,3 +62,13 @@
 - Simulation Monte Carlo : le mélange de durées 10/12/15 explique l'écart Quadrature entre ma simulation rapide (2,2 %) et le moteur (3,5 %).
 - 40 tests passent ; bibliothèque finale acceptée (médiane achat 52,9x, écart-type 74,9, 62 % sous le prix). Démo régénérée.
 - Pour l'itération suivante : tester un freinage plus faible (0,5) pour garder plus de queue ; revoir la table des gains (taux de gain en base, 71,6 % de spins sans gain) ; pas de front-end sans décision de l'utilisateur.
+
+## Itération 8 (2026-10-10, 12:12-13:30 UTC)
+- Freinage du mode achat 0,5 (8 tentatives à 100 000) : 4 acceptables, 4 quasi-échecs (34x-38x), 0 catastrophique ; 0,25 reste meilleur (11 sur 14).
+- Fréquence de gain 1 sur 3,0 et 1 sur 2,7 (10 000 simulations) : gains en plus surtout sous la mise ; non adoptée.
+- Découverte : jeu de base naturel à 78 % de gain et 3,56x par gain ; optimisé : 26,4 % de micro-gains, 0,16 % de gains 1x-5x, 1 spin hors bonus sur 64 paie la mise (outil `base_win_shape.py`).
+- Essais de table des gains : ×0,5 et ×0,3 échouent à la vérification de format Stake (paiements non multiples de 0,1x) mais montrent la tendance (4,0 % et 8,9 % de spins hors bonus à la mise ou plus). Table calibrée à la main, multiples de 0,1x, adoptée.
+- Réglage de forme du jeu de base : facteur 8 sur 1x-5x et biais de distribution 1x-5x (poids 0,7) ; essai avec facteur 3 : 0 tentative sur 4 atteint 6 % ; avec facteur 8 : 3 sur 4.
+- Résultat à 100 000 simulations (exécution acceptée) : 6,06 % des spins hors bonus paient la mise, RTP 96,0 % partout, médiane achat 64,4x. 41 tests passent.
+- Incident : un lancement de l'outil de retirage a été coupé par mon propre délai pendant une écriture ; relancé en arrière-plan avant d'utiliser la bibliothèque (acceptation à la première tentative).
+- Pour l'itération suivante : revoir la durée et la fréquence des Lunettes dans le jeu de base ; tester davantage de symboles de bas niveau (si faisable sans casser les 1 024 ways) ; mesurer la variance d'un échantillon de 20 spins consécutifs (expérience du joueur) ; pas de front-end sans décision de l'utilisateur.

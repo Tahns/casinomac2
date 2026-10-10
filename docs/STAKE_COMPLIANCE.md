@@ -26,3 +26,6 @@ Légende : [LU] lu sur une page officielle (via un outil de lecture qui résume)
 - « Stellar Vigil » : aucun résultat exact. Voisins : Stellar Jackpots, Stellar (AGames). Éviter « Stellar » + « Jackpot ».
 - « Constellation Night » : aucun slot du même nom. Plus proche mécaniquement : Moon Princess Stargazing (Play'n GO).
 - Paliers : « Vault » est encombré (Lucky Vault, Biggest Vault) ; c'est pourquoi les zones s'appellent Horizon, Meridien, Quadrature, Firmament. Bases de marques (EUIPO, INPI, USPTO) non interrogées : à faire.
+
+## Règle de format découverte par les essais (lue dans le code du SDK, `utils/rgs_verification.py`)
+Chaque paiement doit être un multiple de 0,1x la mise (« Payout values must be in increments of 10 », en centièmes). Conséquence : toute valeur de la table des gains, des étoiles, des paliers et de la roue doit être un multiple de 0,1x ; la granularité minimale d'un gain est 0,1x. Vérifié : la table actuelle passe la vérification de format ; une table mise à l'échelle sans arrondi échoue.

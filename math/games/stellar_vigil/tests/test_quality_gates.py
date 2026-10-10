@@ -51,3 +51,13 @@ def test_bonus_buy_most_purchases_do_not_lose_most_of_the_price():
 def test_base_hit_rate_is_reasonable():
     s = stats("base")
     assert 0.22 <= s["p_win"] <= 0.40, s
+
+
+def test_base_game_pays_mid_sized_wins():
+    """Guards against the barbell: spins without bonus must pay at least the bet often enough (>= 6 %)."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("base_win_shape", os.path.join(GAME_DIR, "tools", "base_win_shape.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.non_bonus_ge1() >= 0.06

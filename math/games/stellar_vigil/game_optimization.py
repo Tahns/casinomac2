@@ -33,16 +33,12 @@ class OptimizationSetup:
                 },
                 "scaling": ConstructScaling(
                     [
+                        # Favour mid-sized wins (1-5x). The SDK sample pushed 10-20x instead, which feeds a barbell
+                        # (many sub-bet wins, a few big ones, almost nothing in between).
                         {
                             "criteria": "basegame",
-                            "scale_factor": 1.2,
-                            "win_range": (1, 2),
-                            "probability": 1.0,
-                        },
-                        {
-                            "criteria": "basegame",
-                            "scale_factor": 1.5,
-                            "win_range": (10, 20),
+                            "scale_factor": 8.0,
+                            "win_range": (1, 5),
                             "probability": 1.0,
                         },
                         {
@@ -72,8 +68,8 @@ class OptimizationSetup:
                 ).return_dict(),
                 "distribution_bias": ConstructFenceBias(
                     applied_criteria=["basegame"],
-                    bias_ranges=[(1.5, 3.5)],
-                    bias_weights=[0.4],
+                    bias_ranges=[(1.0, 5.0)],
+                    bias_weights=[0.7],
                 ).return_dict(),
             },
             "bonus": {

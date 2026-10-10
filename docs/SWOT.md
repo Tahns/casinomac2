@@ -1,5 +1,44 @@
 # SWOT — Stellar Vigil
 
+## v10 — fin de l'itération 8 (2026-10-10, 12:12-13:30 UTC)
+
+**Corrigé et mesuré depuis la v9**
+- **Défaut majeur du jeu de base découvert et corrigé** : la table des gains était environ 6 fois trop généreuse (jeu de base naturel : 78 % de gain, 3,56x par gain). L'optimiseur devait tout écraser et produisait une distribution en haltères : seulement **1 spin hors bonus sur 64** payait au moins la mise. Après réduction de la table (arrondie aux multiples de 0,1x) et un réglage de forme plus fort : **1 sur 17** (6,06 %), dont 3,2 % entre 2x et 5x ; 93 % des spins rapportent moins que la mise (98 % avant). Mesuré à 100 000 simulations.
+- **Nouvelle règle de format Stake identifiée** : tout paiement doit être un multiple de 0,1x. Découverte par un échec de vérification pendant les essais ; la table actuelle la respecte.
+- **Nouveau garde-fou** sur la forme du jeu de base (au moins 6 % de spins hors bonus qui paient la mise) ; l'optimiseur le respecte une fois sur deux environ, l'outil de retirage règle le reste. 41 tests passent.
+- **Freinage du mode achat** : valeur 0,5 testée contre 0,25 (8 tentatives) : 4 acceptables sur 8 contre 11 sur 14 ; 0,25 conservé.
+- **Hausse de la fréquence de gain** testée (1 spin sur 3,0 et 2,7) : elle ajoute surtout des gains sous la mise (pertes déguisées en gains) ; non adoptée.
+
+### Forces
+- Moteur complet, déterministe, mesuré par composante, validé à 100 000 simulations ; 41 tests verts.
+- Jeu de base nettement plus vivant (6 % de spins paient la mise, avec des gains de 2x à 5x) ; mode achat sans exécution catastrophique.
+- Chaîne d'outils reproductible : génération, acceptation automatique, mesures (RTP, distribution, forme du jeu de base), gel, démo.
+- Mécanique originale ; roue utile dans les deux modes ; démo jouable.
+
+### Faiblesses (restantes)
+- **Optimiseur toujours non reproductible**, y compris sur la forme du jeu de base (barbell une fois sur deux sans garde-fou) ; géré par le retirage ; archive de ~85 Mo à héberger (question n°9).
+- Le jeu de base reste lent : 93 % des spins rapportent moins que la mise, 71,6 % sans gain ; la granularité de 0,1x limite la baisse supplémentaire de la table des gains.
+- Queue du mode achat mince (conséquence du freinage) ; mode achat plus calme que le bonus déclenché (question n°10).
+- Front-end Svelte/PixiJS non commencé ; art et sons de production absents.
+- Queue extrême non validée.
+
+### Opportunités
+- Plateforme en croissance (chiffres rapportés par Engine, non vérifiés) ; aucun clone de Huff N' Puff trouvé dessus.
+- Thème libre de licences ; déclinaisons possibles.
+- Davantage de symboles de bas niveau (ou une grille 3 rangées) rendrait le jeu de base naturellement moins gagnant en fréquence et permettrait une table plus fine ; non testé.
+
+### Menaces
+- Brevets : persistance des étoiles et roue « jusqu'au plancher » à faire examiner par un conseil.
+- CGU Stake : licence large pour 36 mois renouvelables ; clauses de résiliation/indemnisation non lues.
+- Maths figées après approbation : une erreur découverte après coup ne se corrige pas (atténué par les tests, l'acceptation et le gel).
+- Règles Stake incomplètes (RTP min/max, fichiers, juridictions) ; une règle de format (0,1x) n'a été découverte que par essai : d'autres peuvent exister.
+- Noms proches : Stellar Jackpots, Moon Princess Stargazing, « Vault ».
+- Saturation du marché ; risque de ressemblance avec Huff N' Puff.
+
+---
+
+# SWOT — Stellar Vigil
+
 ## v9 — fin de l'itération 7 (2026-10-10, 09:12-11:45 UTC)
 
 **Corrigé et mesuré depuis la v8**
