@@ -6,3 +6,4 @@ node_modules/
 math/games/*/library/
 math/uploads/
 .env
+demo/stellar_vigil_demo.html
