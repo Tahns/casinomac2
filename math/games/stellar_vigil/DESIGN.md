@@ -25,11 +25,11 @@ Statut : v0.3, moteur de base + bonus + roue de sauvegarde, calibrés et validé
 - Symboles élevés (placeholders, art à créer) : Astrolabe, Lune, Comète, Sablier.
 - Symboles bas : A, K, Q, J.
 - **Étoile Filante (wild)** : colonnes 2 à 4, remplace tout sauf Lunette.
-- **Lunette (scatter)** : 3 ou plus déclenchent la Nuit des Constellations (10 nuits).
+- **Lunette (scatter)** : 3, 4 ou 5 déclenchent la Nuit des Constellations, de 10, 12 ou 15 nuits.
 - **Étoile à valeur (symbole ST)** : peut tomber sur n'importe quelle bobine ; paie sur place 0,2x à 10x la mise (poids 40/30/18/8/3/1), en plus des gains ways.
 
 ## 4. Bonus : la Nuit des Constellations
-Grille de ciel 5x5. **10 nuits fixes** (pas de compteur qui se remet à zéro). À chaque nuit, de nouvelles étoiles tombent, chacune avec une valeur.
+Grille de ciel 5x5. **Nombre de nuits fixe** : 10, 12 ou 15 selon les Lunettes (pas de compteur qui se remet à zéro). À chaque nuit, de nouvelles étoiles tombent, chacune avec une valeur.
 
 ### Cœur du système : l'adjacence
 - Deux étoiles voisines (orthogonal ou diagonale) sont **reliées** et forment une constellation.
@@ -72,18 +72,19 @@ Mode d'achat « Nuit étoilée » : le coût sera fixé après simulation pour t
 4. Front-end : application Svelte/PixiJS à partir de `web-sdk`, animations d'étoiles et de liaisons.
 5. Bet Replay, tests de format, préparation de la soumission.
 
-## 8. État du calibrage (100 000 simulations par mode, après optimiseur, v0.6, profil A)
+## 8. État du calibrage (100 000 simulations par mode, après optimiseur, v0.7, profil A)
 | | Mode base | Mode achat « bonus » (coût 80x) |
 |---|---|---|
 | RTP | 96,0 % | 96,0 % |
 | Gain moyen | 0,96x | 76,8x |
-| Médiane | 0x | 51x à 72x sur les exécutions acceptées (une exécution à 37,5x rejetée par les garde-fous) |
+| Médiane | 0x | 46x à 64x sur les exécutions acceptées (avec freinage, §10) |
 | Spins sans gain | 71,6 % | 0,1 % |
-| Écart-type | 9,1 | 65 à 82 selon l'exécution |
-| Part des résultats sous la mise payée | 97,8 % | 57 à 66 % selon l'exécution |
+| Écart-type | 9,7 | 65 à 84 selon l'exécution |
+| Part des résultats sous la mise payée | 97,8 % | 60 à 66 % selon l'exécution |
+| Gains de 500x à 2 000x (achat) / 1 000x et plus (base) | 2,9 % du RTP en base | environ 1 achat sur 1 300 à 4 800 |
 | Fréquence du gain max (10 000x) | environ 1 sur 10 millions | environ 1 sur 125 000 achats |
 
-Les colonnes « selon l'exécution » viennent de quatre exécutions à 100 000 simulations aux réglages identiques : l'optimiseur n'est pas reproductible (§10), et une exécution sur quatre a été rejetée par les garde-fous. `tools/reoptimize.py` automatise le tirage jusqu'à une exécution acceptable.
+Les colonnes « selon l'exécution » viennent de plusieurs exécutions à 100 000 simulations aux réglages identiques : l'optimiseur n'est pas reproductible (§10). `tools/reoptimize.py` redessine jusqu'à une exécution qui passe les garde-fous.
 Lecture honnête : le gain max de 10 000x existe mais il est extrêmement rare en jeu normal ; il ne faut pas le présenter comme un gain courant.
 Limites : 100 000 simulations valident le RTP et les distributions courantes, pas la queue extrême. La table des gains reste provisoire.
 Tests automatisés : `math/games/stellar_vigil/tests` (40 tests : logique du ciel, intégrité des books, comptabilité, roue, RTP, garde-fous de forme, déterminisme, cohérence bibliothèque/configuration/profil, absence du mot « jackpot »).
@@ -130,16 +131,38 @@ Conclusion : B rapproche la valeur naturelle du prix, mais **ne réduit pas la d
 ### Outil d'acceptation
 `tools/reoptimize.py` relance seulement l'optimiseur (environ 110 s à 100 000 simulations, contre 10 minutes pour tout régénérer) jusqu'à ce que les garde-fous passent. Essai réel : première exécution rejetée (3 garde-fous en échec), deuxième acceptée.
 
+### Profils C et D, et dispersion de l'optimiseur (mesuré, 2026-10-10)
+Mélange des durées : les bonus à 4 et 5 Lunettes durent 12 et 15 nuits ; ils gonflent la valeur naturelle et la zone Quadrature (3,1 % des bonus en simulation contre 2,05 % si tous duraient 10 nuits).
+| Profil | Description | Valeur naturelle (ciel + zones) | Quadrature | Part du RTP en base au-delà de 1 000x |
+|---|---|---|---|---|
+| A (défaut) | ciel dense, 10/12/15 nuits | 93x | 3,1 % | environ 2,1 % |
+| B | ciel clairsemé, étoiles riches | 76x | 0,7 % | environ 0,2 % |
+| C | intermédiaire | 84x | 1,5 % | 0,35 % |
+| D | A avec 10/11/12 nuits | 77x | 2,4 % | 1,7 % |
+Le profil D garde la queue de A, mais **n'améliore pas la robustesse de l'optimiseur** à 100 000 simulations et affaiblit les bonus à 4 et 5 Lunettes : non adopté (sélectionnable).
+
+Dispersion de l'optimiseur, mesurée avec `reoptimize.py --no-stop --log` (100 000 simulations) :
+| Configuration | Tentatives | Acceptables | Mode catastrophique (médiane 22x à 26x, écart-type 210) | Quasi-échecs (médiane 36x à 39x) |
+|---|---|---|---|---|
+| Profil A, sans freinage | 9 | 6 | 3 | 0 |
+| Profil D, sans freinage | 8 | 4 | 2 | 2 |
+| Profil D, avec freinage | 8 | 7 | 0 | 1 |
+| Profil A, avec freinage | 6 | 4 | 0 | 2 |
+L'optimiseur est **bimodal** : une bonne exécution (médiane 46x à 74x) ou une exécution catastrophique (87 % des achats sous le prix). Aucun cas intermédiaire n'est observé entre les deux, sauf les quasi-échecs à 36x-39x.
+
+### Réglage retenu : freinage de la plage 900x-1 500x
+Dans `game_optimization.py`, mode achat : mise à l'échelle de 0,25 sur la plage de gains 900x-1 500x (livres de la zone Quadrature) dans les distributions candidates de l'optimiseur. Effet mesuré : plus aucune exécution catastrophique sur 14 tentatives (A et D), contre 5 sur 17 sans freinage. Coût : environ la moitié de la queue du mode achat (gains de 500x à 2 000x : environ 0,08 % des achats contre 0,17 %) ; le jeu de base garde sa queue (2,9 % du RTP au-delà de 1 000x). Échantillons petits (6 à 8 tentatives par ligne) : à reconfirmer si les profils ou la table des gains changent.
+
 
 ## 11. Répartition du RTP par composante (100 000 simulations, `tools/rtp_breakdown.py`, exécution acceptée courante)
 | Composante | Mode base (part de la mise) | Mode achat (part du prix d'achat) |
 |---|---|---|
-| Gains ways | 42,2 % | 2,0 % |
-| Étoiles à valeur (jeu de base) | 4,8 % | 0,1 % |
-| Nuits du bonus (étoiles et constellations) | 44,8 % | 75,9 % |
-| Multiplicateurs de zone | 4,1 % | 16,4 % |
-| Roue de sauvegarde | 0,1 % | 1,6 % |
+| Gains ways | 43,1 % | 2,0 % |
+| Étoiles à valeur (jeu de base) | 3,9 % | 0,1 % |
+| Nuits du bonus (étoiles et constellations) | 43,6 % | 75,6 % |
+| Multiplicateurs de zone | 5,3 % | 16,6 % |
+| Roue de sauvegarde | 0,1 % | 1,8 % |
 | **Total** | **96,0 %** | **96,0 %** |
 
-Autres mesures : bonus déclenché 1 spin sur 150 ; spins gagnants 28,4 % (1 sur 3,5) ; roue tournée 1 spin sur 1 308 en base et 69 % des achats. La part de zones et de roue varie d'une exécution à l'autre. `rtp_breakdown.py --natural` donne la répartition avant optimisation.
+Autres mesures : bonus déclenché 1 spin sur 150 ; spins gagnants 28,4 % (1 sur 3,5) ; roue tournée 1 spin sur 1 410 en base et 66 % des achats. La part de zones et de roue varie d'une exécution à l'autre. `rtp_breakdown.py --natural` donne la répartition avant optimisation.
 `tools/payout_distribution.py` donne les percentiles et la part de RTP par tranche de gain.

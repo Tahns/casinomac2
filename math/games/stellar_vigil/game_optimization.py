@@ -85,6 +85,15 @@ class OptimizationSetup:
                 },
                 "scaling": ConstructScaling(
                     [
+                        # Damp the ~1000x books (zone Quadrature) in the buy-mode candidates: without this about
+                        # 1 optimizer run in 3 comes out far too volatile (median ~22x, std ~210). Measured on 8
+                        # runs at 100k: 0 such runs with the damping (see DESIGN.md section 10).
+                        {
+                            "criteria": "freegame",
+                            "scale_factor": 0.25,
+                            "win_range": (900, 1500),
+                            "probability": 1.0,
+                        },
                         {
                             "criteria": "freegame",
                             "scale_factor": 0.9,

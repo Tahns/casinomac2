@@ -1,5 +1,44 @@
 # SWOT — Stellar Vigil
 
+## v9 — fin de l'itération 7 (2026-10-10, 09:12-11:45 UTC)
+
+**Corrigé et mesuré depuis la v8**
+- **Le mode catastrophique de l'optimiseur est supprimé, mesuré** : l'optimiseur est bimodal (bonne exécution, ou exécution à médiane 22x-26x et 87 % d'achats sous le prix). Sans réglage : 5 exécutions catastrophiques sur 17. Avec un freinage de la plage 900x-1 500x dans le mode achat : **0 sur 14**, à 100 000 simulations (profils A et D). Coût : environ la moitié de la queue du mode achat. Échantillons petits (6 à 8 par ligne).
+- **Profils C et D évalués** : D (A avec 10/11/12 nuits) garde la queue mais n'améliore pas la robustesse et affaiblit les bonus à 4 et 5 Lunettes ; C perd presque toute la queue. Défaut conservé : A.
+- **Erreur de ma part corrigée** : j'avais d'abord adopté D après « 5 sur 5 acceptables à 10 000 simulations » ; à 100 000 il n'est acceptable que 4 fois sur 8 sans freinage. Je suis revenu à A et j'ai restauré tous les textes (10/12/15 nuits).
+- **Outil de mesure** : `reoptimize.py --no-stop --log` enregistre chaque tentative (médiane, écart-type, part sous le prix).
+- Explication d'un écart de mesure : ma simulation rapide sous-estimait Quadrature parce qu'elle ignorait que les bonus à 4 et 5 Lunettes durent 12 et 15 nuits ; vérifié en la corrigeant.
+- 40 tests passent ; bibliothèque finale acceptée (médiane achat 52,9x, écart-type 74,9).
+
+### Forces
+- Moteur complet, déterministe, mesuré par composante, validé à 100 000 simulations ; 40 tests verts.
+- Chaîne d'outils reproductible : génération, acceptation automatique, mesure de dispersion, gel, démo.
+- Le mode catastrophique de l'optimiseur est neutralisé et chiffré ; les compromis (profils, freinage) sont documentés et réversibles par un réglage.
+- Mécanique originale ; roue utile dans les deux modes ; démo jouable.
+
+### Faiblesses (restantes)
+- **Optimiseur toujours non reproductible** (environ 2 exécutions sur 6 tombent en quasi-échec à 36x-39x de médiane) ; géré par le retirage ; archive de ~85 Mo à héberger (question n°9).
+- Queue du mode achat très mince : gains de 500x à 2 000x environ 1 achat sur 1 300 à 4 800 (conséquence du freinage et de l'écrasement) ; mode achat nettement plus calme que le bonus déclenché (question n°10).
+- Front-end Svelte/PixiJS non commencé ; art et sons de production absents.
+- Table des gains provisoire ; queue extrême non validée ; 71,6 % de spins sans gain en base.
+
+### Opportunités
+- Plateforme en croissance (chiffres rapportés par Engine, non vérifiés) ; aucun clone de Huff N' Puff trouvé dessus.
+- Thème libre de licences ; déclinaisons possibles.
+- Un freinage moins fort (par exemple 0,5) pourrait garder plus de queue en restant sans mode catastrophique ; non testé.
+
+### Menaces
+- Brevets : persistance des étoiles et roue « jusqu'au plancher » à faire examiner par un conseil.
+- CGU Stake : licence large pour 36 mois renouvelables ; clauses de résiliation/indemnisation non lues.
+- Maths figées après approbation : une erreur découverte après coup ne se corrige pas (atténué par les tests, l'acceptation et le gel).
+- Règles Stake incomplètes (RTP min/max, fichiers, juridictions).
+- Noms proches : Stellar Jackpots, Moon Princess Stargazing, « Vault ».
+- Saturation du marché ; risque de ressemblance avec Huff N' Puff.
+
+---
+
+# SWOT — Stellar Vigil
+
 ## v8 — fin de l'itération 6 (2026-10-10, 06:12-08:00 UTC)
 
 **Corrigé et mesuré depuis la v7**

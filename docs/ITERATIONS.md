@@ -54,3 +54,11 @@
 - Outils : `reoptimize.py` (optimiseur seul, environ 110 s), `rtp_breakdown.py --natural`. Tampon `library/profile.json` + test. 40 tests passent.
 - Incident : `reoptimize.py` ne rafraîchissait pas `stats_summary.json` (chiffres de l'exécution rejetée) ; corrigé et rafraîchi avant d'écrire les docs.
 - Pour l'itération suivante : tester un ou deux profils intermédiaires entre A et B ; lancer `reoptimize.py` plus de fois pour caractériser la dispersion (histogramme des médianes) ; réexaminer la table des gains (taux de gain en base). Pas de front-end Svelte sans décision de l'utilisateur.
+
+## Itération 7 (2026-10-10, 09:12-11:45 UTC)
+- Dispersion de l'optimiseur mesurée (`reoptimize.py --no-stop --log`, 100 000 simulations) : profil A sans freinage 9 tentatives (6 acceptables, 3 catastrophiques, médianes 22x-24x et écart-type 210-217) ; profil D sans freinage 8 (4, 2 catastrophiques, 2 quasi-échecs 37,9x et 38,3x) ; profil D avec freinage 8 (7, 0, 1) ; profil A avec freinage 6 (4, 0, 2 quasi-échecs 36,6x et 39,5x).
+- Changement retenu : freinage 0,25 de la plage 900x-1 500x dans le mode achat (`game_optimization.py`). Coût mesuré : gains de 500x à 2 000x d'environ 0,17 % à 0,08 % des achats ; base inchangée (2,9 % du RTP au-delà de 1 000x).
+- Profils C et D ajoutés (sélectionnables). D (10/11/12 nuits) n'a pas été adopté : pas de gain de robustesse à 100 000 ; adopté puis annulé en cours d'itération, textes restaurés.
+- Simulation Monte Carlo : le mélange de durées 10/12/15 explique l'écart Quadrature entre ma simulation rapide (2,2 %) et le moteur (3,5 %).
+- 40 tests passent ; bibliothèque finale acceptée (médiane achat 52,9x, écart-type 74,9, 62 % sous le prix). Démo régénérée.
+- Pour l'itération suivante : tester un freinage plus faible (0,5) pour garder plus de queue ; revoir la table des gains (taux de gain en base, 71,6 % de spins sans gain) ; pas de front-end sans décision de l'utilisateur.

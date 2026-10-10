@@ -4,8 +4,14 @@ The simulations are deterministic and already done; the Rust optimizer is the ra
 too volatile (see tests/test_quality_gates.py). This loops: optimize -> analyse -> format checks (refreshes stats_summary.json) -> run the gates, and stops at
 the first run that passes. The result is still not reproducible, so freeze it afterwards (tools/freeze_maths.py).
 
-Usage (from math/):  env/bin/python games/stellar_vigil/tools/reoptimize.py [--max-attempts 6]
+Usage (from math/):  env/bin/python games/stellar_vigil/tools/reoptimize.py [--max-attempts 6] [--no-stop] [--log FILE]
+  --no-stop   keep going after a run passes (to measure the spread of the optimizer; the library is left on
+              the LAST run, so finish with a normal call to end on an accepted run)
+  --log FILE  append one JSON line per attempt (median, std, share of purchases below cost, gate result)
 """
+
+import csv
+import json
 
 import argparse
 import os
@@ -25,6 +31,27 @@ from utils.game_analytics.run_analysis import create_stat_sheet  # noqa: E402
 from utils.rgs_verification import execute_all_tests  # noqa: E402
 
 
+def bonus_stats() -> dict:
+    with open(os.path.join(GAME_DIR, "library", "publish_files", "lookUpTable_bonus_0.csv")) as f:
+        rows = sorted(((int(w), int(m)) for _, w, m in csv.reader(f)), key=lambda r: r[1])
+    total = sum(w for w, _ in rows)
+    acc, median = 0, 0.0
+    for w, m in rows:
+        acc += w
+        if acc / total >= 0.5:
+            median = m / 100
+            break
+    mean = sum(w * m for w, m in rows) / total / 100
+    cost = float(next(bm for bm in GameConfig().bet_modes if bm._name == "bonus").get_cost())
+    var = sum(w * (m / 100 - mean) ** 2 for w, m in rows) / total
+    return {
+        "median": round(median, 1),
+        "mean": round(mean, 2),
+        "std": round(var**0.5, 1),
+        "below_cost": round(sum(w for w, m in rows if m / 100 < cost) / total, 3),
+    }
+
+
 def gates_pass() -> bool:
     r = subprocess.run(
         [sys.executable, "-m", "pytest", os.path.join(GAME_DIR, "tests", "test_quality_gates.py"), "-q", "-p", "no:cacheprovider"],
@@ -39,6 +66,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--max-attempts", type=int, default=6)
     ap.add_argument("--rust-threads", type=int, default=4)
+    ap.add_argument("--no-stop", action="store_true")
+    ap.add_argument("--log")
     args = ap.parse_args()
     for attempt in range(1, args.max_attempts + 1):
         t = time.time()
@@ -50,9 +79,17 @@ def main() -> int:
         create_stat_sheet(gamestate, custom_keys=[{"symbol": "scatter"}])
         execute_all_tests(config)  # also refreshes library/stats_summary.json
         print(f"attempt {attempt}: optimizer + analysis took {time.time() - t:.0f}s", flush=True)
-        if gates_pass():
+        ok = gates_pass()
+        record = {"attempt": attempt, "passed": ok, **bonus_stats()}
+        print("   ", record, flush=True)
+        if args.log:
+            with open(args.log, "a") as f:
+                f.write(json.dumps(record) + "\n")
+        if ok and not args.no_stop:
             print(f"ACCEPTED on attempt {attempt}")
             return 0
+    if args.no_stop:
+        return 0
     print(f"NO RUN PASSED the gates in {args.max_attempts} attempts")
     return 1
 
