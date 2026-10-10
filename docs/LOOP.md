@@ -14,7 +14,7 @@ Début : 2026-10-09. **Fin : 2026-10-11 13:00 UTC.** Passé ce moment, ne plus i
 ## Garde-fous
 - Aucune pull request, aucun merge, aucun push hors de la branche ci-dessus.
 - Aucune publication ni soumission à Stake Engine. Aucun service payant ou à crédits (par ex. génération d'images ou de vidéos) sans accord explicite de l'utilisateur.
-- Ne jamais copier Huff N' Puff : pas de loup/cochons/maisons, pas de roue de jackpots, pas de cadres paille/bois/brique, pas de noms de la franchise. Ne pas rapprocher la conception de la leur.
+- Ne jamais copier Huff N' Puff : pas de loup/cochons/maisons, pas de roue de jackpots (exception : l'utilisateur a demandé, itération 12, une roue avant et une roue d'upgrade après le bonus : version originale décrite dans TWO_WHEELS_SPEC.md, derrière un réglage, défaut inchangé), pas de cadres paille/bois/brique, pas de noms de la franchise. Ne pas rapprocher la conception de la leur.
 - Pas de jackpots (règle Stake « stateless ») : parler de multiplicateurs fixes.
 - Ne jamais déclarer le jeu « libre de brevets » ni « conforme » : seul un conseil en PI / Stake peut le dire.
 - Les décisions qui relèvent de l'humain (PI, CGU, licences d'art, soumission, contact Stake) vont dans `docs/OPEN_QUESTIONS.md`, pas dans le code.
