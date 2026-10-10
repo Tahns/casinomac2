@@ -59,11 +59,12 @@
   .tools button{flex:0 0 auto;padding:8px 12px;font-size:13px}
   html,body{max-width:100%;overflow-x:hidden}
   body{background:radial-gradient(900px 520px at 80% -5%,#2a2160 0%,transparent 60%),radial-gradient(700px 480px at 0% 30%,#12335c 0%,transparent 60%),linear-gradient(#070b1d,#050816 70%);background-attachment:fixed}
+  body{background-image:linear-gradient(#050816cc,#050816aa 40%,#050816dd),url(art/bg.webp);background-size:cover;background-position:center top;background-attachment:fixed}
   body::before,body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-repeat:repeat}
   body::before{background-image:radial-gradient(1.2px 1.2px at 22px 30px,#fff,transparent),radial-gradient(1px 1px at 90px 80px,#cfe3ff,transparent),radial-gradient(1.4px 1.4px at 150px 20px,#fff,transparent),radial-gradient(1px 1px at 60px 140px,#ffe9b0,transparent),radial-gradient(1.2px 1.2px at 180px 120px,#fff,transparent);background-size:200px 170px;opacity:.55;animation:tw 5s ease-in-out infinite alternate}
   body::after{background-image:radial-gradient(1px 1px at 40px 60px,#fff,transparent),radial-gradient(1.6px 1.6px at 120px 110px,#bfe0ff,transparent),radial-gradient(1px 1px at 170px 40px,#fff,transparent);background-size:230px 190px;opacity:.35;animation:tw 7s ease-in-out infinite alternate-reverse}
   @keyframes tw{from{opacity:.2}to{opacity:.75}}
-  .wrap{position:relative;z-index:1}
+  .wrap{position:relative}
   h1{font-size:24px;letter-spacing:.14em;background:linear-gradient(#fff3c4,#f3c969 55%,#b9852b);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 8px #f3c96955);text-align:center;margin:6px 0 0}
   .sub{text-align:center}
   .stage{background:linear-gradient(160deg,#171f4d 0%,#0d1230 55%,#0a0e26 100%);border:1px solid #6b5a2e;box-shadow:0 0 0 1px #0b0f25,0 0 0 3px #3a2f14,0 10px 40px #000a,inset 0 0 40px #0006;border-radius:18px}
@@ -71,8 +72,13 @@
   .cell{background:radial-gradient(circle at 50% 35%,#222c66 0%,#10163a 70%);border:1px solid #2f3a78;box-shadow:inset 0 1px 0 #ffffff14,inset 0 -8px 14px #0006}
   .sky .cell{background:radial-gradient(circle at 50% 40%,#0f1a45 0%,#070a1c 75%);border-color:#1f2a5c}
   .cell svg{filter:drop-shadow(0 2px 3px #000a);width:90%!important;height:90%!important}
+  img.sym{width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;pointer-events:none}
+  .cell img.sym{width:100%;height:100%}
+  .star img.sym{width:84%;height:84%}
+  .logo{display:block;margin:-6px auto -6px;width:min(62%,260px);mix-blend-mode:screen}
+  h1.vh{position:absolute;left:-9999px}
   @keyframes drop{0%{transform:translateY(-55%) scale(.9);opacity:0;filter:blur(3px)}60%{transform:translateY(6%);opacity:1;filter:blur(0)}100%{transform:none}}
-  .cell.drop svg,.cell.drop .star{animation:drop .42s cubic-bezier(.2,.8,.3,1) both;animation-delay:var(--d,0ms)}
+  .cell.drop svg,.cell.drop img.sym,.cell.drop .star{animation:drop .42s cubic-bezier(.2,.8,.3,1) both;animation-delay:var(--d,0ms)}
   .cell.win{box-shadow:0 0 0 2px var(--win),0 0 22px #7dffb2aa,inset 0 0 14px #7dffb255}
   .cell.scat{box-shadow:0 0 0 2px var(--gold),0 0 22px #f3c969aa,inset 0 0 14px #f3c96955}
   .star small{text-shadow:0 1px 3px #000,0 0 6px #8fd3ff}
@@ -99,7 +105,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Stellar Vigil</h1>
+  <h1 class="vh">Stellar Vigil</h1><img class="logo" src="art/logo.webp" alt="Stellar Vigil">
   <div class="sub">Démo jouable — rejoue de vrais résultats du moteur de maths (RTP 96 %). Argent fictif.</div>
   <div class="hud">
     <div><b>Solde</b><span id="bal">1000.00</span></div>
@@ -155,33 +161,8 @@
 try{if(new URLSearchParams(location.search).get('still'))document.documentElement.classList.add('still')}catch(e){}
 const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const COL=['#f3c969','#9ec5ff','#ff9a8a','#c8a4ff'];
-const GOLD='<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#f3c969"/><stop offset="1" stop-color="#a8721c"/></linearGradient>';
-const svg=(body,defs='')=>`<svg viewBox="0 0 64 64"><defs>${GOLD}${defs}</defs>${body}</svg>`;
-const SYM={
- // H1 Astrolabe: laiton, anneaux gradués, aiguille
- H1:()=>svg(`<circle cx="32" cy="32" r="31" fill="url(#glowG)"/><circle cx="32" cy="32" r="25" fill="#0f1536" stroke="url(#gold)" stroke-width="3.4"/><circle cx="32" cy="32" r="19" fill="none" stroke="url(#gold)" stroke-width="1.6" stroke-dasharray="1.6 3.2"/><circle cx="32" cy="32" r="12" fill="none" stroke="url(#gold)" stroke-width="2.2"/><path d="M32 5v9M32 50v9M5 32h9M50 32h9" stroke="url(#gold)" stroke-width="3.4" stroke-linecap="round"/><path d="M32 32L45 19" stroke="#fff3c4" stroke-width="2.6" stroke-linecap="round"/><path d="M32 32L22 40" stroke="#f3c969" stroke-width="2" stroke-linecap="round"/><circle cx="32" cy="32" r="3.6" fill="#fff3c4" stroke="#a8721c" stroke-width="1"/>`,
-   '<radialGradient id="glowG"><stop offset="0" stop-color="#f3c969" stop-opacity=".38"/><stop offset="1" stop-color="#f3c969" stop-opacity="0"/></radialGradient>'),
- // H2 Lune
- H2:()=>svg(`<circle cx="32" cy="32" r="31" fill="url(#glowM)"/><circle cx="29" cy="33" r="25" mask="url(#cut)" fill="url(#moon)" stroke="#ffffff" stroke-width="1.2"/><circle cx="19" cy="27" r="3.4" fill="#8da2d3" opacity=".55"/><circle cx="23" cy="42" r="2.6" fill="#8da2d3" opacity=".5"/><circle cx="15" cy="36" r="1.8" fill="#8da2d3" opacity=".45"/><path d="M48 14l1.4 3.6 3.6 1.4-3.6 1.4L48 24l-1.4-3.6-3.6-1.4 3.6-1.4z" fill="#fff"/><path d="M54 36l.9 2.2 2.2.9-2.2.9-.9 2.2-.9-2.2-2.2-.9 2.2-.9z" fill="#cfe0ff"/>`,
-   '<mask id="cut"><rect width="64" height="64" fill="#fff"/><circle cx="41" cy="26" r="21" fill="#000"/></mask><linearGradient id="moon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#d6e1ff"/><stop offset="1" stop-color="#8aa0d6"/></linearGradient><radialGradient id="glowM"><stop offset="0" stop-color="#9ec5ff" stop-opacity=".4"/><stop offset="1" stop-color="#9ec5ff" stop-opacity="0"/></radialGradient>'),
- // H3 Comète
- H3:()=>svg(`<path d="M6 58C16 40 30 26 46 18c-6 6-12 14-14 24-4 8-12 14-26 16z" fill="url(#tail)"/><path d="M10 52c12-8 24-18 34-32" stroke="#ffd9a8" stroke-width="1.4" fill="none" opacity=".7"/><circle cx="46" cy="18" r="11" fill="url(#head)"/><circle cx="46" cy="18" r="16" fill="url(#glowC)"/><path d="M54 8l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#fff"/>`,
-   '<linearGradient id="tail" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ff7a59" stop-opacity="0"/><stop offset=".7" stop-color="#ff9a6b" stop-opacity=".7"/><stop offset="1" stop-color="#ffe0b0"/></linearGradient><radialGradient id="head" cx=".4" cy=".35"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#ffd9a8"/><stop offset="1" stop-color="#ff8a5c"/></radialGradient><radialGradient id="glowC"><stop offset="0" stop-color="#ffb27a" stop-opacity=".45"/><stop offset="1" stop-color="#ffb27a" stop-opacity="0"/></radialGradient>'),
- // H4 Sablier
- H4:()=>svg(`<path d="M16 8h32M16 56h32" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/><path d="M20 10c0 14 8 16 12 22-4 6-12 8-12 22M44 10c0 14-8 16-12 22 4 6 12 8 12 22" fill="none" stroke="#d9c8ff" stroke-width="2.6" stroke-linecap="round"/><path d="M23 14h18c-1 7-5 10-9 14-4-4-8-7-9-14z" fill="url(#sand)" opacity=".9"/><path d="M32 32v12" stroke="#ff9bd6" stroke-width="1.6"/><path d="M24 54c1-6 4-9 8-12 4 3 7 6 8 12z" fill="url(#sand)"/>`,
-   '<linearGradient id="sand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd1f0"/><stop offset="1" stop-color="#a077ff"/></linearGradient>'),
- // Wild : étoile filante émeraude
- W:()=>svg(`<circle cx="32" cy="30" r="29" fill="url(#glowW)"/><path d="M4 50L26 36" stroke="#7dffb2" stroke-width="3" stroke-linecap="round" opacity=".5"/><path d="M10 56L28 42" stroke="#7dffb2" stroke-width="2" stroke-linecap="round" opacity=".35"/><path d="M36 6l6 14 15 1.4-11.4 9.8 3.6 14.8L36 38l-13.2 8 3.6-14.8L15 21.4 30 20z" fill="url(#emer)" stroke="#eafff3" stroke-width="1.4" stroke-linejoin="round"/><text x="32" y="60" text-anchor="middle" font-size="9" font-weight="800" fill="#7dffb2" font-family="system-ui,sans-serif" letter-spacing="1">WILD</text>`,
-   '<linearGradient id="emer" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eafff3"/><stop offset=".5" stop-color="#7dffb2"/><stop offset="1" stop-color="#18a86a"/></linearGradient><radialGradient id="glowW"><stop offset="0" stop-color="#7dffb2" stop-opacity=".4"/><stop offset="1" stop-color="#7dffb2" stop-opacity="0"/></radialGradient>'),
- // Scatter : lunette
- S:()=>svg(`<circle cx="32" cy="32" r="31" fill="url(#glowS)"/><path d="M20 58L30 36M44 58L34 36" stroke="url(#gold)" stroke-width="3.2" stroke-linecap="round"/><rect x="8" y="22" width="34" height="13" rx="4" transform="rotate(-18 25 28)" fill="url(#brass)" stroke="#6d4a14" stroke-width="1"/><rect x="36" y="14" width="14" height="17" rx="3.5" transform="rotate(-18 43 22)" fill="url(#brass)" stroke="#6d4a14" stroke-width="1"/><ellipse cx="52" cy="14" rx="6" ry="8" transform="rotate(-18 52 14)" fill="url(#lens)" stroke="#fff3c4" stroke-width="1.6"/><path d="M50 10l3-1" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><text x="32" y="63" text-anchor="middle" font-size="7.5" font-weight="800" fill="#f3c969" font-family="system-ui,sans-serif" letter-spacing=".8">BONUS</text>`,
-   '<linearGradient id="brass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#e2ab45"/><stop offset="1" stop-color="#8a5a14"/></linearGradient><radialGradient id="lens" cx=".4" cy=".35"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#8fd3ff"/><stop offset="1" stop-color="#2b6fd6"/></radialGradient><radialGradient id="glowS"><stop offset="0" stop-color="#8fd3ff" stop-opacity=".38"/><stop offset="1" stop-color="#8fd3ff" stop-opacity="0"/></radialGradient>'),
-};
-// Bas niveau : lettres gravées avec dégradé
-const LETTER=(t,c1,c2)=>svg(`<text x="32" y="46" text-anchor="middle" font-size="42" font-weight="800" font-family="Georgia,'Times New Roman',serif" fill="url(#lt${t})" stroke="#050818" stroke-width="2.2" paint-order="stroke" style="filter:drop-shadow(0 0 4px ${c2}66)">${t}</text>`,
-  `<linearGradient id="lt${t}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient>`);
-SYM.L1=()=>LETTER('A','#e1efff','#6fa8ff'); SYM.L2=()=>LETTER('K','#dcfff6','#3fc7a8'); SYM.L3=()=>LETTER('Q','#efe6ff','#9a7dff'); SYM.L4=()=>LETTER('J','#fff0dd','#ff9a5c');
-const starSvg=`<svg viewBox="0 0 40 40"><defs><linearGradient id="stg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#8fd3ff"/><stop offset="1" stop-color="#3a86e0"/></linearGradient></defs><path d="M20 2l5.4 12.6L39 16l-10.4 8.6 3.4 13.4L20 30l-12 8 3.4-13.4L1 16l13.6-1.4z" fill="url(#stg)" stroke="#eaf6ff" stroke-width="1" stroke-linejoin="round"/><path d="M20 2v28M1 16l38 0" stroke="#ffffff" stroke-opacity=".25" stroke-width="1"/></svg>`;
+const SYM={H1:()=>`<img class="sym" src="art/astrolabe.webp" alt="">`,H2:()=>`<img class="sym" src="art/moon.webp" alt="">`,H3:()=>`<img class="sym" src="art/comet.webp" alt="">`,H4:()=>`<img class="sym" src="art/hourglass.webp" alt="">`,W:()=>`<img class="sym" src="art/wild.webp" alt="">`,S:()=>`<img class="sym" src="art/telescope.webp" alt="">`,L1:()=>`<img class="sym" src="art/A.webp" alt="">`,L2:()=>`<img class="sym" src="art/K.webp" alt="">`,L3:()=>`<img class="sym" src="art/Q.webp" alt="">`,L4:()=>`<img class="sym" src="art/J.webp" alt="">`};
+const starSvg=`<img class="sym starimg" src="art/star.webp" alt="">`;
 const fmt=c=>(c/100).toFixed(2);
 let bal=1000, busy=false;
 // --- Sons synthétisés (aucun fichier audio) ---

@@ -7,3 +7,5 @@ math/games/*/library/
 math/uploads/
 .env
 demo/stellar_vigil_demo.html
+demo/art/raw_*.png
+demo/art/contact*.png
