@@ -30,3 +30,11 @@
 - Constat : deux lancements aux réglages identiques produisent des tables de poids différentes (empreintes différentes). Garde-fous ajoutés ; archivage à décider (question n°9).
 - Outils ajoutés : `tools/payout_distribution.py`. Tests : 33 passent (+ garde-fous de forme, + roue atteignable en base).
 - Pour l'itération suivante : construire le front-end ? (hors portée de ce passage : décision d'effort) ; sinon mesurer la sensibilité du coût d'achat (60x/80x/100x), tester des tables de gains alternatives, ajouter un test de reproductibilité des simulations (même graine, mêmes books).
+
+## Itération 4 (2026-10-10, 00:12-00:50 UTC)
+- Test de déterminisme du moteur de simulation (`test_reproducible.py`, 3 tests) : vérifié que le test exerce de vrais bonus avec roue et gain max, qu'il passe et qu'il détecte des graines différentes.
+- Outil `freeze_maths.py` (freeze / verify) : testé sur la bibliothèque courante ; une altération d'une ligne d'un fichier est détectée. Le manifeste de test a été supprimé (maths non définitives).
+- Outil `export_demo_books.py` : régénère `demo/books.js` à l'identique (même md5).
+- README du jeu. 36 tests passent (110 s à 100 000 simulations).
+- Non fait : calage du coût d'achat (la table de critères n'est pas dans la bibliothèque, donc pas de mesure de la valeur naturelle du bonus).
+- Pour l'itération suivante : exporter la table de critères pour mesurer la marge du coût d'achat ; tester des tables de gains alternatives (taux de gain en base) ; relire l'écran de règles ; ne pas démarrer le front-end Svelte sans décision d'effort de l'utilisateur.

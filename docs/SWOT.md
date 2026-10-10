@@ -1,5 +1,43 @@
 # SWOT — Stellar Vigil
 
+## v6 — fin de l'itération 4 (2026-10-10, 00:12-00:50 UTC)
+
+**Corrigé et mesuré depuis la v5**
+- **Le moteur de simulation est prouvé déterministe** : 3 tests rejouent les mêmes simulations dans des moteurs neufs (bonus, roue et gain max inclus) et obtiennent les mêmes résultats ; l'ordre de simulation est sans effet ; des graines différentes donnent des résultats différents. Seul l'optimiseur reste non reproductible.
+- **Les maths retenues peuvent être figées et vérifiées** : outil `freeze_maths.py` (refuse une exécution qui échoue aux garde-fous ; manifeste d'empreintes ; archive ; vérification). Testé : freeze, verify, et détection d'une altération d'un seul fichier. Aucun manifeste n'est commité tant que les maths ne sont pas définitives.
+- **Démo reproductible** : `export_demo_books.py` régénère le fichier de la démo à l'identique (même empreinte).
+- **README du jeu** : mise en place, génération, tests, outils, réglages. 36 tests passent.
+
+### Forces
+- Moteur complet, déterministe, mesuré par composante, validé à 100 000 simulations ; 36 tests verts avec garde-fous de forme.
+- Chaîne d'outils reproductible : génération, mesures, gel et vérification, démo.
+- Mécanique originale ; bonus déterministe compatible avec les résultats pré-générés de Stake.
+- Roue utile dans les deux modes ; démo jouable avec sons et règles.
+
+### Faiblesses (restantes)
+- **Optimiseur non reproductible** : atténué (garde-fous + outil de gel) mais pas supprimé ; l'archive de ~85 Mo reste à héberger (question n°9).
+- Mode achat nettement plus calme que le bonus déclenché (question n°10).
+- Front-end Svelte/PixiJS non commencé ; art et sons de production absents.
+- Coût de l'achat de bonus (80x) et table des gains toujours provisoires ; je n'ai pas pu mesurer la valeur naturelle du bonus avant optimisation (table de critères absente de la bibliothèque).
+- Queue extrême non validée ; 71,6 % de spins sans gain en base.
+
+### Opportunités
+- Plateforme en croissance (chiffres rapportés par Engine, non vérifiés) ; aucun clone de Huff N' Puff trouvé dessus.
+- Thème libre de licences ; déclinaisons possibles.
+- Le gel vérifiable des maths peut servir de preuve de non-modification après approbation.
+
+### Menaces
+- Brevets : persistance des étoiles et roue « jusqu'au plancher » à faire examiner par un conseil.
+- CGU Stake : licence large pour 36 mois renouvelables ; clauses de résiliation/indemnisation non lues.
+- Maths figées après approbation : une erreur découverte après coup ne se corrige pas (atténué par les tests et le gel).
+- Règles Stake incomplètes (RTP min/max, fichiers, juridictions).
+- Noms proches : Stellar Jackpots, Moon Princess Stargazing, « Vault ».
+- Saturation du marché ; risque de ressemblance avec Huff N' Puff.
+
+---
+
+# SWOT — Stellar Vigil
+
 ## v5 — fin de l'itération 3 (2026-10-09/10, réponse « Oui » de l'utilisateur)
 
 **Corrigé et mesuré depuis la v4**
