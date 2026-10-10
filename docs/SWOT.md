@@ -1,5 +1,44 @@
 # SWOT — Stellar Vigil
 
+## v8 — fin de l'itération 6 (2026-10-10, 06:12-08:00 UTC)
+
+**Corrigé et mesuré depuis la v7**
+- **Cause de l'écrasement du mode achat expliquée** : avant optimisation, la zone Quadrature (1 000x) pèse plus d'un tiers de la valeur naturelle du bonus (106x pour un prix de 80x). Outil `rtp_breakdown.py --natural` pour le voir.
+- **Variante testée** (profil B : ciel plus clairsemé, étoiles plus riches) : valeur naturelle ramenée à environ 86x, mais la dispersion de l'optimiseur ne diminue pas (médianes 51x à 67x) et les gains de 1 000x et plus presque disparaissent (0,2 % du RTP en base contre environ 2 %). **Non adoptée** : elle sacrifie la volatilité haute. Conservée comme réglage sélectionnable, décision laissée à l'utilisateur (question n°12).
+- **Dispersion de l'optimiseur mesurée sur 4 exécutions à 100 000** : médiane achat 71,6x, 51,2x, 37,5x puis 55,4x ; une sur quatre rejetée par les garde-fous (qui fonctionnent donc comme prévu).
+- **Outil d'acceptation** `reoptimize.py` : relance seulement l'optimiseur (environ 110 s contre 10 min) jusqu'à une exécution acceptable ; essayé pour de vrai (rejet puis acceptation).
+- **Tampon de génération** (`library/profile.json`) et test associé : une bibliothèque issue d'un autre profil ou prix est détectée. 40 tests passent.
+- **Erreur corrigée en route** : l'outil `reoptimize.py` laissait `stats_summary.json` périmé (même écart-type que l'exécution rejetée) ; corrigé et rafraîchi.
+
+### Forces
+- Moteur complet, déterministe, mesuré par composante, validé à 100 000 simulations ; 40 tests verts.
+- Chaîne d'outils reproductible : génération, acceptation automatique, mesures, gel, démo.
+- Le compromis volatilité / fidélité du mode achat est chiffré et réversible (un réglage).
+- Mécanique originale ; roue utile dans les deux modes ; démo jouable avec sons et règles.
+
+### Faiblesses (restantes)
+- **Optimiseur non reproductible** et très dispersé (médiane achat 37x à 72x) : géré par garde-fous et acceptation, pas supprimé ; archive de ~85 Mo à héberger (question n°9).
+- Mode achat nettement plus calme que le bonus déclenché (question n°10) ; arbitrage A/B ouvert (question n°12).
+- Front-end Svelte/PixiJS non commencé ; art et sons de production absents.
+- Table des gains toujours provisoire ; queue extrême non validée ; 71,6 % de spins sans gain en base.
+
+### Opportunités
+- Plateforme en croissance (chiffres rapportés par Engine, non vérifiés) ; aucun clone de Huff N' Puff trouvé dessus.
+- Thème libre de licences ; déclinaisons possibles.
+- Une seconde série de profils intermédiaires (entre A et B) pourrait offrir un meilleur compromis ; non testée.
+
+### Menaces
+- Brevets : persistance des étoiles et roue « jusqu'au plancher » à faire examiner par un conseil.
+- CGU Stake : licence large pour 36 mois renouvelables ; clauses de résiliation/indemnisation non lues.
+- Maths figées après approbation : une erreur découverte après coup ne se corrige pas (atténué par les tests, l'acceptation et le gel).
+- Règles Stake incomplètes (RTP min/max, fichiers, juridictions).
+- Noms proches : Stellar Jackpots, Moon Princess Stargazing, « Vault ».
+- Saturation du marché ; risque de ressemblance avec Huff N' Puff.
+
+---
+
+# SWOT — Stellar Vigil
+
 ## v7 — fin de l'itération 5 (2026-10-10, 03:12-04:15 UTC)
 
 **Corrigé et mesuré depuis la v6**

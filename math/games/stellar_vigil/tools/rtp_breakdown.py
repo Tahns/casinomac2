@@ -1,6 +1,6 @@
 """Split the RTP of the published books by component (weighted by the lookup tables).
 
-Usage (from math/):  env/bin/python games/stellar_vigil/tools/rtp_breakdown.py
+Usage (from math/):  env/bin/python games/stellar_vigil/tools/rtp_breakdown.py [--natural]
 Components: ways wins, base-game star prizes, bonus nights (stars), zone multipliers, wager-saver top-ups.
 """
 
@@ -23,11 +23,13 @@ def _costs():
 COST = _costs()
 
 
-def breakdown(mode: str) -> dict:
+def breakdown(mode: str, natural: bool = False) -> dict:
     with open(os.path.join(PUB, f"books_{mode}.jsonl.zst"), "rb") as f:
         lines = io.TextIOWrapper(zstandard.ZstdDecompressor().stream_reader(f)).read().splitlines()
     with open(os.path.join(PUB, f"lookUpTable_{mode}_0.csv")) as f:
         weights = [int(r[1]) for r in csv.reader(f)]
+    if natural:  # before the optimizer: every book counts the same
+        weights = [1] * len(weights)
     total_w = sum(weights)
     acc = collections.defaultdict(float)
     for line, w in zip(lines, weights):
@@ -52,9 +54,13 @@ def breakdown(mode: str) -> dict:
 
 
 if __name__ == "__main__":
-    for mode in ("base", "bonus"):
-        r = breakdown(mode)
-        print(f"\n== {mode} (cost {COST[mode]}x): share of the amount staked")
+    import sys
+
+    natural = "--natural" in sys.argv
+    for mode in (["bonus"] if natural else ["base", "bonus"]):
+        r = breakdown(mode, natural)
+        label = "NATURAL (equal weights, before the optimizer)" if natural else "optimized"
+        print(f"\n== {mode} [{label}] (cost {COST[mode]}x): share of the amount staked")
         for k in ("ways", "stars_base", "bonus_nights", "zones", "saver_topup", "TOTAL"):
             print(f"  {k:14s} {r[k] / COST[mode] * 100:7.2f} %   ({r[k]:.3f}x)")
         for k in ("p_bonus", "p_wheel", "p_win", "p_cap"):

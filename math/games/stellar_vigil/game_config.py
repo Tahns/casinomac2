@@ -6,10 +6,29 @@ from src.config.betmode import BetMode
 # Price of the bonus buy, in multiples of the bet (also the wager-saver floor in buy mode).
 BONUS_BUY_COST = 80.0
 
-# Star-level weights (index into constellation.LADDER) and nightly star counts per bonus profile.
-LEVELS_STD = {0: 30, 1: 25, 2: 18, 3: 12, 4: 8, 5: 4, 6: 2, 7: 1}
+# Bonus profiles: stars per night, star value levels (index into constellation.LADDER) and clustering.
+#   A (default): denser sky. Natural bonus is richer than its price (about 106x for an 80x purchase), so the
+#                optimizer has to shave a lot; keeps the big zone wins (Quadrature 1000x in ~2-4 % of natural bonuses).
+#   B: sparser sky with richer stars. Natural bonus close to its price (about 86x), Quadrature ~0.4 %: more faithful
+#      optimization, but wins of 1000x and more almost disappear (see DESIGN.md section 10).
+PROFILES = {
+    "A": {
+        "night": {0: 30, 1: 40, 2: 22, 3: 8},
+        "levels": {0: 30, 1: 25, 2: 18, 3: 12, 4: 8, 5: 4, 6: 2, 7: 1},
+        "adjacency": 1.5,
+    },
+    "B": {
+        "night": {0: 42, 1: 38, 2: 15, 3: 5},
+        "levels": {0: 12, 1: 16, 2: 18, 3: 17, 4: 14, 5: 10, 6: 7, 7: 4, 8: 2},
+        "adjacency": 3.0,
+    },
+}
+ACTIVE_PROFILE = "A"
+NIGHT_STD = PROFILES[ACTIVE_PROFILE]["night"]
+LEVELS_STD = PROFILES[ACTIVE_PROFILE]["levels"]
+ADJACENCY_STD = PROFILES[ACTIVE_PROFILE]["adjacency"]
+
 LEVELS_RICH = {0: 10, 1: 14, 2: 16, 3: 16, 4: 14, 5: 12, 6: 8, 7: 6, 8: 3, 9: 1}
-NIGHT_STD = {0: 30, 1: 40, 2: 22, 3: 8}
 NIGHT_WINCAP = {5: 1}
 
 
@@ -123,7 +142,7 @@ class GameConfig(Config):
                     Distribution(
                         criteria="freegame",
                         quota=0.1,
-                        conditions=bonus_conditions(NIGHT_STD, LEVELS_STD, 1.5),
+                        conditions=bonus_conditions(NIGHT_STD, LEVELS_STD, ADJACENCY_STD),
                     ),
                     Distribution(
                         criteria="0",
@@ -164,7 +183,7 @@ class GameConfig(Config):
                     Distribution(
                         criteria="freegame",
                         quota=0.999,
-                        conditions=bonus_conditions(NIGHT_STD, LEVELS_STD, 1.5),
+                        conditions=bonus_conditions(NIGHT_STD, LEVELS_STD, ADJACENCY_STD),
                     ),
                 ],
             ),

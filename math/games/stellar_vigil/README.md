@@ -20,7 +20,7 @@ Les sorties vont dans `games/stellar_vigil/library/` (ignoré par git). Les fich
 
 ## Vérifier
 ```
-env/bin/python -m pytest games/stellar_vigil/tests -q      # 36 tests (~2 min avec une bibliothèque à 100 000)
+env/bin/python -m pytest games/stellar_vigil/tests -q      # 40 tests (~2 min avec une bibliothèque à 100 000)
 ```
 - `test_constellation.py` : logique du ciel (chaînes, conjonctions, zones, absence du mot « jackpot »).
 - `test_books.py` : intégrité des résultats publiés (indices, paiements, comptabilité, roue, RTP).
@@ -30,7 +30,8 @@ env/bin/python -m pytest games/stellar_vigil/tests -q      # 36 tests (~2 min av
 ## Outils (`tools/`)
 | Commande | Rôle |
 |---|---|
-| `tools/rtp_breakdown.py` | répartition du RTP par composante (ways, étoiles, nuits, zones, roue) |
+| `tools/rtp_breakdown.py [--natural]` | répartition du RTP par composante ; `--natural` : avant optimisation |
+| `tools/reoptimize.py [--max-attempts N]` | relance seulement l'optimiseur jusqu'à une exécution qui passe les garde-fous |
 | `tools/payout_distribution.py [base\|bonus]` | percentiles et part de RTP par tranche de gain |
 | `tools/freeze_maths.py freeze [--archive DIR]` | vérifie les garde-fous, écrit `frozen/MANIFEST.json` (empreintes) et archive les fichiers |
 | `tools/freeze_maths.py verify [--dir PATH]` | échoue si des fichiers diffèrent du manifeste |
@@ -43,5 +44,6 @@ Ouvrir `../../../demo/index.html` dans un navigateur (`books.js` doit rester à 
 
 ## Réglages à connaître (`game_config.py`, `game_optimization.py`)
 - `saver_floor` : plancher de la roue (25x en base, 80x en achat) ; `saver_segments` : 3 segments « sauvée » sur 8.
+- Profil de bonus : `ACTIVE_PROFILE` ("A" par défaut, "B" variante plus calme, voir `DESIGN.md` §10) ; `library/profile.json` en garde la trace.
 - Mode achat : coût 80x ; bornes de volatilité `min_m2m=1.5`, `max_m2m=3` (`game_optimization.py`).
 - Plafond de gain : 10 000x (`wincap`).

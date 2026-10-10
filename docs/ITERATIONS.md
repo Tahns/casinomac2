@@ -46,3 +46,11 @@
 - Refactor : constante unique `BONUS_BUY_COST` ; outils et tests lisent les coûts depuis la configuration/l'index. Nouveau test de cohérence bibliothèque/configuration. 39 tests passent (148 s).
 - Démo : `books.js` régénéré depuis la nouvelle bibliothèque ; texte des règles ajusté ; 0 erreur JavaScript.
 - Pour l'itération suivante : tester une réduction de la fréquence de la zone Quadrature dans les profils de nuit (sans changer les zones) et mesurer l'effet sur la forme du mode achat ; table des gains alternative (taux de gain en base) ; ne pas démarrer le front-end Svelte sans décision d'effort de l'utilisateur.
+
+## Itération 6 (2026-10-10, 06:12-08:00 UTC)
+- Mesure : décomposition naturelle (poids égaux) du bonus acheté : nuits 51,5x, zones environ 38x (Quadrature), roue 12x, ways 1,4x. Quadrature = plus d'un tiers de la valeur naturelle.
+- Variante B (ciel plus clairsemé, étoiles plus riches), mesurée par Monte Carlo puis par le moteur complet : valeur naturelle environ 86x, Quadrature 0,4 %. Trois exécutions à 10 000 : médianes 64x, 51x, 67x (dispersion inchangée). En base : zones 0,6 % du RTP, gains de 1 000x et plus 0,2 %. Non adoptée ; profil A conservé par défaut.
+- Quatre exécutions du profil A à 100 000 : médianes achat 71,6x, 51,2x, 37,5x, 55,4x. La 37,5x est rejetée par les garde-fous (médiane et rapport moyenne/médiane).
+- Outils : `reoptimize.py` (optimiseur seul, environ 110 s), `rtp_breakdown.py --natural`. Tampon `library/profile.json` + test. 40 tests passent.
+- Incident : `reoptimize.py` ne rafraîchissait pas `stats_summary.json` (chiffres de l'exécution rejetée) ; corrigé et rafraîchi avant d'écrire les docs.
+- Pour l'itération suivante : tester un ou deux profils intermédiaires entre A et B ; lancer `reoptimize.py` plus de fois pour caractériser la dispersion (histogramme des médianes) ; réexaminer la table des gains (taux de gain en base). Pas de front-end Svelte sans décision de l'utilisateur.

@@ -48,6 +48,14 @@ if __name__ == "__main__":
 
     generate_configs(gamestate)
 
+    # Stamp which configuration produced this library (checked by tests/test_library_matches_config.py)
+    import json
+    from game_config import ACTIVE_PROFILE, BONUS_BUY_COST
+
+    os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "library"), exist_ok=True)
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "library", "profile.json"), "w") as f:
+        json.dump({"profile": ACTIVE_PROFILE, "bonus_buy_cost": BONUS_BUY_COST}, f)
+
     if run_conditions["run_optimization"]:
         OptimizationExecution().run_all_modes(config, target_modes, rust_threads)
         generate_configs(gamestate)
