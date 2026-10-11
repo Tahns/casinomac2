@@ -4,7 +4,7 @@ The simulations are deterministic and already done; the Rust optimizer is the ra
 too volatile (see tests/test_quality_gates.py). This loops: optimize -> analyse -> format checks (refreshes stats_summary.json) -> run the gates, and stops at
 the first run that passes. The result is still not reproducible, so freeze it afterwards (tools/freeze_maths.py).
 
-Usage (from math/):  env/bin/python games/stellar_vigil/tools/reoptimize.py [--max-attempts 6] [--no-stop] [--log FILE]
+Usage (from math/):  env/bin/python games/stellar_vigil_wheels/tools/reoptimize.py [--max-attempts 6] [--no-stop] [--log FILE]
   --no-stop   keep going after a run passes (to measure the spread of the optimizer; the library is left on
               the LAST run, so finish with a normal call to end on an accepted run)
   --log FILE  append one JSON line per attempt (median, std, share of purchases below cost, gate result)

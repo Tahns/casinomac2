@@ -77,7 +77,7 @@ class GameExecutables(GameCalculations):
         """Spin the wager-saver wheel if the bonus total is below the amount wagered to enter it."""
         floor = self.config.saver_floor[self.get_current_betmode().get_name()]
         total = self.win_manager.freegame_wins
-        if total >= floor or self.wincap_triggered:
+        if total >= floor - 1e-6 or self.wincap_triggered:  # tolerance: float sums can land a hair under the floor
             return
         saved = random.random() < self.config.saver_draw_probability
         top_up = floor - total if saved else 0.0

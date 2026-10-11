@@ -1,5 +1,31 @@
 # SWOT — Stellar Vigil
 
+## v14 — fin de l'itération 12 (2026-10-11, 00:11-00:55 UTC)
+
+**Corrigé et mesuré depuis la v13**
+- **Deux roues construites (copie d'expérience `games/stellar_vigil_wheels`, jeu principal inchangé)**, après analyse de la vraie structure de Huff N' Puff (l'upgrade améliore le type de bonus, pas le total). Roue des Saisons (Classique 40 / Long 20 / Dense 20 / Aurore 20 %) puis Roue de l'Aurore (versions supérieures 40 / 30 / 30 %).
+- **Chances exactes par construction** : chaque résultat est un critère de l'optimiseur avec son taux ; mesuré à 100 000 simulations dans les deux modes : 40,0 / 20,0 / 20,0 / 20,0 %. Les bonus passés par l'Aurore valent 86-96x contre 68-72x. RTP 96,00 % dans les deux modes, bonus 1 spin sur 150.
+- **38 tests verts dans la copie (portes qualité comprises), à la première génération à 100 000 simulations.**
+- **Défaut trouvé par les tests** : la roue de sauvegarde pouvait tourner quand un total flottant valait 79,99999 au lieu de 80. Corrigé (tolérance) dans la copie et dans le jeu principal ; la bibliothèque principale est saine (0 livre concerné sur 2 160 + 77 672).
+- **Démo mise en ligne pour test sur téléphone** (lien privé), sans les nouvelles roues.
+
+### Faiblesses (restantes)
+- **Les deux roues ne sont pas dans la démo** (ni animation ni habillage) ; leur adoption dans le jeu principal n'est pas décidée.
+- Les livres wincap sont rattachés à Aurore → dense+ (0,1 %).
+- Le nombre de nuits du `freeSpinTrigger` ne tient pas compte du décalage de la variante (`seasonWheel.totalNights` fait foi).
+- Roue de sauvegarde peu utile (n°15), jeu de base rude (n°14), optimiseur non reproductible (n°9), queue du mode achat mince (n°10).
+- Droits de l'art IA non vérifiés ; musique et sons absents ; front-end Svelte/PixiJS non commencé.
+
+### Opportunités
+- Les variantes de ciel donnent de la rejouabilité sans toucher aux règles de base.
+- Même mécanisme (critères) réutilisable pour une roue de sauvegarde généreuse.
+
+### Menaces
+- **Brevets / ressemblance : la structure « roue avant le bonus + roue d'upgrade » est la signature de Huff N' Puff** ; noms, thème et visuels originaux ne suffisent pas à garantir quoi que ce soit ; conseil en brevets requis (question n°16).
+- CGU Stake, règles non publiées, maths figées après approbation, noms proches, saturation du marché.
+
+---
+
 ## v13 — fin de l'itération 11 (2026-10-10, 21:11-21:40 UTC)
 
 **Corrigé et mesuré depuis la v12**

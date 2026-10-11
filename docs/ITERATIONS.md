@@ -93,3 +93,9 @@
 - Vérification : aucun autre visuel de hasard n'annonce de probabilités.
 - Aucun crédit Higgsfield dépensé (le solde reste 153,43).
 - Pour l'itération suivante : rien de neuf à régénérer ; relire les garde-fous du dépôt (hygiène : taille des fichiers versionnés, historique) ; si aucune décision n'arrive sur les questions n°9 à n°15, préparer le dossier de décision complet (une page) plutôt que d'ajouter des mesures.
+
+## Itération 12 (2026-10-11, 00:11-00:55 UTC)
+- Copie d'expérience `games/stellar_vigil_wheels` : 6 critères d'optimiseur (`wheel1_*`, `wheel2_*`, recherche par `variant`), événement `seasonWheel`, outil `tools/wheel_odds.py`, tests `test_wheel_odds.py`. Génération à 100 000 simulations : RTP 96,00 % (base et achat), chances des roues exactes (40/20/20/20 %), bonus aurore 86-96x contre 68-72x, 38 tests verts.
+- Défaut corrigé : tolérance flottante sur le plancher de la roue de sauvegarde (copie et jeu principal ; aucun livre principal concerné).
+- Démo publiée en artefact privé pour test sur téléphone (sans les deux roues).
+- Pour l'itération suivante : dessiner les deux roues dans la démo (copie des livres de l'expérience), et seulement ensuite décider de l'adoption dans le jeu principal ; ne pas démarrer le front-end sans décision.
