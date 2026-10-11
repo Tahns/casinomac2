@@ -99,3 +99,7 @@
 - Défaut corrigé : tolérance flottante sur le plancher de la roue de sauvegarde (copie et jeu principal ; aucun livre principal concerné).
 - Démo publiée en artefact privé pour test sur téléphone (sans les deux roues).
 - Pour l'itération suivante : dessiner les deux roues dans la démo (copie des livres de l'expérience), et seulement ensuite décider de l'adoption dans le jeu principal ; ne pas démarrer le front-end sans décision.
+
+## Itération 13 (2026-10-11, 03:11-03:50 UTC)
+- Démo : `seasonWheel` géré (deux roues, segments dimensionnés par les chances réelles `window.WHEEL_ODDS`), `?auto=season` pour les captures, build `python3 demo/build_single.py wheels` -> `stellar_vigil_demo_wheels.html` (2,4 Mo, ignoré par git), `books_wheels.js` généré par `tools/export_demo_books.py` de la copie. Captures 390 px vérifiées, 0 erreur console. Publiée en artefact privé.
+- Pour l'itération suivante : test de cohérence démo/bibliothèque pour les deux roues ; afficher la variante de ciel (couleur/fond) ; si rien n'est décidé par l'utilisateur sur n°9 à n°16, préparer le dossier de décision d'une page. Fin de boucle à 13:00 UTC.

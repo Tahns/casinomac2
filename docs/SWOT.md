@@ -1,5 +1,26 @@
 # SWOT — Stellar Vigil
 
+## v15 — fin de l'itération 13 (2026-10-11, 03:11-03:50 UTC)
+
+**Corrigé et mesuré depuis la v14**
+- **Les deux roues sont jouables dans la démo** (build séparé `stellar_vigil_demo_wheels.html`, livres de l'expérience) : Roue des Saisons puis, si Aurore, Roue de l'Aurore. Les parts des segments sont les chances réelles mesurées sur la bibliothèque (40/20/20/20 % ; 40/30/30 %), affichées à l'écran. Vérifié par captures à 390 px de large (les deux roues se dessinent, 0 erreur console). Publié en lien privé pour test sur téléphone ; le lien de la démo d'origine est inchangé.
+- Export de livres dédié (`tools/export_demo_books.py` de la copie) : au moins 4 à 6 livres de chaque variante, plus les chances des roues.
+
+### Faiblesses (restantes)
+- La démo ne montre pas encore la différence de ciel entre variantes (seuls le nombre de nuits et la valeur des étoiles changent) ; pas de test automatique démo/bibliothèque pour la version à deux roues.
+- La bannière du déclenchement affiche le nombre de nuits avant décalage de la variante ; celui de `nightStart` est juste.
+- La roue de la partie « Aurore » est tirée par les critères, pas visuellement liée à la valeur du bonus.
+- Adoption dans le jeu principal non décidée ; roue de sauvegarde peu utile (n°15) ; jeu de base rude (n°14) ; optimiseur non reproductible (n°9).
+- Droits de l'art IA non vérifiés ; musique et sons absents ; front-end Svelte/PixiJS non commencé.
+
+### Opportunités
+- Variantes de ciel = rejouabilité ; mécanisme par critères réutilisable.
+
+### Menaces
+- **Brevets / ressemblance avec Huff N' Puff** (structure à deux roues) : conseil requis (n°16). CGU Stake, règles non publiées, maths figées à l'approbation, noms proches, marché saturé.
+
+---
+
 ## v14 — fin de l'itération 12 (2026-10-11, 00:11-00:55 UTC)
 
 **Corrigé et mesuré depuis la v13**
