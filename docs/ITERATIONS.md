@@ -103,3 +103,7 @@
 ## Itération 13 (2026-10-11, 03:11-03:50 UTC)
 - Démo : `seasonWheel` géré (deux roues, segments dimensionnés par les chances réelles `window.WHEEL_ODDS`), `?auto=season` pour les captures, build `python3 demo/build_single.py wheels` -> `stellar_vigil_demo_wheels.html` (2,4 Mo, ignoré par git), `books_wheels.js` généré par `tools/export_demo_books.py` de la copie. Captures 390 px vérifiées, 0 erreur console. Publiée en artefact privé.
 - Pour l'itération suivante : test de cohérence démo/bibliothèque pour les deux roues ; afficher la variante de ciel (couleur/fond) ; si rien n'est décidé par l'utilisateur sur n°9 à n°16, préparer le dossier de décision d'une page. Fin de boucle à 13:00 UTC.
+
+## Itération 14 (2026-10-11, 06:12-06:40 UTC)
+- `tests/test_demo_wheels.py` (2 tests, mutation vérifiée), bannière de déclenchement sans nombre de nuits périmé, démo des deux roues republiée.
+- Pour l'itération suivante : afficher la variante de ciel ; sinon préparer le dossier de décision d'une page. Fin de boucle à 13:00 UTC ; 3 itérations d'affilée sans amélioration possible = arrêt.

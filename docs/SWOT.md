@@ -1,5 +1,19 @@
 # SWOT — Stellar Vigil
 
+## v16 — fin de l'itération 14 (2026-10-11, 06:12-06:40 UTC)
+
+**Corrigé et mesuré depuis la v15**
+- **Test de cohérence démo/bibliothèque pour les deux roues** (`test_demo_wheels.py`, 2 tests) : les chances embarquées dans la démo égalent celles mesurées sur la bibliothèque ; chaque variante est présente dans les livres de la démo ; le nombre de nuits annoncé par la roue correspond aux nuits jouées. **Falsification vérifiée** : changer la chance « Classique » fait échouer le test ; fichier restauré. Copie d'expérience : 40 tests.
+- **Bannière de déclenchement corrigée** : elle n'annonce plus un nombre de nuits périmé quand une roue décale la variante. Démo republiée au même lien.
+
+### Faiblesses (restantes)
+- La démo ne montre pas visuellement la variante de ciel ; adoption des roues dans le jeu principal non décidée ; roue de sauvegarde peu utile (n°15) ; jeu de base rude (n°14) ; optimiseur non reproductible (n°9) ; art IA non vérifié juridiquement ; sons absents ; front-end non commencé.
+
+### Menaces
+- **Brevets / ressemblance Huff N' Puff (structure à deux roues)** : conseil requis (n°16). CGU Stake, règles non publiées, maths figées à l'approbation, marché saturé.
+
+---
+
 ## v15 — fin de l'itération 13 (2026-10-11, 03:11-03:50 UTC)
 
 **Corrigé et mesuré depuis la v14**

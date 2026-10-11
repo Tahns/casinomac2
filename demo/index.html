@@ -271,7 +271,7 @@ async function playEvents(book,bet){
     switch(e.type){
     case 'reveal': sfx('reveal'); view(false); show(e.board); banner(''); await sleep(450); break;
     case 'winInfo': sfx('win'); e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); banner('Gain '+fmt(e.totalWin*bet)+'  ×'+(e.totalWin/100)); await sleep(900); break;
-    case 'freeSpinTrigger': sfx('trigger'); banner('NUIT DES CONSTELLATIONS — '+e.totalFs+' nuits'); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win')); await sleep(1400); buildSky(); view(true); break;
+    case 'freeSpinTrigger': sfx('trigger'); {const sw=book.events.find(x=>x.type==='seasonWheel'); banner('NUIT DES CONSTELLATIONS'+(sw?'':' — '+e.totalFs+' nuits'))} document.querySelectorAll('.scat').forEach(x=>x.classList.add('win')); await sleep(1400); buildSky(); view(true); break;
     case 'nightStart': sfx('night'); nights=e.night; banner(`Nuit ${e.night} / ${e.totalNights}`); await sleep(350); break;
     case 'starsLanded': e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*120)); drawStars(e.stars); await sleep(600); break;
     case 'constellationsUpdate': if(e.constellations.length) sfx('link'); drawStars(e.stars); drawLinks(e.constellations); if(e.conjunctions) banner(`Conjonction ×${e.conjunctions} !`); await sleep(650); break;
