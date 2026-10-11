@@ -111,3 +111,6 @@
 ## Itération 15 (2026-10-11, 09:11-09:35 UTC)
 - Démo : teinte du ciel selon la variante (variables CSS --skyc et --skyb), capture 390 px vérifiée ; démo republiée.
 - Pour l'itération suivante : plus de travail autonome à forte valeur ; préparer le dossier de décision d'une page (questions n°9 à n°16) ou arrêter la boucle à 13:00 UTC.
+
+## Itération 16 — finale (2026-10-11, 12:12 UTC)
+- Dossier de décision d'une page (`docs/DECISIONS.md`), SWOT final v18. Prochain déclenchement après 13:00 UTC : la routine est désactivée.

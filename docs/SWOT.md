@@ -1,5 +1,28 @@
 # SWOT — Stellar Vigil
 
+## v18 — FINAL, fin de la boucle (2026-10-11, 12:12 UTC)
+
+**Bilan de la boucle** : 15 itérations. Moteur complet et mesuré (50 tests sur le jeu principal, 40 sur la copie à deux roues), démo jouable sur téléphone (deux liens privés), deux roues originales construites avec des chances exactes par construction (40/20/20/20 % puis 40/30/30 %), RTP 96,00 % dans les deux modes à 100 000 simulations.
+
+### Forces
+- Tout est mesuré et testé ; les visuels de hasard montrent les vraies chances (tests de cohérence, mutation vérifiée).
+- Compromis réglables et réversibles ; jeu principal inchangé par l'expérience des roues.
+
+### Faiblesses
+- Roue de sauvegarde peu utile (n°15) ; jeu de base rude (n°14) ; optimiseur non reproductible (n°9) ; queue du mode achat mince (n°10).
+- Pas de front-end de production, pas de sons, art IA non vérifié juridiquement.
+
+### Opportunités
+- Variantes de ciel = rejouabilité ; mécanisme par critères réutilisable pour d'autres roues honnêtes.
+
+### Menaces
+- **Brevets / ressemblance Huff N' Puff (deux roues, étoiles persistantes)** : conseil requis (n°16, n°1).
+- CGU Stake et règles non publiées ; maths figées à l'approbation ; noms proches ; marché saturé.
+
+**Ce qui attend une décision humaine** : `docs/DECISIONS.md` (une page).
+
+---
+
 ## v17 — fin de l'itération 15 (2026-10-11, 09:11-09:35 UTC)
 
 **Corrigé et mesuré depuis la v16**
