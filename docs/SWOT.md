@@ -1,5 +1,18 @@
 # SWOT — Stellar Vigil
 
+## v17 — fin de l'itération 15 (2026-10-11, 09:11-09:35 UTC)
+
+**Corrigé et mesuré depuis la v16**
+- **La variante de ciel se voit dans la démo** : le fond du ciel prend une teinte selon le résultat des roues (Classique bleu, Long turquoise, Dense violet ; la version « + » est plus lumineuse). Vérifié par capture à 390 px (ciel turquoise après un Long+, 0 erreur console). Démo republiée au même lien. Livres inchangés : les 2 tests démo/bibliothèque passent toujours.
+
+### Faiblesses (restantes)
+- Adoption des roues dans le jeu principal non décidée ; roue de sauvegarde peu utile (n°15) ; jeu de base rude (n°14) ; optimiseur non reproductible (n°9) ; art IA non vérifié juridiquement ; sons absents ; front-end non commencé.
+
+### Menaces
+- **Brevets / ressemblance Huff N' Puff (deux roues)** : conseil requis (n°16). CGU Stake, règles non publiées, maths figées à l'approbation, marché saturé.
+
+---
+
 ## v16 — fin de l'itération 14 (2026-10-11, 06:12-06:40 UTC)
 
 **Corrigé et mesuré depuis la v15**

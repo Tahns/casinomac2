@@ -70,7 +70,7 @@
   .stage{background:linear-gradient(160deg,#171f4d 0%,#0d1230 55%,#0a0e26 100%);border:1px solid #6b5a2e;box-shadow:0 0 0 1px #0b0f25,0 0 0 3px #3a2f14,0 10px 40px #000a,inset 0 0 40px #0006;border-radius:18px}
   #base{padding:8px;border-radius:14px;background:#06091c;box-shadow:inset 0 0 22px #000c,0 0 0 2px #9c7a2c,0 0 0 4px #3a2f14}
   .cell{background:radial-gradient(circle at 50% 35%,#222c66 0%,#10163a 70%);border:1px solid #2f3a78;box-shadow:inset 0 1px 0 #ffffff14,inset 0 -8px 14px #0006}
-  .sky .cell{background:radial-gradient(circle at 50% 40%,#0f1a45 0%,#070a1c 75%);border-color:#1f2a5c}
+  .sky .cell{background:radial-gradient(circle at 50% 40%,var(--skyc,#0f1a45) 0%,#070a1c 75%);border-color:var(--skyb,#1f2a5c)}
   .cell svg{filter:drop-shadow(0 2px 3px #000a);width:90%!important;height:90%!important}
   img.sym{width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;pointer-events:none}
   .cell img.sym{width:100%;height:100%}
@@ -263,6 +263,7 @@ async function spinSeasons(e){
   const mode=(window.__mode||'base');
   await spinSeasonOnce('Roue des Saisons',wheelSegs(1,mode),e.season,0);
   if(e.wheel===2) await spinSeasonOnce("Roue de l'Aurore",wheelSegs(2,mode),e.variant,0);
+  const T={classic:['#0f1a45','#1f2a5c'],long:['#0f3a4a','#1f6a80'],dense:['#3a1650','#6a2f7a']}[e.variant.replace('+','')]||['#0f1a45','#1f2a5c']; const sk=document.documentElement.style; sk.setProperty('--skyc',e.variant.endsWith('+')?T[1]:T[0]); sk.setProperty('--skyb',T[1]);
   $('wheelbox').classList.add('hidden'); $('wheeltitle').textContent='Roue de sauvegarde';
 }
 async function playEvents(book,bet){

@@ -107,3 +107,7 @@
 ## Itération 14 (2026-10-11, 06:12-06:40 UTC)
 - `tests/test_demo_wheels.py` (2 tests, mutation vérifiée), bannière de déclenchement sans nombre de nuits périmé, démo des deux roues republiée.
 - Pour l'itération suivante : afficher la variante de ciel ; sinon préparer le dossier de décision d'une page. Fin de boucle à 13:00 UTC ; 3 itérations d'affilée sans amélioration possible = arrêt.
+
+## Itération 15 (2026-10-11, 09:11-09:35 UTC)
+- Démo : teinte du ciel selon la variante (variables CSS , ), capture 390 px vérifiée ; démo republiée.
+- Pour l'itération suivante : plus de travail autonome à forte valeur ; préparer le dossier de décision d'une page (questions n°9 à n°16) ou arrêter la boucle à 13:00 UTC.
