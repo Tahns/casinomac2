@@ -109,5 +109,5 @@
 - Pour l'itération suivante : afficher la variante de ciel ; sinon préparer le dossier de décision d'une page. Fin de boucle à 13:00 UTC ; 3 itérations d'affilée sans amélioration possible = arrêt.
 
 ## Itération 15 (2026-10-11, 09:11-09:35 UTC)
-- Démo : teinte du ciel selon la variante (variables CSS , ), capture 390 px vérifiée ; démo republiée.
+- Démo : teinte du ciel selon la variante (variables CSS --skyc et --skyb), capture 390 px vérifiée ; démo republiée.
 - Pour l'itération suivante : plus de travail autonome à forte valeur ; préparer le dossier de décision d'une page (questions n°9 à n°16) ou arrêter la boucle à 13:00 UTC.
