@@ -41,6 +41,7 @@ def constellations_event(gamestate, sky, levels, conjunctions: int) -> None:
                 for c, lvl in sorted(levels.items())
             ],
             "conjunctions": conjunctions,
+            **({"orbits": sky.orbit_counts()} if sky.orbit else {}),
         }
     )
 

@@ -11,7 +11,7 @@ from collections import defaultdict
 
 import zstandard
 
-KINDS = ["constellation", "comet", "nova", "cross", "rain", "eclipse", "galaxy"]
+KINDS = ["constellation", "comet", "nova", "cross", "rain", "eclipse", "galaxy", "orbit"]
 PUB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "library", "publish_files")
 
 

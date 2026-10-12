@@ -1,7 +1,7 @@
 from game_calculations import GameCalculations
 from src.calculations.ways import Ways
 import random
-from constellation import Sky, draw_night, draw_comets, draw_nova, draw_cross, draw_rain, draw_eclipse, draw_galaxy
+from constellation import Sky, draw_night, draw_comets, draw_nova, draw_cross, draw_rain, draw_eclipse, draw_galaxy, draw_orbit
 from src.events.events import set_win_event
 from game_events import (
     night_start_event,
@@ -49,6 +49,8 @@ class GameExecutables(GameCalculations):
 
         crit = cond.get("variant") or WINCAP_VARIANT
         kind = VARIANTS[crit][2]
+        sky.orbit = kind == "orbit"
+        value_before = sky.total_value()
         if kind == "comet":
             stars = draw_comets(sky, 1, cond["level_weights"])
         elif kind == "nova":
@@ -59,6 +61,8 @@ class GameExecutables(GameCalculations):
             stars = draw_rain(sky, cond["level_weights"])
         elif kind == "eclipse":
             stars = draw_eclipse(sky, cond["level_weights"])
+        elif kind == "orbit":
+            stars = draw_orbit(sky, 2, cond["level_weights"])
         elif kind == "galaxy":
             stars = draw_galaxy(sky, 3 if VARIANTS[crit][0] >= 2 else 2, cond["level_weights"])
         else:

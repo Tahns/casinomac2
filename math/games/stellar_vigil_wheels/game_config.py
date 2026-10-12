@@ -82,10 +82,12 @@ KINDS_CFG = {
     "eclipse": (None, 0, {3: 4, 4: 4, 5: 4}, (_MID, LEVELS_RICH, _TOP)),
     # Galaxie: 2 stars a night in phase 1, 3 in phases 2 and 3 (4 nights at most: 5 nights would fill the sky).
     "galaxy": (None, 0, ({3: 6, 4: 6, 5: 7}, {3: 3, 4: 4, 5: 4}, {3: 3, 4: 4, 5: 4}), (_MID, _TOP, _TOP2)),
+    # Orbites: each column is an orbit; its stars are worth (sum of their values) x (number of stars in the column).
+    "orbit": (None, 0, ({3: 5, 4: 5, 5: 5}, {3: 5, 4: 5, 5: 5}, {3: 5, 4: 5, 5: 6}), (LEVELS_RICH, _TOP, _TOP)),
 }
 PHASE_VALUE = {1: 100, 2: 130, 3: 170}  # relative natural value (informational)
 # Roue des Bonus et roue des Phases : part de chaque segment (somme = 1 chacune).
-WHEEL1_ODDS = {"constellation": 0.26, "comet": 0.15, "nova": 0.15, "cross": 0.13, "rain": 0.13, "eclipse": 0.10, "galaxy": 0.08}
+WHEEL1_ODDS = {"constellation": 0.22, "comet": 0.13, "nova": 0.13, "cross": 0.11, "rain": 0.11, "eclipse": 0.09, "galaxy": 0.08, "orbit": 0.13}
 WHEEL2_ODDS = {1: 0.60, 2: 0.30, 3: 0.10}
 assert abs(sum(WHEEL1_ODDS.values()) - 1) < 1e-9 and abs(sum(WHEEL2_ODDS.values()) - 1) < 1e-9
 # criteria: (phase, label, kind, night weights, level weights, adjacency, {scatters: nights}, relative natural value)

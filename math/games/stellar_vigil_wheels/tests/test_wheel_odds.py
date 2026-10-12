@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
 import wheel_odds  # noqa: E402
 
-TARGET1 = {"constellation": 0.26, "comet": 0.15, "nova": 0.15, "cross": 0.13, "rain": 0.13, "eclipse": 0.10, "galaxy": 0.08}
+TARGET1 = {"constellation": 0.22, "comet": 0.13, "nova": 0.13, "cross": 0.11, "rain": 0.11, "eclipse": 0.09, "galaxy": 0.08, "orbit": 0.13}
 TARGET2 = {1: 0.60, 2: 0.30, 3: 0.10}
 
 

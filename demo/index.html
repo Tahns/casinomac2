@@ -218,6 +218,34 @@
   .cmult{font-size:18px;color:#ffe39a;letter-spacing:.2em}
   .ctap{margin-top:18px;font-size:11px;color:#8a93c4}
   @media (prefers-reduced-motion:reduce){.spinbtn,.spinbtn::after,.stage.tense::after,.cnum,.cell.wait{animation:none}}
+  /* ===== Une seule page : la scène a une taille fixe (430 x 860) et s'adapte à l'écran sans défilement ===== */
+  html,body{height:100%;overflow:hidden;margin:0}
+  .wrap{position:absolute;left:50%;top:0;width:430px;height:860px;max-width:none;margin:0;padding:8px 14px 6px;display:flex;flex-direction:column;gap:7px;transform-origin:top center;transform:translateX(-50%) scale(var(--fit,1))}
+  .sub,.note{display:none}
+  .logo{height:58px;width:auto;margin:0 auto;mix-blend-mode:normal}
+  .hud{margin:0}
+  .hud div{padding:5px 10px}
+  .hud span{font-size:17px}
+  .stage{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:10px}
+  .dock{margin:-4px -4px 2px}
+  #base{width:372px;margin:0 auto;flex:none}
+  #skywrap{width:292px;margin:0 auto;flex:none}
+  .zones{margin-top:2px}
+  .zone{padding:4px 2px;font-size:9px}
+  .zone b{font-size:11px}
+  .cap{min-height:38px;margin:0;font-size:15px;padding:6px 8px}
+  .bhead{margin:0}
+  .bhead .btot span{font-size:21px}
+  .deck{margin:0;gap:8px}
+  .spinbtn{width:92px;height:92px;font-size:14px}
+  .buybtn{height:68px}
+  .tools{margin:0}
+  .tools button{padding:6px 12px;font-size:11px}
+  .orbits{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:4px}
+  .orbits.hidden{display:none}
+  .orbits i{font-style:normal;text-align:center;font-weight:900;font-size:13px;color:#3a2a08;background:linear-gradient(#ffe39a,#f3c969);border-radius:8px;padding:2px 0;box-shadow:0 0 10px #f3c96988;transition:transform .3s}
+  .orbits i.up{animation:bump .6s ease-out}
+  body.bonusing .logo{display:none}
 </style>
 </head>
 <body>
@@ -252,7 +280,7 @@
     </div>
     <div class="pips hidden" id="pips"></div>
     <div id="base" class="grid" style="grid-template-columns:repeat(5,1fr)"></div>
-    <div id="skywrap" class="hidden" style="position:relative">
+    <div id="skywrap" class="hidden" style="position:relative"><div class="orbits hidden" id="orbits"></div>
       <div id="sky" class="grid sky" style="grid-template-columns:repeat(5,1fr)"></div>
       <svg id="links" class="links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
       <div class="fx" id="fx"></div>
@@ -273,9 +301,9 @@
   </div>
   <select id="betsel" hidden><option>0.20</option><option>0.50</option><option selected>1.00</option><option>2.00</option><option>5.00</option><option>10.00</option></select>
   <div class="tools"><button class="alt" id="rulesbtn">Règles</button><button class="alt" id="mutebtn">Son : activé</button><button class="alt speed" id="speedbtn">Vitesse : normale</button></div>
-  <div class="flash" id="flash"></div>
   <div class="note">Symboles provisoires (art à créer). Chaque tour tire un résultat pondéré parmi un échantillon exporté du moteur ; ce n'est pas le jeu final Stake Engine.</div>
 </div>
+<div class="flash" id="flash"></div>
 <div class="celeb hidden" id="celeb"><canvas id="cv"></canvas><div class="cbox"><div class="ctier" id="ctier"></div><div class="cnum" id="cnum">0.00</div><div class="cmult" id="cmult"></div><div class="ctap">Touchez pour continuer</div></div></div>
 <div class="rules hidden" id="rules"><div class="card">
   <h2>Règles — Stellar Vigil</h2>
@@ -398,6 +426,8 @@ KINDS.rain={name:"Pluie d'Étoiles",col:'#5fe0a4',txt:'Chaque nuit, une étoile 
     icon:'<g stroke="#5fe0a4" stroke-width="2.5" stroke-linecap="round" opacity=".55"><path d="M10 4 V22"/><path d="M24 12 V32"/><path d="M38 2 V20"/></g><g fill="#d6ffe9"><path d="M10 28 L13 36 L21 38 L13 40 L10 48 L7 40 L-1 38 L7 36Z" transform="translate(0,-8) scale(.9)"/><path d="M24 36 L27 42 L33 44 L27 46 L24 52 L21 46 L15 44 L21 42Z" transform="translate(0,-10)"/><path d="M38 24 L41 32 L49 34 L41 36 L38 44 L35 36 L27 34 L35 32Z" transform="translate(0,-4) scale(.8)"/></g>'};
 KINDS.eclipse={name:'Éclipse',col:'#ff7a7a',txt:'Chaque nuit, une ombre traverse le ciel en diagonale et allume une étoile sur chaque case libre.',
     icon:'<circle cx="24" cy="24" r="13" fill="#2a1030" stroke="#ff7a7a" stroke-width="2"/><circle cx="24" cy="24" r="19" fill="none" stroke="#ffb0a0" stroke-width="1.5" stroke-dasharray="3 4" opacity=".8"/><path d="M6 42 L42 6" stroke="#fff3c4" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="24" r="4" fill="#fff3c4"/>'};
+KINDS.orbit={name:'Orbites',col:'#ffb04a',txt:'Chaque colonne est une orbite : ses étoiles valent leur somme multipliée par le nombre d\'étoiles qu\'elle contient.',
+    icon:'<ellipse cx="24" cy="24" rx="20" ry="8" fill="none" stroke="#ffb04a" stroke-width="2" transform="rotate(-25 24 24)"/><ellipse cx="24" cy="24" rx="20" ry="8" fill="none" stroke="#ffe39a" stroke-width="1.5" opacity=".6" transform="rotate(35 24 24)"/><circle cx="24" cy="24" r="8" fill="#ffd27a"/><circle cx="24" cy="24" r="4" fill="#fff"/><circle cx="40" cy="14" r="3" fill="#fff3c4"/><circle cx="9" cy="33" r="2.5" fill="#fff3c4"/>'};
 KINDS.galaxy={name:'Galaxie',col:'#ff9fe0',txt:"Chaque nuit, l'étoile suivante d'une spirale se pose, du bord du ciel vers son centre.",
     icon:'<path d="M24 24 m0 0 a4 4 0 0 1 8 0 a8 8 0 0 1 -16 0 a12 12 0 0 1 24 0 a16 16 0 0 1 -32 0" fill="none" stroke="#ff9fe0" stroke-width="2.5" stroke-linecap="round"/><g fill="#fff"><circle cx="24" cy="24" r="3.5"/><circle cx="40" cy="24" r="2.2"/><circle cx="8" cy="24" r="2.2"/><circle cx="24" cy="8" r="2"/></g>'};
 const kindOf=v=>String(v||'constellation').replace(/\+/g,'');
@@ -413,7 +443,7 @@ function cap(html,pop=true){const c=$('cap'); c.innerHTML='<span>'+html+'</span>
 const banner=t=>cap(t);
 function buildBoard(){const b=$('base');b.innerHTML='';for(let r=0;r<4;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`b${c}_${r}`;b.appendChild(d)}}
 let skyVal={}, skyBase={};
-function buildSky(){const s=$('sky');s.innerHTML='';for(let r=0;r<5;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`s${c}_${r}`;s.appendChild(d)}
+function buildSky(){ if($('orbits')) $('orbits').innerHTML='';const s=$('sky');s.innerHTML='';for(let r=0;r<5;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`s${c}_${r}`;s.appendChild(d)}
   $('links').innerHTML='';$('fx').innerHTML=''; skyVal={}; skyBase={};
   $('zones').innerHTML=ZONES.map(z=>`<div class="zone" id="z${z[0]}"><b>${z[2]}×</b>${z[0]}<br>${z[1]}<i></i></div>`).join('')}
 const SYMKEYS=Object.keys(SYM).filter(k=>k!=='S'&&k!=='W');
@@ -439,7 +469,8 @@ function show(board){const sf=turbo?.3:speed;
   setTimeout(()=>$('stage').classList.remove('tense'),(stop[4]+400)*sf);
   return stop[4]+350;
 }
-function viewBonus(on){$('base').classList.toggle('hidden',on);$('skywrap').classList.toggle('hidden',!on);$('zones').classList.toggle('hidden',!on);$('bhead').classList.toggle('hidden',!on);$('pips').classList.toggle('hidden',!on);$('stage').classList.toggle('bonus',on); if(!on) document.documentElement.style.setProperty('--bc','#f3c969')}
+function showOrbits(counts,anim){const o=$('orbits'); if(curKind!=='orbit'){o.classList.add('hidden');return} o.classList.remove('hidden'); const prev=[...o.children].map(i=>+i.dataset.n); o.innerHTML=counts.map((n,i)=>`<i data-n="${n}" class="${anim&&n>(prev[i]||0)?'up':''}">${n?'×'+n:'·'}</i>`).join('')}
+function viewBonus(on){$('base').classList.toggle('hidden',on);$('skywrap').classList.toggle('hidden',!on);$('zones').classList.toggle('hidden',!on);$('bhead').classList.toggle('hidden',!on);$('pips').classList.toggle('hidden',!on);$('stage').classList.toggle('bonus',on); if(!on) document.documentElement.style.setProperty('--bc','#f3c969'); if(on) showOrbits([0,0,0,0,0]); else $('orbits').classList.add('hidden')}
 const view=viewBonus;
 function countTo(el,from,to,ms,fmtf=v=>v.toFixed(1)+'×'){const t0=performance.now(); ms*=turbo?.25:speed; (function f(t){const k=Math.min(1,(t-t0)/Math.max(1,ms)); el.textContent=fmtf(from+(to-from)*(1-Math.pow(1-k,3))); if(k<1) requestAnimationFrame(f)})(t0)}
 let shownTotal=0;
@@ -474,15 +505,15 @@ async function summaryCard(total,bet){
   showCard(`<div class="tag">BONUS TERMINÉ</div><h2>${KINDS[curKind].name}${'+'.repeat(curTier-1)}</h2><div class="big" id="sumbig">0.0×</div><div class="rows" id="sumrows"></div><div class="tap">Touchez pour continuer</div>`);
   countTo($('sumbig'),0,total/100,1400); $('sumrows').innerHTML=`<b>${fmt(total*bet)}</b> gagnés sur une mise de ${bet.toFixed(2)}`; sfx(total>=8000?'upgrade':'win'); await cardWait(3200); hideCard()}
 // --- Roues au-dessus de la grille ---
-const RING_COL={constellation:'#2b3a86',comet:'#14607a',nova:'#8a3a1f',cross:'#5a2f86',rain:'#1b6b4c',eclipse:'#7a2f3a',galaxy:'#86306a'};
-const KIND_ORDER=['constellation','comet','nova','cross','rain','eclipse','galaxy'];
+const RING_COL={constellation:'#2b3a86',comet:'#14607a',nova:'#8a3a1f',cross:'#5a2f86',rain:'#1b6b4c',eclipse:'#7a2f3a',galaxy:'#86306a',orbit:'#8a5a1f'};
+const KIND_ORDER=['constellation','comet','nova','cross','rain','eclipse','galaxy','orbit'];
 function ringPath(s,e,r0,r1){const P=(a,r)=>{a=a*Math.PI/180;return (r*Math.sin(a)).toFixed(2)+' '+(-r*Math.cos(a)).toFixed(2)},L=(e-s)>180?1:0;
   return `M${P(s,r1)} A${r1} ${r1} 0 ${L} 1 ${P(e,r1)} L${P(e,r0)} A${r0} ${r0} 0 ${L} 0 ${P(s,r0)} Z`}
 function wheelSegs(wheel,mode){const W=(window.WHEEL_ODDS||{})[mode]||{};
-  const o1=Object.assign({constellation:.26,comet:.15,nova:.15,cross:.13,rain:.13,eclipse:.10,galaxy:.08},W.kinds||{});
+  const o1=Object.assign({constellation:.22,comet:.13,nova:.13,cross:.11,rain:.11,eclipse:.09,galaxy:.08,orbit:.13},W.kinds||{});
   const o2=Object.assign({1:.6,2:.3,3:.1},W.tiers||{});
   return wheel===1?KIND_ORDER.map(k=>[k,o1[k]]):[1,2,3].map(t=>['tier'+t,o2[t]])}
-const LABEL={constellation:'Constellations',comet:'Comètes',nova:'Nova',cross:'Croix de Lune',rain:"Pluie d'Étoiles",eclipse:'Éclipse',galaxy:'Galaxie'};
+const LABEL={constellation:'Constellations',comet:'Comètes',nova:'Nova',cross:'Croix de Lune',rain:"Pluie d'Étoiles",eclipse:'Éclipse',galaxy:'Galaxie',orbit:'Orbites'};
 // Chaque segment montre l'image de son bonus ou de sa phase (plus de texte ni de pourcentage).
 function drawRing(id,segs,r0,r1){let a=0; const arcs=segs.map(([k,p])=>{const s=a;a+=p*360;return {k,s,e:a}}); const rm=(r0+r1)/2, band=r1-r0;
   $(id).innerHTML=arcs.map(x=>{const isT=x.k.startsWith('tier'),mid=(x.s+x.e)/2,fill=isT?TIER[+x.k[4]].col:RING_COL[x.k],icon=isT?TIER[+x.k[4]].icon:KINDS[x.k].icon;
@@ -572,16 +603,16 @@ async function playEvents(book,bet){
         for(const [i,st] of e.stars.entries()){drawStar($(`s${st.reel}_${st.row}`),st.value/100,'fresh'); skyVal[st.reel+','+st.row]=st.value/100; sfx('star',st.value/100); await sl(130)} await sl(500)}
       else if(curKind==='nova'){ cap(`✦ <em>Nova !</em> Un bloc de ${e.stars.length} étoiles se pose`); sfx('nova'); const d=fxNova(e.stars); await sleep(d);
         e.stars.forEach((st,i)=>{setTimeout(()=>sfx('star',st.value/100),i*90)}); paintSky(e.stars.map(s=>({reel:s.reel,row:s.row,value:s.value})),fresh); await sl(900)}
-      else if(['cross','rain','eclipse','galaxy'].includes(curKind)){
+      else if(['cross','rain','eclipse','galaxy','orbit'].includes(curKind)){
         const T={cross:`✚ Une <em>croix de lune</em> se pose : ${e.stars.length} étoile${e.stars.length>1?'s':''}`,rain:`🌠 <em>Pluie d'étoiles</em> : ${e.stars.length} étoile${e.stars.length>1?'s':''} tombent`,
-          eclipse:`🌑 Une <em>éclipse</em> traverse le ciel : ${e.stars.length} étoile${e.stars.length>1?'s':''}`,galaxy:`🌀 La <em>galaxie</em> tourne : ${e.stars.length} étoile${e.stars.length>1?'s':''}`};
+          orbit:`🪐 Les étoiles tombent sur leurs <em>orbites</em> : ${e.stars.length}`,eclipse:`🌑 Une <em>éclipse</em> traverse le ciel : ${e.stars.length} étoile${e.stars.length>1?'s':''}`,galaxy:`🌀 La <em>galaxie</em> tourne : ${e.stars.length} étoile${e.stars.length>1?'s':''}`};
         cap(e.stars.length?T[curKind]:'Rien ne se pose cette nuit'); sfx(curKind);
         if(curKind==='cross'&&e.stars.length){const d=fxNova(e.stars); await sleep(d*.5)}
         const seq=curKind==='eclipse'?[...e.stars].sort((a,b)=>a.reel-b.reel):e.stars; const gap=curKind==='rain'?160:230;
         for(const st of seq){drawStar($(`s${st.reel}_${st.row}`),st.value/100,'fresh'); skyVal[st.reel+','+st.row]=st.value/100; sfx('star',st.value/100); await sl(gap)} await sl(500)}
       else { cap(`✦ <em>${e.stars.length?e.stars.length:'Aucune'}</em> étoile${e.stars.length>1?'s':''} se pose${e.stars.length>1?'nt':''}`); e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*140)); paintSky(e.stars.map(s=>({reel:s.reel,row:s.row,value:s.value})),fresh); await sl(700+e.stars.length*140)}
       zoneProgress(); break}
-    case 'constellationsUpdate': {
+    case 'constellationsUpdate': { if(e.orbits){showOrbits(e.orbits,true); cap('🪐 <em>Orbites</em> : '+e.orbits.map(n=>'×'+Math.max(1,n)).join(' · ')); }
       const sizes=e.constellations.map(c=>c.length).sort((a,b)=>b-a); $('sky').classList.remove('focus');
       const before={...skyVal}; paintSky(e.stars,new Set()); drawLinks(e.constellations); zoneProgress();
       const ups=Object.keys(skyVal).filter(k=>before[k]!==undefined&&skyVal[k]>before[k]).length;
@@ -613,7 +644,7 @@ async function celebrate(win,bet){const mult=win/bet, tier=TIERS.find(t=>mult>=t
   let done=false; const h=()=>{done=true}; box.addEventListener('click',h,{once:true}); const w0=performance.now(); while(!done&&performance.now()-w0<(mult>=100?6500:4200)*(turbo?.4:1)) await sleep(60);
   cancelAnimationFrame(burstRaf); box.classList.add('hidden')}
 async function play(kind){
-  if(busy)return; busy=true; $('spin').disabled=$('buy').disabled=true; turbo=false; document.body.classList.add('bonusing'); $('stage').scrollIntoView({block:'start'});
+  if(busy)return; busy=true; $('spin').disabled=$('buy').disabled=true; turbo=false; document.body.classList.add('bonusing'); 
   const bet=parseFloat($('betsel').value); $('betv').textContent=bet.toFixed(2);
   const cost=kind==='bonus'?80*bet:bet;
   if(bal<cost){cap('Solde insuffisant');busy=false;$('spin').disabled=$('buy').disabled=false;return}
@@ -628,6 +659,8 @@ async function play(kind){
   if(win>0) await celebrate(win,bet);
   await sl(700); viewBonus(false); document.body.classList.remove('bonusing'); busy=false; $('spin').disabled=$('buy').disabled=false;
 }
+const fit=()=>document.documentElement.style.setProperty('--fit',Math.min(innerWidth/430,innerHeight/860).toFixed(4));
+addEventListener('resize',fit); fit();
 buildBoard(); buildSky(); setKind('constellation'); initDock('base');
 try{const o=window.SAVER_ODDS||{}, pc=x=>Math.round(x*100)+' %'; if(o.bonus){$('oddsBuy').textContent=pc(o.bonus.p_save_given_spin);$('spinBuy').textContent=pc(o.bonus.p_spin_given_bonus);$('oddsBase').textContent=pc(o.base.p_save_given_spin);$('spinBase').textContent=pc(o.base.p_spin_given_bonus)}}catch(e){}
 (function(){const b=BOOKS.base.find(x=>x.events[0].type==='reveal'); show(b.events[0].board)})();

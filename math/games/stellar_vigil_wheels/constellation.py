@@ -42,12 +42,15 @@ class Sky:
         self.base = {}  # (reel,row) -> base level
         self.conj = {}  # (reel,row) -> conjunction bonus levels
         self.zones_done = set()
+        self.orbit = False  # Orbites: each column is an orbit whose multiplier is the number of stars it holds
 
     def empty_cells(self):
         return [(r, c) for r in range(GRID) for c in range(GRID) if (r, c) not in self.base]
 
     def components(self):
         """Return list of constellations, each a sorted list of cells."""
+        if self.orbit:
+            return []
         seen, comps = set(), []
         for cell in sorted(self.base):
             if cell in seen:
@@ -66,6 +69,8 @@ class Sky:
 
     def levels(self):
         """Current level of every star, after chain bonus and conjunctions."""
+        if self.orbit:
+            return dict(self.base)
         out = {}
         for comp in self.components():
             chain = min(CHAIN_CAP, len(comp) - 1)
@@ -73,7 +78,16 @@ class Sky:
                 out[cell] = min(TOP_LEVEL, self.base[cell] + chain + self.conj.get(cell, 0))
         return out
 
+    def orbit_counts(self):
+        return [sum(1 for c in self.base if c[0] == reel) for reel in range(GRID)]
+
     def total_value(self) -> float:
+        if self.orbit:
+            # Orbites: the stars of a column are worth (sum of their values) x (number of stars in that column)
+            return sum(
+                sum(LADDER[lvl] for c, lvl in self.base.items() if c[0] == reel) * n
+                for reel, n in enumerate(self.orbit_counts())
+            )
         return sum(LADDER[lvl] for lvl in self.levels().values())
 
     def add_stars(self, new_stars):
@@ -218,3 +232,23 @@ def draw_galaxy(sky: Sky, count: int, level_weights: dict):
     ring = SPIRAL[: GRID * 4 - 4]
     order = ring[sky.spiral_start :] + ring[: sky.spiral_start] + SPIRAL[GRID * 4 - 4 :]
     return _star_levels([c for c in order if c not in sky.base][:count], sky, level_weights)
+
+
+def draw_orbit(sky: Sky, count: int, level_weights: dict):
+    """Orbites: each night `count` stars fall, each into a column chosen with a taste for busy orbits (more stars in a
+    column = more likely to receive the next one), and rest on its lowest free cell."""
+    levels, lw = list(level_weights.keys()), list(level_weights.values())
+    stars, taken = [], set()
+    for _ in range(count):
+        cols = []
+        for reel in range(GRID):
+            free = [row for row in range(GRID) if (reel, row) not in sky.base and (reel, row) not in taken]
+            if free:
+                n = sum(1 for c in list(sky.base) + list(taken) if c[0] == reel)
+                cols.append((reel, max(free), 1.0 + 1.5 * n))
+        if not cols:
+            break
+        reel, row, _ = random.choices(cols, weights=[c[2] for c in cols])[0]
+        taken.add((reel, row))
+        stars.append(((reel, row), random.choices(levels, weights=lw)[0]))
+    return stars
