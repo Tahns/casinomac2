@@ -1,7 +1,7 @@
 from game_calculations import GameCalculations
 from src.calculations.ways import Ways
 import random
-from constellation import Sky, draw_night
+from constellation import Sky, draw_night, draw_comets, draw_nova
 from src.events.events import set_win_event
 from game_events import (
     night_start_event,
@@ -45,7 +45,15 @@ class GameExecutables(GameCalculations):
         """Run one night: drop stars, relink constellations, pay the value gained and any zone."""
         cond = self.get_current_distribution_conditions()
         value_before = sky.total_value()
-        stars = draw_night(sky, cond["star_count_weights"], cond["level_weights"], cond["adjacency_bias"])
+        from game_config import VARIANTS
+
+        kind = VARIANTS[cond.get("variant") or "wheel2_constellation"][2]
+        if kind == "comet":
+            stars = draw_comets(sky, 1, cond["level_weights"])
+        elif kind == "nova":
+            stars = draw_nova(sky, 2, 0, cond["level_weights"])
+        else:
+            stars = draw_night(sky, cond["star_count_weights"], cond["level_weights"], cond["adjacency_bias"])
         night_start_event(self, night, self.tot_fs)
         stars_landed_event(self, stars)
         conjunctions = sky.add_stars(stars)
@@ -64,12 +72,13 @@ class GameExecutables(GameCalculations):
         self.record({"night": night, "stars": len(sky.base), "zones": len(sky.zones_done), "gametype": self.gametype})
 
     def play_season_wheels(self) -> None:
-        """(The rare wincap criterion is assigned to the richest outcome, Aurore -> dense+.) Roue des Saisons (and Roue de l'Aurore if it lands on Aurore): the result IS the criteria's variant."""
+        """(The rare wincap criterion is assigned to the richest outcome, Aurore -> constellation+, the only kind that can fill the sky.) Roue des Saisons (and Roue de l'Aurore if it lands on Aurore): the result IS the criteria's variant."""
         from game_config import VARIANTS
 
-        crit = self.get_current_distribution_conditions().get("variant") or "wheel2_dense"
-        wheel, label, _, _, _, offset, _ = VARIANTS[crit]
-        self.tot_fs += offset
+        crit = self.get_current_distribution_conditions().get("variant") or "wheel2_constellation"
+        wheel, label, _, _, _, _, nights, _ = VARIANTS[crit]
+        scatters = {10: 3, 12: 4, 15: 5}[self.tot_fs]
+        self.tot_fs = nights[scatters]
         season_wheel_event(self, wheel, label, self.tot_fs)
         self.record({"variant": crit, "gametype": self.gametype})
 

@@ -128,3 +128,37 @@ def draw_night(sky: Sky, star_count_weights: dict, level_weights: dict, adjacenc
         empty.remove(cell)
         stars.append((cell, random.choices(levels, weights=lw)[0]))
     return stars
+
+
+def draw_comets(sky: Sky, lines: int, level_weights: dict):
+    """Pluie de Cometes: each comet crosses a whole row or column and lands a star on every empty cell of it."""
+    levels, lw = list(level_weights.keys()), list(level_weights.values())
+    stars, taken = [], set()
+    for _ in range(lines):
+        horizontal = random.random() < 0.5
+        idx = random.randrange(GRID)
+        cells = [(c, idx) if horizontal else (idx, c) for c in range(GRID)]
+        for cell in cells:
+            if cell not in sky.base and cell not in taken:
+                taken.add(cell)
+                stars.append((cell, random.choices(levels, weights=lw)[0]))
+    return stars
+
+
+def draw_nova(sky: Sky, size: int, extra: int, level_weights: dict):
+    """Grande Nova: a size x size block of stars lands where it covers the most room, plus `extra` free stars."""
+    levels, lw = list(level_weights.keys()), list(level_weights.values())
+    corners = [(r, c) for r in range(GRID - size + 1) for c in range(GRID - size + 1)]
+    random.shuffle(corners)
+    r0, c0 = corners[0]
+    stars = []
+    for r in range(r0, r0 + size):
+        for c in range(c0, c0 + size):
+            if (r, c) not in sky.base:
+                stars.append(((r, c), random.choices(levels, weights=lw)[0]))
+    taken = {s[0] for s in stars}
+    empty = [cell for cell in sky.empty_cells() if cell not in taken]
+    random.shuffle(empty)
+    for cell in empty[:extra]:
+        stars.append((cell, random.choices(levels, weights=lw)[0]))
+    return stars

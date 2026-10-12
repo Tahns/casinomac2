@@ -41,7 +41,7 @@ def main():
         sel = [books[i] for i in random.choices(range(len(books)), weights=weights, k=n)]
         if mode == "base":
             sel += random.sample([b for b in books if has(b, "freeSpinTrigger")], 12)
-        for var in ("classic", "long", "dense", "classic+", "long+", "dense+"):
+        for var in ("constellation", "comet", "nova", "constellation+", "comet+", "nova+"):
             pool = [b for b in books if has(b, "seasonWheel", variant=var)]
             sel += random.sample(pool, 6 if mode == "base" else 4)
         per = 5 if mode == "base" else 6

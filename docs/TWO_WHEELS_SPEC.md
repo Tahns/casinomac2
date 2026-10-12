@@ -1,5 +1,11 @@
 # Spécification : deux roues (demande utilisateur, itération 12)
 
+> **MISE À JOUR (itération 17, d'après la capture de Huff N' Puff fournie par l'utilisateur : deux roues empilées au-dessus de la grille, chacune menant à des bonus différents et à leurs versions Super).** Les roues ne choisissent plus des « variantes » du même bonus mais **trois bonus différents**, chacun avec sa version Supérieure :
+> - **Nuit des Constellations** (bonus d'origine) / Constellations+ ;
+> - **Pluie de Comètes** : chaque nuit une comète traverse une ligne ou une colonne et pose une étoile sur chaque case libre / Comètes+ ;
+> - **Grande Nova** : chaque nuit un bloc 2x2 d'étoiles se pose d'un coup / Nova+.
+> Roue des Saisons : Constellations 35 %, Comètes 25 %, Nova 25 %, Aurore 15 %. Roue de l'Aurore : versions « + » 40 / 30 / 30 %. Pas de jackpots, pas de noms ni de visuels de la franchise. **Non fait** : déclenchement par un symbole spécial (par exemple une Lunette dorée qui ouvre directement la Roue de l'Aurore) ; il demande un nouveau symbole dans la grille de base et des critères de génération dédiés.
+
 > **CORRECTION (analyse de Huff N' Puff, sources : FanDuel, casinos.com, gambling.com, Indian Gaming).** Dans H&P la roue 1 (3+ scies) mène à un bonus (Buzz Saw / Mansions / Mega Hat), à un prix fixe ou à un segment *Upgrade*. La roue 2 (« Super/Ultra Wheel », déclenchée par scies + scie dorée ou par le segment Upgrade) ne contient que les versions *Super* des bonus et les gros prix. L'upgrade améliore donc **le type de bonus**, pas le total final. La section « Roue 2 » ci-dessous (multiplicateur sur gros total) était une mauvaise lecture : à remplacer par « roue d'Aurore = versions Supérieures des variantes de ciel » (ex. Ciel Dense+ : plus d'étoiles par nuit, niveaux riches). Les sources divergent sur les détails exacts de déclenchement.
 
 Demande : « une roue au dessus des bonus et une autre roue avec upgrade des gros bonus » (structure à deux roues, comme dans Huff N' Puff). Version originale pour Stellar Vigil. Rien n'est implémenté dans le jeu par défaut : tout se fait derrière un réglage (`TWO_WHEELS = False` par défaut).

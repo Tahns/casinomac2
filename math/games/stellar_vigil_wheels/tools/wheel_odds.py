@@ -38,9 +38,9 @@ def measure(mode):
         out["variants"][k] = {"share": w / bonus_w, "mean_win": pw / w, "rtp_part": pw / total_w}
     a = sum(v["share"] for k, v in out["variants"].items() if k.endswith("@aurora"))
     out["wheel1"] = {
-        "classic": out["variants"].get("classic", {}).get("share", 0),
-        "long": out["variants"].get("long", {}).get("share", 0),
-        "dense": out["variants"].get("dense", {}).get("share", 0),
+        "constellation": out["variants"].get("constellation", {}).get("share", 0),
+        "comet": out["variants"].get("comet", {}).get("share", 0),
+        "nova": out["variants"].get("nova", {}).get("share", 0),
         "aurora": a,
     }
     return out

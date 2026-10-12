@@ -1,5 +1,25 @@
 # SWOT — Stellar Vigil
 
+## v19 — itération 17 (2026-10-12) : trois bonus différents, deux roues, nouveaux sons
+
+**Fait et mesuré** (demande de l'utilisateur après capture de Huff N' Puff : deux roues empilées menant à des bonus différents et à leurs versions Super)
+- **Trois bonus différents** dans la copie `stellar_vigil_wheels` : Nuit des Constellations, Pluie de Comètes (une comète remplit une ligne ou colonne chaque nuit), Grande Nova (bloc 2x2 chaque nuit), chacun avec sa version Supérieure. Roue des Saisons : 35 / 25 / 25 / 15 % (Aurore) ; Roue de l'Aurore : 40 / 30 / 30 %.
+- **Chances exactes** (chaque résultat = critère d'optimiseur) : mesurées à 100 000 simulations : 35,0 / 25,0 / 25,0 / 15,0 % dans les deux modes ; bonus « + » 93-96x contre 72x ; RTP 96,00 % ; 38 tests verts (portes qualité comprises) + 2 tests démo.
+- **Piège évité** : les livres wincap bloquaient (aucune Nova ne peut remplir le ciel) ; rattachés à Constellations+.
+- **Démo** : trois bonus visibles (comète : étoiles qui se posent l'une après l'autre ; Nova : éclair et bloc de 4 ; teinte du ciel par bonus), vérifiés par captures 390 px, 0 erreur console.
+- **Nouveaux sons synthétisés** : cloches à partiels, souffles filtrés, grondements, réverbération, gamme pentatonique, sons propres aux comètes, à la Nova et aux roues. **Non écoutés par moi** : à juger à l'oreille ; sons de production à créer ou licencier.
+
+### Faiblesses (restantes)
+- Déclenchement par symbole spécial (ex. Lunette dorée vers la Roue de l'Aurore) **non fait** : nouveau symbole et critères dédiés.
+- Les bonus Comètes ont 2 à 4 nuits : la roue de sauvegarde y tourne souvent (chances réelles affichées).
+- Roues non adoptées dans le jeu principal ; roue de sauvegarde peu utile (n°15) ; jeu de base rude (n°14) ; optimiseur non reproductible (n°9).
+- Art IA non vérifié juridiquement ; front-end de production non commencé.
+
+### Menaces
+- **Brevets / ressemblance Huff N' Puff : plus forte** (deux roues + bonus multiples + versions Super) ; conseil requis (n°16). CGU Stake, règles non publiées, maths figées, noms proches.
+
+---
+
 ## v18 — FINAL, fin de la boucle (2026-10-11, 12:12 UTC)
 
 **Bilan de la boucle** : 15 itérations. Moteur complet et mesuré (50 tests sur le jeu principal, 40 sur la copie à deux roues), démo jouable sur téléphone (deux liens privés), deux roues originales construites avec des chances exactes par construction (40/20/20/20 % puis 40/30/30 %), RTP 96,00 % dans les deux modes à 100 000 simulations.

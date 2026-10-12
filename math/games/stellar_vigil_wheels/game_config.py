@@ -55,36 +55,38 @@ LEVELS_RICH = {0: 10, 1: 14, 2: 16, 3: 16, 4: 14, 5: 12, 6: 8, 7: 6, 8: 3, 9: 1}
 NIGHT_WINCAP = {5: 1}
 
 
-# ---- Deux roues (docs/TWO_WHEELS_SPEC.md) ------------------------------------------------------------------
-# Roue des Saisons (avant le bonus) : Classique / Long / Dense / Aurore. Aurore mene a la Roue de l'Aurore, qui ne
-# contient que les versions superieures. Chaque variante est un CRITERE de l'optimiseur avec son propre taux (hr) :
-# les chances affichees sont donc celles de la bibliotheque finale, jamais un tirage decide avant la ponderation.
+# ---- Deux roues et plusieurs bonus (docs/TWO_WHEELS_SPEC.md) --------------------------------------------------
+# Roue des Saisons (avant le bonus) : Constellations / Cometes / Nova / Aurore. Aurore mene a la Roue de l'Aurore, qui
+# ne contient que les versions Superieures. Chaque resultat est un CRITERE de l'optimiseur avec son propre taux (hr) :
+# les chances affichees sont celles de la bibliotheque finale, jamais un tirage decide avant la ponderation.
+#   constellation : nuits de 0 a 3 etoiles dispersees (bonus d'origine)
+#   comet         : chaque nuit une comete traverse une ligne ou une colonne et pose une etoile sur chaque case libre
+#   nova          : chaque nuit un bloc 2x2 d'etoiles se pose d'un coup
 _MID = {0: 18, 1: 20, 2: 18, 3: 15, 4: 12, 5: 9, 6: 5, 7: 2, 8: 1}
-_LOW = {0: 50, 1: 28, 2: 12, 3: 6, 4: 3, 5: 1}
-_NIGHTS_LONG = {0: 30, 1: 42, 2: 22, 3: 6}
-_NIGHTS_DENSE = {0: 20, 1: 38, 2: 28, 3: 14}
+_LOWL = {0: 60, 1: 28, 2: 9, 3: 3}
+_COMET_PLUS = {0: 50, 1: 28, 2: 13, 3: 6, 4: 3}
+# criteria: (wheel, label, kind, night weights, level weights, adjacency, {scatters: nights}, relative natural value)
 VARIANTS = {
-    # criteria: (wheel, label, night weights, level weights, adjacency, nights offset, relative natural value)
-    "wheel1_classic": (1, "classic", NIGHT_STD, LEVELS_STD, ADJACENCY_STD, 0, 100),
-    "wheel1_long": (1, "long", _NIGHTS_LONG, _LOW, 1.5, 2, 100),
-    "wheel1_dense": (1, "dense", _NIGHTS_DENSE, LEVELS_STD, 1.5, -2, 95),
-    "wheel2_classic": (2, "classic+", NIGHT_STD, _MID, 1.5, 0, 120),
-    "wheel2_long": (2, "long+", _NIGHTS_LONG, LEVELS_STD, 1.5, 2, 130),
-    "wheel2_dense": (2, "dense+", _NIGHTS_DENSE, _MID, 1.5, -2, 130),
+    "wheel1_constellation": (1, "constellation", "constellation", NIGHT_STD, LEVELS_STD, ADJACENCY_STD, {3: 10, 4: 12, 5: 15}, 100),
+    "wheel1_comet": (1, "comet", "comet", None, _LOWL, 0, {3: 2, 4: 3, 5: 3}, 100),
+    "wheel1_nova": (1, "nova", "nova", None, LEVELS_STD, 0, {3: 5, 4: 6, 5: 7}, 100),
+    "wheel2_constellation": (2, "constellation+", "constellation", NIGHT_STD, _MID, ADJACENCY_STD, {3: 10, 4: 12, 5: 15}, 130),
+    "wheel2_comet": (2, "comet+", "comet", None, _COMET_PLUS, 0, {3: 3, 4: 3, 5: 4}, 130),
+    "wheel2_nova": (2, "nova+", "nova", None, _MID, 0, {3: 5, 4: 6, 5: 7}, 130),
 }
-# Roue des Saisons : part de chaque segment ; l'Aurore (20 %) se repartit ensuite sur la Roue de l'Aurore.
-WHEEL1_ODDS = {"classic": 0.40, "long": 0.20, "dense": 0.20, "aurora": 0.20}
-WHEEL2_ODDS = {"classic+": 0.40, "long+": 0.30, "dense+": 0.30}
+# Roue des Saisons : part de chaque segment ; l'Aurore se repartit ensuite sur la Roue de l'Aurore.
+WHEEL1_ODDS = {"constellation": 0.35, "comet": 0.25, "nova": 0.25, "aurora": 0.15}
+WHEEL2_ODDS = {"constellation+": 0.40, "comet+": 0.30, "nova+": 0.30}
 VARIANT_PROB = {
-    "wheel1_classic": WHEEL1_ODDS["classic"],
-    "wheel1_long": WHEEL1_ODDS["long"],
-    "wheel1_dense": WHEEL1_ODDS["dense"],
-    "wheel2_classic": WHEEL1_ODDS["aurora"] * WHEEL2_ODDS["classic+"],
-    "wheel2_long": WHEEL1_ODDS["aurora"] * WHEEL2_ODDS["long+"],
-    "wheel2_dense": WHEEL1_ODDS["aurora"] * WHEEL2_ODDS["dense+"],
+    "wheel1_constellation": WHEEL1_ODDS["constellation"],
+    "wheel1_comet": WHEEL1_ODDS["comet"],
+    "wheel1_nova": WHEEL1_ODDS["nova"],
+    "wheel2_constellation": WHEEL1_ODDS["aurora"] * WHEEL2_ODDS["constellation+"],
+    "wheel2_comet": WHEEL1_ODDS["aurora"] * WHEEL2_ODDS["comet+"],
+    "wheel2_nova": WHEEL1_ODDS["aurora"] * WHEEL2_ODDS["nova+"],
 }
-_WSUM = sum(VARIANT_PROB[k] * VARIANTS[k][6] for k in VARIANTS)
-VARIANT_RTP_FRACTION = {k: VARIANT_PROB[k] * VARIANTS[k][6] / _WSUM for k in VARIANTS}
+_WSUM = sum(VARIANT_PROB[k] * VARIANTS[k][7] for k in VARIANTS)
+VARIANT_RTP_FRACTION = {k: VARIANT_PROB[k] * VARIANTS[k][7] / _WSUM for k in VARIANTS}
 
 
 class GameConfig(Config):
@@ -204,7 +206,7 @@ class GameConfig(Config):
                         Distribution(
                             criteria=crit,
                             quota=round(0.1 * VARIANT_PROB[crit], 5),
-                            conditions=bonus_conditions(v[2], v[3], v[4], variant=crit),
+                            conditions=bonus_conditions(v[3], v[4], v[5], variant=crit),
                         )
                         for crit, v in VARIANTS.items()
                     ],
@@ -248,7 +250,7 @@ class GameConfig(Config):
                         Distribution(
                             criteria=crit,
                             quota=round(0.999 * VARIANT_PROB[crit], 5),
-                            conditions=bonus_conditions(v[2], v[3], v[4], variant=crit),
+                            conditions=bonus_conditions(v[3], v[4], v[5], variant=crit),
                         )
                         for crit, v in VARIANTS.items()
                     ],

@@ -114,3 +114,7 @@
 
 ## Itération 16 — finale (2026-10-11, 12:12 UTC)
 - Dossier de décision d'une page (`docs/DECISIONS.md`), SWOT final v18. Prochain déclenchement après 13:00 UTC : la routine est désactivée.
+
+## Itération 17 (2026-10-12)
+- Copie `stellar_vigil_wheels` : 3 bonus (Constellations, Comètes, Nova) x 2 niveaux, critères d'optimiseur, wincap rattaché à Constellations+ ; 100 000 simulations : chances 35/25/25/15 %, RTP 96,00 %, 38 tests verts. Démo : bonus visibles, sons réécrits, captures 390 px, `?kind=comet|nova` pour les tester.
+- À faire : symbole déclencheur spécial, écoute des sons par l'utilisateur, avis brevets.

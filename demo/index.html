@@ -70,6 +70,7 @@
   .stage{background:linear-gradient(160deg,#171f4d 0%,#0d1230 55%,#0a0e26 100%);border:1px solid #6b5a2e;box-shadow:0 0 0 1px #0b0f25,0 0 0 3px #3a2f14,0 10px 40px #000a,inset 0 0 40px #0006;border-radius:18px}
   #base{padding:8px;border-radius:14px;background:#06091c;box-shadow:inset 0 0 22px #000c,0 0 0 2px #9c7a2c,0 0 0 4px #3a2f14}
   .cell{background:radial-gradient(circle at 50% 35%,#222c66 0%,#10163a 70%);border:1px solid #2f3a78;box-shadow:inset 0 1px 0 #ffffff14,inset 0 -8px 14px #0006}
+  @keyframes novaflash{0%{filter:brightness(2.2) saturate(1.4)}100%{filter:none}} .flash{animation:novaflash .7s ease-out}
   .sky .cell{background:radial-gradient(circle at 50% 40%,var(--skyc,#0f1a45) 0%,#070a1c 75%);border-color:var(--skyb,#1f2a5c)}
   .cell svg{filter:drop-shadow(0 2px 3px #000a);width:90%!important;height:90%!important}
   img.sym{width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;pointer-events:none}
@@ -175,17 +176,53 @@ function tone(freq,dur=.15,type='sine',vol=.08,when=0,slideTo=null){
   g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
   o.connect(g).connect(c.destination); o.start(t); o.stop(t+dur+.02);
 }
+// Bus principal : un peu de réverbération (delai avec retour filtré) pour donner de l'espace.
+let bus=null, noiseBuf=null;
+function master(){const c=audio(); if(!c) return null; if(bus&&bus.c===c) return bus;
+  const input=c.createGain(); input.gain.value=.9; const dry=c.createGain(); dry.gain.value=.8;
+  const d1=c.createDelay(); d1.delayTime.value=.23; const d2=c.createDelay(); d2.delayTime.value=.37;
+  const fb=c.createGain(); fb.gain.value=.38; const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2600;
+  const wet=c.createGain(); wet.gain.value=.32;
+  input.connect(dry).connect(c.destination); input.connect(d1); input.connect(d2); d1.connect(lp); d2.connect(lp); lp.connect(fb).connect(d1); lp.connect(wet).connect(c.destination);
+  const comp=c.createDynamicsCompressor(); try{comp.connect(c.destination)}catch(e){}
+  bus={c,input}; return bus}
+function noise(){const c=audio(); if(!noiseBuf||noiseBuf.c!==c){const b=c.createBuffer(1,c.sampleRate*1.5,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;noiseBuf={c,b}} return noiseBuf.b}
+// Cloche : trois partiels non harmoniques à décroissance exponentielle.
+function chime(freq,dur=.9,vol=.07,when=0){const m=master(); if(!m) return; const c=m.c,t=c.currentTime+when;
+  [[1,1],[2.76,.45],[5.4,.2]].forEach(([r,a],i)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=freq*r;
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol*a,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+dur/(1+i*.6));
+    o.connect(g).connect(m.input);o.start(t);o.stop(t+dur+.05)})}
+// Souffle filtré qui monte ou descend (comète, roue, déclenchement).
+function whoosh(dur=.6,f0=300,f1=3000,vol=.06,when=0){const m=master(); if(!m) return; const c=m.c,t=c.currentTime+when;
+  const src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=noise();f.type='bandpass';f.Q.value=2.2;
+  f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+dur*.45);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  src.connect(f).connect(g).connect(m.input);src.start(t);src.stop(t+dur+.05)}
+function boom(vol=.16,when=0,f=90){const m=master(); if(!m) return; const c=m.c,t=c.currentTime+when,o=c.createOscillator(),g=c.createGain();
+  o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*.4,t+.55);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+.7);
+  o.connect(g).connect(m.input);o.start(t);o.stop(t+.75)}
+function click(vol=.05,f=1800){const m=master(); if(!m) return; const c=m.c,t=c.currentTime,src=c.createBufferSource(),fl=c.createBiquadFilter(),g=c.createGain();
+  src.buffer=noise();fl.type='bandpass';fl.frequency.value=f;fl.Q.value=6;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+.045);
+  src.connect(fl).connect(g).connect(m.input);src.start(t);src.stop(t+.06)}
+function sparkle(n=6,base=1200,span=1500,vol=.035,gap=.07){for(let i=0;i<n;i++)chime(base+Math.random()*span,.5,vol,i*gap)}
+const PENTA=[523.25,587.33,659.25,783.99,880,1046.5,1174.7,1318.5,1568,1760]; // pentatonique majeure
 const SFX={
-  reveal:()=>{tone(220,.06,'triangle',.05);tone(330,.06,'triangle',.04,.07)},
-  win:()=>{[523,659,784].forEach((f,i)=>tone(f,.18,'sine',.07,i*.09))},
-  star:(v)=>tone(500+Math.min(900,v*4),.18,'sine',.06),
-  link:()=>tone(300,.35,'sawtooth',.03,0,900),
-  zone:()=>{[392,523,659,784,1046].forEach((f,i)=>tone(f,.3,'triangle',.07,i*.1))},
-  trigger:()=>{[262,330,392,523].forEach((f,i)=>tone(f,.25,'triangle',.07,i*.12))},
-  night:()=>tone(180,.2,'sine',.05,0,120),
-  tick:()=>tone(900,.03,'square',.03),
-  saved:()=>{[523,659,784,1046].forEach((f,i)=>tone(f,.25,'sine',.08,i*.1))},
-  empty:()=>tone(220,.4,'sine',.06,0,150)
+  reveal:()=>{click(.06,900);tone(196,.12,'triangle',.05)},
+  win:()=>{[0,2,4,5].forEach((n,i)=>chime(PENTA[n],.8,.07,i*.08))},
+  star:(v)=>{const i=Math.min(PENTA.length-1,Math.floor(Math.log2(Math.max(.2,v)*5)*1.1)); chime(PENTA[Math.max(0,i)],.7,.06)},
+  link:()=>{whoosh(.4,500,2600,.035);chime(783.99,.6,.04,.25);chime(1174.7,.6,.035,.33)},
+  zone:()=>{boom(.12);[0,2,4,5,7].forEach((n,i)=>chime(PENTA[n],1.1,.075,.05+i*.09));sparkle(8,1500,1800,.03,.06)},
+  trigger:()=>{boom(.2,0,70);whoosh(1.2,200,2400,.08);[0,2,4,5].forEach((n,i)=>chime(PENTA[n]/2,1.2,.08,.35+i*.12));sparkle(5,1500,1500,.03,.1)},
+  night:()=>{tone(110,.9,'sine',.05,0,70);whoosh(.7,200,800,.025)},
+  tick:()=>click(.05,1500+Math.random()*900),
+  saved:()=>{whoosh(.5,400,3000,.05);[0,2,4,5,7].forEach((n,i)=>chime(PENTA[n],1,.08,.1+i*.1));sparkle(7,1500,1800,.03,.08)},
+  empty:()=>{tone(220,.7,'sine',.06,0,110);tone(165,.7,'triangle',.04,.12,90)},
+  comet:()=>{whoosh(.9,400,5200,.07);sparkle(9,1400,2400,.03,.07)},
+  nova:()=>{boom(.2,0,110);whoosh(.5,300,3500,.06);chime(523.25,1.3,.08,.05);chime(783.99,1.3,.07,.1);chime(1046.5,1.3,.06,.15)},
+  constellation:()=>{[0,3,5].forEach((n,i)=>chime(PENTA[n],1,.06,i*.12))},
+  stop:()=>{click(.08,700);chime(PENTA[2],1,.07);chime(PENTA[4],1,.06,.06)},
+  upgrade:()=>{whoosh(.8,300,4500,.08);[0,2,4,5,7,9].forEach((n,i)=>chime(PENTA[n],1.2,.08,i*.08));boom(.14,.4,100)}
 };
 function sfx(name,arg){ try{ SFX[name](arg) }catch(e){} }
 const ZONES=[['Horizon','Ligne du bas',20],['Meridien','Colonne centrale',100],['Quadrature','Les 4 coins',1000],['Firmament','Ciel complet',10000]];
@@ -235,11 +272,12 @@ async function spinWheel(e){
   await sleep(2200); box.classList.add('hidden');
 }
 // Roues avant le bonus (Roue des Saisons, Roue de l'Aurore). Les parts des segments sont les chances réelles mesurées (window.WHEEL_ODDS).
-const SEASONS={classic:['Classique','#2b3a86'],long:['Long','#1f5f7a'],dense:['Dense','#6a2f7a'],aurora:['AURORE','url(#rim)'],'classic+':['Classique+','#2b3a86'],'long+':['Long+','#1f5f7a'],'dense+':['Dense+','#6a2f7a']};
-const SEASON_TXT={classic:'Ciel Classique',long:'Ciel Long : 2 nuits de plus, étoiles plus douces',dense:'Ciel Dense : 2 nuits de moins, plus d\'étoiles par nuit','classic+':'Ciel Classique+ : étoiles plus riches','long+':'Ciel Long+ : 2 nuits de plus, étoiles de la version riche','dense+':'Ciel Dense+ : étoiles plus nombreuses et plus riches'};
+const SEASONS={constellation:['Constellations','#2b3a86'],comet:['Comètes','#1f5f7a'],nova:['Nova','#8a3a1f'],aurora:['AURORE','url(#rim)'],'constellation+':['Constellations+','#2b3a86'],'comet+':['Comètes+','#1f5f7a'],'nova+':['Nova+','#8a3a1f']};
+const SEASON_TXT={constellation:'Nuit des Constellations : des étoiles se posent chaque nuit et se relient','comet':'Pluie de Comètes : chaque nuit une comète traverse une ligne ou une colonne et pose une étoile sur chaque case libre',nova:'Grande Nova : chaque nuit un bloc de 4 étoiles se pose d\'un coup','constellation+':'Constellations+ : étoiles plus riches','comet+':'Comètes+ : étoiles de comète plus riches, une nuit de plus','nova+':'Nova+ : étoiles du bloc plus riches'};
+let curKind='constellation';
 function wheelSegs(wheel,mode){
-  const o=((window.WHEEL_ODDS||{})[mode])||{classic:.4,long:.2,dense:.2,aurora:.2};
-  return wheel===1?[['classic',o.classic],['long',o.long],['dense',o.dense],['aurora',o.aurora]]:[['classic+',.4],['long+',.3],['dense+',.3]];
+  const o=((window.WHEEL_ODDS||{})[mode])||{constellation:.35,comet:.25,nova:.25,aurora:.15};
+  return wheel===1?[['constellation',o.constellation],['comet',o.comet],['nova',o.nova],['aurora',o.aurora]]:[['constellation+',.4],['comet+',.3],['nova+',.3]];
 }
 async function spinSeasonOnce(title,segs,target,nightsTxt){
   const svg=$('wheelsvg'), box=$('wheelbox'), msg=$('wheelmsg'); $('wheeltitle').textContent=title;
@@ -249,13 +287,13 @@ async function spinSeasonOnce(title,segs,target,nightsTxt){
   svg.style.transition='none'; svg.style.transform='rotate(0deg)';
   svg.innerHTML=arcs.map(x=>{const [x0,y0]=pt(x.s,96),[x1,y1]=pt(x.e,96),large=(x.e-x.s)>180?1:0,[lx,ly]=pt((x.s+x.e)/2,62);
     return `<path d="M0 0 L${x0.toFixed(2)} ${y0.toFixed(2)} A96 96 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z" fill="${SEASONS[x.k][1]}" stroke="#0a0e1f" stroke-width="1.2"/>`+
-      `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="${x.k==='aurora'?'#3a2f14':'#fff'}" font-size="11" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${((x.s+x.e)/2).toFixed(1)} ${lx.toFixed(1)} ${ly.toFixed(1)})">${SEASONS[x.k][0]}</text>`}).join('');
+      `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="${x.k==='aurora'?'#3a2f14':'#fff'}" font-size="9" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${((x.s+x.e)/2).toFixed(1)} ${lx.toFixed(1)} ${ly.toFixed(1)})">${SEASONS[x.k][0]}</text>`}).join('');
   msg.textContent='Chances : '+arcs.map(x=>SEASONS[x.k][0]+' '+Math.round((x.e-x.s)/3.6)+' %').join(' · '); msg.style.color='var(--ink)';
   box.classList.remove('hidden'); await sleep(900);
   let t=0, step=60; while(t<3200){ setTimeout(()=>sfx('tick'),t); t+=step; step*=1.07 }
   const jitter=(Math.random()-.5)*(tgt.e-tgt.s)*.6;
   svg.getBoundingClientRect(); svg.style.transition=''; svg.style.transform=`rotate(${360*5-(mid+jitter)}deg)`;
-  await sleep(3500); sfx(target==='aurora'?'saved':'trigger');
+  await sleep(3500); sfx(target==='aurora'?'upgrade':'stop');
   msg.textContent=target==='aurora'?'AURORE ! Deuxième roue : versions supérieures':(SEASON_TXT[target]||''); msg.style.color='var(--gold)';
   await sleep(1900);
 }
@@ -263,7 +301,7 @@ async function spinSeasons(e){
   const mode=(window.__mode||'base');
   await spinSeasonOnce('Roue des Saisons',wheelSegs(1,mode),e.season,0);
   if(e.wheel===2) await spinSeasonOnce("Roue de l'Aurore",wheelSegs(2,mode),e.variant,0);
-  const T={classic:['#0f1a45','#1f2a5c'],long:['#0f3a4a','#1f6a80'],dense:['#3a1650','#6a2f7a']}[e.variant.replace('+','')]||['#0f1a45','#1f2a5c']; const sk=document.documentElement.style; sk.setProperty('--skyc',e.variant.endsWith('+')?T[1]:T[0]); sk.setProperty('--skyb',T[1]);
+  curKind=e.variant.replace('+',''); const T={constellation:['#0f1a45','#1f2a5c'],comet:['#0f3a4a','#1f6a80'],nova:['#4a2310','#8a4a1f']}[curKind]||['#0f1a45','#1f2a5c']; const sk=document.documentElement.style; sk.setProperty('--skyc',e.variant.endsWith('+')?T[1]:T[0]); sk.setProperty('--skyb',T[1]);
   $('wheelbox').classList.add('hidden'); $('wheeltitle').textContent='Roue de sauvegarde';
 }
 async function playEvents(book,bet){
@@ -272,9 +310,9 @@ async function playEvents(book,bet){
     switch(e.type){
     case 'reveal': sfx('reveal'); view(false); show(e.board); banner(''); await sleep(450); break;
     case 'winInfo': sfx('win'); e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); banner('Gain '+fmt(e.totalWin*bet)+'  ×'+(e.totalWin/100)); await sleep(900); break;
-    case 'freeSpinTrigger': sfx('trigger'); {const sw=book.events.find(x=>x.type==='seasonWheel'); banner('NUIT DES CONSTELLATIONS'+(sw?'':' — '+e.totalFs+' nuits'))} document.querySelectorAll('.scat').forEach(x=>x.classList.add('win')); await sleep(1400); buildSky(); view(true); break;
-    case 'nightStart': sfx('night'); nights=e.night; banner(`Nuit ${e.night} / ${e.totalNights}`); await sleep(350); break;
-    case 'starsLanded': e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*120)); drawStars(e.stars); await sleep(600); break;
+    case 'freeSpinTrigger': sfx('trigger'); {const sw=book.events.find(x=>x.type==='seasonWheel'); banner(sw?'BONUS DÉCLENCHÉ — la roue décide':'NUIT DES CONSTELLATIONS — '+e.totalFs+' nuits')} document.querySelectorAll('.scat').forEach(x=>x.classList.add('win')); await sleep(1400); buildSky(); view(true); break;
+    case 'nightStart': sfx(curKind==='comet'?'comet':curKind==='nova'?'nova':'night'); nights=e.night; banner(`Nuit ${e.night} / ${e.totalNights}`); await sleep(350); break;
+    case 'starsLanded': e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*(curKind==='comet'?70:120))); if(curKind==='comet'){e.stars.forEach((st,i)=>setTimeout(()=>drawStars([st]),i*90)); await sleep(150+e.stars.length*90)} else {drawStars(e.stars); if(curKind==='nova'){$('sky').classList.add('flash');setTimeout(()=>$('sky').classList.remove('flash'),700)} await sleep(600)} break;
     case 'constellationsUpdate': if(e.constellations.length) sfx('link'); drawStars(e.stars); drawLinks(e.constellations); if(e.conjunctions) banner(`Conjonction ×${e.conjunctions} !`); await sleep(650); break;
     case 'zonesComplete': sfx('zone'); e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); banner('PALIER '+e.zones.map(z=>z.name+' '+(z.win/100)+'×').join(' + ')); await sleep(1300); break;
     case 'nightPayout': total=e.total; banner(`Nuit ${nights} : +${(e.amount/100).toFixed(1)}×  (total ${(e.total/100).toFixed(1)}×)`); await sleep(500); break;
@@ -292,8 +330,9 @@ async function play(kind){
   const cost=kind==='bonus'?80*bet:bet;
   if(bal<cost){banner('Solde insuffisant');busy=false;$('spin').disabled=$('buy').disabled=false;return}
   bal-=cost; $('bal').textContent=bal.toFixed(2);
-  window.__mode=kind;
-  const pool=BOOKS[kind], book=pool[Math.floor(Math.random()*pool.length)];
+  window.__mode=kind; curKind='constellation';
+  let pool=BOOKS[kind]; const qk=new URLSearchParams(location.search).get('kind'); if(qk){const f=pool.filter(b=>b.events.some(e=>e.type==='seasonWheel'&&e.variant===qk)); if(f.length) pool=f}
+  const book=pool[Math.floor(Math.random()*pool.length)];
   await playEvents(book,bet);
   const win=book.win/100*bet; bal+=win;
   $('bal').textContent=bal.toFixed(2); $('last').textContent=win.toFixed(2);
