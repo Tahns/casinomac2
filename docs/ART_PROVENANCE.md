@@ -36,3 +36,6 @@ Les prompts demandent un objet unique sur **fond noir pur** ; les images sont fo
 | `wheel_hub.webp` | Moyeu des roues | médaillon doré, étoile à huit branches, petit cristal bleu | 87584ec7-7070-4a69-ad7e-07a4a6c85338 |
 
 Modèle `gpt_image_2_5`, fond noir converti en transparence. Même garde-fous que ci-dessus (aucune référence, aucun nom de marque). Trois visuels de menu ont aussi été générés (jobs 707ab0d2-98cc-47b2-9001-663858c37a61, fa8fbab4-ab48-454c-8698-badc10d0536d, f2368020-d67f-4c40-b71b-d18ad2574d41) mais pas encore intégrés.
+
+## Ajout (2026-10-12) : icônes de bonus (non intégrées)
+Quatre icônes générées avec `gpt_image_2_5` (Nova, Croix de Lune, Éclipse, Galaxie), fond noir, sans référence ni nom de marque. Jobs : 6dd61560-36f2-400a-9e48-39bfe552119b, e4f46f0c-dac1-4f6f-96cb-c4c029fb8e0b, b2e84b8a-5c59-40dc-8508-6a1bcb799d04, 05820d0e-5481-416b-ab73-397b15a3c633. Elles ne sont pas encore dans `demo/art/` ; les icônes affichées dans la démo sont dessinées en code. Les mêmes réserves juridiques qu'au-dessus s'appliquent.

@@ -128,3 +128,11 @@
 - Deux roues indépendantes : roue des Bonus (26/15/15/13/13/10/8 %) et roue des Phases de Lune (60/30/10 %), sans segment Upgrade ; 21 couples (bonus, phase) comme critères de l'optimiseur. Documents mis à jour : encadré dans `TWO_WHEELS_SPEC.md`, section « Changement itération 18 » dans `PATENT_BRIEF.md`, ligne 16 de `DECISIONS.md`, question 16 de `OPEN_QUESTIONS.md`.
 - Cadre et moyeu d'or générés avec Higgsfield.
 - Points bloqués : (1) mesures à 100 000 simulations en cours de régénération, aucun RTP ni distribution à citer pour le nouveau système ; (2) accès réseau aux fichiers Higgsfield non résolu ; (3) un script de mesure a été refusé par le contrôle d'accès, non contourné.
+
+## Itération 19 (2026-10-12)
+- Huitième bonus : **Orbites** (chaque colonne est une orbite ; ses étoiles valent leur somme multipliée par le nombre d'étoiles de la colonne ; les étoiles tombent en bas et préfèrent les colonnes chargées). Idée de l'utilisateur (multiplicateurs par colonne) réalisée sans reprendre les symboles ni les noms d'un jeu existant. Huit bonus x trois phases de lune = 24 critères d'optimiseur.
+- Chances mesurées à 100 000 simulations sur la bibliothèque : roue des Bonus 22/13/13/11/11/9/8/13 % (Constellations, Comètes, Nova, Croix, Pluie, Éclipse, Galaxie, Orbites) ; roue des Phases 60/30/10 % ; RTP 96,00 % dans les deux modes ; bonus environ 1 spin sur 150 ; 40 tests réussis.
+- Calibration des nuits par phase d'après une simulation de 63 combinaisons : la Galaxie remplissait tout le ciel en phases 2 et 3 (corrigé, 4 nuits au plus), Constellations à 5 Lunettes ramenée à 12 nuits.
+- Démo : menu refait (bouton TOURNER, mise + et -), suspense (tension avant le 3e Lunette, roues qui frôlent la case voisine puis reviennent), célébrations des gros gains (paliers dès 20x), le jeu tient sur une seule page sans défilement.
+- Higgsfield : 4 icônes de bonus générées (Nova, Croix, Éclipse, Galaxie : jobs 6dd61560-36f2-400a-9e48-39bfe552119b, e4f46f0c-dac1-4f6f-96cb-c4c029fb8e0b, b2e84b8a-5c59-40dc-8508-6a1bcb799d04, 05820d0e-5481-416b-ab73-397b15a3c633), non intégrées : l'environnement refuse le téléchargement depuis cloudfront.net.
+- Points bloqués : accès réseau aux fichiers Higgsfield ; avis d'un conseil en brevets sur la structure à deux roues (aucune affirmation de conformité).
