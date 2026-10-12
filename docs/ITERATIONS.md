@@ -118,3 +118,6 @@
 ## Itération 17 (2026-10-12)
 - Copie `stellar_vigil_wheels` : 3 bonus (Constellations, Comètes, Nova) x 2 niveaux, critères d'optimiseur, wincap rattaché à Constellations+ ; 100 000 simulations : chances 35/25/25/15 %, RTP 96,00 %, 38 tests verts. Démo : bonus visibles, sons réécrits, captures 390 px, `?kind=comet|nova` pour les tester.
 - À faire : symbole déclencheur spécial, écoute des sons par l'utilisateur, avis brevets.
+
+## Itération 18 (2026-10-12)
+- Interface de la démo réécrite (roues en arc au-dessus de la grille, légendes d'étapes, cartes, halos, jauges, vitesse). , , . 6 bonus joués sans erreur ; 6 tests démo verts.

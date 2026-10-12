@@ -102,6 +102,62 @@
   .note{overflow-wrap:anywhere}
   .still *,.still body::before,.still body::after{animation:none!important;transition:none!important}
   .hidden{display:none}
+  /* ===== Interface v2 : roues au-dessus de la grille, bonus lisibles ===== */
+  :root{--bc:#f3c969}
+  .stage{transition:box-shadow .5s,border-color .5s}
+  .stage.bonus{border-color:var(--bc);box-shadow:0 0 0 1px #0b0f25,0 0 0 3px var(--bc),0 0 40px color-mix(in srgb,var(--bc) 45%,transparent),inset 0 0 40px #0006}
+  .dock{position:relative;margin:-2px -4px 6px;padding-top:4px}
+  .dock svg{display:block;width:100%;height:auto;overflow:hidden}
+  .dock .ring{transition:transform 4.2s cubic-bezier(.1,.7,.1,1);transform-origin:0 0}
+  .dock .ring.idle{transition:none}
+  .dock text{font-weight:800;font-family:system-ui,sans-serif;paint-order:stroke;stroke:#0008;stroke-width:1.6px}
+  .dock .seg.hit{filter:brightness(1.5) drop-shadow(0 0 6px #fff)}
+  .dockcap{display:none;justify-content:center;gap:6px;flex-wrap:wrap;margin:-4px 0 2px;font-size:10px;color:var(--dim)}
+  .dockcap span{background:#0d1230;border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+  .dockcap span.on{border-color:var(--bc);color:#fff;box-shadow:0 0 10px color-mix(in srgb,var(--bc) 60%,transparent)}
+  .bhead{display:flex;align-items:center;gap:10px;margin:0 0 8px;padding:8px 10px;border-radius:12px;background:linear-gradient(#171e4a,#10163a);border:1px solid color-mix(in srgb,var(--bc) 60%,#2f3a78)}
+  .bhead .bico{width:40px;height:40px;flex:0 0 40px}
+  .bhead .bname{font-weight:800;letter-spacing:.05em;text-transform:uppercase;font-size:14px;color:var(--bc);line-height:1.15}
+  .bhead .bname small{display:block;color:var(--dim);font-weight:600;letter-spacing:0;text-transform:none;font-size:11px}
+  .bhead .btot{margin-left:auto;text-align:right}
+  .bhead .btot b{display:block;font-size:10px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+  .bhead .btot span{font-size:24px;font-weight:900;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 0 14px var(--bc)}
+  .pips{display:flex;gap:4px;margin:0 0 8px;justify-content:center;flex-wrap:wrap}
+  .pips i{width:14px;height:6px;border-radius:3px;background:#27316a}
+  .pips i.done{background:color-mix(in srgb,var(--bc) 55%,#27316a)}
+  .pips i.now{background:var(--bc);box-shadow:0 0 8px var(--bc)}
+  .cap{min-height:46px;margin:10px 0 0;padding:8px 10px;text-align:center;font-weight:800;font-size:16px;line-height:1.25;border-radius:12px;background:#0b1030;border:1px solid #2a3566;color:#fff;display:flex;align-items:center;justify-content:center}
+  .cap.pop{animation:cappop .35s ease-out}
+  @keyframes cappop{from{transform:scale(.94);opacity:.3}to{transform:none;opacity:1}}
+  .cap em{font-style:normal;color:var(--bc)}
+  .sky.focus .star:not(.fresh){opacity:.5;transition:opacity .3s}
+  .star.fresh{z-index:3}
+  .star.fresh::after{content:"";position:absolute;inset:6%;border-radius:50%;border:3px solid var(--bc);box-shadow:0 0 18px var(--bc),inset 0 0 12px var(--bc);animation:ringp 1.2s ease-out both;pointer-events:none}
+  @keyframes ringp{0%{transform:scale(.3);opacity:1}100%{transform:scale(1.25);opacity:0}}
+  .star.up small{color:#7dffb2;animation:upv .9s ease-out}
+  .star.up::before{content:"▲";position:absolute;top:3px;right:6px;font-size:11px;color:#7dffb2;animation:upv .9s ease-out both}
+  @keyframes upv{0%{transform:translateY(8px) scale(1.5);opacity:0}100%{transform:none;opacity:1}}
+  .fx{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden;border-radius:12px}
+  .fx .comet{position:absolute;width:22%;height:7%;border-radius:50%;background:linear-gradient(90deg,transparent,#7fe3ff 60%,#fff);filter:drop-shadow(0 0 8px #7fe3ff)}
+  .fx .ring{position:absolute;border-radius:50%;border:4px solid #ffb24a;box-shadow:0 0 30px #ff8a1f,inset 0 0 30px #ff8a1f}
+  .zones{margin-top:8px}
+  .zone{position:relative;overflow:hidden}
+  .zone i{position:absolute;left:0;bottom:0;height:3px;background:var(--bc);width:0;transition:width .5s}
+  .zone.done{background:linear-gradient(#3a2f14,#1c1608);box-shadow:0 0 14px #f3c96988}
+  .card{position:absolute;inset:0;z-index:8;border-radius:18px;background:rgba(6,9,28,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18px;gap:10px;animation:cappop .4s ease-out}
+  .card.hidden{display:none}
+  .card .cico{width:96px;height:96px}
+  .card h2{margin:0;font-size:24px;letter-spacing:.08em;text-transform:uppercase;color:var(--bc);text-shadow:0 0 18px var(--bc)}
+  .card .tag{background:linear-gradient(#ffe39a,#f3c969);color:#3a2a08;font-weight:900;font-size:11px;letter-spacing:.1em;border-radius:999px;padding:2px 10px}
+  .card p{margin:0;max-width:30ch;font-size:15px;line-height:1.35}
+  .card .big{font-size:42px;font-weight:900;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 0 22px var(--bc)}
+  .card .tap{font-size:11px;color:var(--dim)}
+  .card .rows{font-size:13px;color:var(--dim);line-height:1.5}
+  .card .rows b{color:#fff}
+  body.bonusing .logo,body.bonusing .sub{display:none}
+  body.bonusing .wrap{padding-top:8px}
+  .speed.on{outline:2px solid var(--gold)}
+  .wheelbox{z-index:9}
 </style>
 </head>
 <body>
@@ -113,17 +169,39 @@
     <div><b>Mise</b><span id="betv">1.00</span></div>
     <div><b>Dernier gain</b><span id="last">0.00</span></div>
   </div>
-  <div class="stage">
+  <div class="stage" id="stage">
+    <div class="dock hidden" id="dock">
+      <svg id="dockSvg" viewBox="-112 -114 224 104" aria-label="Roues des bonus">
+        <defs><linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#f3c969"/><stop offset="1" stop-color="#8a5a14"/></linearGradient>
+        <clipPath id="halfclip"><rect x="-112" y="-114" width="224" height="104"/></clipPath></defs>
+        <g clip-path="url(#halfclip)">
+          <g id="ring2" class="ring idle"></g>
+          <g id="ring1" class="ring idle"></g>
+          <circle r="19" fill="#0a0e26" stroke="url(#rim)" stroke-width="3"/>
+          <circle r="107" fill="none" stroke="url(#rim)" stroke-width="3.5"/><circle r="70" fill="none" stroke="url(#rim)" stroke-width="2"/>
+        </g>
+        <path d="M-9 -116 L9 -116 L0 -98 Z" fill="#ffe39a" stroke="#7a5614" stroke-width="1.5" style="filter:drop-shadow(0 0 5px #f3c969)"/>
+      </svg>
+      <div class="dockcap" id="dockcap"></div>
+    </div>
+    <div id="bhead" class="bhead hidden">
+      <svg class="bico" id="bico" viewBox="0 0 48 48"></svg>
+      <div class="bname" id="bname"></div>
+      <div class="btot"><b>Total du bonus</b><span id="btotal">0.0×</span></div>
+    </div>
+    <div class="pips hidden" id="pips"></div>
     <div id="base" class="grid" style="grid-template-columns:repeat(5,1fr)"></div>
     <div id="skywrap" class="hidden" style="position:relative">
       <div id="sky" class="grid sky" style="grid-template-columns:repeat(5,1fr)"></div>
       <svg id="links" class="links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+      <div class="fx" id="fx"></div>
     </div>
     <div class="zones hidden" id="zones"></div>
-    <div class="banner" id="banner">Prêt</div>
+    <div class="cap" id="cap">Prêt</div>
+    <div class="card hidden" id="card"></div>
     <div class="wheelbox hidden" id="wheelbox">
       <div class="wheeltitle" id="wheeltitle">Roue de sauvegarde</div>
-      <div class="wheelwrap"><div class="pointer"></div><svg id="wheelsvg" viewBox="-100 -100 200 200"></svg><svg class="hub" viewBox="-100 -100 200 200"><defs><linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#f3c969"/><stop offset="1" stop-color="#8a5a14"/></linearGradient></defs><circle r="98" fill="none" stroke="url(#rim)" stroke-width="6"/><circle r="94" fill="none" stroke="#3a2f14" stroke-width="1.5"/><circle r="15" fill="url(#rim)" stroke="#3a2f14" stroke-width="2"/><circle r="5" fill="#3a2f14"/></svg></div>
+      <div class="wheelwrap"><div class="pointer"></div><svg id="wheelsvg" viewBox="-100 -100 200 200"></svg><svg class="hub" viewBox="-100 -100 200 200"><circle r="98" fill="none" stroke="url(#rim)" stroke-width="6"/><circle r="94" fill="none" stroke="#3a2f14" stroke-width="1.5"/><circle r="15" fill="url(#rim)" stroke="#3a2f14" stroke-width="2"/><circle r="5" fill="#3a2f14"/></svg></div>
       <div class="wheelmsg" id="wheelmsg"></div>
     </div>
   </div>
@@ -133,7 +211,7 @@
     <button id="spin">Tourner</button>
     <button id="buy" class="alt">Acheter le bonus (80×)</button>
   </div>
-  <div class="tools"><button class="alt" id="rulesbtn">Règles</button><button class="alt" id="mutebtn">Son : activé</button></div>
+  <div class="tools"><button class="alt" id="rulesbtn">Règles</button><button class="alt" id="mutebtn">Son : activé</button><button class="alt speed" id="speedbtn">Vitesse : normale</button></div>
   <div class="note">Symboles provisoires (art à créer). Chaque tour tire un résultat pondéré parmi un échantillon exporté du moteur ; ce n'est pas le jeu final Stake Engine.</div>
 </div>
 <div class="rules hidden" id="rules"><div class="card">
@@ -147,6 +225,9 @@
   <li>Chaque nuit, de 0 à 3 étoiles tombent sur un ciel de 5 × 5 ; elles y restent jusqu'à la fin du bonus.</li>
   <li>Des étoiles voisines forment une constellation : chaque étoile gagne un niveau de valeur par lien, jusqu'à +3. Une étoile qui relie deux constellations ajoute un niveau de plus (conjonction).</li>
   <li>Compléter une zone paie un multiplicateur fixe, une seule fois par bonus : Horizon (ligne du bas) 20×, Méridien (colonne centrale) 100×, Quadrature (les 4 coins) 1 000×, Firmament (ciel complet) 10 000×. Ces multiplicateurs ne sont pas progressifs.</li></ul>
+  <h3>Roues et bonus (version à deux roues)</h3>
+  <ul><li>Dans la version à deux roues, la Roue des Saisons choisit le bonus : Constellations, Comètes ou Nova. Le segment Aurore ouvre la Roue de l'Aurore, qui donne la version supérieure (étoiles plus riches).</li>
+  <li>Pluie de Comètes : chaque nuit une comète traverse une ligne ou une colonne et pose une étoile sur chaque case libre. Grande Nova : chaque nuit un bloc de 4 étoiles se pose d'un coup. Les chances de chaque roue sont celles mesurées sur le jeu.</li></ul>
   <h3>Roue de sauvegarde</h3>
   <ul><li>En fin de bonus, si le total est inférieur à un plancher, la roue tourne. Plancher : 25× la mise pour un bonus déclenché en jeu normal ; 80× (le prix payé) pour un bonus acheté.</li>
   <li>La roue relève le total exactement jusqu'au plancher si elle tombe sur « sauvée ». Chance réelle mesurée sur ce jeu : environ <b id="oddsBuy">?</b> en achat, <b id="oddsBase">?</b> sur un bonus déclenché. Ce n'est pas un remboursement garanti.</li>
@@ -225,134 +306,192 @@ const SFX={
   upgrade:()=>{whoosh(.8,300,4500,.08);[0,2,4,5,7,9].forEach((n,i)=>chime(PENTA[n],1.2,.08,i*.08));boom(.14,.4,100)}
 };
 function sfx(name,arg){ try{ SFX[name](arg) }catch(e){} }
+const ZONE_CELLS={Horizon:[0,1,2,3,4].map(r=>[r,4]),Meridien:[0,1,2,3,4].map(r=>[2,r]),Quadrature:[[0,0],[4,0],[0,4],[4,4]],Firmament:[...Array(25).keys()].map(i=>[Math.floor(i/5),i%5])};
 const ZONES=[['Horizon','Ligne du bas',20],['Meridien','Colonne centrale',100],['Quadrature','Les 4 coins',1000],['Firmament','Ciel complet',10000]];
-
+// --- Réglages d'affichage ---
+let speed=1, turbo=false;
+const sl=ms=>sleep(ms*(turbo?.25:speed));
+// --- Les bonus : nom, couleur, icône, explication ---
+const KINDS={
+  constellation:{name:'Nuit des Constellations',col:'#f3c969',txt:'Des étoiles se posent chaque nuit. Les étoiles voisines se relient et montent de niveau.',
+    icon:'<g stroke="#f3c969" stroke-width="2" fill="none"><path d="M9 34 L22 16 L30 28 L40 10"/></g><g fill="#fff3c4"><circle cx="9" cy="34" r="4"/><circle cx="22" cy="16" r="4"/><circle cx="30" cy="28" r="4"/><circle cx="40" cy="10" r="4"/></g>'},
+  comet:{name:'Pluie de Comètes',col:'#5fd6ff',txt:'Chaque nuit, une comète traverse une ligne ou une colonne et pose une étoile sur chaque case libre.',
+    icon:'<path d="M6 42 L30 18" stroke="#5fd6ff" stroke-width="5" stroke-linecap="round" opacity=".5"/><path d="M12 38 L32 20" stroke="#bff0ff" stroke-width="3" stroke-linecap="round"/><circle cx="34" cy="16" r="8" fill="#e6fbff"/><circle cx="34" cy="16" r="12" fill="none" stroke="#5fd6ff" stroke-width="1.5" opacity=".6"/>'},
+  nova:{name:'Grande Nova',col:'#ffa63d',txt:'Chaque nuit, un bloc de 4 étoiles se pose d\'un coup.',
+    icon:'<g fill="#ffd27a"><path d="M24 2 L28 20 L46 24 L28 28 L24 46 L20 28 L2 24 L20 20 Z"/></g><circle cx="24" cy="24" r="6" fill="#fff"/><circle cx="24" cy="24" r="14" fill="none" stroke="#ffa63d" stroke-width="2" opacity=".7"/>'}
+};
+const kindOf=v=>String(v||'constellation').replace('+','');
+const isPlus=v=>String(v||'').endsWith('+');
+const setKind=v=>{curKind=kindOf(v); curPlus=isPlus(v); document.documentElement.style.setProperty('--bc',KINDS[curKind].col)};
+let curKind='constellation', curPlus=false;
+// --- Interface ---
+function cap(html,pop=true){const c=$('cap'); c.innerHTML='<span>'+html+'</span>'; if(pop){c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop')}}
+const banner=t=>cap(t);
 function buildBoard(){const b=$('base');b.innerHTML='';for(let r=0;r<4;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`b${c}_${r}`;b.appendChild(d)}}
+let skyVal={}, skyBase={};
 function buildSky(){const s=$('sky');s.innerHTML='';for(let r=0;r<5;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`s${c}_${r}`;s.appendChild(d)}
-  $('links').innerHTML='';
-  $('zones').innerHTML=ZONES.map(z=>`<div class="zone" id="z${z[0]}"><b>${z[2]}×</b>${z[0]}<br>${z[1]}</div>`).join('')}
-function show(board){ // board[reel] has 6 entries: pad,4 visible,pad
-  for(let c=0;c<5;c++)for(let r=0;r<4;r++){const el=$(`b${c}_${r}`);const s=board[c][r+1];el.className='cell drop'+(s.scatter?' scat':'');el.style.setProperty('--d',c*70+'ms');el.innerHTML=s.name==='ST'?`<div class="star">${starSvg}<small>${s.prize}×</small></div>`:(SYM[s.name]||(()=>''))()}}
-function view(sky){$('base').classList.toggle('hidden',sky);$('skywrap').classList.toggle('hidden',!sky);$('zones').classList.toggle('hidden',!sky)}
-function banner(t){$('banner').textContent=t}
-
-function drawStars(stars){
-  stars.forEach(s=>{const el=$(`s${s.reel}_${s.row}`);el.innerHTML=`<div class="star">${starSvg}<small>${(s.value/100)}×</small></div>`});
-}
-function drawLinks(cons){
+  $('links').innerHTML='';$('fx').innerHTML=''; skyVal={}; skyBase={};
+  $('zones').innerHTML=ZONES.map(z=>`<div class="zone" id="z${z[0]}"><b>${z[2]}×</b>${z[0]}<br>${z[1]}<i></i></div>`).join('')}
+function show(board){for(let c=0;c<5;c++)for(let r=0;r<4;r++){const el=$(`b${c}_${r}`);const s=board[c][r+1];el.className='cell drop'+(s.scatter?' scat':'');el.style.setProperty('--d',c*70+'ms');el.innerHTML=s.name==='ST'?`<div class="star">${starSvg}<small>${s.prize}×</small></div>`:(SYM[s.name]||(()=>''))()}}
+function viewBonus(on){$('base').classList.toggle('hidden',on);$('skywrap').classList.toggle('hidden',!on);$('zones').classList.toggle('hidden',!on);$('bhead').classList.toggle('hidden',!on);$('pips').classList.toggle('hidden',!on);$('stage').classList.toggle('bonus',on); if(!on) document.documentElement.style.setProperty('--bc','#f3c969')}
+const view=viewBonus;
+function countTo(el,from,to,ms,fmtf=v=>v.toFixed(1)+'×'){const t0=performance.now(); ms*=turbo?.25:speed; (function f(t){const k=Math.min(1,(t-t0)/Math.max(1,ms)); el.textContent=fmtf(from+(to-from)*(1-Math.pow(1-k,3))); if(k<1) requestAnimationFrame(f)})(t0)}
+let shownTotal=0;
+function setTotal(c,ms=700){const to=c/100; countTo($('btotal'),shownTotal,to,ms); shownTotal=to}
+function drawStar(el,value,cls=''){el.innerHTML=`<div class="star ${cls}">${starSvg}<small>${value}×</small></div>`}
+function paintSky(levels,fresh=new Set()){ // levels: [{reel,row,value}]
+  levels.forEach(s=>{const k=s.reel+','+s.row,v=s.value/100,el=$(`s${s.reel}_${s.row}`),was=skyVal[k]; skyVal[k]=v;
+    const isFresh=fresh.has(k), up=was!==undefined&&v>was;
+    if(isFresh||was===undefined||up) drawStar(el,v,(isFresh?'fresh ':'')+(up?'up':'')); else {const sm=el.querySelector('small'); if(sm) sm.textContent=v+'×'}})}
+function zoneProgress(){ZONES.forEach(z=>{const cells=ZONE_CELLS[z[0]],n=cells.filter(([c,r])=>skyVal[c+','+r]!==undefined).length;const el=$('z'+z[0]); el.querySelector('i').style.width=(100*n/cells.length)+'%'})}
+function buildPips(n){$('pips').innerHTML=Array.from({length:n},()=>'<i></i>').join('')}
+function setPip(night){[...$('pips').children].forEach((p,i)=>{p.className=i<night-1?'done':(i===night-1?'now':'')})}
+function setHead(plus){const k=KINDS[curKind]; $('bico').innerHTML=k.icon; $('bname').innerHTML=k.name+(plus?'+':'')+`<small>${plus?'Version supérieure : étoiles plus riches':'Bonus en cours'}</small>`}
+function drawLinks(cons){ // un arbre couvrant par constellation : lisible, sans la forêt de diagonales
   const g=$('links');g.innerHTML='';
   const p=(c,r)=>[(c+.5)*20,(r+.5)*20];
-  cons.forEach((comp,i)=>{const set=new Set(comp.map(x=>x.reel+','+x.row));
-    comp.forEach(a=>comp.forEach(b=>{if((a.reel<b.reel||(a.reel==b.reel&&a.row<b.row))&&Math.abs(a.reel-b.reel)<=1&&Math.abs(a.row-b.row)<=1){
-      const [x1,y1]=p(a.reel,a.row),[x2,y2]=p(b.reel,b.row);
-      g.insertAdjacentHTML('beforeend',`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${COL[i%4]}" stroke-width="1.1" stroke-linecap="round" opacity=".9"/>`)}}))});
-}
+  cons.forEach((comp,i)=>{
+    const key=c=>c.reel+','+c.row, seen=new Set([key(comp[0])]), queue=[comp[0]];
+    while(queue.length){const a=queue.shift();
+      const nbs=comp.filter(b=>!seen.has(key(b))&&Math.abs(a.reel-b.reel)<=1&&Math.abs(a.row-b.row)<=1).sort((u,v)=>(Math.abs(u.reel-a.reel)+Math.abs(u.row-a.row))-(Math.abs(v.reel-a.reel)+Math.abs(v.row-a.row)));
+      nbs.forEach(b=>{seen.add(key(b)); queue.push(b); const [x1,y1]=p(a.reel,a.row),[x2,y2]=p(b.reel,b.row);
+        g.insertAdjacentHTML('beforeend',`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${COL[i%4]}" stroke-width="1.4" stroke-linecap="round" opacity=".95"/>`)})}
+  })}
+// --- Cartes (présentation / résumé) ---
+function showCard(html){const c=$('card'); c.innerHTML=html; c.classList.remove('hidden')}
+function hideCard(){$('card').classList.add('hidden')}
+async function cardWait(ms){let done=false; const c=$('card'); const h=()=>{done=true}; c.addEventListener('click',h,{once:true}); const t0=performance.now(); while(!done&&performance.now()-t0<ms*(turbo?.25:speed)) await sleep(60); c.removeEventListener('click',h)}
+async function introCard(nights){const k=KINDS[curKind];
+  showCard(`<svg class="cico" viewBox="0 0 48 48">${k.icon}</svg>${curPlus?'<div class="tag">VERSION SUPÉRIEURE</div>':''}<h2>${k.name}${curPlus?'+':''}</h2><p>${k.txt}</p><div class="rows"><b>${nights}</b> nuits${curPlus?' · étoiles plus riches':''}</div><div class="tap">Touchez pour passer</div>`);
+  sfx(curKind); await cardWait(3600); hideCard()}
+async function summaryCard(total,bet){
+  showCard(`<div class="tag">BONUS TERMINÉ</div><h2>${KINDS[curKind].name}${curPlus?'+':''}</h2><div class="big" id="sumbig">0.0×</div><div class="rows" id="sumrows"></div><div class="tap">Touchez pour continuer</div>`);
+  countTo($('sumbig'),0,total/100,1400); $('sumrows').innerHTML=`<b>${fmt(total*bet)}</b> gagnés sur une mise de ${bet.toFixed(2)}`; sfx(total>=8000?'upgrade':'win'); await cardWait(3200); hideCard()}
+// --- Roues au-dessus de la grille ---
+const RING_COL={constellation:'#2b3a86',comet:'#14607a',nova:'#8a3a1f',aurora:'#c89532'};
+function ringPath(a0,a1,r0,r1){const p=(a,r)=>{const t=(a-90)*Math.PI/180;return [r*Math.cos(t),r*Math.sin(t)]};const [x0,y0]=p(a0,r1),[x1,y1]=p(a1,r1),[x2,y2]=p(a1,r0),[x3,y3]=p(a0,r0),L=(a1-a0)>180?1:0;
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r1} ${r1} 0 ${L} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} L${x2.toFixed(2)} ${y2.toFixed(2)} A${r0} ${r0} 0 ${L} 0 ${x3.toFixed(2)} ${y3.toFixed(2)} Z`}
+function wheelSegs(wheel,mode){const o=((window.WHEEL_ODDS||{})[mode])||{constellation:.35,comet:.25,nova:.25,aurora:.15};
+  return wheel===1?[['constellation',o.constellation],['comet',o.comet],['nova',o.nova],['aurora',o.aurora]]:[['constellation+',.4],['comet+',.3],['nova+',.3]]}
+const LABEL={constellation:'CONSTELL.',comet:'COMÈTES',nova:'NOVA',aurora:'AURORE','constellation+':'CONSTELL.+','comet+':'COMÈTES+','nova+':'NOVA+'};
+function drawRing(id,segs,r0,r1){let a=0; const arcs=segs.map(([k,p])=>{const s=a;a+=p*360;return {k,s,e:a}}); const rm=(r0+r1)/2;
+  $(id).innerHTML=arcs.map(x=>{const base=x.k.replace('+',''),mid=(x.s+x.e)/2,fill=x.k==='aurora'?'url(#rim)':RING_COL[base]+(x.k.endsWith('+')?'':'');
+    const pct=Math.round((x.e-x.s)/3.6); return `<g class="seg" data-k="${x.k}"><path d="${ringPath(x.s,x.e,r0,r1)}" fill="${fill}" stroke="#0a0e1f" stroke-width="1.5"/><g transform="rotate(${mid.toFixed(1)})"><text x="0" y="${-rm-1}" text-anchor="middle" font-size="${x.k==='aurora'?9.5:8}" fill="${x.k==='aurora'?'#3a2f14':'#fff'}">${LABEL[x.k]}</text><text x="0" y="${-rm+9}" text-anchor="middle" font-size="7" fill="${x.k==='aurora'?'#3a2f14':'#cfd8ff'}">${pct} %</text></g></g>`}).join('');
+  return arcs}
+let ringArcs={1:[],2:[]}, ringAngle={1:0,2:0};
+function initDock(mode){ if(!window.WHEEL_ODDS){$('dock').classList.add('hidden');return}
+  $('dock').classList.remove('hidden'); ringArcs[1]=drawRing('ring1',wheelSegs(1,mode),20,68); ringArcs[2]=drawRing('ring2',wheelSegs(2,mode),72,105);
+  ringAngle={1:0,2:0}; ['ring1','ring2'].forEach(i=>{$(i).classList.add('idle');$(i).style.transform='rotate(0deg)'});
+  const pc=(arr)=>arr.map(x=>`<span>${LABEL[x.k].replace('.','')}  ${Math.round((x.e-x.s)/3.6)} %</span>`).join('');
+  $('dockcap').innerHTML='<span style="border-color:#f3c969;color:#ffe39a">Saisons</span>'+pc(ringArcs[1])+'<span style="border-color:#f3c969;color:#ffe39a">Aurore</span>'+pc(ringArcs[2])}
+async function spinRing(n,target){const arcs=ringArcs[n], x=arcs.find(a=>a.k===target), mid=(x.s+x.e)/2+(Math.random()-.5)*(x.e-x.s)*.55, el=$('ring'+n);
+  const dir=n===1?1:-1, turns=5, cur=ringAngle[n]; const to=Math.ceil(cur/360)*360+dir*turns*360-dir*mid + (dir<0?0:0);
+  const final=dir*turns*360-mid*dir; // aligne mid sous le pointeur
+  const angle=(n===1? (turns*360-mid) : (-turns*360-mid)); ringAngle[n]=angle;
+  el.classList.remove('idle'); el.getBoundingClientRect(); el.style.transitionDuration=(4.2*(turbo?.3:speed))+'s'; el.style.transform=`rotate(${angle}deg)`;
+  const dur=4200*(turbo?.3:speed); let t=0,step=70; while(t<dur*.9){setTimeout(()=>sfx('tick'),t);t+=step;step*=1.06}
+  await sleep(dur+250); sfx(target==='aurora'?'upgrade':'stop');
+  const g=el.querySelector(`[data-k="${target}"]`); if(g) g.classList.add('hit')}
+async function spinSeasons(e){
+  const mode=window.__mode||'base'; initDock(mode); setKind(e.season==='aurora'?e.variant:e.season);
+  cap('<em>Roue des Saisons</em> : elle choisit ton bonus…'); await sl(500);
+  await spinRing(1,e.season);
+  if(e.wheel===2){cap('<em>AURORE !</em> La roue de l\'Aurore choisit la version supérieure…'); await sl(900); setKind(e.variant); await spinRing(2,e.variant)}
+  cap(`Bonus gagné : <em>${KINDS[curKind].name}${curPlus?'+':''}</em>`); await sl(1100)}
+// --- Roue de sauvegarde (fin de bonus), inchangée ---
 function wheelPath(i,n,r){const a0=(i*360/n-90)*Math.PI/180,a1=((i+1)*360/n-90)*Math.PI/180;
   return `M0 0 L${(r*Math.cos(a0)).toFixed(2)} ${(r*Math.sin(a0)).toFixed(2)} A${r} ${r} 0 0 1 ${(r*Math.cos(a1)).toFixed(2)} ${(r*Math.sin(a1)).toFixed(2)} Z`}
-// La roue est dessinée avec les VRAIES probabilités mesurées sur le jeu (window.SAVER_ODDS), pas avec des segments inventés.
 function wheelOdds(e){const o=(window.SAVER_ODDS||{})[e.floor>=6000?'bonus':'base']||{p_save_given_spin:.05};return o.p_save_given_spin}
 async function spinWheel(e){
-  const n=40, p=wheelOdds(e), k=Math.max(1,Math.round(p*n)), svg=$('wheelsvg'), box=$('wheelbox'), msg=$('wheelmsg');
+  const n=40, p=wheelOdds(e), k=Math.max(1,Math.round(p*n)), svg=$('wheelsvg'), box=$('wheelbox'), msg=$('wheelmsg'); $('wheeltitle').textContent='Roue de sauvegarde';
   const savedIdx=[...Array(k)].map((_,m)=>Math.floor(m*n/k+n/(2*k)));
   const others=[...Array(n).keys()].filter(x=>!savedIdx.includes(x));
   const pool=e.saved?savedIdx:others, segment=pool[Math.floor(Math.random()*pool.length)];
   svg.style.transition='none'; svg.style.transform='rotate(0deg)';
-  svg.innerHTML=[...Array(n).keys()].map(i=>{const saved=savedIdx.includes(i), mid=((i+.5)*360/n-90)*Math.PI/180, lx=70*Math.cos(mid), ly=70*Math.sin(mid);
-    return `<path d="${wheelPath(i,n,96)}" fill="${saved?'url(#rim)':(i%2?'#18204f':'#242f6a')}" stroke="#0a0e1f" stroke-width="1.2"/>`+
-      ''}).join('');
-  msg.textContent=`Sous ${(e.floor/100).toFixed(0)}× : les segments dorés relèvent le bonus à ${(e.floor/100).toFixed(0)}×. Chance réelle ≈ ${(p*100).toFixed(1)} %`;
-  msg.style.color='var(--ink)';
-  box.classList.remove('hidden'); await sleep(900);
-  let t=0, step=60; while(t<3200){ setTimeout(()=>sfx('tick'),t); t+=step; step*=1.07 }
-  svg.getBoundingClientRect(); svg.style.transition=''; svg.style.transform=`rotate(${360*5-(segment+.5)*360/n}deg)`;
-  await sleep(3500);
-  sfx(e.saved?'saved':'empty');
+  svg.innerHTML=[...Array(n).keys()].map(i=>`<path d="${wheelPath(i,n,96)}" fill="${savedIdx.includes(i)?'url(#rim)':(i%2?'#18204f':'#242f6a')}" stroke="#0a0e1f" stroke-width="1.2"/>`).join('');
+  msg.textContent=`Total sous ${(e.floor/100).toFixed(0)}× : les segments dorés le relèvent à ${(e.floor/100).toFixed(0)}×. Chance réelle ≈ ${(p*100).toFixed(1)} %`; msg.style.color='var(--ink)';
+  box.classList.remove('hidden'); await sl(900);
+  let t=0, step=60; while(t<3200*speed){ setTimeout(()=>sfx('tick'),t); t+=step; step*=1.07 }
+  svg.getBoundingClientRect(); svg.style.transition=`transform ${3.2*speed}s cubic-bezier(.12,.75,.12,1)`; svg.style.transform=`rotate(${360*5-(segment+.5)*360/n}deg)`;
+  await sl(3500); sfx(e.saved?'saved':'empty');
   msg.textContent=e.saved?`${e.floor>=8000?'Mise sauvée !':'Minimum de bonus atteint !'} +${(e.topUp/100).toFixed(1)}×  → total ${(e.total/100).toFixed(1)}×`:'Pas de sauvegarde cette fois';
-  msg.style.color=e.saved?'var(--gold)':'var(--dim)';
-  await sleep(2200); box.classList.add('hidden');
-}
-// Roues avant le bonus (Roue des Saisons, Roue de l'Aurore). Les parts des segments sont les chances réelles mesurées (window.WHEEL_ODDS).
-const SEASONS={constellation:['Constellations','#2b3a86'],comet:['Comètes','#1f5f7a'],nova:['Nova','#8a3a1f'],aurora:['AURORE','url(#rim)'],'constellation+':['Constellations+','#2b3a86'],'comet+':['Comètes+','#1f5f7a'],'nova+':['Nova+','#8a3a1f']};
-const SEASON_TXT={constellation:'Nuit des Constellations : des étoiles se posent chaque nuit et se relient','comet':'Pluie de Comètes : chaque nuit une comète traverse une ligne ou une colonne et pose une étoile sur chaque case libre',nova:'Grande Nova : chaque nuit un bloc de 4 étoiles se pose d\'un coup','constellation+':'Constellations+ : étoiles plus riches','comet+':'Comètes+ : étoiles de comète plus riches, une nuit de plus','nova+':'Nova+ : étoiles du bloc plus riches'};
-let curKind='constellation';
-function wheelSegs(wheel,mode){
-  const o=((window.WHEEL_ODDS||{})[mode])||{constellation:.35,comet:.25,nova:.25,aurora:.15};
-  return wheel===1?[['constellation',o.constellation],['comet',o.comet],['nova',o.nova],['aurora',o.aurora]]:[['constellation+',.4],['comet+',.3],['nova+',.3]];
-}
-async function spinSeasonOnce(title,segs,target,nightsTxt){
-  const svg=$('wheelsvg'), box=$('wheelbox'), msg=$('wheelmsg'); $('wheeltitle').textContent=title;
-  let a=0; const arcs=segs.map(([k,p])=>{const s=a; a+=p*360; return {k,s,e:a}});
-  const tgt=arcs.find(x=>x.k===target), mid=(tgt.s+tgt.e)/2;
-  const pt=(deg,r)=>{const t=(deg-90)*Math.PI/180;return [r*Math.cos(t),r*Math.sin(t)]};
-  svg.style.transition='none'; svg.style.transform='rotate(0deg)';
-  svg.innerHTML=arcs.map(x=>{const [x0,y0]=pt(x.s,96),[x1,y1]=pt(x.e,96),large=(x.e-x.s)>180?1:0,[lx,ly]=pt((x.s+x.e)/2,62);
-    return `<path d="M0 0 L${x0.toFixed(2)} ${y0.toFixed(2)} A96 96 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z" fill="${SEASONS[x.k][1]}" stroke="#0a0e1f" stroke-width="1.2"/>`+
-      `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="${x.k==='aurora'?'#3a2f14':'#fff'}" font-size="9" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${((x.s+x.e)/2).toFixed(1)} ${lx.toFixed(1)} ${ly.toFixed(1)})">${SEASONS[x.k][0]}</text>`}).join('');
-  msg.textContent='Chances : '+arcs.map(x=>SEASONS[x.k][0]+' '+Math.round((x.e-x.s)/3.6)+' %').join(' · '); msg.style.color='var(--ink)';
-  box.classList.remove('hidden'); await sleep(900);
-  let t=0, step=60; while(t<3200){ setTimeout(()=>sfx('tick'),t); t+=step; step*=1.07 }
-  const jitter=(Math.random()-.5)*(tgt.e-tgt.s)*.6;
-  svg.getBoundingClientRect(); svg.style.transition=''; svg.style.transform=`rotate(${360*5-(mid+jitter)}deg)`;
-  await sleep(3500); sfx(target==='aurora'?'upgrade':'stop');
-  msg.textContent=target==='aurora'?'AURORE ! Deuxième roue : versions supérieures':(SEASON_TXT[target]||''); msg.style.color='var(--gold)';
-  await sleep(1900);
-}
-async function spinSeasons(e){
-  const mode=(window.__mode||'base');
-  await spinSeasonOnce('Roue des Saisons',wheelSegs(1,mode),e.season,0);
-  if(e.wheel===2) await spinSeasonOnce("Roue de l'Aurore",wheelSegs(2,mode),e.variant,0);
-  curKind=e.variant.replace('+',''); const T={constellation:['#0f1a45','#1f2a5c'],comet:['#0f3a4a','#1f6a80'],nova:['#4a2310','#8a4a1f']}[curKind]||['#0f1a45','#1f2a5c']; const sk=document.documentElement.style; sk.setProperty('--skyc',e.variant.endsWith('+')?T[1]:T[0]); sk.setProperty('--skyb',T[1]);
-  $('wheelbox').classList.add('hidden'); $('wheeltitle').textContent='Roue de sauvegarde';
-}
+  msg.style.color=e.saved?'var(--gold)':'var(--dim)'; await sl(2200); box.classList.add('hidden')}
+// --- Effets des bonus ---
+function fxComet(stars){const fx=$('fx'); if(!stars.length) return 0;
+  const sameRow=stars.every(s=>s.row===stars[0].row), sameCol=stars.every(s=>s.reel===stars[0].reel);
+  const el=document.createElement('div'); el.className='comet'; fx.appendChild(el); const d=800*(turbo?.25:speed);
+  if(stars.length>1?sameRow:true){const r=stars[0].row; el.style.top=(r*20+10-3.5)+'%'; el.animate([{left:'-24%',opacity:0},{opacity:1,offset:.15},{left:'104%',opacity:1}],{duration:d,easing:'ease-in'})}
+  else {const c=stars[0].reel; el.style.left=(c*20+10-11)+'%'; el.style.width='22%'; el.style.transformOrigin='center'; el.style.transform='rotate(90deg)'; el.animate([{top:'-14%',opacity:0},{opacity:1,offset:.15},{top:'104%',opacity:1}],{duration:d,easing:'ease-in'})}
+  setTimeout(()=>el.remove(),d+50); return d}
+function fxNova(stars){const fx=$('fx'); if(!stars.length) return 0;
+  const cs=stars.map(s=>s.reel),rs=stars.map(s=>s.row), cx=(Math.min(...cs)+Math.max(...cs)+1)/2*20, cy=(Math.min(...rs)+Math.max(...rs)+1)/2*20;
+  const el=document.createElement('div'); el.className='ring'; el.style.left=(cx-8)+'%'; el.style.top=(cy-8)+'%'; el.style.width='16%'; el.style.height='16%'; fx.appendChild(el);
+  const d=800*(turbo?.25:speed); el.animate([{transform:'scale(.2)',opacity:1},{transform:'scale(4.2)',opacity:0}],{duration:d,easing:'ease-out'}); setTimeout(()=>el.remove(),d+50); return d*.45}
+// --- Lecture d'un livre ---
 async function playEvents(book,bet){
-  let nights=0, total=0;
+  let night=0, total=0, extra={stars:0,zones:0};
+  window.__mode=window.__mode||'base';
   for(const e of book.events){
     switch(e.type){
-    case 'reveal': sfx('reveal'); view(false); show(e.board); banner(''); await sleep(450); break;
-    case 'winInfo': sfx('win'); e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); banner('Gain '+fmt(e.totalWin*bet)+'  ×'+(e.totalWin/100)); await sleep(900); break;
-    case 'freeSpinTrigger': sfx('trigger'); {const sw=book.events.find(x=>x.type==='seasonWheel'); banner(sw?'BONUS DÉCLENCHÉ — la roue décide':'NUIT DES CONSTELLATIONS — '+e.totalFs+' nuits')} document.querySelectorAll('.scat').forEach(x=>x.classList.add('win')); await sleep(1400); buildSky(); view(true); break;
-    case 'nightStart': sfx(curKind==='comet'?'comet':curKind==='nova'?'nova':'night'); nights=e.night; banner(`Nuit ${e.night} / ${e.totalNights}`); await sleep(350); break;
-    case 'starsLanded': e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*(curKind==='comet'?70:120))); if(curKind==='comet'){e.stars.forEach((st,i)=>setTimeout(()=>drawStars([st]),i*90)); await sleep(150+e.stars.length*90)} else {drawStars(e.stars); if(curKind==='nova'){$('sky').classList.add('flash');setTimeout(()=>$('sky').classList.remove('flash'),700)} await sleep(600)} break;
-    case 'constellationsUpdate': if(e.constellations.length) sfx('link'); drawStars(e.stars); drawLinks(e.constellations); if(e.conjunctions) banner(`Conjonction ×${e.conjunctions} !`); await sleep(650); break;
-    case 'zonesComplete': sfx('zone'); e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); banner('PALIER '+e.zones.map(z=>z.name+' '+(z.win/100)+'×').join(' + ')); await sleep(1300); break;
-    case 'nightPayout': total=e.total; banner(`Nuit ${nights} : +${(e.amount/100).toFixed(1)}×  (total ${(e.total/100).toFixed(1)}×)`); await sleep(500); break;
-    case 'starPrizes': sfx('win'); e.stars.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win')); banner('Étoiles : +'+(e.total/100).toFixed(1)+'×'); await sleep(900); break;
-    case 'seasonWheel': await spinSeasons(e); break;
-    case 'saverWheel': await spinWheel(e); break;
-    case 'freeSpinEnd': banner('Fin du bonus : '+(e.amount/100).toFixed(1)+'×'); await sleep(1200); break;
+    case 'reveal': sfx('reveal'); viewBonus(false); show(e.board); cap('Bonne chance'); await sl(450); break;
+    case 'winInfo': sfx('win'); e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); cap('Gain <em>'+fmt(e.totalWin*bet)+'</em> &nbsp;×'+(e.totalWin/100)); await sl(1000); break;
+    case 'starPrizes': sfx('win'); e.stars.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win')); cap('Étoiles à valeur : <em>+'+(e.total/100).toFixed(1)+'×</em>'); await sl(1000); break;
+    case 'freeSpinTrigger': sfx('trigger'); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win'));
+      cap(book.events.some(x=>x.type==='seasonWheel')?'<em>BONUS !</em> Les roues choisissent ton bonus':'<em>BONUS !</em> Nuit des Constellations — '+e.totalFs+' nuits'); await sl(1500);
+      if(!book.events.some(x=>x.type==='seasonWheel')){setKind('constellation'); buildSky(); shownTotal=0; $('btotal').textContent='0.0×'; setHead(false); buildPips(e.totalFs); viewBonus(true); await introCard(e.totalFs)}
+      break;
+    case 'seasonWheel': await spinSeasons(e); buildSky(); shownTotal=0; $('btotal').textContent='0.0×'; setHead(curPlus); buildPips(e.totalNights); viewBonus(true); await introCard(e.totalNights); break;
+    case 'nightStart': night=e.night; setPip(e.night); cap(`<em>Nuit ${e.night}</em> sur ${e.totalNights}`); sfx('night'); await sl(600); break;
+    case 'starsLanded': {
+      const fresh=new Set(e.stars.map(s=>s.reel+','+s.row)); $('sky').classList.add('focus'); extra.stars+=e.stars.length;
+      if(curKind==='comet'&&!e.stars.length){cap('☄ La comète ne trouve aucune case libre'); sfx('comet'); await sl(900)}
+      else if(curKind==='comet'){ const dir=e.stars.every(s=>s.row===e.stars[0].row)?`la ligne ${e.stars[0].row+1}`:`la colonne ${e.stars[0].reel+1}`; cap(`☄ Une comète traverse <em>${dir}</em> : ${e.stars.length} étoile${e.stars.length>1?'s':''}`); sfx('comet'); const d=fxComet(e.stars); await sleep(d*.55);
+        for(const [i,st] of e.stars.entries()){drawStar($(`s${st.reel}_${st.row}`),st.value/100,'fresh'); skyVal[st.reel+','+st.row]=st.value/100; sfx('star',st.value/100); await sl(130)} await sl(500)}
+      else if(curKind==='nova'){ cap(`✦ <em>Nova !</em> Un bloc de ${e.stars.length} étoiles se pose`); sfx('nova'); const d=fxNova(e.stars); await sleep(d);
+        e.stars.forEach((st,i)=>{setTimeout(()=>sfx('star',st.value/100),i*90)}); paintSky(e.stars.map(s=>({reel:s.reel,row:s.row,value:s.value})),fresh); await sl(900)}
+      else { cap(`✦ <em>${e.stars.length?e.stars.length:'Aucune'}</em> étoile${e.stars.length>1?'s':''} se pose${e.stars.length>1?'nt':''}`); e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*140)); paintSky(e.stars.map(s=>({reel:s.reel,row:s.row,value:s.value})),fresh); await sl(700+e.stars.length*140)}
+      zoneProgress(); break}
+    case 'constellationsUpdate': {
+      const sizes=e.constellations.map(c=>c.length).sort((a,b)=>b-a); $('sky').classList.remove('focus');
+      const before={...skyVal}; paintSky(e.stars,new Set()); drawLinks(e.constellations); zoneProgress();
+      const ups=Object.keys(skyVal).filter(k=>before[k]!==undefined&&skyVal[k]>before[k]).length;
+      if(sizes.length){sfx('link'); cap(`🔗 Constellation de <em>${sizes[0]} étoiles</em>${ups?` : ${ups} étoile${ups>1?'s':''} gagne${ups>1?'nt':''} de la valeur`:''}${e.conjunctions?`<br>Conjonction ×${e.conjunctions} : une étoile relie deux constellations`:''}`)} 
+      await sl(sizes.length?1500:500); break}
+    case 'zonesComplete': sfx('zone'); extra.zones+=e.zones.reduce((a,z)=>a+z.win,0); e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); cap('🏆 PALIER <em>'+e.zones.map(z=>z.name+' +'+(z.win/100)+'×').join(' et ')+'</em>'); await sl(1700); break;
+    case 'nightPayout': total=e.total; setTotal(e.total,800); cap(e.amount>0?`Nuit ${night} : <em>+${(e.amount/100).toFixed(1)}×</em>`:`Nuit ${night} : rien de nouveau`); if(e.amount>0) sfx('win'); await sl(900); break;
+    case 'saverWheel': cap('Roue de sauvegarde…'); await spinWheel(e); setTotal(e.total,500); break;
+    case 'freeSpinEnd': await summaryCard(e.amount,bet); viewBonus(false); break;
     case 'finalWin': break;
     }
   }
 }
 async function play(kind){
-  if(busy)return; busy=true; $('spin').disabled=$('buy').disabled=true;
+  if(busy)return; busy=true; $('spin').disabled=$('buy').disabled=true; turbo=false; document.body.classList.add('bonusing'); $('stage').scrollIntoView({block:'start'});
   const bet=parseFloat($('betsel').value); $('betv').textContent=bet.toFixed(2);
   const cost=kind==='bonus'?80*bet:bet;
-  if(bal<cost){banner('Solde insuffisant');busy=false;$('spin').disabled=$('buy').disabled=false;return}
-  bal-=cost; $('bal').textContent=bal.toFixed(2);
-  window.__mode=kind; curKind='constellation';
+  if(bal<cost){cap('Solde insuffisant');busy=false;$('spin').disabled=$('buy').disabled=false;return}
+  bal-=cost; $('bal').textContent=bal.toFixed(2); window.__mode=kind; setKind('constellation'); initDock(kind);
   let pool=BOOKS[kind]; const qk=new URLSearchParams(location.search).get('kind'); if(qk){const f=pool.filter(b=>b.events.some(e=>e.type==='seasonWheel'&&e.variant===qk)); if(f.length) pool=f}
   const book=pool[Math.floor(Math.random()*pool.length)];
   await playEvents(book,bet);
   const win=book.win/100*bet; bal+=win;
   $('bal').textContent=bal.toFixed(2); $('last').textContent=win.toFixed(2);
-  banner(win>0?`Gain total : ${win.toFixed(2)}  (${(book.win/100).toFixed(2)}×)`:'Pas de gain');
-  await sleep(800); view(false); busy=false; $('spin').disabled=$('buy').disabled=false;
+  cap(win>0?`Gain total : <em>${win.toFixed(2)}</em> &nbsp;(×${(book.win/100).toFixed(2)})`:'Pas de gain');
+  await sl(700); viewBonus(false); document.body.classList.remove('bonusing'); busy=false; $('spin').disabled=$('buy').disabled=false;
 }
-buildBoard(); buildSky();
+buildBoard(); buildSky(); setKind('constellation'); initDock('base');
 try{const o=window.SAVER_ODDS||{}, pc=x=>Math.round(x*100)+' %'; if(o.bonus){$('oddsBuy').textContent=pc(o.bonus.p_save_given_spin);$('spinBuy').textContent=pc(o.bonus.p_spin_given_bonus);$('oddsBase').textContent=pc(o.base.p_save_given_spin);$('spinBase').textContent=pc(o.base.p_spin_given_bonus)}}catch(e){}
-// preview board on load
 (function(){const b=BOOKS.base.find(x=>x.events[0].type==='reveal'); show(b.events[0].board)})();
 $('spin').onclick=()=>play('base'); $('buy').onclick=()=>play('bonus');
+$('stage').addEventListener('click',()=>{if(busy) turbo=true});
+$('speedbtn').onclick=()=>{speed=speed===1?.5:1; $('speedbtn').textContent='Vitesse : '+(speed===1?'normale':'rapide'); $('speedbtn').classList.toggle('on',speed!==1)};
 $('rulesbtn').onclick=()=>$('rules').classList.remove('hidden'); $('rulesclose').onclick=()=>$('rules').classList.add('hidden');
 function paintMute(){ $('mutebtn').textContent='Son : '+(muted?'coupé':'activé') }
 $('mutebtn').onclick=()=>{ muted=!muted; try{localStorage.setItem('sv_muted',muted?'1':'0')}catch(e){} paintMute(); if(!muted) sfx('win') };
 paintMute();
-// query helpers for automated screenshots
 const q=new URLSearchParams(location.search);
+if(q.get('fast')) speed=.5;
 if(q.get('auto')==='bonus'){setTimeout(()=>play('bonus'),300)}
-if(q.get('auto')==='season'){const b=BOOKS.base.find(x=>x.events.some(e=>e.type==='seasonWheel'&&e.wheel===2)); const e=b.events.find(e=>e.type==='seasonWheel'); buildSky(); view(true); setTimeout(()=>spinSeasons(e),200)}
-if(q.get('auto')==='wheel'){const b=BOOKS.base.find(x=>x.events.some(e=>e.type==='saverWheel'&&e.saved)); const e=b.events.find(e=>e.type==='saverWheel'); buildSky(); view(true); setTimeout(()=>spinWheel(e),200)}
+if(q.get('auto')==='season'){const b=BOOKS.base.find(x=>x.events.some(e=>e.type==='seasonWheel'&&e.wheel===2)); const e=b.events.find(e=>e.type==='seasonWheel'); setTimeout(()=>spinSeasons(e),300)}
+if(q.get('auto')==='wheel'){const b=BOOKS.base.find(x=>x.events.some(e=>e.type==='saverWheel'&&e.saved)); const e=b.events.find(e=>e.type==='saverWheel'); buildSky(); viewBonus(true); setTimeout(()=>spinWheel(e),200)}
 </script>
-</body>
-</html>

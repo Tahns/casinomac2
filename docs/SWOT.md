@@ -1,5 +1,17 @@
 # SWOT — Stellar Vigil
 
+## v20 — itération 18 (2026-10-12) : interface refaite, roues au-dessus de la grille
+
+**Fait et vérifié** (demande : animations et bonus difficiles à suivre ; roues au-dessus de la slot comme sur la capture)
+- **Roues en arc au-dessus de la grille**, comme sur la capture : anneau intérieur = Roue des Saisons, anneau extérieur = Roue de l'Aurore, aiguille fixe, pourcentages réels écrits sur chaque segment.
+- **Bonus lisibles** : carte de présentation (nom, règle en une phrase), bandeau avec nom et total animé, barre de nuits, **légende en gros à chaque étape** (« Une comète traverse la colonne 3 : 5 étoiles », « Constellation de 6 étoiles », « PALIER Méridien +100× »), nouvelles étoiles entourées d'un halo, flèche verte quand une étoile gagne de la valeur, jauges de progression des paliers, comète animée, onde de Nova, liens dessinés en arbre (plus de forêt de diagonales), carte de résumé avec total qui monte. Bouton **vitesse** et **toucher pour accélérer**.
+- Vérifié : captures 390 px, 6 types de bonus joués en accéléré sans erreur, 6 tests démo verts.
+
+### Faiblesses (restantes)
+- Sons non écoutés par moi ; symbole déclencheur spécial non fait ; roues non adoptées dans le jeu principal ; brevets (n°16, risque accru) ; art IA non vérifié.
+
+---
+
 ## v19 — itération 17 (2026-10-12) : trois bonus différents, deux roues, nouveaux sons
 
 **Fait et mesuré** (demande de l'utilisateur après capture de Huff N' Puff : deux roues empilées menant à des bonus différents et à leurs versions Super)
