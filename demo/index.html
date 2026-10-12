@@ -405,6 +405,8 @@ async function summaryCard(total,bet){
 // --- Roues au-dessus de la grille ---
 const RING_COL={constellation:'#2b3a86',comet:'#14607a',nova:'#8a3a1f',cross:'#5a2f86',rain:'#1b6b4c',eclipse:'#7a2f3a',galaxy:'#86306a'};
 const KIND_ORDER=['constellation','comet','nova','cross','rain','eclipse','galaxy'];
+function ringPath(s,e,r0,r1){const P=(a,r)=>{a=a*Math.PI/180;return (r*Math.sin(a)).toFixed(2)+' '+(-r*Math.cos(a)).toFixed(2)},L=(e-s)>180?1:0;
+  return `M${P(s,r1)} A${r1} ${r1} 0 ${L} 1 ${P(e,r1)} L${P(e,r0)} A${r0} ${r0} 0 ${L} 0 ${P(s,r0)} Z`}
 function wheelSegs(wheel,mode){const W=(window.WHEEL_ODDS||{})[mode]||{};
   const o1=Object.assign({constellation:.26,comet:.15,nova:.15,cross:.13,rain:.13,eclipse:.10,galaxy:.08},W.kinds||{});
   const o2=Object.assign({1:.6,2:.3,3:.1},W.tiers||{});
@@ -432,7 +434,7 @@ async function spinRing(n,target){const arcs=ringArcs[n], x=arcs.find(a=>a.k===t
   const dir=n===1?1:-1, turns=5; driftOn=false;
   const cur=ringAngle[n], need=(((-mid-cur)%360)+360)%360; // angle restant pour aligner mid sous le pointeur
   const angle=dir>0? cur+need+turns*360 : cur-((360-need)%360)-turns*360; ringAngle[n]=angle;
-  el.classList.remove('idle'); el.getBoundingClientRect(); el.style.transitionDuration=(4.2*(turbo?.3:speed))+'s'; el.style.transform=`rotate(${angle}deg)`;
+  el.classList.remove('idle'); el.getBoundingClientRect(); el.style.transition='transform '+(4.2*(turbo?.3:speed))+'s cubic-bezier(.1,.7,.1,1)'; el.style.transform=`rotate(${angle}deg)`;
   const dur=4200*(turbo?.3:speed); let t=0,step=70; while(t<dur*.9){setTimeout(()=>sfx('tick'),t);t+=step;step*=1.06}
   await sleep(dur+250); sfx(target==='tier3'?'upgrade':'stop');
   const g=el.querySelector(`[data-k="${target}"]`); if(g) g.classList.add('hit')}
@@ -521,7 +523,7 @@ async function play(kind){
   const cost=kind==='bonus'?80*bet:bet;
   if(bal<cost){cap('Solde insuffisant');busy=false;$('spin').disabled=$('buy').disabled=false;return}
   bal-=cost; $('bal').textContent=bal.toFixed(2); window.__mode=kind; setKind('constellation'); initDock(kind);
-  let pool=BOOKS[kind]; const qk=new URLSearchParams(location.search).get('kind'); if(qk){const f=pool.filter(b=>b.events.some(e=>e.type==='seasonWheel'&&e.variant===qk)); if(f.length) pool=f}
+  let pool=BOOKS[kind]; const qk=new URLSearchParams(location.search).get('kind'); if(qk){const f=pool.filter(b=>b.events.some(e=>e.type==='seasonWheel'&&kindOf(e.variant)===qk)); if(f.length) pool=f}
   const book=pool[Math.floor(Math.random()*pool.length)];
   await playEvents(book,bet);
   const win=book.win/100*bet; bal+=win;
