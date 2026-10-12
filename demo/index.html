@@ -162,6 +162,62 @@
   .cell .strip{position:absolute;left:0;right:0;display:flex;flex-direction:column;will-change:transform}
   .cell .si{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
   .cell .si .star{animation:none}
+  /* ===== Menu v3 : pupitre de commande, suspense, célébrations ===== */
+  .hud{gap:10px}
+  .hud div{position:relative;border-radius:14px;padding:9px 12px;background:linear-gradient(#1a2258,#0e1335);border:1px solid #6b5a2e;box-shadow:inset 0 1px 0 #ffffff1c,0 4px 14px #0008}
+  .hud b{color:#c9b57a}
+  .hud span{font-size:20px;font-variant-numeric:tabular-nums;color:#fff3c4;text-shadow:0 0 10px #f3c96955}
+  .hud span.bump{animation:bump .5s ease-out}
+  @keyframes bump{0%{transform:scale(1)}30%{transform:scale(1.28);color:#fff}100%{transform:scale(1)}}
+  .deck{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-top:12px}
+  .deck button{flex:none}
+  .stepper{display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(#141b44,#0b1030);border:1px solid #6b5a2e;border-radius:16px;padding:6px}
+  .stepper .mini{width:36px;height:36px;padding:0;font-size:22px;line-height:1;border-radius:50%}
+  .stepper .betval{min-width:56px;text-align:center}
+  .stepper .betval small{display:block;font-size:9px;letter-spacing:.14em;color:#c9b57a}
+  .stepper .betval b{font-size:19px;color:#fff;font-variant-numeric:tabular-nums}
+  .spinbtn{width:104px;height:104px;border-radius:50%;padding:0;font-size:15px;font-weight:900;letter-spacing:.12em;color:#3a2a08;position:relative;overflow:hidden;
+    background:radial-gradient(circle at 50% 28%,#fff6cf 0%,#f3c969 40%,#b07a1c 100%);border:3px solid #fff0b0;box-shadow:0 0 0 3px #3a2f14,0 0 26px #f3c969aa,0 8px 0 #7a5614,0 14px 22px #000a;animation:breathe 2.4s ease-in-out infinite}
+  .spinbtn::after{content:"";position:absolute;inset:-40% -60%;background:linear-gradient(100deg,transparent 40%,#fff9 50%,transparent 60%);transform:translateX(-80%);animation:sheen 3.2s ease-in-out infinite}
+  @keyframes sheen{0%,60%{transform:translateX(-80%)}100%{transform:translateX(80%)}}
+  @keyframes breathe{0%,100%{box-shadow:0 0 0 3px #3a2f14,0 0 20px #f3c96988,0 8px 0 #7a5614,0 14px 22px #000a}50%{box-shadow:0 0 0 3px #3a2f14,0 0 38px #ffd86acc,0 8px 0 #7a5614,0 14px 22px #000a}}
+  .spinbtn:active:not(:disabled){transform:translateY(5px);box-shadow:0 0 0 3px #3a2f14,0 0 26px #f3c969aa,0 3px 0 #7a5614,0 8px 14px #000a}
+  .spinbtn:disabled{animation:none;filter:saturate(.4) brightness(.7)}
+  .buybtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:76px;border-radius:18px;padding:6px 8px;color:#e9ecff;
+    background:linear-gradient(#34429a,#1b2468 60%,#121a52);border:2px solid #c89532;box-shadow:0 0 0 2px #1a1408,0 6px 0 #0b1030,0 10px 18px #000a,inset 0 1px 0 #ffffff33}
+  .buybtn small{font-size:10px;letter-spacing:.1em;color:#ffe39a}
+  .buybtn b{font-size:24px;color:#fff;text-shadow:0 0 12px #8fd3ff}
+  .buybtn:active:not(:disabled){transform:translateY(4px);box-shadow:0 0 0 2px #1a1408,0 2px 0 #0b1030,0 5px 10px #000a}
+  .tools{justify-content:center;flex-wrap:wrap;margin-top:14px}
+  .tools button{background:linear-gradient(#222b66,#141a45);border:1px solid #6b5a2e;color:#e9ecff;box-shadow:0 3px 0 #0b1030;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700}
+  @media (max-width:380px){.spinbtn{width:88px;height:88px;font-size:13px}.buybtn b{font-size:20px}}
+  /* suspense */
+  .stage::after{content:"";position:absolute;inset:0;border-radius:18px;pointer-events:none;box-shadow:inset 0 0 0 rgba(0,0,0,0);transition:box-shadow .6s;z-index:6}
+  .stage.tense::after{box-shadow:inset 0 0 90px 24px #000d,inset 0 0 40px #ff6a3d88;animation:heart 1s ease-in-out infinite}
+  @keyframes heart{0%,100%{opacity:.75}12%{opacity:1}24%{opacity:.8}36%{opacity:1}}
+  .cell.wait{box-shadow:0 0 0 2px #ffb24a,0 0 26px #ff8a1f;animation:waitp .5s ease-in-out infinite alternate;z-index:3}
+  @keyframes waitp{from{box-shadow:0 0 0 2px #ffb24a,0 0 12px #ff8a1f}to{box-shadow:0 0 0 3px #fff3c4,0 0 34px #ffb24a}}
+  .stage.quake{animation:quake .6s cubic-bezier(.36,.07,.19,.97) both}
+  @keyframes quake{10%,90%{transform:translate3d(-2px,0,0)}20%,80%{transform:translate3d(4px,-2px,0)}30%,50%,70%{transform:translate3d(-7px,2px,0)}40%,60%{transform:translate3d(7px,-2px,0)}}
+  .dock.crawl{filter:drop-shadow(0 0 16px var(--bc))}
+  .flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:40}
+  .flash.go{animation:flashgo .9s ease-out}
+  @keyframes flashgo{0%{opacity:.95}100%{opacity:0}}
+  .cap.big{font-size:22px;animation:capbig .6s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes capbig{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+  /* célébration */
+  .celeb{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#000a,#000e);animation:celebin .4s ease-out}
+  .celeb.hidden{display:none}
+  @keyframes celebin{from{opacity:0}to{opacity:1}}
+  .celeb canvas{position:absolute;inset:0;width:100%;height:100%}
+  .cbox{position:relative;text-align:center;padding:16px}
+  .ctier{font-size:clamp(28px,9vw,54px);font-weight:900;letter-spacing:.1em;text-transform:uppercase;background:linear-gradient(#fff6cf,#f3c969 55%,#b9852b);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 22px #f3c969);animation:tierin .8s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes tierin{from{transform:scale(.2) rotate(-8deg);opacity:0}to{transform:none;opacity:1}}
+  .cnum{font-size:clamp(46px,16vw,96px);font-weight:900;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 0 30px #f3c969,0 4px 0 #7a5614;animation:numpulse .5s ease-in-out infinite alternate}
+  @keyframes numpulse{to{transform:scale(1.06)}}
+  .cmult{font-size:18px;color:#ffe39a;letter-spacing:.2em}
+  .ctap{margin-top:18px;font-size:11px;color:#8a93c4}
+  @media (prefers-reduced-motion:reduce){.spinbtn,.spinbtn::after,.stage.tense::after,.cnum,.cell.wait{animation:none}}
 </style>
 </head>
 <body>
@@ -210,15 +266,17 @@
       <div class="wheelmsg" id="wheelmsg"></div>
     </div>
   </div>
-  <div class="ctl">
-    <div class="bet"><span class="sub" style="margin:0">Mise</span>
-      <select id="betsel"><option>0.20</option><option>0.50</option><option selected>1.00</option><option>2.00</option><option>5.00</option><option>10.00</option></select></div>
-    <button id="spin">Tourner</button>
-    <button id="buy" class="alt">Acheter le bonus (80×)</button>
+  <div class="deck">
+    <div class="stepper"><button class="alt mini" id="betminus" aria-label="Baisser la mise">−</button><div class="betval"><small>MISE</small><b id="betdisp">1.00</b></div><button class="alt mini" id="betplus" aria-label="Augmenter la mise">+</button></div>
+    <button id="spin" class="spinbtn">TOURNER</button>
+    <button id="buy" class="buybtn"><small>ACHETER LE BONUS</small><b>80×</b></button>
   </div>
+  <select id="betsel" hidden><option>0.20</option><option>0.50</option><option selected>1.00</option><option>2.00</option><option>5.00</option><option>10.00</option></select>
   <div class="tools"><button class="alt" id="rulesbtn">Règles</button><button class="alt" id="mutebtn">Son : activé</button><button class="alt speed" id="speedbtn">Vitesse : normale</button></div>
+  <div class="flash" id="flash"></div>
   <div class="note">Symboles provisoires (art à créer). Chaque tour tire un résultat pondéré parmi un échantillon exporté du moteur ; ce n'est pas le jeu final Stake Engine.</div>
 </div>
+<div class="celeb hidden" id="celeb"><canvas id="cv"></canvas><div class="cbox"><div class="ctier" id="ctier"></div><div class="cnum" id="cnum">0.00</div><div class="cmult" id="cmult"></div><div class="ctap">Touchez pour continuer</div></div></div>
 <div class="rules hidden" id="rules"><div class="card">
   <h2>Règles — Stellar Vigil</h2>
   <h3>Jeu de base</h3>
@@ -311,9 +369,14 @@ const SFX={
   galaxy:()=>{whoosh(1.1,300,2200,.05);[0,2,4,5,7,9].forEach((n,i)=>chime(PENTA[n],.9,.04,i*.1))},
   nova:()=>{boom(.2,0,110);whoosh(.5,300,3500,.06);chime(523.25,1.3,.08,.05);chime(783.99,1.3,.07,.1);chime(1046.5,1.3,.06,.15)},
   constellation:()=>{[0,3,5].forEach((n,i)=>chime(PENTA[n],1,.06,i*.12))},
+  heart:()=>{boom(.14,0,55);boom(.1,.17,48)},
+  suspense:()=>{tone(82,1.3,'sawtooth',.03,0,52);whoosh(1.3,200,1800,.04)},
+  big:()=>{boom(.22,0,60);[0,2,4,5,7,9,7,9].forEach((n,i)=>chime(PENTA[n],1.2,.08,i*.09));sparkle(12,1500,2200,.035,.06)},
   stop:()=>{click(.08,700);chime(PENTA[2],1,.07);chime(PENTA[4],1,.06,.06)},
   upgrade:()=>{whoosh(.8,300,4500,.08);[0,2,4,5,7,9].forEach((n,i)=>chime(PENTA[n],1.2,.08,i*.08));boom(.14,.4,100)}
 };
+const flash=()=>{const f=$('flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go')};
+const shake=()=>{const st=$('stage'); st.classList.remove('quake'); void st.offsetWidth; st.classList.add('quake'); setTimeout(()=>st.classList.remove('quake'),700)};
 function sfx(name,arg){ try{ SFX[name](arg) }catch(e){} }
 const ZONE_CELLS={Horizon:[0,1,2,3,4].map(r=>[r,4]),Meridien:[0,1,2,3,4].map(r=>[2,r]),Quadrature:[[0,0],[4,0],[0,4],[4,4]],Firmament:[...Array(25).keys()].map(i=>[Math.floor(i/5),i%5])};
 const ZONES=[['Horizon','Ligne du bas',20],['Meridien','Colonne centrale',100],['Quadrature','Les 4 coins',1000],['Firmament','Ciel complet',10000]];
@@ -355,18 +418,26 @@ function buildSky(){const s=$('sky');s.innerHTML='';for(let r=0;r<5;r++)for(let 
   $('zones').innerHTML=ZONES.map(z=>`<div class="zone" id="z${z[0]}"><b>${z[2]}×</b>${z[0]}<br>${z[1]}<i></i></div>`).join('')}
 const SYMKEYS=Object.keys(SYM).filter(k=>k!=='S'&&k!=='W');
 // Les rouleaux défilent : une bande de symboles descend dans chaque case et s'arrête colonne après colonne.
+// Suspense : après deux Lunettes, les rouleaux restants ralentissent, la scène s'assombrit et un battement de coeur monte.
 function show(board){const sf=turbo?.3:speed;
-  for(let c=0;c<5;c++){ const n=9+c*4, dur=(650+c*260)*sf;
+  const scat=c=>[1,2,3,4].filter(r=>board[c][r].scatter).length; let seen=0, stop=[], tense=false, t=0;
+  for(let c=0;c<5;c++){ t+= c===0?700:(seen>=2&&c<=4?1250:260); stop.push(t); if(seen>=2&&c<=4) tense=true; seen+=scat(c)}
+  $('stage').classList.toggle('tense',tense&&!turbo);
+  for(let c=0;c<5;c++){ const n=9+c*4+(stop[c]>1200?10:0), dur=stop[c]*sf; const waiting=c>0&&stop[c]-stop[c-1]>1000;
     for(let r=0;r<4;r++){const el=$(`b${c}_${r}`);const s=board[c][r+1];
-      el.className='cell reel'+(s.scatter?' scat':''); el.classList.remove('drop');
+      el.className='cell reel'+(s.scatter?' scat':'')+(waiting?' wait':'');
       const fin=s.name==='ST'?`<div class="star">${starSvg}<small>${s.prize}×</small></div>`:(SYM[s.name]||(()=>''))();
       const items=[fin]; for(let i=0;i<n;i++){const k=SYMKEYS[Math.floor(Math.random()*SYMKEYS.length)]; items.push(SYM[k]())}
       const ih=100/(n+1);
       el.innerHTML=`<div class="strip" style="top:0;height:${(n+1)*100}%">${items.map(h=>`<div class="si" style="height:${ih}%">${h}</div>`).join('')}</div>`;
-      const strip=el.firstChild; const anim=strip.animate([{transform:`translateY(-${n*ih}%)`,filter:'blur(2.5px)'},{transform:`translateY(-${n*ih*.12}%)`,filter:'blur(2px)',offset:.72},{transform:'translateY(0)',filter:'blur(0)'}],{duration:dur+r*50*sf,easing:'cubic-bezier(.25,.6,.25,1)'});
-      anim.onfinish=()=>{el.innerHTML=fin; el.classList.remove('reel')};
+      const strip=el.firstChild; const anim=strip.animate([{transform:`translateY(-${n*ih}%)`,filter:'blur(2.5px)'},{transform:`translateY(-${n*ih*.1}%)`,filter:'blur(2px)',offset:.8},{transform:'translateY(0)',filter:'blur(0)'}],{duration:dur+r*50*sf,easing:waiting?'cubic-bezier(.35,.1,.3,1)':'cubic-bezier(.25,.6,.25,1)'});
+      anim.onfinish=()=>{el.innerHTML=fin; el.classList.remove('reel'); el.classList.remove('wait')};
     }
-    setTimeout(()=>sfx('tick'),dur+80*sf); }
+    setTimeout(()=>sfx('tick'),dur+80*sf);
+    if(waiting){ for(let k=0;k<Math.floor((stop[c]-stop[c-1])/520);k++) setTimeout(()=>sfx('heart'),(stop[c-1]+k*520)*sf); }
+  }
+  setTimeout(()=>$('stage').classList.remove('tense'),(stop[4]+400)*sf);
+  return stop[4]+350;
 }
 function viewBonus(on){$('base').classList.toggle('hidden',on);$('skywrap').classList.toggle('hidden',!on);$('zones').classList.toggle('hidden',!on);$('bhead').classList.toggle('hidden',!on);$('pips').classList.toggle('hidden',!on);$('stage').classList.toggle('bonus',on); if(!on) document.documentElement.style.setProperty('--bc','#f3c969')}
 const view=viewBonus;
@@ -430,13 +501,20 @@ function initDock(mode){ if(!window.WHEEL_ODDS){$('dock').classList.add('hidden'
   ringAngle={1:ringAngle[1]%360,2:ringAngle[2]%360}; driftOn=true; ['ring1','ring2'].forEach((i,k)=>{$(i).classList.add('idle');$(i).style.transition='none';$(i).style.transform=`rotate(${ringAngle[k+1]}deg)`});
   const pc=(arr)=>arr.map(x=>`<span>${LABEL[x.k].replace('.','')}  ${Math.round((x.e-x.s)/3.6)} %</span>`).join('');
   $('dockcap').innerHTML=''}
-async function spinRing(n,target){const arcs=ringArcs[n], x=arcs.find(a=>a.k===target), mid=(x.s+x.e)/2+(Math.random()-.5)*(x.e-x.s)*.55, el=$('ring'+n);
-  const dir=n===1?1:-1, turns=5; driftOn=false;
+async function spinRing(n,target){const arcs=ringArcs[n], x=arcs.find(a=>a.k===target), segw=x.e-x.s, mid=(x.s+x.e)/2+(Math.random()-.5)*segw*.4, el=$('ring'+n);
+  const dir=n===1?1:-1, turns=5+n; driftOn=false; const f=turbo?.3:speed;
   const cur=ringAngle[n], need=(((-mid-cur)%360)+360)%360; // angle restant pour aligner mid sous le pointeur
   const angle=dir>0? cur+need+turns*360 : cur-((360-need)%360)-turns*360; ringAngle[n]=angle;
-  el.classList.remove('idle'); el.getBoundingClientRect(); el.style.transition='transform '+(4.2*(turbo?.3:speed))+'s cubic-bezier(.1,.7,.1,1)'; el.style.transform=`rotate(${angle}deg)`;
-  const dur=4200*(turbo?.3:speed); let t=0,step=70; while(t<dur*.9){setTimeout(()=>sfx('tick'),t);t+=step;step*=1.06}
-  await sleep(dur+250); sfx(target==='tier3'?'upgrade':'stop');
+  // Phase 1 : tour rapide qui freine, la roue des Phases est plus longue (suspense) ; elle dépasse la cible d'une demi-case...
+  const over=dir*Math.min(segw*.9,24), d1=(n===1?4.6:6.4)*f, d2=(n===1?1.5:2.1)*f;
+  el.classList.remove('idle'); el.getBoundingClientRect(); el.style.transition='transform '+d1+'s cubic-bezier(.05,.82,.12,1)'; el.style.transform=`rotate(${angle+over}deg)`;
+  let t=0,step=60; while(t<d1*1000*.93){setTimeout(()=>sfx('tick'),t);t+=step;step*=1.055}
+  await sleep(d1*1000+120);
+  // ... puis s'arrête presque sur la case voisine, un battement de coeur, et revient lentement sur la bonne case.
+  $('dock').classList.add('crawl'); sfx('suspense'); sfx('heart'); await sleep(550*f);
+  el.style.transition='transform '+d2+'s cubic-bezier(.4,0,.25,1)'; el.style.transform=`rotate(${angle}deg)`;
+  [250,520,900,1450].forEach(m=>setTimeout(()=>sfx('tick'),m*f));
+  await sleep(d2*1000+200); $('dock').classList.remove('crawl'); sfx(target==='tier3'?'upgrade':'stop');
   const g=el.querySelector(`[data-k="${target}"]`); if(g) g.classList.add('hit')}
 async function spinSeasons(e){
   const mode=window.__mode||'base'; initDock(mode); setKind(e.variant);
@@ -478,10 +556,10 @@ async function playEvents(book,bet){
   window.__mode=window.__mode||'base';
   for(const e of book.events){
     switch(e.type){
-    case 'reveal': sfx('reveal'); viewBonus(false); show(e.board); cap('Bonne chance'); await sl(2100); break;
+    case 'reveal': sfx('reveal'); viewBonus(false); {const tt=show(e.board); cap('Bonne chance'); await sl(tt+350)} break;
     case 'winInfo': sfx('win'); e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); cap('Gain <em>'+fmt(e.totalWin*bet)+'</em> &nbsp;×'+(e.totalWin/100)); await sl(1000); break;
     case 'starPrizes': sfx('win'); e.stars.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win')); cap('Étoiles à valeur : <em>+'+(e.total/100).toFixed(1)+'×</em>'); await sl(1000); break;
-    case 'freeSpinTrigger': sfx('trigger'); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win'));
+    case 'freeSpinTrigger': sfx('trigger'); flash(); shake(); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win'));
       cap(book.events.some(x=>x.type==='seasonWheel')?'<em>BONUS !</em> Les roues choisissent ton bonus':'<em>BONUS !</em> Nuit des Constellations — '+e.totalFs+' nuits'); await sl(1500);
       if(!book.events.some(x=>x.type==='seasonWheel')){setKind('constellation'); buildSky(); shownTotal=0; $('btotal').textContent='0.0×'; setHead(); buildPips(e.totalFs); viewBonus(true); await introCard(e.totalFs)}
       break;
@@ -509,7 +587,7 @@ async function playEvents(book,bet){
       const ups=Object.keys(skyVal).filter(k=>before[k]!==undefined&&skyVal[k]>before[k]).length;
       if(sizes.length){sfx('link'); cap(`🔗 Constellation de <em>${sizes[0]} étoiles</em>${ups?` : ${ups} étoile${ups>1?'s':''} gagne${ups>1?'nt':''} de la valeur`:''}${e.conjunctions?`<br>Conjonction ×${e.conjunctions} : une étoile relie deux constellations`:''}`)} 
       await sl(sizes.length?1500:500); break}
-    case 'zonesComplete': sfx('zone'); extra.zones+=e.zones.reduce((a,z)=>a+z.win,0); e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); cap('🏆 PALIER <em>'+e.zones.map(z=>z.name+' +'+(z.win/100)+'×').join(' et ')+'</em>'); await sl(1700); break;
+    case 'zonesComplete': sfx('zone'); shake(); extra.zones+=e.zones.reduce((a,z)=>a+z.win,0); e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); cap('🏆 PALIER <em>'+e.zones.map(z=>z.name+' +'+(z.win/100)+'×').join(' et ')+'</em>'); await sl(1700); break;
     case 'nightPayout': total=e.total; setTotal(e.total,800); cap(e.amount>0?`Nuit ${night} : <em>+${(e.amount/100).toFixed(1)}×</em>`:`Nuit ${night} : rien de nouveau`); if(e.amount>0) sfx('win'); await sl(900); break;
     case 'saverWheel': cap('Roue de sauvegarde…'); await spinWheel(e); setTotal(e.total,500); break;
     case 'freeSpinEnd': await summaryCard(e.amount,bet); viewBonus(false); break;
@@ -517,6 +595,23 @@ async function playEvents(book,bet){
     }
   }
 }
+
+// --- Célébration des gros gains : paliers, compteur et pluie d'étoiles ---
+const TIERS=[[1000,'Légendaire'],[250,'Épique'],[100,'Méga gain'],[50,'Super gain'],[20,'Gros gain']];
+let burstRaf=0;
+function startBurst(strength){const cv=$('cv'), ctx=cv.getContext('2d'); cv.width=innerWidth; cv.height=innerHeight; const W=cv.width,H=cv.height, P=[]; cancelAnimationFrame(burstRaf);
+  const add=n=>{for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=6+Math.random()*13*strength; P.push({x:W/2,y:H*.42,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-7,r:3+Math.random()*7,rot:Math.random()*6,vr:(Math.random()-.5)*.3,life:1,c:['#fff3c4','#f3c969','#8fd3ff','#ff9fe0','#7dffb2'][i%5]})}};
+  add(70*strength); let frame=0;
+  (function loop(){ctx.clearRect(0,0,W,H); frame++; if(frame%28===0&&frame<200) add(36*strength);
+    P.forEach(p=>{p.vy+=.28;p.x+=p.vx;p.y+=p.vy;p.vx*=.992;p.rot+=p.vr;p.life-=.0065; if(p.life<=0) return; ctx.save(); ctx.globalAlpha=Math.max(0,p.life); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.c; ctx.shadowColor=p.c; ctx.shadowBlur=10;
+      ctx.beginPath(); for(let k=0;k<8;k++){const rr=k%2?p.r*.45:p.r*1.4,aa=k*Math.PI/4; ctx.lineTo(Math.cos(aa)*rr,Math.sin(aa)*rr)} ctx.closePath(); ctx.fill(); ctx.restore()});
+    if(P.some(p=>p.life>0)) burstRaf=requestAnimationFrame(loop)})()}
+async function celebrate(win,bet){const mult=win/bet, tier=TIERS.find(t=>mult>=t[0]); if(!tier) return;
+  const box=$('celeb'); $('ctier').textContent=tier[1]; $('cnum').textContent='0.00'; $('cmult').textContent='×'+mult.toFixed(1); box.classList.remove('hidden'); flash(); sfx('big');
+  startBurst(mult>=250?2:mult>=100?1.5:1);
+  const t0=performance.now(), dur=(mult>=100?2600:1800)*(turbo?.4:1); (function f(t){const k=Math.min(1,(t-t0)/dur); $('cnum').textContent=(win*(1-Math.pow(1-k,3))).toFixed(2); if(k<1&&!box.classList.contains('hidden')) requestAnimationFrame(f)})(t0);
+  let done=false; const h=()=>{done=true}; box.addEventListener('click',h,{once:true}); const w0=performance.now(); while(!done&&performance.now()-w0<(mult>=100?6500:4200)*(turbo?.4:1)) await sleep(60);
+  cancelAnimationFrame(burstRaf); box.classList.add('hidden')}
 async function play(kind){
   if(busy)return; busy=true; $('spin').disabled=$('buy').disabled=true; turbo=false; document.body.classList.add('bonusing'); $('stage').scrollIntoView({block:'start'});
   const bet=parseFloat($('betsel').value); $('betv').textContent=bet.toFixed(2);
@@ -529,11 +624,16 @@ async function play(kind){
   const win=book.win/100*bet; bal+=win;
   $('bal').textContent=bal.toFixed(2); $('last').textContent=win.toFixed(2);
   cap(win>0?`Gain total : <em>${win.toFixed(2)}</em> &nbsp;(×${(book.win/100).toFixed(2)})`:'Pas de gain');
+  $('bal').classList.add('bump'); $('last').classList.add('bump'); setTimeout(()=>{$('bal').classList.remove('bump');$('last').classList.remove('bump')},600);
+  if(win>0) await celebrate(win,bet);
   await sl(700); viewBonus(false); document.body.classList.remove('bonusing'); busy=false; $('spin').disabled=$('buy').disabled=false;
 }
 buildBoard(); buildSky(); setKind('constellation'); initDock('base');
 try{const o=window.SAVER_ODDS||{}, pc=x=>Math.round(x*100)+' %'; if(o.bonus){$('oddsBuy').textContent=pc(o.bonus.p_save_given_spin);$('spinBuy').textContent=pc(o.bonus.p_spin_given_bonus);$('oddsBase').textContent=pc(o.base.p_save_given_spin);$('spinBase').textContent=pc(o.base.p_spin_given_bonus)}}catch(e){}
 (function(){const b=BOOKS.base.find(x=>x.events[0].type==='reveal'); show(b.events[0].board)})();
+const betSync=()=>{const v=parseFloat($('betsel').value); $('betdisp').textContent=v.toFixed(2); $('betv').textContent=v.toFixed(2)};
+$('betminus').onclick=()=>{if(busy)return; const sl_=$('betsel'); sl_.selectedIndex=Math.max(0,sl_.selectedIndex-1); betSync(); sfx('tick')};
+$('betplus').onclick=()=>{if(busy)return; const sl_=$('betsel'); sl_.selectedIndex=Math.min(sl_.options.length-1,sl_.selectedIndex+1); betSync(); sfx('tick')};
 $('spin').onclick=()=>play('base'); $('buy').onclick=()=>play('bonus');
 $('stage').addEventListener('click',()=>{if(busy) turbo=true});
 $('speedbtn').onclick=()=>{speed=speed===1?.5:1; $('speedbtn').textContent='Vitesse : '+(speed===1?'normale':'rapide'); $('speedbtn').classList.toggle('on',speed!==1)};
