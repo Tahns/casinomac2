@@ -67,23 +67,23 @@ _LOWL = {0: 60, 1: 28, 2: 9, 3: 3}
 _COMET_PLUS = {0: 50, 1: 28, 2: 13, 3: 6, 4: 3}
 # criteria: (wheel, label, kind, night weights, level weights, adjacency, {scatters: nights}, relative natural value)
 VARIANTS = {
-    "wheel1_constellation": (1, "constellation", "constellation", NIGHT_STD, LEVELS_STD, ADJACENCY_STD, {3: 10, 4: 12, 5: 15}, 100),
-    "wheel1_comet": (1, "comet", "comet", None, _LOWL, 0, {3: 2, 4: 3, 5: 3}, 100),
-    "wheel1_nova": (1, "nova", "nova", None, LEVELS_STD, 0, {3: 5, 4: 6, 5: 7}, 100),
-    "wheel2_constellation": (2, "constellation+", "constellation", NIGHT_STD, _MID, ADJACENCY_STD, {3: 10, 4: 12, 5: 15}, 130),
-    "wheel2_comet": (2, "comet+", "comet", None, _COMET_PLUS, 0, {3: 3, 4: 3, 5: 4}, 130),
-    "wheel2_nova": (2, "nova+", "nova", None, _MID, 0, {3: 5, 4: 6, 5: 7}, 130),
+    "wheel1_constellation": (1, "constellation", "constellation", NIGHT_STD, LEVELS_STD, ADJACENCY_STD, {3: 10, 4: 12}, 100),
+    "wheel1_comet": (1, "comet", "comet", None, _LOWL, 0, {3: 2, 4: 3}, 100),
+    "wheel1_nova": (1, "nova", "nova", None, LEVELS_STD, 0, {3: 5, 4: 6}, 100),
+    "wheel2_constellation": (2, "constellation+", "constellation", NIGHT_STD, _MID, ADJACENCY_STD, {5: 15}, 130),
+    "wheel2_comet": (2, "comet+", "comet", None, _COMET_PLUS, 0, {5: 4}, 130),
+    "wheel2_nova": (2, "nova+", "nova", None, _MID, 0, {5: 7}, 130),
     # Croix de Lune, Pluie d'Etoiles, Eclipse, Galaxie (natural mean tuned by simulation to about 100x / 130x)
-    "wheel1_cross": (1, "cross", "cross", None, _MID, 0, {3: 3, 4: 4, 5: 4}, 100),
-    "wheel1_rain": (1, "rain", "rain", None, _MID, 0, {3: 3, 4: 3, 5: 4}, 100),
-    "wheel1_eclipse": (1, "eclipse", "eclipse", None, _MID, 0, {3: 3, 4: 4, 5: 4}, 100),
-    "wheel1_galaxy": (1, "galaxy", "galaxy", None, _MID, 0, {3: 5, 4: 5, 5: 6}, 100),
-    "wheel2_cross": (2, "cross+", "cross", None, LEVELS_RICH, 0, {3: 4, 4: 4, 5: 5}, 130),
-    "wheel2_rain": (2, "rain+", "rain", None, LEVELS_RICH, 0, {3: 3, 4: 4, 5: 4}, 130),
-    "wheel2_eclipse": (2, "eclipse+", "eclipse", None, LEVELS_RICH, 0, {3: 4, 4: 4, 5: 5}, 130),
-    "wheel2_galaxy": (2, "galaxy+", "galaxy", None, LEVELS_RICH, 0, {3: 3, 4: 4, 5: 4}, 130),
+    "wheel1_cross": (1, "cross", "cross", None, _MID, 0, {3: 3, 4: 4}, 100),
+    "wheel1_rain": (1, "rain", "rain", None, _MID, 0, {3: 3, 4: 3}, 100),
+    "wheel1_eclipse": (1, "eclipse", "eclipse", None, _MID, 0, {3: 3, 4: 4}, 100),
+    "wheel1_galaxy": (1, "galaxy", "galaxy", None, _MID, 0, {3: 5, 4: 5}, 100),
+    "wheel2_cross": (2, "cross+", "cross", None, LEVELS_RICH, 0, {5: 5}, 130),
+    "wheel2_rain": (2, "rain+", "rain", None, LEVELS_RICH, 0, {5: 4}, 130),
+    "wheel2_eclipse": (2, "eclipse+", "eclipse", None, LEVELS_RICH, 0, {5: 5}, 130),
+    "wheel2_galaxy": (2, "galaxy+", "galaxy", None, LEVELS_RICH, 0, {5: 4}, 130),
 }
-# Roue des Saisons (petite roue) : part de chaque segment ; UPGRADE ("aurora") ouvre la grande roue (Roue de l'Aurore).
+# Tirage des cartes du ciel : part de chaque bonus ("aurora" = part des versions "+", obtenues avec 5 Lunettes).
 WHEEL1_ODDS = {"constellation": 0.22, "comet": 0.14, "nova": 0.14, "cross": 0.12, "rain": 0.12, "eclipse": 0.10,
                "galaxy": 0.06, "aurora": 0.10}
 WHEEL2_ODDS = {"constellation+": 0.25, "comet+": 0.15, "nova+": 0.15, "cross+": 0.13, "rain+": 0.12, "eclipse+": 0.12,
@@ -181,12 +181,14 @@ class GameConfig(Config):
         base_reels = {self.basegame_type: {"BR0": 1}}
         triggers = {3: 100, 4: 20, 5: 5}
 
+        # Version: 3 or 4 Lunettes give the normal bonus, 5 Lunettes give its "+" version (no second wheel).
         def bonus_conditions(night_weights, level_weights, adjacency, force_wincap=False, variant=None):
+            plus = force_wincap or (variant is not None and VARIANTS[variant][0] == 2)
             return {
                 "reel_weights": base_reels,
                 "force_wincap": force_wincap,
                 "force_freegame": True,
-                "scatter_triggers": triggers,
+                "scatter_triggers": {5: 1} if plus else {3: 100, 4: 20},
                 "star_count_weights": night_weights,
                 "level_weights": level_weights,
                 "adjacency_bias": adjacency,

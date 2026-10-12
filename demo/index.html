@@ -158,6 +158,14 @@
   body.bonusing .wrap{padding-top:8px}
   .speed.on{outline:2px solid var(--gold)}
   .wheelbox{z-index:9}
+  .cr{position:relative;overflow:hidden;height:112px;border-radius:14px;background:radial-gradient(#171e4a,#080b20);border:1px solid #6b5a2e;box-shadow:inset 0 0 24px #000c}
+  .crstrip{display:flex;gap:6px;position:absolute;left:0;top:8px;will-change:transform}
+  .crc{position:relative;width:84px;height:96px;flex:0 0 auto;border-radius:12px;background:linear-gradient(#1a2255,#0d1230);border:1.5px solid var(--cc);box-shadow:0 0 12px color-mix(in srgb,var(--cc) 35%,transparent);display:flex;align-items:center;justify-content:center}
+  .crc svg{width:62px;height:62px;filter:drop-shadow(0 0 4px #000a)}
+  .crc.plus{background:linear-gradient(#3a2f14,#1c1608);border-color:#ffe39a;box-shadow:0 0 18px #f3c969cc}
+  .crc .pl{position:absolute;right:5px;top:4px;width:20px;height:20px;border-radius:50%;background:#f3c969;color:#3a2f14;font:900 16px/20px system-ui;text-align:center;font-style:normal}
+  .crc.hit{transform:scale(1.08);box-shadow:0 0 0 2px #fff,0 0 26px var(--cc);z-index:2}
+  .crptr{position:absolute;left:50%;top:0;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:14px solid var(--gold);filter:drop-shadow(0 0 6px var(--gold));z-index:3}
   .cell.reel{overflow:hidden}
   .cell .strip{position:absolute;left:0;right:0;display:flex;flex-direction:column;will-change:transform}
   .cell .si{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -174,21 +182,7 @@
     <div><b>Dernier gain</b><span id="last">0.00</span></div>
   </div>
   <div class="stage" id="stage">
-    <div class="dock hidden" id="dock">
-      <svg id="dockSvg" viewBox="-112 -114 224 104" aria-label="Roues des bonus">
-        <defs><linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#f3c969"/><stop offset="1" stop-color="#8a5a14"/></linearGradient>
-        <clipPath id="halfclip"><rect x="-112" y="-114" width="224" height="104"/></clipPath></defs>
-        <g clip-path="url(#halfclip)">
-          <g id="ring2" class="ring idle"></g>
-          <g id="ring1" class="ring idle"></g>
-          <circle r="69" fill="none" stroke="url(#rim)" stroke-width="2"/>
-          <image href="art/wheel_rim.webp" x="-116" y="-116" width="232" height="232" style="pointer-events:none"/>
-          <image href="art/wheel_hub.webp" x="-23.5" y="-23.5" width="47" height="47" style="pointer-events:none"/>
-        </g>
-        <path d="M-9 -116 L9 -116 L0 -98 Z" fill="#ffe39a" stroke="#7a5614" stroke-width="1.5" style="filter:drop-shadow(0 0 5px #f3c969)"/>
-      </svg>
-      <div class="dockcap" id="dockcap"></div>
-    </div>
+    <div class="dock hidden" id="dock"><div class="cr" id="cr"><div class="crstrip" id="crstrip"></div><div class="crptr"></div></div><div class="dockcap" id="dockcap"></div></div>
     <div id="bhead" class="bhead hidden">
       <svg class="bico" id="bico" viewBox="0 0 48 48"></svg>
       <div class="bname" id="bname"></div>
@@ -230,9 +224,10 @@
   <li>Chaque nuit, de 0 à 3 étoiles tombent sur un ciel de 5 × 5 ; elles y restent jusqu'à la fin du bonus.</li>
   <li>Des étoiles voisines forment une constellation : chaque étoile gagne un niveau de valeur par lien, jusqu'à +3. Une étoile qui relie deux constellations ajoute un niveau de plus (conjonction).</li>
   <li>Compléter une zone paie un multiplicateur fixe, une seule fois par bonus : Horizon (ligne du bas) 20×, Méridien (colonne centrale) 100×, Quadrature (les 4 coins) 1 000×, Firmament (ciel complet) 10 000×. Ces multiplicateurs ne sont pas progressifs.</li></ul>
-  <h3>Roues et bonus (version à deux roues)</h3>
-  <ul><li>Dans la version à deux roues, la Roue des Saisons choisit le bonus : Constellations, Comètes ou Nova. Le segment UPGRADE de la petite roue est le seul moyen d'ouvrir la grande roue (Roue de l'Aurore), qui donne la version supérieure (étoiles plus riches).</li>
-  <li>Pluie de Comètes : chaque nuit une comète traverse une ligne ou une colonne et pose une étoile sur chaque case libre. Grande Nova : chaque nuit un bloc de 4 étoiles se pose d'un coup. Les chances de chaque roue sont celles mesurées sur le jeu.</li></ul>
+  <h3>Tirage des cartes du ciel (version à sept bonus)</h3>
+  <ul><li>Trois Lunettes ou plus déclenchent un bonus. Une bande de cartes défile et s'arrête sur l'un des sept bonus : Constellations, Comètes, Nova, Croix de Lune, Pluie d'Étoiles, Éclipse ou Galaxie.</li>
+  <li>Le nombre de Lunettes décide de la version : 3 ou 4 Lunettes donnent le bonus normal, 5 Lunettes donnent sa version supérieure « + » (étoiles plus riches). Il n'y a pas de seconde roue.</li>
+  <li>Comètes : une comète traverse une ligne ou une colonne. Nova : un bloc de 4 étoiles. Croix de Lune : une croix de 5 étoiles. Pluie d'Étoiles : une étoile tombe dans chaque colonne. Éclipse : une diagonale d'étoiles. Galaxie : une spirale d'étoiles. Les chances de chaque bonus sont celles mesurées sur le jeu.</li></ul>
   <h3>Roue de sauvegarde</h3>
   <ul><li>En fin de bonus, si le total est inférieur à un plancher, la roue tourne. Plancher : 25× la mise pour un bonus déclenché en jeu normal ; 80× (le prix payé) pour un bonus acheté.</li>
   <li>La roue relève le total exactement jusqu'au plancher si elle tombe sur « sauvée ». Chance réelle mesurée sur ce jeu : environ <b id="oddsBuy">?</b> en achat, <b id="oddsBase">?</b> sur un bonus déclenché. Ce n'est pas un remboursement garanti.</li>
@@ -404,44 +399,33 @@ async function summaryCard(total,bet){
 const RING_COL={constellation:'#2b3a86',comet:'#14607a',nova:'#8a3a1f',cross:'#5a2f86',rain:'#1b6b4c',eclipse:'#7a2f3a',galaxy:'#86306a',aurora:'#c89532'};
 function ringPath(a0,a1,r0,r1){const p=(a,r)=>{const t=(a-90)*Math.PI/180;return [r*Math.cos(t),r*Math.sin(t)]};const [x0,y0]=p(a0,r1),[x1,y1]=p(a1,r1),[x2,y2]=p(a1,r0),[x3,y3]=p(a0,r0),L=(a1-a0)>180?1:0;
   return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r1} ${r1} 0 ${L} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} L${x2.toFixed(2)} ${y2.toFixed(2)} A${r0} ${r0} 0 ${L} 0 ${x3.toFixed(2)} ${y3.toFixed(2)} Z`}
-function wheelSegs(wheel,mode){const o=Object.assign({constellation:.22,comet:.14,nova:.14,cross:.12,rain:.12,eclipse:.10,galaxy:.06,aurora:.10},((window.WHEEL_ODDS||{})[mode])||{});
-  const K=['constellation','comet','nova','cross','rain','eclipse','galaxy'];
-  return wheel===1?[...K.map(k=>[k,o[k]]),['aurora',o.aurora]]:[['constellation+',.25],['comet+',.15],['nova+',.15],['cross+',.13],['rain+',.12],['eclipse+',.12],['galaxy+',.08]]}
-const LABEL={constellation:'Constellations',comet:'Comètes',nova:'Nova',cross:'Croix de Lune',rain:"Pluie d'Étoiles",eclipse:'Éclipse',galaxy:'Galaxie',aurora:'Upgrade'};
-Object.keys(LABEL).forEach(k=>{if(k!=='aurora')LABEL[k+'+']=LABEL[k]+'+'});
-// Chaque segment montre l'image de son bonus (plus de texte ni de pourcentage).
-function drawRing(id,segs,r0,r1){let a=0; const arcs=segs.map(([k,p])=>{const s=a;a+=p*360;return {k,s,e:a}}); const rm=(r0+r1)/2, band=r1-r0;
-  $(id).innerHTML=arcs.map(x=>{const base=x.k.replace('+',''),plus=x.k.endsWith('+'),mid=(x.s+x.e)/2,fill=x.k==='aurora'?'url(#rim)':RING_COL[base];
-    const arc=(x.e-x.s)*Math.PI/180*rm, sz=Math.min(band*.86,arc*.86), sc=sz/48; const kd=KINDS[base];
-    const badge=plus?`<g transform="translate(15,-15)"><circle r="9" fill="#f3c969" stroke="#3a2f14" stroke-width="2"/><path d="M-5 0H5M0 -5V5" stroke="#3a2f14" stroke-width="2.6" stroke-linecap="round"/></g>`:'';
-    return `<g class="seg" data-k="${x.k}"><path d="${ringPath(x.s,x.e,r0,r1)}" fill="${fill}" stroke="#0a0e1f" stroke-width="1.5"/><g transform="rotate(${mid.toFixed(1)}) translate(0,${-rm}) scale(${sc.toFixed(3)}) translate(-24,-24)"><g style="filter:drop-shadow(0 0 3px #000c)">${kd.icon}</g>${badge}</g></g>`}).join('');
-  return arcs}
-let ringArcs={1:[],2:[]}, ringAngle={1:0,2:0}, driftOn=false;
-// Rotation continue très lente des deux roues (arrêtée pendant un tirage et jusqu'au tour suivant).
-const DRIFT={1:3,2:-2.2}, reduceMotion=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-let driftT=performance.now();
-(function drift(t){ const dt=Math.min(.1,(t-driftT)/1000); driftT=t;
-  if(driftOn&&!reduceMotion&&!$('dock').classList.contains('hidden')) [1,2].forEach(n=>{ringAngle[n]+=DRIFT[n]*dt; const el=$('ring'+n); el.style.transition='none'; el.style.transform=`rotate(${ringAngle[n]}deg)`});
-  requestAnimationFrame(drift)})(driftT);
+const KIND_ORDER=['constellation','comet','nova','cross','rain','eclipse','galaxy'];
+const LABEL={constellation:'Constellations',comet:'Comètes',nova:'Nova',cross:'Croix de Lune',rain:"Pluie d'Étoiles",eclipse:'Éclipse',galaxy:'Galaxie'};
+// --- Tirage des cartes du ciel : une bande de cartes défile en continu, très doucement, et s'arrête sur le bonus gagné ---
+const CARD_W=84, CARD_GAP=6, STEP=CARD_W+CARD_GAP;
+const cardHtml=(k,plus)=>`<div class="crc${plus?' plus':''}" style="--cc:${KINDS[k].col}"><svg viewBox="0 0 48 48">${KINDS[k].icon}</svg>${plus?'<i class="pl">+</i>':''}</div>`;
+let crX=0, crDrift=true, crSpinning=false, crT=performance.now();
+const reduceMotion=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+function buildIdleStrip(){ const row=[]; for(let r=0;r<8;r++) KIND_ORDER.forEach(k=>row.push(cardHtml(k,false))); $('crstrip').innerHTML=row.join(''); $('crstrip').style.transition='none'; crX=0}
+(function drift(t){ const dt=Math.min(.1,(t-crT)/1000); crT=t;
+  if(crDrift&&!crSpinning&&!reduceMotion&&!$('dock').classList.contains('hidden')){ crX-=7*dt; if(crX<-STEP*KIND_ORDER.length*4) crX+=STEP*KIND_ORDER.length*2; $('crstrip').style.transform=`translateX(${crX}px)`}
+  requestAnimationFrame(drift)})(crT);
 function initDock(mode){ if(!window.WHEEL_ODDS){$('dock').classList.add('hidden');return}
-  $('dock').classList.remove('hidden'); ringArcs[1]=drawRing('ring1',wheelSegs(1,mode),23,66); ringArcs[2]=drawRing('ring2',wheelSegs(2,mode),71,89);
-  ringAngle={1:ringAngle[1]%360,2:ringAngle[2]%360}; driftOn=true; ['ring1','ring2'].forEach((i,k)=>{$(i).classList.add('idle');$(i).style.transition='none';$(i).style.transform=`rotate(${ringAngle[k+1]}deg)`});
-  const pc=(arr)=>arr.map(x=>`<span>${LABEL[x.k].replace('.','')}  ${Math.round((x.e-x.s)/3.6)} %</span>`).join('');
-  $('dockcap').innerHTML='';/*<span style="border-color:#f3c969;color:#ffe39a">Petite roue</span>'+pc(ringArcs[1])+'<span style="border-color:#f3c969;color:#ffe39a">Grande roue</span>'+pc(ringArcs[2])*/}
-async function spinRing(n,target){const arcs=ringArcs[n], x=arcs.find(a=>a.k===target), mid=(x.s+x.e)/2+(Math.random()-.5)*(x.e-x.s)*.55, el=$('ring'+n);
-  const dir=n===1?1:-1, turns=5; driftOn=false;
-  const cur=ringAngle[n], need=(((-mid-cur)%360)+360)%360; // angle restant pour aligner mid sous le pointeur
-  const angle=dir>0? cur+need+turns*360 : cur-((360-need)%360)-turns*360; ringAngle[n]=angle;
-  el.classList.remove('idle'); el.getBoundingClientRect(); el.style.transitionDuration=(4.2*(turbo?.3:speed))+'s'; el.style.transform=`rotate(${angle}deg)`;
-  const dur=4200*(turbo?.3:speed); let t=0,step=70; while(t<dur*.9){setTimeout(()=>sfx('tick'),t);t+=step;step*=1.06}
-  await sleep(dur+250); sfx(target==='aurora'?'upgrade':'stop');
-  const g=el.querySelector(`[data-k="${target}"]`); if(g) g.classList.add('hit')}
+  $('dock').classList.remove('hidden'); crDrift=true; crSpinning=false; buildIdleStrip(); $('dockcap').innerHTML=''}
 async function spinSeasons(e){
-  const mode=window.__mode||'base'; initDock(mode); setKind(e.season==='aurora'?e.variant:e.season);
-  cap('<em>Roue des Saisons</em> : elle choisit ton bonus…'); await sl(500);
-  await spinRing(1,e.season);
-  if(e.wheel===2){cap('<em>UPGRADE !</em> La grande roue choisit la version supérieure…'); await sl(900); setKind(e.variant); await spinRing(2,e.variant)}
-  cap(`Bonus gagné : <em>${KINDS[curKind].name}${curPlus?'+':''}</em>`); await sl(1100)}
+  const plus=e.wheel===2, target=e.variant.replace('+',''); setKind(e.variant); initDock(window.__mode||'base');
+  cap('<em>Tirage des cartes du ciel</em> : quel bonus ?'); await sl(500);
+  crSpinning=true; const cw=$('cr').clientWidth, n=KIND_ORDER.length, rounds=6;
+  const deck=[]; for(let r=0;r<rounds;r++){ const o=[...KIND_ORDER]; for(let i=o.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[o[i],o[j]]=[o[j],o[i]]} o.forEach(k=>deck.push([k,false])) }
+  const finalIdx=deck.length-3; deck[finalIdx]=[target,plus]; // la carte gagnante est suivie de trois voisines
+  const strip=$('crstrip'); strip.innerHTML=deck.map(([k,p])=>cardHtml(k,p)).join('');
+  const x0=crX%(STEP*n), toX=-(finalIdx*STEP+CARD_W/2-cw/2)+((Math.random()-.5)*CARD_W*.5);
+  strip.style.transition='none'; strip.style.transform=`translateX(${x0}px)`; strip.getBoundingClientRect();
+  const dur=4600*(turbo?.3:speed); strip.style.transition=`transform ${dur}ms cubic-bezier(.12,.7,.1,1)`; strip.style.transform=`translateX(${toX}px)`;
+  let t=0,step=60; while(t<dur*.92){setTimeout(()=>sfx('tick'),t);t+=step;step*=1.05}
+  await sleep(dur+250); sfx(plus?'upgrade':'stop');
+  strip.children[finalIdx]?.classList.add('hit');
+  cap(plus?`<em>5 Lunettes !</em> Version supérieure : <em>${LABEL[target]}+</em>`:`Bonus gagné : <em>${KINDS[target].name}</em>`); await sl(1300)}
 // --- Roue de sauvegarde (fin de bonus), inchangée ---
 function wheelPath(i,n,r){const a0=(i*360/n-90)*Math.PI/180,a1=((i+1)*360/n-90)*Math.PI/180;
   return `M0 0 L${(r*Math.cos(a0)).toFixed(2)} ${(r*Math.sin(a0)).toFixed(2)} A${r} ${r} 0 0 1 ${(r*Math.cos(a1)).toFixed(2)} ${(r*Math.sin(a1)).toFixed(2)} Z`}
