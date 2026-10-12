@@ -70,15 +70,18 @@ _COMET_PLUS = {0: 50, 1: 28, 2: 13, 3: 6, 4: 3}
 #   - la roue des Phases de Lune (3 segments : croissant, quartier, pleine lune) choisit sa richesse (niveau 1, 2 ou 3).
 # Chaque couple (bonus, phase) est un CRITERE de l'optimiseur avec son propre taux : les chances sont exactes.
 _TOP = {0: 5, 1: 9, 2: 13, 3: 16, 4: 16, 5: 14, 6: 11, 7: 8, 8: 5, 9: 3}
+_TOP2 = {0: 3, 1: 6, 2: 10, 3: 13, 4: 15, 5: 15, 6: 13, 7: 11, 8: 8, 9: 6}
 KINDS_CFG = {
-    # kind: (night weights, adjacency, {scatters: nights}, level weights for phase 1 / 2 / 3)
-    "constellation": (NIGHT_STD, ADJACENCY_STD, {3: 10, 4: 12, 5: 15}, (LEVELS_STD, _MID, LEVELS_RICH)),
-    "comet": (None, 0, {3: 2, 4: 3, 5: 3}, (_LOWL, _COMET_PLUS, _MID)),
+    # kind: (night weights, adjacency, {scatters: nights} (or one dict per phase), level weights for phase 1 / 2 / 3)
+    # Nights tuned by simulation (about 100x / 130x / 170x natural mean, no kind that fills the whole sky).
+    "constellation": (NIGHT_STD, ADJACENCY_STD, {3: 10, 4: 12, 5: 12}, (LEVELS_STD, _MID, LEVELS_RICH)),
+    "comet": (None, 0, ({3: 2, 4: 2, 5: 2}, {3: 2, 4: 3, 5: 3}, {3: 3, 4: 3, 5: 3}), (_LOWL, _COMET_PLUS, _MID)),
     "nova": (None, 0, {3: 5, 4: 6, 5: 7}, (LEVELS_STD, _MID, LEVELS_RICH)),
     "cross": (None, 0, {3: 3, 4: 4, 5: 4}, (_MID, LEVELS_RICH, _TOP)),
-    "rain": (None, 0, {3: 3, 4: 3, 5: 4}, (_MID, LEVELS_RICH, _TOP)),
-    "eclipse": (None, 0, {3: 3, 4: 4, 5: 4}, (_MID, LEVELS_RICH, _TOP)),
-    "galaxy": (None, 0, {3: 5, 4: 5, 5: 6}, (_MID, LEVELS_RICH, _TOP)),
+    "rain": (None, 0, {3: 3, 4: 3, 5: 3}, (_MID, LEVELS_RICH, _TOP)),
+    "eclipse": (None, 0, {3: 4, 4: 4, 5: 4}, (_MID, LEVELS_RICH, _TOP)),
+    # Galaxie: 2 stars a night in phase 1, 3 in phases 2 and 3 (4 nights at most: 5 nights would fill the sky).
+    "galaxy": (None, 0, ({3: 6, 4: 6, 5: 7}, {3: 3, 4: 4, 5: 4}, {3: 3, 4: 4, 5: 4}), (_MID, _TOP, _TOP2)),
 }
 PHASE_VALUE = {1: 100, 2: 130, 3: 170}  # relative natural value (informational)
 # Roue des Bonus et roue des Phases : part de chaque segment (somme = 1 chacune).
@@ -87,7 +90,7 @@ WHEEL2_ODDS = {1: 0.60, 2: 0.30, 3: 0.10}
 assert abs(sum(WHEEL1_ODDS.values()) - 1) < 1e-9 and abs(sum(WHEEL2_ODDS.values()) - 1) < 1e-9
 # criteria: (phase, label, kind, night weights, level weights, adjacency, {scatters: nights}, relative natural value)
 VARIANTS = {
-    f"p{ph}_{kind}": (ph, kind + "+" * (ph - 1), kind, v[0], v[3][ph - 1], v[1], v[2], PHASE_VALUE[ph])
+    f"p{ph}_{kind}": (ph, kind + "+" * (ph - 1), kind, v[0], v[3][ph - 1], v[1], v[2][ph - 1] if isinstance(v[2], tuple) else v[2], PHASE_VALUE[ph])
     for kind, v in KINDS_CFG.items()
     for ph in (1, 2, 3)
 }
