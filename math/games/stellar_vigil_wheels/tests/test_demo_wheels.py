@@ -21,9 +21,11 @@ def _load():
 def test_demo_wheel_odds_are_the_library_odds():
     _, odds = _load()
     for mode in ("base", "bonus"):
-        real = wheel_odds.measure(mode)["wheel1"]
-        for k, v in real.items():
-            assert abs(odds[mode][k] - v) < 1e-9, (mode, k)
+        real = wheel_odds.measure(mode)
+        for k, v in real["wheel1"].items():
+            assert abs(odds[mode]["kinds"][k] - v) < 1e-9, (mode, k)
+        for k, v in real["wheel2"].items():
+            assert abs(odds[mode]["tiers"][str(k)] - v) < 1e-9, (mode, k)
 
 
 def test_demo_books_cover_every_variant_and_nights_match():
@@ -39,4 +41,4 @@ def test_demo_books_cover_every_variant_and_nights_match():
             starts = [e for e in b["events"] if e["type"] == "nightStart"]
             assert starts and all(e["totalNights"] == sw[0]["totalNights"] for e in starts)
             assert len(starts) == sw[0]["totalNights"] or any(e["type"] == "freeSpinEnd" for e in b["events"])
-    assert seen == {k + suf for suf in ("", "+") for k in wheel_odds.KINDS}, seen
+    assert seen == {k + "+" * t for t in (0, 1, 2) for k in wheel_odds.KINDS}, seen

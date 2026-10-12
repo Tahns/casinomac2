@@ -41,7 +41,7 @@ def main():
         sel = [books[i] for i in random.choices(range(len(books)), weights=weights, k=n)]
         if mode == "base":
             sel += random.sample([b for b in books if has(b, "freeSpinTrigger")], 12)
-        for var in [k + suf for suf in ("", "+") for k in wheel_odds.KINDS]:
+        for var in [k + "+" * t for t in (0, 1, 2) for k in wheel_odds.KINDS]:
             pool = [b for b in books if has(b, "seasonWheel", variant=var)]
             sel += random.sample(pool, 6 if mode == "base" else 4)
         per = 5 if mode == "base" else 6
@@ -53,7 +53,7 @@ def main():
         odds = json.load(f)
     with open(OUT, "w") as f:
         f.write("window.BOOKS=" + json.dumps(out, separators=(",", ":")) + ";")
-        f.write("window.WHEEL_ODDS=" + json.dumps({m: wheel_odds.measure(m)["wheel1"] for m in ("base", "bonus")}, separators=(",", ":")) + ";")
+        f.write("window.WHEEL_ODDS=" + json.dumps({m: {"kinds": wheel_odds.measure(m)["wheel1"], "tiers": wheel_odds.measure(m)["wheel2"]} for m in ("base", "bonus")}, separators=(",", ":")) + ";")
         f.write("window.SAVER_ODDS=" + json.dumps({k: odds[k] for k in ("base", "bonus", "lut_sha256")}, separators=(",", ":")) + ";")
     print("written", OUT)
 

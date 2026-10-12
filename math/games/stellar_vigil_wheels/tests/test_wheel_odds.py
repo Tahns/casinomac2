@@ -6,20 +6,26 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
 import wheel_odds  # noqa: E402
 
-TARGET1 = {"constellation": 0.22, "comet": 0.14, "nova": 0.14, "cross": 0.12, "rain": 0.12, "eclipse": 0.10, "galaxy": 0.06, "aurora": 0.10}
+TARGET1 = {"constellation": 0.26, "comet": 0.15, "nova": 0.15, "cross": 0.13, "rain": 0.13, "eclipse": 0.10, "galaxy": 0.08}
+TARGET2 = {1: 0.60, 2: 0.30, 3: 0.10}
 
 
-def test_wheel1_odds_match_design():
+def test_wheel_odds_match_design():
     for mode in ("base", "bonus"):
         m = wheel_odds.measure(mode)
         for k, p in TARGET1.items():
             assert abs(m["wheel1"][k] - p) < 0.02, (mode, k, m["wheel1"])
+        for k, p in TARGET2.items():
+            assert abs(m["wheel2"][k] - p) < 0.02, (mode, k, m["wheel2"])
 
 
-def test_aurora_versions_are_richer():
+def test_higher_phases_are_richer():
     m = wheel_odds.measure("base")["variants"]
-    plain = sum(v["mean_win"] * v["share"] for k, v in m.items() if not k.endswith("@aurora"))
-    plain /= sum(v["share"] for k, v in m.items() if not k.endswith("@aurora"))
-    up = sum(v["mean_win"] * v["share"] for k, v in m.items() if k.endswith("@aurora"))
-    up /= sum(v["share"] for k, v in m.items() if k.endswith("@aurora"))
-    assert up > plain * 1.1, (plain, up)
+    mean = {t: 0.0 for t in (1, 2, 3)}
+    wsum = {t: 0.0 for t in (1, 2, 3)}
+    for n, v in m.items():
+        t = len(n) - len(n.rstrip("+")) + 1
+        mean[t] += v["mean_win"] * v["share"]
+        wsum[t] += v["share"]
+    mean = {t: mean[t] / wsum[t] for t in mean}
+    assert mean[2] > mean[1] * 1.05 and mean[3] > mean[2] * 1.05, mean

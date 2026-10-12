@@ -92,15 +92,17 @@ def saver_wheel_event(gamestate, saved: bool, floor: float, top_up: float) -> No
     )
 
 
-def season_wheel_event(gamestate, wheel: int, variant: str, total_nights: int) -> None:
-    """Pre-bonus wheels. wheel=1: Roue des Saisons stops on `variant`; wheel=2: it stops on Aurore, then the Roue de
-    l'Aurore stops on `variant` (a '+' version). The result is fixed by the criteria, so odds are the optimizer's."""
+def season_wheel_event(gamestate, tier: int, variant: str, kind: str, total_nights: int) -> None:
+    """Pre-bonus wheels, spun together and independent of each other: the Bonus wheel stops on `kind`, the Moon-phase
+    wheel stops on `tier` (1 crescent, 2 quarter, 3 full moon). `variant` is kind + '+' * (tier - 1). The result is
+    fixed by the criteria, so the odds are the optimizer's."""
     gamestate.book.add_event(
         {
             "index": len(gamestate.book.events),
             "type": "seasonWheel",
-            "wheel": wheel,
-            "season": "aurora" if wheel == 2 else variant,
+            "wheel": tier,
+            "tier": tier,
+            "kind": kind,
             "variant": variant,
             "totalNights": total_nights,
         }

@@ -45,9 +45,9 @@ class GameExecutables(GameCalculations):
         """Run one night: drop stars, relink constellations, pay the value gained and any zone."""
         cond = self.get_current_distribution_conditions()
         value_before = sky.total_value()
-        from game_config import VARIANTS
+        from game_config import VARIANTS, WINCAP_VARIANT
 
-        crit = cond.get("variant") or "wheel2_constellation"
+        crit = cond.get("variant") or WINCAP_VARIANT
         kind = VARIANTS[crit][2]
         if kind == "comet":
             stars = draw_comets(sky, 1, cond["level_weights"])
@@ -60,7 +60,7 @@ class GameExecutables(GameCalculations):
         elif kind == "eclipse":
             stars = draw_eclipse(sky, cond["level_weights"])
         elif kind == "galaxy":
-            stars = draw_galaxy(sky, 3 if VARIANTS[crit][0] == 2 else 2, cond["level_weights"])
+            stars = draw_galaxy(sky, 3 if VARIANTS[crit][0] >= 2 else 2, cond["level_weights"])
         else:
             stars = draw_night(sky, cond["star_count_weights"], cond["level_weights"], cond["adjacency_bias"])
         night_start_event(self, night, self.tot_fs)
@@ -82,13 +82,13 @@ class GameExecutables(GameCalculations):
 
     def play_season_wheels(self) -> None:
         """(The rare wincap criterion is assigned to the richest outcome, Aurore -> constellation+, the only kind that can fill the sky.) Roue des Saisons (and Roue de l'Aurore if it lands on Aurore): the result IS the criteria's variant."""
-        from game_config import VARIANTS
+        from game_config import VARIANTS, WINCAP_VARIANT
 
-        crit = self.get_current_distribution_conditions().get("variant") or "wheel2_constellation"
-        wheel, label, _, _, _, _, nights, _ = VARIANTS[crit]
+        crit = self.get_current_distribution_conditions().get("variant") or WINCAP_VARIANT
+        tier, label, kind, _, _, _, nights, _ = VARIANTS[crit]
         scatters = {10: 3, 12: 4, 15: 5}[self.tot_fs]
         self.tot_fs = nights[scatters]
-        season_wheel_event(self, wheel, label, self.tot_fs)
+        season_wheel_event(self, tier, label, kind, self.tot_fs)
         self.record({"variant": crit, "gametype": self.gametype})
 
     def play_saver_wheel(self) -> None:

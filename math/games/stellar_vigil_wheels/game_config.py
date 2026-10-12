@@ -65,33 +65,34 @@ NIGHT_WINCAP = {5: 1}
 _MID = {0: 18, 1: 20, 2: 18, 3: 15, 4: 12, 5: 9, 6: 5, 7: 2, 8: 1}
 _LOWL = {0: 60, 1: 28, 2: 9, 3: 3}
 _COMET_PLUS = {0: 50, 1: 28, 2: 13, 3: 6, 4: 3}
-# criteria: (wheel, label, kind, night weights, level weights, adjacency, {scatters: nights}, relative natural value)
-VARIANTS = {
-    "wheel1_constellation": (1, "constellation", "constellation", NIGHT_STD, LEVELS_STD, ADJACENCY_STD, {3: 10, 4: 12, 5: 15}, 100),
-    "wheel1_comet": (1, "comet", "comet", None, _LOWL, 0, {3: 2, 4: 3, 5: 3}, 100),
-    "wheel1_nova": (1, "nova", "nova", None, LEVELS_STD, 0, {3: 5, 4: 6, 5: 7}, 100),
-    "wheel2_constellation": (2, "constellation+", "constellation", NIGHT_STD, _MID, ADJACENCY_STD, {3: 10, 4: 12, 5: 15}, 130),
-    "wheel2_comet": (2, "comet+", "comet", None, _COMET_PLUS, 0, {3: 3, 4: 3, 5: 4}, 130),
-    "wheel2_nova": (2, "nova+", "nova", None, _MID, 0, {3: 5, 4: 6, 5: 7}, 130),
-    # Croix de Lune, Pluie d'Etoiles, Eclipse, Galaxie (natural mean tuned by simulation to about 100x / 130x)
-    "wheel1_cross": (1, "cross", "cross", None, _MID, 0, {3: 3, 4: 4, 5: 4}, 100),
-    "wheel1_rain": (1, "rain", "rain", None, _MID, 0, {3: 3, 4: 3, 5: 4}, 100),
-    "wheel1_eclipse": (1, "eclipse", "eclipse", None, _MID, 0, {3: 3, 4: 4, 5: 4}, 100),
-    "wheel1_galaxy": (1, "galaxy", "galaxy", None, _MID, 0, {3: 5, 4: 5, 5: 6}, 100),
-    "wheel2_cross": (2, "cross+", "cross", None, LEVELS_RICH, 0, {3: 4, 4: 4, 5: 5}, 130),
-    "wheel2_rain": (2, "rain+", "rain", None, LEVELS_RICH, 0, {3: 3, 4: 4, 5: 4}, 130),
-    "wheel2_eclipse": (2, "eclipse+", "eclipse", None, LEVELS_RICH, 0, {3: 4, 4: 4, 5: 5}, 130),
-    "wheel2_galaxy": (2, "galaxy+", "galaxy", None, LEVELS_RICH, 0, {3: 3, 4: 4, 5: 4}, 130),
+# Deux roues INDEPENDANTES qui tournent ensemble, aucune ne mene a l'autre :
+#   - la roue des Bonus (7 segments) choisit le bonus ;
+#   - la roue des Phases de Lune (3 segments : croissant, quartier, pleine lune) choisit sa richesse (niveau 1, 2 ou 3).
+# Chaque couple (bonus, phase) est un CRITERE de l'optimiseur avec son propre taux : les chances sont exactes.
+_TOP = {0: 5, 1: 9, 2: 13, 3: 16, 4: 16, 5: 14, 6: 11, 7: 8, 8: 5, 9: 3}
+KINDS_CFG = {
+    # kind: (night weights, adjacency, {scatters: nights}, level weights for phase 1 / 2 / 3)
+    "constellation": (NIGHT_STD, ADJACENCY_STD, {3: 10, 4: 12, 5: 15}, (LEVELS_STD, _MID, LEVELS_RICH)),
+    "comet": (None, 0, {3: 2, 4: 3, 5: 3}, (_LOWL, _COMET_PLUS, _MID)),
+    "nova": (None, 0, {3: 5, 4: 6, 5: 7}, (LEVELS_STD, _MID, LEVELS_RICH)),
+    "cross": (None, 0, {3: 3, 4: 4, 5: 4}, (_MID, LEVELS_RICH, _TOP)),
+    "rain": (None, 0, {3: 3, 4: 3, 5: 4}, (_MID, LEVELS_RICH, _TOP)),
+    "eclipse": (None, 0, {3: 3, 4: 4, 5: 4}, (_MID, LEVELS_RICH, _TOP)),
+    "galaxy": (None, 0, {3: 5, 4: 5, 5: 6}, (_MID, LEVELS_RICH, _TOP)),
 }
-# Roue des Saisons (petite roue) : part de chaque segment ; UPGRADE ("aurora") ouvre la grande roue (Roue de l'Aurore).
-WHEEL1_ODDS = {"constellation": 0.22, "comet": 0.14, "nova": 0.14, "cross": 0.12, "rain": 0.12, "eclipse": 0.10,
-               "galaxy": 0.06, "aurora": 0.10}
-WHEEL2_ODDS = {"constellation+": 0.25, "comet+": 0.15, "nova+": 0.15, "cross+": 0.13, "rain+": 0.12, "eclipse+": 0.12,
-               "galaxy+": 0.08}
+PHASE_VALUE = {1: 100, 2: 130, 3: 170}  # relative natural value (informational)
+# Roue des Bonus et roue des Phases : part de chaque segment (somme = 1 chacune).
+WHEEL1_ODDS = {"constellation": 0.26, "comet": 0.15, "nova": 0.15, "cross": 0.13, "rain": 0.13, "eclipse": 0.10, "galaxy": 0.08}
+WHEEL2_ODDS = {1: 0.60, 2: 0.30, 3: 0.10}
 assert abs(sum(WHEEL1_ODDS.values()) - 1) < 1e-9 and abs(sum(WHEEL2_ODDS.values()) - 1) < 1e-9
-VARIANT_PROB = {
-    k: (WHEEL1_ODDS[v[1]] if v[0] == 1 else WHEEL1_ODDS["aurora"] * WHEEL2_ODDS[v[1]]) for k, v in VARIANTS.items()
+# criteria: (phase, label, kind, night weights, level weights, adjacency, {scatters: nights}, relative natural value)
+VARIANTS = {
+    f"p{ph}_{kind}": (ph, kind + "+" * (ph - 1), kind, v[0], v[3][ph - 1], v[1], v[2], PHASE_VALUE[ph])
+    for kind, v in KINDS_CFG.items()
+    for ph in (1, 2, 3)
 }
+VARIANT_PROB = {k: WHEEL1_ODDS[v[2]] * WHEEL2_ODDS[v[0]] for k, v in VARIANTS.items()}
+WINCAP_VARIANT = "p3_constellation"
 _WSUM = sum(VARIANT_PROB[k] * VARIANTS[k][7] for k in VARIANTS)
 VARIANT_RTP_FRACTION = {k: VARIANT_PROB[k] * VARIANTS[k][7] / _WSUM for k in VARIANTS}
 
