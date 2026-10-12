@@ -25,7 +25,7 @@ def load(mode):
 
 def measure(mode):
     lines, rows = load(mode)
-    total_w = sum(w for _, w in rows)
+    total_w = sum(w for w, _ in rows)
     per = defaultdict(lambda: [0, 0.0])
     for line, (w, pay) in zip(lines, rows):
         sw = [e for e in json.loads(line)["events"] if e["type"] == "seasonWheel"]
