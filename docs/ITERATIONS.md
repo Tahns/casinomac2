@@ -120,4 +120,4 @@
 - À faire : symbole déclencheur spécial, écoute des sons par l'utilisateur, avis brevets.
 
 ## Itération 18 (2026-10-12)
-- Interface de la démo réécrite (roues en arc au-dessus de la grille, légendes d'étapes, cartes, halos, jauges, vitesse). , , . 6 bonus joués sans erreur ; 6 tests démo verts.
+- Interface de la démo réécrite (roues en arc au-dessus de la grille, légendes d'étapes, cartes, halos, jauges, vitesse). Paramètres d'URL de test : fast=1, kind=comet (ou nova, etc.), auto=bonus, season ou wheel. 6 bonus joués sans erreur ; 6 tests démo verts.
