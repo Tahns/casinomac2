@@ -20,7 +20,7 @@ def data_uri(path: str) -> str:
 html = open(os.path.join(HERE, "index.html"), encoding="utf-8").read()
 books = open(os.path.join(HERE, "books_wheels.js" if VARIANT == "wheels" else "books.js"), encoding="utf-8").read()
 html = html.replace('<script src="books.js"></script>', "<script>" + books + "</script>")
-html = re.sub(r'(src=\\?")art/([A-Za-z0-9_]+\.webp)(\\?")', lambda m: m.group(1) + data_uri("art/" + m.group(2)) + m.group(3), html)
+html = re.sub(r'((?:src|href)=\\?")art/([A-Za-z0-9_]+\.webp)(\\?")', lambda m: m.group(1) + data_uri("art/" + m.group(2)) + m.group(3), html)
 html = re.sub(r"url\(art/([A-Za-z0-9_]+\.webp)\)", lambda m: "url(" + data_uri("art/" + m.group(1)) + ")", html)
 out = os.path.join(HERE, "stellar_vigil_demo_wheels.html" if VARIANT == "wheels" else "stellar_vigil_demo.html")
 open(out, "w", encoding="utf-8").write(html)

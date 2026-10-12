@@ -28,3 +28,11 @@ Les prompts demandent un objet unique sur **fond noir pur** ; les images sont fo
 3. **Droit d'auteur** : le statut de protection d'images générées par IA varie selon les pays ; à faire valider par un conseil. Conserver ce fichier, les prompts et les identifiants de jobs comme preuve de création.
 4. **Ressemblance involontaire** : faire relire les images (en particulier le logo et la comète) pour vérifier qu'elles ne ressemblent pas à un visuel existant.
 5. **Divulgation** : certaines plateformes ou juridictions demandent de déclarer le recours à l'IA générative.
+
+## Ajout (2026-10-12) : roues
+| Fichier | Rôle | Description du prompt (résumé) | Job Higgsfield |
+|---|---|---|---|
+| `wheel_rim.webp` | Cadre des roues | anneau doré d'astrolabe, graduations, petites étoiles et lunes, centre vide | b99f8c88-b698-4c87-8ca6-6c812eaadb64 |
+| `wheel_hub.webp` | Moyeu des roues | médaillon doré, étoile à huit branches, petit cristal bleu | 87584ec7-7070-4a69-ad7e-07a4a6c85338 |
+
+Modèle `gpt_image_2_5`, fond noir converti en transparence. Même garde-fous que ci-dessus (aucune référence, aucun nom de marque). Trois visuels de menu ont aussi été générés (jobs 707ab0d2-98cc-47b2-9001-663858c37a61, fa8fbab4-ab48-454c-8698-badc10d0536d, f2368020-d67f-4c40-b71b-d18ad2574d41) mais pas encore intégrés.

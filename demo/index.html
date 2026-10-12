@@ -177,8 +177,9 @@
         <g clip-path="url(#halfclip)">
           <g id="ring2" class="ring idle"></g>
           <g id="ring1" class="ring idle"></g>
-          <circle r="19" fill="#0a0e26" stroke="url(#rim)" stroke-width="3"/>
-          <circle r="107" fill="none" stroke="url(#rim)" stroke-width="3.5"/><circle r="70" fill="none" stroke="url(#rim)" stroke-width="2"/>
+          <circle r="69" fill="none" stroke="url(#rim)" stroke-width="2"/>
+          <image href="art/wheel_rim.webp" x="-116" y="-116" width="232" height="232" style="pointer-events:none"/>
+          <image href="art/wheel_hub.webp" x="-23.5" y="-23.5" width="47" height="47" style="pointer-events:none"/>
         </g>
         <path d="M-9 -116 L9 -116 L0 -98 Z" fill="#ffe39a" stroke="#7a5614" stroke-width="1.5" style="filter:drop-shadow(0 0 5px #f3c969)"/>
       </svg>
@@ -226,7 +227,7 @@
   <li>Des étoiles voisines forment une constellation : chaque étoile gagne un niveau de valeur par lien, jusqu'à +3. Une étoile qui relie deux constellations ajoute un niveau de plus (conjonction).</li>
   <li>Compléter une zone paie un multiplicateur fixe, une seule fois par bonus : Horizon (ligne du bas) 20×, Méridien (colonne centrale) 100×, Quadrature (les 4 coins) 1 000×, Firmament (ciel complet) 10 000×. Ces multiplicateurs ne sont pas progressifs.</li></ul>
   <h3>Roues et bonus (version à deux roues)</h3>
-  <ul><li>Dans la version à deux roues, la Roue des Saisons choisit le bonus : Constellations, Comètes ou Nova. Le segment Aurore ouvre la Roue de l'Aurore, qui donne la version supérieure (étoiles plus riches).</li>
+  <ul><li>Dans la version à deux roues, la Roue des Saisons choisit le bonus : Constellations, Comètes ou Nova. Le segment UPGRADE de la petite roue est le seul moyen d'ouvrir la grande roue (Roue de l'Aurore), qui donne la version supérieure (étoiles plus riches).</li>
   <li>Pluie de Comètes : chaque nuit une comète traverse une ligne ou une colonne et pose une étoile sur chaque case libre. Grande Nova : chaque nuit un bloc de 4 étoiles se pose d'un coup. Les chances de chaque roue sont celles mesurées sur le jeu.</li></ul>
   <h3>Roue de sauvegarde</h3>
   <ul><li>En fin de bonus, si le total est inférieur à un plancher, la roue tourne. Plancher : 25× la mise pour un bonus déclenché en jeu normal ; 80× (le prix payé) pour un bonus acheté.</li>
@@ -373,21 +374,27 @@ function ringPath(a0,a1,r0,r1){const p=(a,r)=>{const t=(a-90)*Math.PI/180;return
   return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r1} ${r1} 0 ${L} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} L${x2.toFixed(2)} ${y2.toFixed(2)} A${r0} ${r0} 0 ${L} 0 ${x3.toFixed(2)} ${y3.toFixed(2)} Z`}
 function wheelSegs(wheel,mode){const o=((window.WHEEL_ODDS||{})[mode])||{constellation:.35,comet:.25,nova:.25,aurora:.15};
   return wheel===1?[['constellation',o.constellation],['comet',o.comet],['nova',o.nova],['aurora',o.aurora]]:[['constellation+',.4],['comet+',.3],['nova+',.3]]}
-const LABEL={constellation:'CONSTELL.',comet:'COMÈTES',nova:'NOVA',aurora:'AURORE','constellation+':'CONSTELL.+','comet+':'COMÈTES+','nova+':'NOVA+'};
+const LABEL={constellation:'CONSTELL.',comet:'COMÈTES',nova:'NOVA',aurora:'UPGRADE','constellation+':'CONSTELL.+','comet+':'COMÈTES+','nova+':'NOVA+'};
 function drawRing(id,segs,r0,r1){let a=0; const arcs=segs.map(([k,p])=>{const s=a;a+=p*360;return {k,s,e:a}}); const rm=(r0+r1)/2;
   $(id).innerHTML=arcs.map(x=>{const base=x.k.replace('+',''),mid=(x.s+x.e)/2,fill=x.k==='aurora'?'url(#rim)':RING_COL[base]+(x.k.endsWith('+')?'':'');
-    const pct=Math.round((x.e-x.s)/3.6); return `<g class="seg" data-k="${x.k}"><path d="${ringPath(x.s,x.e,r0,r1)}" fill="${fill}" stroke="#0a0e1f" stroke-width="1.5"/><g transform="rotate(${mid.toFixed(1)})"><text x="0" y="${-rm-1}" text-anchor="middle" font-size="${x.k==='aurora'?9.5:8}" fill="${x.k==='aurora'?'#3a2f14':'#fff'}">${LABEL[x.k]}</text><text x="0" y="${-rm+9}" text-anchor="middle" font-size="7" fill="${x.k==='aurora'?'#3a2f14':'#cfd8ff'}">${pct} %</text></g></g>`}).join('');
+    const pct=Math.round((x.e-x.s)/3.6); return `<g class="seg" data-k="${x.k}"><path d="${ringPath(x.s,x.e,r0,r1)}" fill="${fill}" stroke="#0a0e1f" stroke-width="1.5"/><g transform="rotate(${mid.toFixed(1)})"><text x="0" y="${-rm-1}" text-anchor="middle" font-size="${x.k==='aurora'?7.6:8}" fill="${x.k==='aurora'?'#3a2f14':'#fff'}">${LABEL[x.k]}</text><text x="0" y="${-rm+9}" text-anchor="middle" font-size="7" fill="${x.k==='aurora'?'#3a2f14':'#cfd8ff'}">${pct} %</text></g></g>`}).join('');
   return arcs}
-let ringArcs={1:[],2:[]}, ringAngle={1:0,2:0};
+let ringArcs={1:[],2:[]}, ringAngle={1:0,2:0}, driftOn=false;
+// Rotation continue très lente des deux roues (arrêtée pendant un tirage et jusqu'au tour suivant).
+const DRIFT={1:3,2:-2.2}, reduceMotion=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+let driftT=performance.now();
+(function drift(t){ const dt=Math.min(.1,(t-driftT)/1000); driftT=t;
+  if(driftOn&&!reduceMotion&&!$('dock').classList.contains('hidden')) [1,2].forEach(n=>{ringAngle[n]+=DRIFT[n]*dt; const el=$('ring'+n); el.style.transition='none'; el.style.transform=`rotate(${ringAngle[n]}deg)`});
+  requestAnimationFrame(drift)})(driftT);
 function initDock(mode){ if(!window.WHEEL_ODDS){$('dock').classList.add('hidden');return}
-  $('dock').classList.remove('hidden'); ringArcs[1]=drawRing('ring1',wheelSegs(1,mode),20,68); ringArcs[2]=drawRing('ring2',wheelSegs(2,mode),72,105);
-  ringAngle={1:0,2:0}; ['ring1','ring2'].forEach(i=>{$(i).classList.add('idle');$(i).style.transform='rotate(0deg)'});
+  $('dock').classList.remove('hidden'); ringArcs[1]=drawRing('ring1',wheelSegs(1,mode),23,66); ringArcs[2]=drawRing('ring2',wheelSegs(2,mode),71,89);
+  ringAngle={1:ringAngle[1]%360,2:ringAngle[2]%360}; driftOn=true; ['ring1','ring2'].forEach((i,k)=>{$(i).classList.add('idle');$(i).style.transition='none';$(i).style.transform=`rotate(${ringAngle[k+1]}deg)`});
   const pc=(arr)=>arr.map(x=>`<span>${LABEL[x.k].replace('.','')}  ${Math.round((x.e-x.s)/3.6)} %</span>`).join('');
-  $('dockcap').innerHTML='<span style="border-color:#f3c969;color:#ffe39a">Saisons</span>'+pc(ringArcs[1])+'<span style="border-color:#f3c969;color:#ffe39a">Aurore</span>'+pc(ringArcs[2])}
+  $('dockcap').innerHTML='<span style="border-color:#f3c969;color:#ffe39a">Petite roue</span>'+pc(ringArcs[1])+'<span style="border-color:#f3c969;color:#ffe39a">Grande roue</span>'+pc(ringArcs[2])}
 async function spinRing(n,target){const arcs=ringArcs[n], x=arcs.find(a=>a.k===target), mid=(x.s+x.e)/2+(Math.random()-.5)*(x.e-x.s)*.55, el=$('ring'+n);
-  const dir=n===1?1:-1, turns=5, cur=ringAngle[n]; const to=Math.ceil(cur/360)*360+dir*turns*360-dir*mid + (dir<0?0:0);
-  const final=dir*turns*360-mid*dir; // aligne mid sous le pointeur
-  const angle=(n===1? (turns*360-mid) : (-turns*360-mid)); ringAngle[n]=angle;
+  const dir=n===1?1:-1, turns=5; driftOn=false;
+  const cur=ringAngle[n], need=(((-mid-cur)%360)+360)%360; // angle restant pour aligner mid sous le pointeur
+  const angle=dir>0? cur+need+turns*360 : cur-((360-need)%360)-turns*360; ringAngle[n]=angle;
   el.classList.remove('idle'); el.getBoundingClientRect(); el.style.transitionDuration=(4.2*(turbo?.3:speed))+'s'; el.style.transform=`rotate(${angle}deg)`;
   const dur=4200*(turbo?.3:speed); let t=0,step=70; while(t<dur*.9){setTimeout(()=>sfx('tick'),t);t+=step;step*=1.06}
   await sleep(dur+250); sfx(target==='aurora'?'upgrade':'stop');
@@ -396,7 +403,7 @@ async function spinSeasons(e){
   const mode=window.__mode||'base'; initDock(mode); setKind(e.season==='aurora'?e.variant:e.season);
   cap('<em>Roue des Saisons</em> : elle choisit ton bonus…'); await sl(500);
   await spinRing(1,e.season);
-  if(e.wheel===2){cap('<em>AURORE !</em> La roue de l\'Aurore choisit la version supérieure…'); await sl(900); setKind(e.variant); await spinRing(2,e.variant)}
+  if(e.wheel===2){cap('<em>UPGRADE !</em> La grande roue choisit la version supérieure…'); await sl(900); setKind(e.variant); await spinRing(2,e.variant)}
   cap(`Bonus gagné : <em>${KINDS[curKind].name}${curPlus?'+':''}</em>`); await sl(1100)}
 // --- Roue de sauvegarde (fin de bonus), inchangée ---
 function wheelPath(i,n,r){const a0=(i*360/n-90)*Math.PI/180,a1=((i+1)*360/n-90)*Math.PI/180;
