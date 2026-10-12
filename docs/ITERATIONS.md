@@ -121,3 +121,10 @@
 
 ## Itération 18 (2026-10-12)
 - Interface de la démo réécrite (roues en arc au-dessus de la grille, légendes d'étapes, cartes, halos, jauges, vitesse). Paramètres d'URL de test : fast=1, kind=comet (ou nova, etc.), auto=bonus, season ou wheel. 6 bonus joués sans erreur ; 6 tests démo verts.
+
+## Itération 18 (2026-10-12), changements de jeu demandés par l'utilisateur
+- Quatre nouveaux bonus : Croix de Lune, Pluie d'Étoiles, Éclipse, Galaxie (sept bonus au total avec Constellations, Comètes, Nova).
+- Rouleaux qui défilent dans la démo ; roues dessinées avec images et rotation lente.
+- Deux roues indépendantes : roue des Bonus (26/15/15/13/13/10/8 %) et roue des Phases de Lune (60/30/10 %), sans segment Upgrade ; 21 couples (bonus, phase) comme critères de l'optimiseur. Documents mis à jour : encadré dans `TWO_WHEELS_SPEC.md`, section « Changement itération 18 » dans `PATENT_BRIEF.md`, ligne 16 de `DECISIONS.md`, question 16 de `OPEN_QUESTIONS.md`.
+- Cadre et moyeu d'or générés avec Higgsfield.
+- Points bloqués : (1) mesures à 100 000 simulations en cours de régénération, aucun RTP ni distribution à citer pour le nouveau système ; (2) accès réseau aux fichiers Higgsfield non résolu ; (3) un script de mesure a été refusé par le contrôle d'accès, non contourné.

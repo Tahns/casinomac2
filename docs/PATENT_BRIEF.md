@@ -20,3 +20,22 @@ Dans les revendications lues, le point commun est des symboles « configurables 
 
 ## Éléments sans équivalent trouvé dans ces six brevets (recherche non exhaustive)
 Bonus de constellation par adjacence avec niveaux de valeur ; multiplicateurs fixes par complétion de zone (à surveiller : un multiplicateur « grille pleine » apparaît dans les dépendantes du brevet 064 et un « Grand » à matrice pleine dans la description du 982).
+
+## Changement itération 18 (deux roues indépendantes, sept bonus)
+Le jeu n'a plus la structure « roue avant le bonus + roue d'amélioration conditionnelle » décrite dans `TWO_WHEELS_SPEC.md` (itérations 12 à 17).
+
+**Ce qui s'éloigne :**
+- Les deux roues sont indépendantes et tournent ensemble : la roue des Bonus choisit le bonus, la roue des Phases de Lune choisit sa richesse (niveau 1/2/3).
+- Il n'y a plus de segment Upgrade : la seconde roue n'est ni déclenchée par la première, ni une amélioration conditionnelle d'un résultat précédent.
+- Sept bonus au lieu de trois, aux formes différentes (croix, colonnes, diagonale, spirale).
+- Toujours pas de déclenchement direct depuis le jeu de base, de grille agrandie, de jackpot, de cadres ni de casques.
+
+**Ce qui reste proche :**
+- Deux roues placées devant un bonus, chacune déterminant une partie de ce qui suit.
+- Un bonus qui se joue sur une grille de symboles à valeur après tirage des roues.
+- Les risques des six brevets Aristocrat du tableau ci-dessus (étoiles persistantes, roue de sauvegarde) sont inchangés.
+
+**Limites, à lire avant toute conclusion :**
+- Cette description ne dit pas que le jeu est libre de brevets ni conforme. Seul un conseil en propriété intellectuelle peut se prononcer, sur le texte officiel des revendications.
+- La recherche ne couvre que six brevets Aristocrat. Elle ne couvre pas Light & Wonder (titulaire probable de brevets sur les structures à roues de type Huff N' Puff), ni IGT, Everi ou d'autres titulaires.
+- Il n'existe pas de recherche d'antériorité exhaustive. Le conseil devrait recevoir `TWO_WHEELS_SPEC.md` (encadré itération 18) avec ce dossier.

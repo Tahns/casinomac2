@@ -4,7 +4,7 @@ Tout ce qui attend une décision humaine, avec ma recommandation. Détails : `do
 
 | N° | Décision | Recommandation | Pourquoi |
 |----|----------|----------------|----------|
-| 16 | Deux roues (Saisons + Aurore) : adopter dans le jeu principal ? | **Ne pas soumettre avant l'avis d'un conseil en brevets** ; garder la copie `stellar_vigil_wheels` | La structure « roue avant le bonus + roue d'upgrade » est celle de Huff N' Puff ; noms et thème originaux ne garantissent rien (pas un avis juridique) |
+| 16 | Deux roues indépendantes (Bonus 7 segments + Phases de Lune), sept bonus : adopter dans le jeu principal ? | **Ne pas soumettre avant l'avis d'un conseil en brevets** ; garder la copie `stellar_vigil_wheels`. Mesures de l'itération 18 en cours de régénération | Structure plus éloignée de Huff N' Puff (plus de segment Upgrade ni d'amélioration conditionnelle) mais deux roues devant un bonus restent proches ; recherche limitée à six brevets Aristocrat, pas Light & Wonder ; ni libre de brevets ni conforme tant qu'un conseil en PI ne l'a pas dit |
 | 1, 6 | Brevets (étoiles persistantes, roue « jusqu'au plancher ») | Faire examiner `docs/PATENT_BRIEF.md` | Risque principal du projet |
 | 15 | Roue de sauvegarde (2,5 % de chance réelle en achat) | Option (b) la retirer, ou (a) la garder | La rendre généreuse coûte 4 à 15 points de RTP |
 | 14 | Répartition RTP base/bonus | Garder `default` (volatilité haute demandée) ; `base_heavy` si sessions plus douces voulues | Ruine à 200 spins 26,8 % contre 16,2 % |

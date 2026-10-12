@@ -1,5 +1,15 @@
 # Spécification : deux roues (demande utilisateur, itération 12)
 
+> **MISE À JOUR itération 18 (remplace le système de l'itération 17 ci-dessous ; l'historique est conservé).** Sept bonus et deux roues **indépendantes** qui tournent ensemble :
+> - **Sept bonus** : Constellations (bonus d'origine), Comètes, Nova, **Croix de Lune** (croix de 5 étoiles), **Pluie d'Étoiles** (une étoile par colonne, qui tombe en bas), **Éclipse** (une diagonale d'étoiles), **Galaxie** (spirale).
+> - **Roue des Bonus** (7 segments) : choisit le bonus. Chances : Constellations 26 %, Comètes 15 %, Nova 15 %, Croix de Lune 13 %, Pluie d'Étoiles 13 %, Éclipse 10 %, Galaxie 8 %.
+> - **Roue des Phases de Lune** (3 segments) : choisit la richesse du bonus (niveau 1/2/3, par exemple Constellations, Constellations+, Constellations++). Chances : croissant 60 %, quartier 30 %, pleine lune 10 %.
+> - Les deux roues sont tirées indépendamment (chance d'un couple = produit des deux). **Il n'y a plus de segment Upgrade** : la seconde roue n'est plus une amélioration conditionnelle atteinte depuis la première. La « Roue de l'Aurore » et la « Roue des Saisons » de l'itération 17 sont abandonnées.
+> - Les **21 couples (bonus, phase)** sont des critères de l'optimiseur, avec leurs taux exacts (`WHEEL1_ODDS` x `WHEEL2_ODDS` dans `game_config.py`), donc des chances affichées exactes par construction.
+> - Inchangé : pas de déclenchement direct depuis le jeu de base, pas de grille agrandie, pas de jackpot, pas de cadres ni de casques, pas de noms ni de visuels de la franchise de référence.
+> - **Résultats (RTP, distribution, portes qualité) : en cours de régénération, non mesurés à ce jour.** Aucun chiffre des itérations 12 à 17 ne vaut pour ce système.
+> - Risque PI : voir la section « Changement itération 18 » de `docs/PATENT_BRIEF.md` ; ce n'est pas un avis juridique.
+
 > **MISE À JOUR (itération 17, d'après la capture de Huff N' Puff fournie par l'utilisateur : deux roues empilées au-dessus de la grille, chacune menant à des bonus différents et à leurs versions Super).** Les roues ne choisissent plus des « variantes » du même bonus mais **trois bonus différents**, chacun avec sa version Supérieure :
 > - **Nuit des Constellations** (bonus d'origine) / Constellations+ ;
 > - **Pluie de Comètes** : chaque nuit une comète traverse une ligne ou une colonne et pose une étoile sur chaque case libre / Comètes+ ;
