@@ -11,6 +11,7 @@ from collections import defaultdict
 
 import zstandard
 
+KINDS = ["constellation", "comet", "nova", "cross", "rain", "eclipse", "galaxy"]
 PUB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "library", "publish_files")
 
 
@@ -37,12 +38,8 @@ def measure(mode):
     for k, (w, pw) in per.items():
         out["variants"][k] = {"share": w / bonus_w, "mean_win": pw / w, "rtp_part": pw / total_w}
     a = sum(v["share"] for k, v in out["variants"].items() if k.endswith("@aurora"))
-    out["wheel1"] = {
-        "constellation": out["variants"].get("constellation", {}).get("share", 0),
-        "comet": out["variants"].get("comet", {}).get("share", 0),
-        "nova": out["variants"].get("nova", {}).get("share", 0),
-        "aurora": a,
-    }
+    out["wheel1"] = {k: out["variants"].get(k, {}).get("share", 0) for k in KINDS}
+    out["wheel1"]["aurora"] = a
     return out
 
 

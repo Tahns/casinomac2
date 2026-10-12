@@ -36,12 +36,12 @@ def has(book, etype, **kw):
 def main():
     random.seed(42)
     out = {}
-    for mode, n in (("base", 600), ("bonus", 80)):
+    for mode, n in (("base", 600), ("bonus", 120)):
         books, weights = load(mode)
         sel = [books[i] for i in random.choices(range(len(books)), weights=weights, k=n)]
         if mode == "base":
             sel += random.sample([b for b in books if has(b, "freeSpinTrigger")], 12)
-        for var in ("constellation", "comet", "nova", "constellation+", "comet+", "nova+"):
+        for var in [k + suf for suf in ("", "+") for k in wheel_odds.KINDS]:
             pool = [b for b in books if has(b, "seasonWheel", variant=var)]
             sel += random.sample(pool, 6 if mode == "base" else 4)
         per = 5 if mode == "base" else 6

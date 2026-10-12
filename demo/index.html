@@ -158,6 +158,10 @@
   body.bonusing .wrap{padding-top:8px}
   .speed.on{outline:2px solid var(--gold)}
   .wheelbox{z-index:9}
+  .cell.reel{overflow:hidden}
+  .cell .strip{position:absolute;left:0;right:0;display:flex;flex-direction:column;will-change:transform}
+  .cell .si{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .cell .si .star{animation:none}
 </style>
 </head>
 <body>
@@ -301,6 +305,10 @@ const SFX={
   saved:()=>{whoosh(.5,400,3000,.05);[0,2,4,5,7].forEach((n,i)=>chime(PENTA[n],1,.08,.1+i*.1));sparkle(7,1500,1800,.03,.08)},
   empty:()=>{tone(220,.7,'sine',.06,0,110);tone(165,.7,'triangle',.04,.12,90)},
   comet:()=>{whoosh(.9,400,5200,.07);sparkle(9,1400,2400,.03,.07)},
+  cross:()=>{boom(.1,0,140);chime(659.25,1.1,.07,.05);chime(987.77,1.1,.06,.12)},
+  rain:()=>{whoosh(1.2,2600,500,.05);sparkle(8,1800,2200,.03,.1)},
+  eclipse:()=>{boom(.16,0,60);whoosh(1,900,200,.06);chime(329.63,1.4,.06,.2)},
+  galaxy:()=>{whoosh(1.1,300,2200,.05);[0,2,4,5,7,9].forEach((n,i)=>chime(PENTA[n],.9,.04,i*.1))},
   nova:()=>{boom(.2,0,110);whoosh(.5,300,3500,.06);chime(523.25,1.3,.08,.05);chime(783.99,1.3,.07,.1);chime(1046.5,1.3,.06,.15)},
   constellation:()=>{[0,3,5].forEach((n,i)=>chime(PENTA[n],1,.06,i*.12))},
   stop:()=>{click(.08,700);chime(PENTA[2],1,.07);chime(PENTA[4],1,.06,.06)},
@@ -321,6 +329,16 @@ const KINDS={
   nova:{name:'Grande Nova',col:'#ffa63d',txt:'Chaque nuit, un bloc de 4 étoiles se pose d\'un coup.',
     icon:'<g fill="#ffd27a"><path d="M24 2 L28 20 L46 24 L28 28 L24 46 L20 28 L2 24 L20 20 Z"/></g><circle cx="24" cy="24" r="6" fill="#fff"/><circle cx="24" cy="24" r="14" fill="none" stroke="#ffa63d" stroke-width="2" opacity=".7"/>'}
 };
+KINDS.cross={name:'Croix de Lune',col:'#c58cff',txt:'Chaque nuit, une croix de 5 étoiles se pose sur le ciel.',
+    icon:'<path d="M24 4 V44 M4 24 H44" stroke="#c58cff" stroke-width="3" opacity=".6"/><g fill="#efdcff"><path d="M24 6 L27 21 L24 24 L21 21 Z"/><path d="M24 42 L27 27 L24 24 L21 27 Z"/><path d="M6 24 L21 21 L24 24 L21 27 Z"/><path d="M42 24 L27 21 L24 24 L27 27 Z"/></g><path d="M31 9 A11 11 0 1 0 31 21 A8 8 0 1 1 31 9Z" fill="#fff3c4" transform="translate(6,8) scale(.55)"/>'};
+KINDS.rain={name:"Pluie d'Étoiles",col:'#5fe0a4',txt:'Chaque nuit, une étoile tombe dans chaque colonne et se pose tout en bas.',
+    icon:'<g stroke="#5fe0a4" stroke-width="2.5" stroke-linecap="round" opacity=".55"><path d="M10 4 V22"/><path d="M24 12 V32"/><path d="M38 2 V20"/></g><g fill="#d6ffe9"><path d="M10 28 L13 36 L21 38 L13 40 L10 48 L7 40 L-1 38 L7 36Z" transform="translate(0,-8) scale(.9)"/><path d="M24 36 L27 42 L33 44 L27 46 L24 52 L21 46 L15 44 L21 42Z" transform="translate(0,-10)"/><path d="M38 24 L41 32 L49 34 L41 36 L38 44 L35 36 L27 34 L35 32Z" transform="translate(0,-4) scale(.8)"/></g>'};
+KINDS.eclipse={name:'Éclipse',col:'#ff7a7a',txt:'Chaque nuit, une ombre traverse le ciel en diagonale et allume une étoile sur chaque case libre.',
+    icon:'<circle cx="24" cy="24" r="13" fill="#2a1030" stroke="#ff7a7a" stroke-width="2"/><circle cx="24" cy="24" r="19" fill="none" stroke="#ffb0a0" stroke-width="1.5" stroke-dasharray="3 4" opacity=".8"/><path d="M6 42 L42 6" stroke="#fff3c4" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="24" r="4" fill="#fff3c4"/>'};
+KINDS.galaxy={name:'Galaxie',col:'#ff9fe0',txt:"Chaque nuit, l'étoile suivante d'une spirale se pose, du bord du ciel vers son centre.",
+    icon:'<path d="M24 24 m0 0 a4 4 0 0 1 8 0 a8 8 0 0 1 -16 0 a12 12 0 0 1 24 0 a16 16 0 0 1 -32 0" fill="none" stroke="#ff9fe0" stroke-width="2.5" stroke-linecap="round"/><g fill="#fff"><circle cx="24" cy="24" r="3.5"/><circle cx="40" cy="24" r="2.2"/><circle cx="8" cy="24" r="2.2"/><circle cx="24" cy="8" r="2"/></g>'};
+KINDS.aurora={name:'Upgrade',col:'#ffe39a',txt:'',
+    icon:'<path d="M24 4 L40 26 H30 V44 H18 V26 H8 Z" fill="#fff3c4" stroke="#8a5a14" stroke-width="2"/><path d="M24 12 L26 18 L32 19 L26 21 L24 27 L22 21 L16 19 L22 18Z" fill="#f3c969"/>'};
 const kindOf=v=>String(v||'constellation').replace('+','');
 const isPlus=v=>String(v||'').endsWith('+');
 const setKind=v=>{curKind=kindOf(v); curPlus=isPlus(v); document.documentElement.style.setProperty('--bc',KINDS[curKind].col)};
@@ -333,7 +351,21 @@ let skyVal={}, skyBase={};
 function buildSky(){const s=$('sky');s.innerHTML='';for(let r=0;r<5;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`s${c}_${r}`;s.appendChild(d)}
   $('links').innerHTML='';$('fx').innerHTML=''; skyVal={}; skyBase={};
   $('zones').innerHTML=ZONES.map(z=>`<div class="zone" id="z${z[0]}"><b>${z[2]}×</b>${z[0]}<br>${z[1]}<i></i></div>`).join('')}
-function show(board){for(let c=0;c<5;c++)for(let r=0;r<4;r++){const el=$(`b${c}_${r}`);const s=board[c][r+1];el.className='cell drop'+(s.scatter?' scat':'');el.style.setProperty('--d',c*70+'ms');el.innerHTML=s.name==='ST'?`<div class="star">${starSvg}<small>${s.prize}×</small></div>`:(SYM[s.name]||(()=>''))()}}
+const SYMKEYS=Object.keys(SYM).filter(k=>k!=='S'&&k!=='W');
+// Les rouleaux défilent : une bande de symboles descend dans chaque case et s'arrête colonne après colonne.
+function show(board){const sf=turbo?.3:speed;
+  for(let c=0;c<5;c++){ const n=9+c*4, dur=(650+c*260)*sf;
+    for(let r=0;r<4;r++){const el=$(`b${c}_${r}`);const s=board[c][r+1];
+      el.className='cell reel'+(s.scatter?' scat':''); el.classList.remove('drop');
+      const fin=s.name==='ST'?`<div class="star">${starSvg}<small>${s.prize}×</small></div>`:(SYM[s.name]||(()=>''))();
+      const items=[fin]; for(let i=0;i<n;i++){const k=SYMKEYS[Math.floor(Math.random()*SYMKEYS.length)]; items.push(SYM[k]())}
+      const ih=100/(n+1);
+      el.innerHTML=`<div class="strip" style="top:0;height:${(n+1)*100}%">${items.map(h=>`<div class="si" style="height:${ih}%">${h}</div>`).join('')}</div>`;
+      const strip=el.firstChild; const anim=strip.animate([{transform:`translateY(-${n*ih}%)`,filter:'blur(2.5px)'},{transform:`translateY(-${n*ih*.12}%)`,filter:'blur(2px)',offset:.72},{transform:'translateY(0)',filter:'blur(0)'}],{duration:dur+r*50*sf,easing:'cubic-bezier(.25,.6,.25,1)'});
+      anim.onfinish=()=>{el.innerHTML=fin; el.classList.remove('reel')};
+    }
+    setTimeout(()=>sfx('tick'),dur+80*sf); }
+}
 function viewBonus(on){$('base').classList.toggle('hidden',on);$('skywrap').classList.toggle('hidden',!on);$('zones').classList.toggle('hidden',!on);$('bhead').classList.toggle('hidden',!on);$('pips').classList.toggle('hidden',!on);$('stage').classList.toggle('bonus',on); if(!on) document.documentElement.style.setProperty('--bc','#f3c969')}
 const view=viewBonus;
 function countTo(el,from,to,ms,fmtf=v=>v.toFixed(1)+'×'){const t0=performance.now(); ms*=turbo?.25:speed; (function f(t){const k=Math.min(1,(t-t0)/Math.max(1,ms)); el.textContent=fmtf(from+(to-from)*(1-Math.pow(1-k,3))); if(k<1) requestAnimationFrame(f)})(t0)}
@@ -369,15 +401,20 @@ async function summaryCard(total,bet){
   showCard(`<div class="tag">BONUS TERMINÉ</div><h2>${KINDS[curKind].name}${curPlus?'+':''}</h2><div class="big" id="sumbig">0.0×</div><div class="rows" id="sumrows"></div><div class="tap">Touchez pour continuer</div>`);
   countTo($('sumbig'),0,total/100,1400); $('sumrows').innerHTML=`<b>${fmt(total*bet)}</b> gagnés sur une mise de ${bet.toFixed(2)}`; sfx(total>=8000?'upgrade':'win'); await cardWait(3200); hideCard()}
 // --- Roues au-dessus de la grille ---
-const RING_COL={constellation:'#2b3a86',comet:'#14607a',nova:'#8a3a1f',aurora:'#c89532'};
+const RING_COL={constellation:'#2b3a86',comet:'#14607a',nova:'#8a3a1f',cross:'#5a2f86',rain:'#1b6b4c',eclipse:'#7a2f3a',galaxy:'#86306a',aurora:'#c89532'};
 function ringPath(a0,a1,r0,r1){const p=(a,r)=>{const t=(a-90)*Math.PI/180;return [r*Math.cos(t),r*Math.sin(t)]};const [x0,y0]=p(a0,r1),[x1,y1]=p(a1,r1),[x2,y2]=p(a1,r0),[x3,y3]=p(a0,r0),L=(a1-a0)>180?1:0;
   return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r1} ${r1} 0 ${L} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} L${x2.toFixed(2)} ${y2.toFixed(2)} A${r0} ${r0} 0 ${L} 0 ${x3.toFixed(2)} ${y3.toFixed(2)} Z`}
-function wheelSegs(wheel,mode){const o=((window.WHEEL_ODDS||{})[mode])||{constellation:.35,comet:.25,nova:.25,aurora:.15};
-  return wheel===1?[['constellation',o.constellation],['comet',o.comet],['nova',o.nova],['aurora',o.aurora]]:[['constellation+',.4],['comet+',.3],['nova+',.3]]}
-const LABEL={constellation:'CONSTELL.',comet:'COMÈTES',nova:'NOVA',aurora:'UPGRADE','constellation+':'CONSTELL.+','comet+':'COMÈTES+','nova+':'NOVA+'};
-function drawRing(id,segs,r0,r1){let a=0; const arcs=segs.map(([k,p])=>{const s=a;a+=p*360;return {k,s,e:a}}); const rm=(r0+r1)/2;
-  $(id).innerHTML=arcs.map(x=>{const base=x.k.replace('+',''),mid=(x.s+x.e)/2,fill=x.k==='aurora'?'url(#rim)':RING_COL[base]+(x.k.endsWith('+')?'':'');
-    const pct=Math.round((x.e-x.s)/3.6); return `<g class="seg" data-k="${x.k}"><path d="${ringPath(x.s,x.e,r0,r1)}" fill="${fill}" stroke="#0a0e1f" stroke-width="1.5"/><g transform="rotate(${mid.toFixed(1)})"><text x="0" y="${-rm-1}" text-anchor="middle" font-size="${x.k==='aurora'?7.6:8}" fill="${x.k==='aurora'?'#3a2f14':'#fff'}">${LABEL[x.k]}</text><text x="0" y="${-rm+9}" text-anchor="middle" font-size="7" fill="${x.k==='aurora'?'#3a2f14':'#cfd8ff'}">${pct} %</text></g></g>`}).join('');
+function wheelSegs(wheel,mode){const o=Object.assign({constellation:.22,comet:.14,nova:.14,cross:.12,rain:.12,eclipse:.10,galaxy:.06,aurora:.10},((window.WHEEL_ODDS||{})[mode])||{});
+  const K=['constellation','comet','nova','cross','rain','eclipse','galaxy'];
+  return wheel===1?[...K.map(k=>[k,o[k]]),['aurora',o.aurora]]:[['constellation+',.25],['comet+',.15],['nova+',.15],['cross+',.13],['rain+',.12],['eclipse+',.12],['galaxy+',.08]]}
+const LABEL={constellation:'Constellations',comet:'Comètes',nova:'Nova',cross:'Croix de Lune',rain:"Pluie d'Étoiles",eclipse:'Éclipse',galaxy:'Galaxie',aurora:'Upgrade'};
+Object.keys(LABEL).forEach(k=>{if(k!=='aurora')LABEL[k+'+']=LABEL[k]+'+'});
+// Chaque segment montre l'image de son bonus (plus de texte ni de pourcentage).
+function drawRing(id,segs,r0,r1){let a=0; const arcs=segs.map(([k,p])=>{const s=a;a+=p*360;return {k,s,e:a}}); const rm=(r0+r1)/2, band=r1-r0;
+  $(id).innerHTML=arcs.map(x=>{const base=x.k.replace('+',''),plus=x.k.endsWith('+'),mid=(x.s+x.e)/2,fill=x.k==='aurora'?'url(#rim)':RING_COL[base];
+    const arc=(x.e-x.s)*Math.PI/180*rm, sz=Math.min(band*.86,arc*.86), sc=sz/48; const kd=KINDS[base];
+    const badge=plus?`<g transform="translate(15,-15)"><circle r="9" fill="#f3c969" stroke="#3a2f14" stroke-width="2"/><path d="M-5 0H5M0 -5V5" stroke="#3a2f14" stroke-width="2.6" stroke-linecap="round"/></g>`:'';
+    return `<g class="seg" data-k="${x.k}"><path d="${ringPath(x.s,x.e,r0,r1)}" fill="${fill}" stroke="#0a0e1f" stroke-width="1.5"/><g transform="rotate(${mid.toFixed(1)}) translate(0,${-rm}) scale(${sc.toFixed(3)}) translate(-24,-24)"><g style="filter:drop-shadow(0 0 3px #000c)">${kd.icon}</g>${badge}</g></g>`}).join('');
   return arcs}
 let ringArcs={1:[],2:[]}, ringAngle={1:0,2:0}, driftOn=false;
 // Rotation continue très lente des deux roues (arrêtée pendant un tirage et jusqu'au tour suivant).
@@ -390,7 +427,7 @@ function initDock(mode){ if(!window.WHEEL_ODDS){$('dock').classList.add('hidden'
   $('dock').classList.remove('hidden'); ringArcs[1]=drawRing('ring1',wheelSegs(1,mode),23,66); ringArcs[2]=drawRing('ring2',wheelSegs(2,mode),71,89);
   ringAngle={1:ringAngle[1]%360,2:ringAngle[2]%360}; driftOn=true; ['ring1','ring2'].forEach((i,k)=>{$(i).classList.add('idle');$(i).style.transition='none';$(i).style.transform=`rotate(${ringAngle[k+1]}deg)`});
   const pc=(arr)=>arr.map(x=>`<span>${LABEL[x.k].replace('.','')}  ${Math.round((x.e-x.s)/3.6)} %</span>`).join('');
-  $('dockcap').innerHTML='<span style="border-color:#f3c969;color:#ffe39a">Petite roue</span>'+pc(ringArcs[1])+'<span style="border-color:#f3c969;color:#ffe39a">Grande roue</span>'+pc(ringArcs[2])}
+  $('dockcap').innerHTML='';/*<span style="border-color:#f3c969;color:#ffe39a">Petite roue</span>'+pc(ringArcs[1])+'<span style="border-color:#f3c969;color:#ffe39a">Grande roue</span>'+pc(ringArcs[2])*/}
 async function spinRing(n,target){const arcs=ringArcs[n], x=arcs.find(a=>a.k===target), mid=(x.s+x.e)/2+(Math.random()-.5)*(x.e-x.s)*.55, el=$('ring'+n);
   const dir=n===1?1:-1, turns=5; driftOn=false;
   const cur=ringAngle[n], need=(((-mid-cur)%360)+360)%360; // angle restant pour aligner mid sous le pointeur
@@ -440,7 +477,7 @@ async function playEvents(book,bet){
   window.__mode=window.__mode||'base';
   for(const e of book.events){
     switch(e.type){
-    case 'reveal': sfx('reveal'); viewBonus(false); show(e.board); cap('Bonne chance'); await sl(450); break;
+    case 'reveal': sfx('reveal'); viewBonus(false); show(e.board); cap('Bonne chance'); await sl(2100); break;
     case 'winInfo': sfx('win'); e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); cap('Gain <em>'+fmt(e.totalWin*bet)+'</em> &nbsp;×'+(e.totalWin/100)); await sl(1000); break;
     case 'starPrizes': sfx('win'); e.stars.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win')); cap('Étoiles à valeur : <em>+'+(e.total/100).toFixed(1)+'×</em>'); await sl(1000); break;
     case 'freeSpinTrigger': sfx('trigger'); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win'));
@@ -456,6 +493,13 @@ async function playEvents(book,bet){
         for(const [i,st] of e.stars.entries()){drawStar($(`s${st.reel}_${st.row}`),st.value/100,'fresh'); skyVal[st.reel+','+st.row]=st.value/100; sfx('star',st.value/100); await sl(130)} await sl(500)}
       else if(curKind==='nova'){ cap(`✦ <em>Nova !</em> Un bloc de ${e.stars.length} étoiles se pose`); sfx('nova'); const d=fxNova(e.stars); await sleep(d);
         e.stars.forEach((st,i)=>{setTimeout(()=>sfx('star',st.value/100),i*90)}); paintSky(e.stars.map(s=>({reel:s.reel,row:s.row,value:s.value})),fresh); await sl(900)}
+      else if(['cross','rain','eclipse','galaxy'].includes(curKind)){
+        const T={cross:`✚ Une <em>croix de lune</em> se pose : ${e.stars.length} étoile${e.stars.length>1?'s':''}`,rain:`🌠 <em>Pluie d'étoiles</em> : ${e.stars.length} étoile${e.stars.length>1?'s':''} tombent`,
+          eclipse:`🌑 Une <em>éclipse</em> traverse le ciel : ${e.stars.length} étoile${e.stars.length>1?'s':''}`,galaxy:`🌀 La <em>galaxie</em> tourne : ${e.stars.length} étoile${e.stars.length>1?'s':''}`};
+        cap(e.stars.length?T[curKind]:'Rien ne se pose cette nuit'); sfx(curKind);
+        if(curKind==='cross'&&e.stars.length){const d=fxNova(e.stars); await sleep(d*.5)}
+        const seq=curKind==='eclipse'?[...e.stars].sort((a,b)=>a.reel-b.reel):e.stars; const gap=curKind==='rain'?160:230;
+        for(const st of seq){drawStar($(`s${st.reel}_${st.row}`),st.value/100,'fresh'); skyVal[st.reel+','+st.row]=st.value/100; sfx('star',st.value/100); await sl(gap)} await sl(500)}
       else { cap(`✦ <em>${e.stars.length?e.stars.length:'Aucune'}</em> étoile${e.stars.length>1?'s':''} se pose${e.stars.length>1?'nt':''}`); e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*140)); paintSky(e.stars.map(s=>({reel:s.reel,row:s.row,value:s.value})),fresh); await sl(700+e.stars.length*140)}
       zoneProgress(); break}
     case 'constellationsUpdate': {

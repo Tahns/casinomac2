@@ -39,4 +39,4 @@ def test_demo_books_cover_every_variant_and_nights_match():
             starts = [e for e in b["events"] if e["type"] == "nightStart"]
             assert starts and all(e["totalNights"] == sw[0]["totalNights"] for e in starts)
             assert len(starts) == sw[0]["totalNights"] or any(e["type"] == "freeSpinEnd" for e in b["events"])
-    assert seen == {"constellation", "comet", "nova", "constellation+", "comet+", "nova+"}, seen
+    assert seen == {k + suf for suf in ("", "+") for k in wheel_odds.KINDS}, seen

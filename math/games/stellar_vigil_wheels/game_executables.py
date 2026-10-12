@@ -1,7 +1,7 @@
 from game_calculations import GameCalculations
 from src.calculations.ways import Ways
 import random
-from constellation import Sky, draw_night, draw_comets, draw_nova
+from constellation import Sky, draw_night, draw_comets, draw_nova, draw_cross, draw_rain, draw_eclipse, draw_galaxy
 from src.events.events import set_win_event
 from game_events import (
     night_start_event,
@@ -47,11 +47,20 @@ class GameExecutables(GameCalculations):
         value_before = sky.total_value()
         from game_config import VARIANTS
 
-        kind = VARIANTS[cond.get("variant") or "wheel2_constellation"][2]
+        crit = cond.get("variant") or "wheel2_constellation"
+        kind = VARIANTS[crit][2]
         if kind == "comet":
             stars = draw_comets(sky, 1, cond["level_weights"])
         elif kind == "nova":
             stars = draw_nova(sky, 2, 0, cond["level_weights"])
+        elif kind == "cross":
+            stars = draw_cross(sky, cond["level_weights"])
+        elif kind == "rain":
+            stars = draw_rain(sky, cond["level_weights"])
+        elif kind == "eclipse":
+            stars = draw_eclipse(sky, cond["level_weights"])
+        elif kind == "galaxy":
+            stars = draw_galaxy(sky, 3 if VARIANTS[crit][0] == 2 else 2, cond["level_weights"])
         else:
             stars = draw_night(sky, cond["star_count_weights"], cond["level_weights"], cond["adjacency_bias"])
         night_start_event(self, night, self.tot_fs)

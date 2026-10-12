@@ -73,17 +73,24 @@ VARIANTS = {
     "wheel2_constellation": (2, "constellation+", "constellation", NIGHT_STD, _MID, ADJACENCY_STD, {3: 10, 4: 12, 5: 15}, 130),
     "wheel2_comet": (2, "comet+", "comet", None, _COMET_PLUS, 0, {3: 3, 4: 3, 5: 4}, 130),
     "wheel2_nova": (2, "nova+", "nova", None, _MID, 0, {3: 5, 4: 6, 5: 7}, 130),
+    # Croix de Lune, Pluie d'Etoiles, Eclipse, Galaxie (natural mean tuned by simulation to about 100x / 130x)
+    "wheel1_cross": (1, "cross", "cross", None, _MID, 0, {3: 3, 4: 4, 5: 4}, 100),
+    "wheel1_rain": (1, "rain", "rain", None, _MID, 0, {3: 3, 4: 3, 5: 4}, 100),
+    "wheel1_eclipse": (1, "eclipse", "eclipse", None, _MID, 0, {3: 3, 4: 4, 5: 4}, 100),
+    "wheel1_galaxy": (1, "galaxy", "galaxy", None, _MID, 0, {3: 5, 4: 5, 5: 6}, 100),
+    "wheel2_cross": (2, "cross+", "cross", None, LEVELS_RICH, 0, {3: 4, 4: 4, 5: 5}, 130),
+    "wheel2_rain": (2, "rain+", "rain", None, LEVELS_RICH, 0, {3: 3, 4: 4, 5: 4}, 130),
+    "wheel2_eclipse": (2, "eclipse+", "eclipse", None, LEVELS_RICH, 0, {3: 4, 4: 4, 5: 5}, 130),
+    "wheel2_galaxy": (2, "galaxy+", "galaxy", None, LEVELS_RICH, 0, {3: 3, 4: 4, 5: 4}, 130),
 }
-# Roue des Saisons : part de chaque segment ; l'Aurore se repartit ensuite sur la Roue de l'Aurore.
-WHEEL1_ODDS = {"constellation": 0.35, "comet": 0.25, "nova": 0.25, "aurora": 0.15}
-WHEEL2_ODDS = {"constellation+": 0.40, "comet+": 0.30, "nova+": 0.30}
+# Roue des Saisons (petite roue) : part de chaque segment ; UPGRADE ("aurora") ouvre la grande roue (Roue de l'Aurore).
+WHEEL1_ODDS = {"constellation": 0.22, "comet": 0.14, "nova": 0.14, "cross": 0.12, "rain": 0.12, "eclipse": 0.10,
+               "galaxy": 0.06, "aurora": 0.10}
+WHEEL2_ODDS = {"constellation+": 0.25, "comet+": 0.15, "nova+": 0.15, "cross+": 0.13, "rain+": 0.12, "eclipse+": 0.12,
+               "galaxy+": 0.08}
+assert abs(sum(WHEEL1_ODDS.values()) - 1) < 1e-9 and abs(sum(WHEEL2_ODDS.values()) - 1) < 1e-9
 VARIANT_PROB = {
-    "wheel1_constellation": WHEEL1_ODDS["constellation"],
-    "wheel1_comet": WHEEL1_ODDS["comet"],
-    "wheel1_nova": WHEEL1_ODDS["nova"],
-    "wheel2_constellation": WHEEL1_ODDS["aurora"] * WHEEL2_ODDS["constellation+"],
-    "wheel2_comet": WHEEL1_ODDS["aurora"] * WHEEL2_ODDS["comet+"],
-    "wheel2_nova": WHEEL1_ODDS["aurora"] * WHEEL2_ODDS["nova+"],
+    k: (WHEEL1_ODDS[v[1]] if v[0] == 1 else WHEEL1_ODDS["aurora"] * WHEEL2_ODDS[v[1]]) for k, v in VARIANTS.items()
 }
 _WSUM = sum(VARIANT_PROB[k] * VARIANTS[k][7] for k in VARIANTS)
 VARIANT_RTP_FRACTION = {k: VARIANT_PROB[k] * VARIANTS[k][7] / _WSUM for k in VARIANTS}
