@@ -410,7 +410,7 @@ function sfx(name,arg){ try{ SFX[name](arg) }catch(e){} }
 const ZONE_CELLS={Horizon:[0,1,2,3,4].map(r=>[r,4]),Meridien:[0,1,2,3,4].map(r=>[2,r]),Quadrature:[[0,0],[4,0],[0,4],[4,4]],Firmament:[...Array(25).keys()].map(i=>[Math.floor(i/5),i%5])};
 const ZONES=[['Horizon','Ligne du bas',20],['Meridien','Colonne centrale',100],['Quadrature','Les 4 coins',1000],['Firmament','Ciel complet',10000]];
 // --- Réglages d'affichage ---
-let speed=1, turbo=false;
+let speed=1, turbo=false, modeIdx=0, auto=false, bonusHit=false, savedSpeed=null;
 const sl=ms=>sleep(ms*(turbo?.25:speed));
 // --- Les bonus : nom, couleur, icône, explication ---
 const KINDS={
@@ -455,6 +455,7 @@ const SYMKEYS=Object.keys(SYM).filter(k=>k!=='S'&&k!=='W');
 // Les rouleaux défilent : une bande de symboles descend dans chaque case et s'arrête colonne après colonne.
 // Suspense : après deux Lunettes, les rouleaux restants ralentissent, la scène s'assombrit et un battement de coeur monte.
 function show(board){const sf=turbo?.3:speed;
+  if(sf<=.15){ for(let c=0;c<5;c++)for(let r=0;r<4;r++){const el=$(`b${c}_${r}`),sy=board[c][r+1]; el.className='cell'+(sy.scatter?' scat':''); el.innerHTML=sy.name==='ST'?`<div class="star">${starSvg}<small>${sy.prize}×</small></div>`:(SYM[sy.name]||(()=>''))()} $('stage').classList.remove('tense'); setTimeout(()=>sfx('tick'),40); return 120 }
   const scat=c=>[1,2,3,4].filter(r=>board[c][r].scatter).length; let seen=0, stop=[], tense=false, t=0;
   for(let c=0;c<5;c++){ t+= c===0?700:(seen>=2&&c<=4?1250:260); stop.push(t); if(seen>=2&&c<=4) tense=true; seen+=scat(c)}
   $('stage').classList.toggle('tense',tense&&!turbo);
@@ -520,10 +521,12 @@ function wheelSegs(wheel,mode){const W=(window.WHEEL_ODDS||{})[mode]||{};
   return wheel===1?KIND_ORDER.map(k=>[k,o1[k]]):[1,2,3].map(t=>['tier'+t,o2[t]])}
 const LABEL={constellation:'Constellations',comet:'Comètes',nova:'Nova',cross:'Croix de Lune',rain:"Pluie d'Étoiles",eclipse:'Éclipse',galaxy:'Galaxie',orbit:'Orbites'};
 // Chaque segment montre l'image de son bonus ou de sa phase (plus de texte ni de pourcentage).
+const SHORT={constellation:'Constell.',comet:'Comètes',nova:'Nova',cross:'Croix',rain:'Pluie',eclipse:'Éclipse',galaxy:'Galaxie',orbit:'Orbites',tier1:'Croissant',tier2:'Quartier',tier3:'Pleine'};
 function drawRing(id,segs,r0,r1){let a=0; const arcs=segs.map(([k,p])=>{const s=a;a+=p*360;return {k,s,e:a}}); const rm=(r0+r1)/2, band=r1-r0;
   $(id).innerHTML=arcs.map(x=>{const isT=x.k.startsWith('tier'),mid=(x.s+x.e)/2,fill=isT?TIER[+x.k[4]].col:RING_COL[x.k],icon=isT?TIER[+x.k[4]].icon:KINDS[x.k].icon;
-    const arc=(x.e-x.s)*Math.PI/180*rm, sz=Math.min(band*.86,arc*.86), sc=sz/48;
-    return `<g class="seg" data-k="${x.k}"><path d="${ringPath(x.s,x.e,r0,r1)}" fill="${fill}" stroke="#0a0e1f" stroke-width="1.5"/><g transform="rotate(${mid.toFixed(1)}) translate(0,${-rm}) scale(${sc.toFixed(3)}) translate(-24,-24)"><g style="filter:drop-shadow(0 0 3px #000c)">${icon}</g></g></g>`}).join('');
+    // image + nom : l'image en haut du segment, le nom en dessous (même sens que la roue)
+    const arc=(x.e-x.s)*Math.PI/180*rm, sz=Math.min(band*.58,arc*.78), sc=sz/48, ty=-(rm+band*.12), fs=Math.max(4.6,Math.min(6.6,arc*.30));
+    return `<g class="seg" data-k="${x.k}"><path d="${ringPath(x.s,x.e,r0,r1)}" fill="${fill}" stroke="#0a0e1f" stroke-width="1.5"/><g transform="rotate(${mid.toFixed(1)})"><g transform="translate(0,${ty.toFixed(1)}) scale(${sc.toFixed(3)}) translate(-24,-24)"><g style="filter:drop-shadow(0 0 3px #000c)">${icon}</g></g><text x="0" y="${(-rm+band*.36).toFixed(1)}" text-anchor="middle" font-size="${fs.toFixed(1)}" fill="#fff" style="font-weight:800;paint-order:stroke;stroke:#000b;stroke-width:1.4px">${SHORT[x.k]}</text></g></g>`}).join('');
   return arcs}
 let ringArcs={1:[],2:[]}, ringAngle={1:0,2:0}, driftOn=false;
 // Rotation continue très lente des deux roues (arrêtée pendant un tirage et jusqu'au tour suivant).
@@ -595,7 +598,7 @@ async function playEvents(book,bet){
     case 'reveal': sfx('reveal'); viewBonus(false); {const tt=show(e.board); cap('Bonne chance'); await sl(tt+350)} break;
     case 'winInfo': sfx('win'); e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); cap('Gain <em>'+fmt(e.totalWin*bet)+'</em> &nbsp;×'+(e.totalWin/100)); await sl(1000); break;
     case 'starPrizes': sfx('win'); e.stars.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win')); cap('Étoiles à valeur : <em>+'+(e.total/100).toFixed(1)+'×</em>'); await sl(1000); break;
-    case 'freeSpinTrigger': sfx('trigger'); flash(); shake(); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win'));
+    case 'freeSpinTrigger': bonusHit=true; if(auto){auto=false; paintSpin()} if(speed<1){savedSpeed=speed; speed=1} sfx('trigger'); flash(); shake(); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win'));
       cap(book.events.some(x=>x.type==='seasonWheel')?'<em>BONUS !</em> Les roues choisissent ton bonus':'<em>BONUS !</em> Nuit des Constellations — '+e.totalFs+' nuits'); await sl(1500);
       if(!book.events.some(x=>x.type==='seasonWheel')){setKind('constellation'); buildSky(); shownTotal=0; $('btotal').textContent='0.0×'; setHead(); buildPips(e.totalFs); viewBonus(true); await introCard(e.totalFs)}
       break;
@@ -645,11 +648,11 @@ function startBurst(strength){const cv=$('cv'), ctx=cv.getContext('2d'); cv.widt
 async function celebrate(win,bet){const mult=win/bet, tier=TIERS.find(t=>mult>=t[0]); if(!tier) return;
   const box=$('celeb'); $('ctier').textContent=tier[1]; $('cnum').textContent='0.00'; $('cmult').textContent='×'+mult.toFixed(1); box.classList.remove('hidden'); flash(); sfx('big');
   startBurst(mult>=250?2:mult>=100?1.5:1);
-  const t0=performance.now(), dur=(mult>=100?2600:1800)*(turbo?.4:1); (function f(t){const k=Math.min(1,(t-t0)/dur); $('cnum').textContent=(win*(1-Math.pow(1-k,3))).toFixed(2); if(k<1&&!box.classList.contains('hidden')) requestAnimationFrame(f)})(t0);
-  let done=false; const h=()=>{done=true}; box.addEventListener('click',h,{once:true}); const w0=performance.now(); while(!done&&performance.now()-w0<(mult>=100?6500:4200)*(turbo?.4:1)) await sleep(60);
+  const t0=performance.now(), dur=(mult>=100?2600:1800)*(turbo||speed<1?.35:1); (function f(t){const k=Math.min(1,(t-t0)/dur); $('cnum').textContent=(win*(1-Math.pow(1-k,3))).toFixed(2); if(k<1&&!box.classList.contains('hidden')) requestAnimationFrame(f)})(t0);
+  let done=false; const h=()=>{done=true}; box.addEventListener('click',h,{once:true}); const w0=performance.now(); while(!done&&performance.now()-w0<(mult>=100?6500:4200)*(turbo||speed<1?.35:1)) await sleep(60);
   cancelAnimationFrame(burstRaf); box.classList.add('hidden')}
 async function play(kind){
-  if(busy)return; busy=true; $('spin').disabled=$('buy').disabled=true; turbo=false; document.body.classList.add('bonusing'); 
+  if(busy)return; busy=true; $('buy').disabled=true; $('spin').disabled=!auto; turbo=false; document.body.classList.add('bonusing'); 
   const bet=parseFloat($('betsel').value); $('betv').textContent=bet.toFixed(2);
   const cost=kind==='bonus'?80*bet:bet;
   if(bal<cost){cap('Solde insuffisant');busy=false;$('spin').disabled=$('buy').disabled=false;return}
@@ -662,7 +665,7 @@ async function play(kind){
   cap(win>0?`Gain total : <em>${win.toFixed(2)}</em> &nbsp;(×${(book.win/100).toFixed(2)})`:'Pas de gain');
   $('bal').classList.add('bump'); $('last').classList.add('bump'); setTimeout(()=>{$('bal').classList.remove('bump');$('last').classList.remove('bump')},600);
   if(win>0) await celebrate(win,bet);
-  await sl(700); viewBonus(false); document.body.classList.remove('bonusing'); busy=false; $('spin').disabled=$('buy').disabled=false;
+  await sl(700); viewBonus(false); document.body.classList.remove('bonusing'); if(savedSpeed!==null){speed=savedSpeed; savedSpeed=null} busy=false; $('spin').disabled=$('buy').disabled=false; paintSpin();
 }
 const fit=()=>document.documentElement.style.setProperty('--fit',Math.min(innerWidth/430,innerHeight/860).toFixed(4));
 addEventListener('resize',fit); fit();
@@ -672,9 +675,16 @@ try{const o=window.SAVER_ODDS||{}, pc=x=>Math.round(x*100)+' %'; if(o.bonus){$('
 const betSync=()=>{const v=parseFloat($('betsel').value); $('betdisp').textContent=v.toFixed(2); $('betv').textContent=v.toFixed(2)};
 $('betminus').onclick=()=>{if(busy)return; const sl_=$('betsel'); sl_.selectedIndex=Math.max(0,sl_.selectedIndex-1); betSync(); sfx('tick')};
 $('betplus').onclick=()=>{if(busy)return; const sl_=$('betsel'); sl_.selectedIndex=Math.min(sl_.options.length-1,sl_.selectedIndex+1); betSync(); sfx('tick')};
-$('spin').onclick=()=>play('base'); $('buy').onclick=()=>play('bonus');
+$('spin').onclick=()=>{ if(auto){auto=false; paintSpin(); return} if(modeIdx>0) startAuto(); else play('base') }; $('buy').onclick=()=>play('bonus');
 $('stage').addEventListener('click',()=>{if(busy) turbo=true});
-$('speedbtn').onclick=()=>{speed=speed===1?.5:1; $('speedbtn').textContent='Vitesse : '+(speed===1?'normale':'rapide'); $('speedbtn').classList.toggle('on',speed!==1)};
+// Vitesses : normale, turbo, turbo x2. En turbo, TOURNER lance des tours en boucle (AUTO) jusqu'à un bonus, un solde trop bas ou un clic sur ARRÊT.
+const MODES=[{s:1,n:'normale'},{s:.35,n:'turbo'},{s:.12,n:'turbo ×2'}];
+function paintSpin(){ $('spin').textContent=auto?'ARRÊT':(modeIdx>0?'AUTO':'TOURNER') }
+function setMode(i){ modeIdx=i; speed=MODES[i].s; $('speedbtn').textContent='Vitesse : '+MODES[i].n; $('speedbtn').classList.toggle('on',i>0); paintSpin() }
+$('speedbtn').onclick=()=>{ if(busy&&!auto) return; setMode((modeIdx+1)%3) };
+async function startAuto(){ if(busy) return; auto=true; paintSpin();
+  while(auto){ const bet=parseFloat($('betsel').value); if(bal<bet){cap('Solde insuffisant'); break} bonusHit=false; await play('base'); if(bonusHit||!auto) break; await sleep(40) }
+  auto=false; paintSpin() }
 $('rulesbtn').onclick=()=>$('rules').classList.remove('hidden'); $('rulesclose').onclick=()=>$('rules').classList.add('hidden');
 function paintMute(){ $('mutebtn').textContent='Son : '+(muted?'coupé':'activé') }
 $('mutebtn').onclick=()=>{ muted=!muted; try{localStorage.setItem('sv_muted',muted?'1':'0')}catch(e){} paintMute(); if(!muted) sfx('win') };
