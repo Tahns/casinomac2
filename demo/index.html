@@ -667,10 +667,11 @@ async function playEvents(book,bet){
         cap(e.stars.length?T[curKind]:'Rien ne se pose cette nuit'); sfx(curKind);
         if(curKind==='cross'&&e.stars.length){const d=fxNova(e.stars); await sleep(d*.5)}
         const seq=curKind==='eclipse'?[...e.stars].sort((a,b)=>a.reel-b.reel):e.stars; const gap=curKind==='rain'?160:230;
-        for(const st of seq){drawStar($(`s${st.reel}_${st.row}`),st.value/100,'fresh'); skyVal[st.reel+','+st.row]=st.value/100; sfx('star',st.value/100); await sl(gap)} await sl(500)}
+        const colN=r=>Object.keys(skyVal).filter(k=>+k.split(',')[0]===r).length+e.stars.filter(x=>x.reel===r).length;
+        for(const st of seq){const v=curKind==='orbit'?st.value/100*colN(st.reel):st.value/100; drawStar($(`s${st.reel}_${st.row}`),v,'fresh'); skyVal[st.reel+','+st.row]=v; sfx('star',v); await sl(gap)} await sl(500)}
       else { cap(`✦ <em>${e.stars.length?e.stars.length:'Aucune'}</em> étoile${e.stars.length>1?'s':''} se pose${e.stars.length>1?'nt':''}`); e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*140)); paintSky(e.stars.map(s=>({reel:s.reel,row:s.row,value:s.value})),fresh); await sl(700+e.stars.length*140)}
       zoneProgress(); break}
-    case 'constellationsUpdate': { if(e.orbits){showOrbits(e.orbits,true); cap('🪐 <em>Orbites</em> : '+e.orbits.map(n=>'×'+Math.max(1,n)).join(' · ')); }
+    case 'constellationsUpdate': { if(e.orbits&&!e._orb){ e._orb=true; e.stars.forEach(st=>{st.value=st.value*Math.max(1,e.orbits[st.reel])}) } if(e.orbits){showOrbits(e.orbits,true); cap('🪐 <em>Orbites</em> : '+e.orbits.map(n=>'×'+Math.max(1,n)).join(' · ')); }
       const sizes=e.constellations.map(c=>c.length).sort((a,b)=>b-a); $('sky').classList.remove('focus');
       const before={...skyVal}; paintSky(e.stars,new Set()); drawLinks(e.constellations); zoneProgress();
       const ups=Object.keys(skyVal).filter(k=>before[k]!==undefined&&skyVal[k]>before[k]).length;
