@@ -136,3 +136,12 @@
 - Démo : menu refait (bouton TOURNER, mise + et -), suspense (tension avant le 3e Lunette, roues qui frôlent la case voisine puis reviennent), célébrations des gros gains (paliers dès 20x), le jeu tient sur une seule page sans défilement.
 - Higgsfield : 4 icônes de bonus générées (Nova, Croix, Éclipse, Galaxie : jobs 6dd61560-36f2-400a-9e48-39bfe552119b, e4f46f0c-dac1-4f6f-96cb-c4c029fb8e0b, b2e84b8a-5c59-40dc-8508-6a1bcb799d04, 05820d0e-5481-416b-ab73-397b15a3c633), non intégrées : l'environnement refuse le téléchargement depuis cloudfront.net.
 - Points bloqués : accès réseau aux fichiers Higgsfield ; avis d'un conseil en brevets sur la structure à deux roues (aucune affirmation de conformité).
+
+## Itération 20 (2026-10-13)
+- **Modes turbo et turbo ×2** (démo) : le bouton Vitesse alterne normale / turbo / turbo ×2. En turbo, TOURNER devient AUTO ; un clic lance des tours en boucle et le bouton devient ARRÊT. La boucle s'arrête au déclenchement d'un bonus, quand le solde est inférieur à la mise, ou au clic sur ARRÊT. Le bonus se joue à vitesse normale ; le mode choisi est rétabli à la fin du bonus.
+- **Roues** : chaque segment affiche son nom (libellé court) en plus de son image.
+- **Menu refait** avec des visuels générés avec Higgsfield : tuile du haut, panneau du sélecteur de mise, bouton rond doré, faisceau de lumière entre les étoiles, plaque bleue du bouton d'achat, icônes Nova, Croix de Lune et Orbites (les autres icônes de bonus restent dessinées en code). Polices Cinzel (titres, boutons) et Outfit (chiffres) chargées via Google Fonts. Jobs et réserves juridiques : `docs/ART_PROVENANCE.md`.
+- **Une seule page à échelle fixe** : la scène mesure 430 x 860 et s'adapte à l'écran par mise à l'échelle, sans défilement.
+- Visuels générés mais non intégrés : fond de roue, bandeau de victoire, cadre de roue, icônes Galaxie, Éclipse, Comètes, Constellations, Pluie, trois lunes (croissant, quartier, pleine).
+- Aucun chiffre de maths nouveau ; aucune mesure ajoutée dans cette itération.
+- Points ouverts : conditions Higgsfield non lues, droit d'auteur des images à valider, avis d'un conseil en brevets (aucune affirmation de conformité).

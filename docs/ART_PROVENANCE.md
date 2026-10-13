@@ -39,3 +39,35 @@ Modèle `gpt_image_2_5`, fond noir converti en transparence. Même garde-fous qu
 
 ## Ajout (2026-10-12) : icônes de bonus (non intégrées)
 Quatre icônes générées avec `gpt_image_2_5` (Nova, Croix de Lune, Éclipse, Galaxie), fond noir, sans référence ni nom de marque. Jobs : 6dd61560-36f2-400a-9e48-39bfe552119b, e4f46f0c-dac1-4f6f-96cb-c4c029fb8e0b, b2e84b8a-5c59-40dc-8508-6a1bcb799d04, 05820d0e-5481-416b-ab73-397b15a3c633. Elles ne sont pas encore dans `demo/art/` ; les icônes affichées dans la démo sont dessinées en code. Les mêmes réserves juridiques qu'au-dessus s'appliquent.
+
+## Ajout (2026-10-13) : refonte du menu et visuels supplémentaires
+Visuels générés avec Higgsfield à la demande de l'utilisateur, sans image de référence ni nom de marque. Les identifiants de job servent de preuve de création. Mêmes réserves que plus haut : conditions d'utilisation de Higgsfield non lues, statut de droit d'auteur à faire valider, aucune affirmation de conformité.
+
+Intégrés dans la démo (`demo/art/`) :
+| Visuel | Rôle | Job Higgsfield |
+|---|---|---|
+| Tuile du haut | HUD (solde, mise, gain) | 9cbe92dc-9283-4cb5-82ce-66ec56e38e9f |
+| Panneau du sélecteur de mise | fond du sélecteur | 1422f417-e6ad-4fd8-b634-c546ad2830c5 |
+| Bouton rond doré | bouton TOURNER | 5134e7b3-27ee-462c-8bba-f673e7c5e611 |
+| Faisceau de lumière | liaison entre les étoiles | 4a936a61-cad4-4893-959e-6d72644b77a9 |
+| Plaque bleue | bouton d'achat | fa8fbab4-ab48-454c-8698-badc10d0536d |
+| Icône Nova | segment et bonus Nova | 6dd61560-36f2-400a-9e48-39bfe552119b |
+| Icône Croix de Lune | segment et bonus Croix de Lune | e4f46f0c-dac1-4f6f-96cb-c4c029fb8e0b |
+| Icône Orbites | segment et bonus Orbites | 8d7b403d-5ae8-4a46-8c2b-b3b24a0a5147 |
+
+Générés, non intégrés (pas dans `demo/art/`) :
+| Visuel | Job Higgsfield |
+|---|---|
+| Fond de roue | 39f57fda-6123-406c-a298-6eb4af2a9b16 |
+| Bandeau de victoire | 19c73f8a-9ad1-46fc-91f6-6a1ab6ae74f2 |
+| Cadre de roue | eba61fff-c4d6-43af-be26-c8ddcb2ad9db |
+| Icône Galaxie | 05820d0e-5481-416b-ab73-397b15a3c633 |
+| Icône Éclipse | b2e84b8a-5c59-40dc-8508-6a1bcb799d04 |
+| Icône Comètes | 5dcaf04c-f329-4886-925b-c93be2fe06b4 |
+| Icône Constellations | b7a43992-8281-436c-8af7-7fe4490c9a10 |
+| Icône Pluie | 71522f8f-2144-4974-b64a-ebde18da97d6 |
+| Lune : croissant | 6f1648ba-b5d8-4a3e-8602-67c90ffb3fcb |
+| Lune : quartier | 7bc77316-0abe-4955-bc53-7ac3e8a0f494 |
+| Lune : pleine | ce0c56d6-fdb6-4c78-aad9-3eed43f9b393 |
+
+Notes : les icônes Nova, Croix de Lune et Orbites sont désormais intégrées (les mentions « non intégrées » des ajouts précédents sont à lire en conséquence) ; la plaque bleue fa8fbab4 figurait déjà dans la liste des visuels de menu non intégrés de l'ajout du 2026-10-12. Les polices Cinzel et Outfit sont chargées depuis Google Fonts : leurs licences sont à vérifier avant toute publication.
