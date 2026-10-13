@@ -297,6 +297,8 @@
   .bhead{padding:6px 10px}
   .stage.bonus{gap:4px;padding-top:10px}
   .stage.bonus .dock{margin-bottom:2px}
+  button:focus-visible,select:focus-visible{outline:3px solid #fff3c4;outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){.cell.reel .strip{animation:none}.dock.crawl{filter:none}.cap.pop,.cap.big{animation:none}}
 </style>
 </head>
 <body>
@@ -337,7 +339,7 @@
       <div class="fx" id="fx"></div>
     </div>
     <div class="zones hidden" id="zones"></div>
-    <div class="cap" id="cap">Prêt</div>
+    <div class="cap" id="cap" role="status" aria-live="polite">Prêt</div>
     <div class="card hidden" id="card"></div>
     <div class="wheelbox hidden" id="wheelbox">
       <div class="wheeltitle" id="wheeltitle">Roue de sauvegarde</div>
@@ -726,7 +728,7 @@ try{const o=window.SAVER_ODDS||{}, pc=x=>Math.round(x*100)+' %'; if(o.bonus){$('
 const betSync=()=>{const v=parseFloat($('betsel').value); $('betdisp').textContent=v.toFixed(2); $('betv').textContent=v.toFixed(2)};
 $('betminus').onclick=()=>{if(busy)return; const sl_=$('betsel'); sl_.selectedIndex=Math.max(0,sl_.selectedIndex-1); betSync(); sfx('tick')};
 $('betplus').onclick=()=>{if(busy)return; const sl_=$('betsel'); sl_.selectedIndex=Math.min(sl_.options.length-1,sl_.selectedIndex+1); betSync(); sfx('tick')};
-$('spin').onclick=()=>{ if(auto){auto=false; paintSpin(); $('spin').disabled=true; return} if(modeIdx>0) startAuto(); else play('base') }; $('buy').onclick=()=>play('bonus');
+$('spin').onclick=()=>{ if(auto){auto=false; paintSpin(); $('spin').disabled=true; return} if(modeIdx>0) startAuto(); else play('base') }; $('buy').onclick=()=>{ if(auto) return; play('bonus') };
 $('stage').addEventListener('click',()=>{if(busy) turbo=true});
 // Vitesses : normale, turbo, turbo x2. En turbo, TOURNER lance des tours en boucle (AUTO) jusqu'à un bonus, un solde trop bas ou un clic sur ARRÊT.
 const MODES=[{s:1,n:'normale'},{s:.35,n:'turbo'},{s:.12,n:'turbo ×2'}];
