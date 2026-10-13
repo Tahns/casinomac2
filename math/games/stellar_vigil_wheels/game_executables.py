@@ -85,7 +85,7 @@ class GameExecutables(GameCalculations):
         self.record({"night": night, "stars": len(sky.base), "zones": len(sky.zones_done), "gametype": self.gametype})
 
     def play_season_wheels(self) -> None:
-        """(The rare wincap criterion is assigned to the richest outcome, Aurore -> constellation+, the only kind that can fill the sky.) Roue des Saisons (and Roue de l'Aurore if it lands on Aurore): the result IS the criteria's variant."""
+        """Roue des Bonus and Roue des Phases de Lune, spun together: the result IS the criterion's variant. (The rare wincap criterion is assigned to p3_constellation, the only kind that can fill the sky.)"""
         from game_config import VARIANTS, WINCAP_VARIANT
 
         crit = self.get_current_distribution_conditions().get("variant") or WINCAP_VARIANT

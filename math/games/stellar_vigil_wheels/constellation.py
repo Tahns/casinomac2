@@ -160,7 +160,7 @@ def draw_comets(sky: Sky, lines: int, level_weights: dict):
 
 
 def draw_nova(sky: Sky, size: int, extra: int, level_weights: dict):
-    """Grande Nova: a size x size block of stars lands where it covers the most room, plus `extra` free stars."""
+    """Grande Nova: a size x size block of stars lands on a random corner of the sky (cells already occupied are skipped, so a night can bring fewer than size x size stars), plus `extra` free stars."""
     levels, lw = list(level_weights.keys()), list(level_weights.values())
     corners = [(r, c) for r in range(GRID - size + 1) for c in range(GRID - size + 1)]
     random.shuffle(corners)
