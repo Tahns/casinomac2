@@ -725,13 +725,13 @@ try{const o=window.SAVER_ODDS||{}, pc=x=>Math.round(x*100)+' %'; if(o.bonus){$('
 const betSync=()=>{const v=parseFloat($('betsel').value); $('betdisp').textContent=v.toFixed(2); $('betv').textContent=v.toFixed(2)};
 $('betminus').onclick=()=>{if(busy)return; const sl_=$('betsel'); sl_.selectedIndex=Math.max(0,sl_.selectedIndex-1); betSync(); sfx('tick')};
 $('betplus').onclick=()=>{if(busy)return; const sl_=$('betsel'); sl_.selectedIndex=Math.min(sl_.options.length-1,sl_.selectedIndex+1); betSync(); sfx('tick')};
-$('spin').onclick=()=>{ if(auto){auto=false; paintSpin(); return} if(modeIdx>0) startAuto(); else play('base') }; $('buy').onclick=()=>play('bonus');
+$('spin').onclick=()=>{ if(auto){auto=false; paintSpin(); $('spin').disabled=true; return} if(modeIdx>0) startAuto(); else play('base') }; $('buy').onclick=()=>play('bonus');
 $('stage').addEventListener('click',()=>{if(busy) turbo=true});
 // Vitesses : normale, turbo, turbo x2. En turbo, TOURNER lance des tours en boucle (AUTO) jusqu'à un bonus, un solde trop bas ou un clic sur ARRÊT.
 const MODES=[{s:1,n:'normale'},{s:.35,n:'turbo'},{s:.12,n:'turbo ×2'}];
 function paintSpin(){ $('spin').textContent=auto?'ARRÊT':(modeIdx>0?'AUTO':'TOURNER') }
 function setMode(i){ modeIdx=i; speed=MODES[i].s; $('speedbtn').textContent='Vitesse : '+MODES[i].n; $('speedbtn').classList.toggle('on',i>0); paintSpin() }
-$('speedbtn').onclick=()=>{ if(busy&&!auto) return; setMode((modeIdx+1)%3) };
+$('speedbtn').onclick=()=>{ if(busy) return; setMode((modeIdx+1)%3) };
 async function startAuto(){ if(busy) return; auto=true; paintSpin();
   while(auto){ const bet=parseFloat($('betsel').value); if(bal<bet){cap('Solde insuffisant'); break} bonusHit=false; await play('base'); if(bonusHit||!auto) break; await sleep(40) }
   auto=false; paintSpin() }
