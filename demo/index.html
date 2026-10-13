@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Outfit:wght@400;600;800&display=swap">
 <title>Stellar Vigil — démo</title>
 <style>
   :root{--bg:#0a0e1f;--panel:#121832;--line:#2a3566;--gold:#f3c969;--ink:#e9ecff;--dim:#8a93c4;--star:#8fd3ff;--win:#7dffb2}
@@ -247,6 +249,25 @@
   .orbits i{font-style:normal;text-align:center;font-weight:900;font-size:13px;color:#3a2a08;background:linear-gradient(#ffe39a,#f3c969);border-radius:8px;padding:2px 0;box-shadow:0 0 10px #f3c96988;transition:transform .3s}
   .orbits i.up{animation:bump .6s ease-out}
   body.bonusing .logo{display:none}
+  /* ===== Visuels Higgsfield : tuiles, sélecteur de mise, bouton TOURNER ===== */
+  .hud div{background:url(art/hud.webp) center/100% 100% no-repeat;border:0;box-shadow:none;padding:7px 14px;min-height:52px;display:flex;flex-direction:column;justify-content:center}
+  .stepper{position:relative;height:52px;padding:0;background:url(art/panel.webp) center/100% 100% no-repeat;border:0;box-shadow:none;justify-content:center}
+  .stepper .mini{position:absolute;top:50%;transform:translateY(-50%);width:30px;height:30px;background:transparent;border:0;box-shadow:none;color:#3a2a08;font-size:24px;font-weight:900;text-shadow:0 1px 0 #ffe9a0}
+  #betminus{left:4%}#betplus{right:4%}
+  .stepper .betval{min-width:0}
+  .spinbtn{background:url(art/btn_gold.webp) center/100% 100% no-repeat;border:0;box-shadow:none;filter:drop-shadow(0 0 14px #f3c969aa) drop-shadow(0 6px 8px #000a);color:#4a3208;text-shadow:0 1px 0 #fff3c4}
+  .spinbtn:active:not(:disabled){transform:translateY(3px)}
+  /* ===== Typographie : Cinzel (lettres gravées, titres et boutons) + Outfit (chiffres et texte) ===== */
+  body,.cap,.note,.rules,.card p,.card .rows,.zone{font-family:'Outfit',system-ui,sans-serif}
+  h1,.spinbtn,.buybtn small,.buybtn b,.tools button,.hud b,.ctier,.card h2,.card .tag,.bhead .bname,.rules h2,.rules h3,.cmult,.stepper .betval small{font-family:'Cinzel','Times New Roman',serif;font-weight:800}
+  .hud span,.stepper .betval b,.bhead .btot span,.cnum,.card .big{font-family:'Outfit',system-ui,sans-serif;font-weight:800;font-variant-numeric:tabular-nums}
+  .hud b{letter-spacing:.12em;font-size:10px}
+  .spinbtn{font-size:15px;letter-spacing:.1em;font-weight:900}
+  .buybtn small{font-size:9.5px;letter-spacing:.08em}
+  .tools button{letter-spacing:.04em;font-size:11px}
+  .ctier{letter-spacing:.06em;font-weight:900}
+  .cap{font-weight:700}
+  .cap em{font-family:'Cinzel','Times New Roman',serif;font-weight:900}
 </style>
 </head>
 <body>
@@ -498,7 +519,7 @@ function drawLinks(cons){ // un arbre couvrant par constellation : lisible, sans
     while(queue.length){const a=queue.shift();
       const nbs=comp.filter(b=>!seen.has(key(b))&&Math.abs(a.reel-b.reel)<=1&&Math.abs(a.row-b.row)<=1).sort((u,v)=>(Math.abs(u.reel-a.reel)+Math.abs(u.row-a.row))-(Math.abs(v.reel-a.reel)+Math.abs(v.row-a.row)));
       nbs.forEach(b=>{seen.add(key(b)); queue.push(b); const [x1,y1]=p(a.reel,a.row),[x2,y2]=p(b.reel,b.row);
-        g.insertAdjacentHTML('beforeend',`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${COL[i%4]}" stroke-width="1.4" stroke-linecap="round" opacity=".95"/>`)})}
+        const L=Math.hypot(x2-x1,y2-y1), A=Math.atan2(y2-y1,x2-x1)*180/Math.PI; g.insertAdjacentHTML('beforeend',`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${COL[i%4]}" stroke-width="1" stroke-linecap="round" opacity=".55"/><image href="art/beam.webp" x="${x1}" y="${(y1-2.6).toFixed(2)}" width="${L.toFixed(2)}" height="5.2" preserveAspectRatio="none" transform="rotate(${A.toFixed(1)} ${x1} ${y1})" style="pointer-events:none"/>`)})}
   })}
 // --- Cartes (présentation / résumé) ---
 function showCard(html){const c=$('card'); c.innerHTML=html; c.classList.remove('hidden')}
