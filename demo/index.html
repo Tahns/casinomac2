@@ -185,6 +185,7 @@
   .spinbtn:disabled{animation:none;filter:saturate(.4) brightness(.7)}
   .buybtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:76px;border-radius:18px;padding:6px 8px;color:#e9ecff;
     background:linear-gradient(#34429a,#1b2468 60%,#121a52);border:2px solid #c89532;box-shadow:0 0 0 2px #1a1408,0 6px 0 #0b1030,0 10px 18px #000a,inset 0 1px 0 #ffffff33}
+  .buybtn{background:url(art/btn_blue.webp) center/100% 100% no-repeat;border:0;box-shadow:0 8px 14px #000a;padding:6px 18px}
   .buybtn small{font-size:10px;letter-spacing:.1em;color:#ffe39a}
   .buybtn b{font-size:24px;color:#fff;text-shadow:0 0 12px #8fd3ff}
   .buybtn:active:not(:disabled){transform:translateY(4px);box-shadow:0 0 0 2px #1a1408,0 2px 0 #0b1030,0 5px 10px #000a}
@@ -430,6 +431,10 @@ KINDS.orbit={name:'Orbites',col:'#ffb04a',txt:'Chaque colonne est une orbite : s
     icon:'<ellipse cx="24" cy="24" rx="20" ry="8" fill="none" stroke="#ffb04a" stroke-width="2" transform="rotate(-25 24 24)"/><ellipse cx="24" cy="24" rx="20" ry="8" fill="none" stroke="#ffe39a" stroke-width="1.5" opacity=".6" transform="rotate(35 24 24)"/><circle cx="24" cy="24" r="8" fill="#ffd27a"/><circle cx="24" cy="24" r="4" fill="#fff"/><circle cx="40" cy="14" r="3" fill="#fff3c4"/><circle cx="9" cy="33" r="2.5" fill="#fff3c4"/>'};
 KINDS.galaxy={name:'Galaxie',col:'#ff9fe0',txt:"Chaque nuit, l'étoile suivante d'une spirale se pose, du bord du ciel vers son centre.",
     icon:'<path d="M24 24 m0 0 a4 4 0 0 1 8 0 a8 8 0 0 1 -16 0 a12 12 0 0 1 24 0 a16 16 0 0 1 -32 0" fill="none" stroke="#ff9fe0" stroke-width="2.5" stroke-linecap="round"/><g fill="#fff"><circle cx="24" cy="24" r="3.5"/><circle cx="40" cy="24" r="2.2"/><circle cx="8" cy="24" r="2.2"/><circle cx="24" cy="8" r="2"/></g>'};
+// Icônes générées avec Higgsfield (fond noir converti en transparence)
+KINDS.nova.icon='<image href="art/ic_nova.webp" x="0" y="0" width="48" height="48"/>';
+KINDS.cross.icon='<image href="art/ic_cross.webp" x="0" y="0" width="48" height="48"/>';
+KINDS.orbit.icon='<image href="art/ic_orbit.webp" x="0" y="0" width="48" height="48"/>';
 const kindOf=v=>String(v||'constellation').replace(/\+/g,'');
 const tierOf=v=>1+(String(v||'').match(/\+/g)||[]).length;
 const setKind=v=>{curKind=kindOf(v); curTier=tierOf(v); curPlus=curTier>1; document.documentElement.style.setProperty('--bc',KINDS[curKind].col)};
