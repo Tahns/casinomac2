@@ -1,5 +1,54 @@
 # SWOT — Stellar Vigil
 
+## v21 — itération 20 (2026-10-13) : état actuel, mesuré / non mesuré, et pistes d'attractivité
+
+Portée : huit bonus, deux roues indépendantes (Bonus / Phases de Lune), turbo et turbo x2, célébrations, suspense, menu Higgsfield, démo sur une page. Aucune ligne de code modifiée pour ce SWOT. Idées détaillées : `docs/ATTRACTIVITE.md`.
+
+### Ce qui est mesuré et ce qui ne l'est pas
+| Mesuré (100 000 simulations, bibliothèque `stellar_vigil_wheels`) | Non mesuré / non vérifié |
+|---|---|
+| RTP 96,00 % dans les deux modes (base et achat) | Aucun chiffre de maths nouveau depuis l'itération 19 (l'itération 20 n'a rien ajouté) |
+| Bonus environ 1 spin sur 150 | Ruine, médiane et sessions simulées du système à huit bonus (les chiffres de l'itération 14 valent pour l'ancien jeu) |
+| Roue des Bonus 22/13/13/11/11/9/8/13 %, Phases 60/30/10 % | Distribution des gains du mode achat, queue, gain max atteint |
+| 40 tests réussis | Écoute des sons (jamais écoutés par moi), lisibilité réelle sur appareils, test avec de vrais joueurs |
+| Démo : captures 390 px, 0 erreur console (itérations 17-18) | Performances sur téléphone d'entrée de gamme ; accessibilité (lecteur d'écran, contraste, daltonisme) |
+
+### Forces
+- Maths mesurées, chances des roues exactes par construction (critères d'optimiseur) : les pourcentages affichés sont les pourcentages réels.
+- Variété : huit bonus aux formes distinctes x trois phases = 24 combinaisons ; deux roues qui donnent de l'anticipation avant même le bonus.
+- Démo jouable sur une page, mobile (scène 430 x 860 mise à l'échelle), turbo / turbo x2 avec arrêt automatique au bonus et si le solde est insuffisant.
+- Lisibilité des bonus (légendes d'étapes, halos, jauges), célébrations par paliers, suspense avant le 3e Lunette.
+- Jeu sans état, multiples de 0,1x : formats compatibles avec les règles Stake lues.
+
+### Faiblesses
+- Jeu de base rude (n°13, n°14) : l'attractivité repose sur un bonus rare (environ 1 spin sur 150) ; peu de micro-récompenses entre deux bonus. Chiffres de sessions à régénérer.
+- Roue de sauvegarde peu utile (n°15), mode achat plus calme que le bonus déclenché (n°10) : à revérifier sur le nouveau système.
+- Complexité : huit bonus et deux roues à expliquer ; le joueur novice peut décrocher (onboarding absent ou non testé).
+- Sons non écoutés, musique de production inexistante ; symbole déclencheur spécial non fait ; plusieurs visuels générés non intégrés.
+- Pas de front-end de production, démo non soumise aux contraintes du SDK Stake. Optimiseur non reproductible (n°9) : tout changement de maths exige une régénération complète.
+- Accessibilité : seul `prefers-reduced-motion` est repéré dans la démo ; le reste (sous-titres des sons, contraste, tailles de texte) n'a pas été examiné.
+- Outils jeu responsable (limites, historique de session, pause) : non prévus dans la démo ; relèvent aussi de l'opérateur.
+
+### Opportunités
+- Quasi-gains et suspense honnêtes : les roues et le troisième Lunette donnent déjà matière à anticipation sans fausse information.
+- Mode achat avec choix du bonus ou de la phase : à étudier (maths nouvelles, donc régénération ; et à soumettre au conseil PI car ressemble à un choix de bonus, voir brevet 11798368 dans le dossier).
+- Partage / capture d'écran des gros gains ; onboarding de la première minute ; musique et sons originaux licenciés.
+- Démo une page : outil de test utilisateur et de présentation à Stake.
+
+### Menaces
+- **Risque PI, non levé.** Aucune affirmation « libre de brevets » ni « conforme ». Seule la recherche sur **six brevets Aristocrat** existe (`PATENT_BRIEF.md`) ; **Light & Wonder (titulaire probable de brevets sur les structures à roues de type Huff N' Puff), IGT, Everi : non examinés.** Deux roues devant un bonus restent proches de la structure de référence malgré l'indépendance des roues et l'absence d'Upgrade. Ne pas soumettre avant l'avis d'un conseil en brevets (n°16, n°1, n°6).
+- **Conformité Stake, non vérifiée par Stake.** Règles lues : jeux stateless, pas de jackpot, gains multiples de 0,1x, gain max 10 000x (existe mais environ 1 sur 10 millions : communication à encadrer, n°7). Règles non publiées (RTP min/max, fichiers, juridictions) : inconnues ; CGU lues en extrait seulement (licence 36 mois, redevance 10 % du GGR, clauses non lues). Après sortie, aucun changement de maths possible. Toute idée d'attractivité qui crée un état persistant, un compteur ou un progressif est exclue.
+- **Marques** : « Stellar Vigil » et les noms de paliers non interrogés (EUIPO, INPI, USPTO) ; noms voisins repérés (Stellar Jackpots, Moon Princess Stargazing, « Vault »).
+- **Art IA** : conditions Higgsfield non lues, droit d'auteur des images générées incertain selon le pays, ressemblance involontaire non relue, divulgation éventuelle de l'IA (`ART_PROVENANCE.md`). Visuels envoyés à un service payant avec accord de l'utilisateur uniquement.
+- **Polices** : Cinzel et Outfit chargées via Google Fonts ; licences supposées libres (SIL OFL) **à vérifier** ; chargement externe à remplacer par des fichiers hébergés pour la production (confidentialité, hors ligne, règles Stake).
+- **Sons et musique** : sons synthétisés maison (pas de droits tiers connus) ; musique de production à créer ou licencier par écrit.
+- **Dépendances** : Higgsfield (outil de génération, accès réseau aux fichiers bloqué par moments), Google Fonts, SDK Stake Engine (format 0,1x, règles évolutives), environnement Python de l'optimiseur non reproductible.
+- Marché saturé de slots à bonus ; ressemblance perçue avec Huff N' Puff côté joueurs et côté revue.
+
+**Décisions humaines en attente** : `docs/DECISIONS.md` (aucune nouvelle décision créée ici). Rien n'est soumis, publié ou affirmé conforme.
+
+---
+
 ## v20 — itération 18 (2026-10-12) : interface refaite, roues au-dessus de la grille
 
 **Fait et vérifié** (demande : animations et bonus difficiles à suivre ; roues au-dessus de la slot comme sur la capture)
