@@ -71,3 +71,28 @@ Générés, non intégrés (pas dans `demo/art/`) :
 | Lune : pleine | ce0c56d6-fdb6-4c78-aad9-3eed43f9b393 |
 
 Notes : les icônes Nova, Croix de Lune et Orbites sont désormais intégrées (les mentions « non intégrées » des ajouts précédents sont à lire en conséquence) ; la plaque bleue fa8fbab4 figurait déjà dans la liste des visuels de menu non intégrés de l'ajout du 2026-10-12. Les polices Cinzel et Outfit sont chargées depuis Google Fonts : leurs licences sont à vérifier avant toute publication.
+
+## Ajout (2026-10-14) : thème « The Unleashed Mine » (visuels générés, non intégrés)
+Générés avec `gpt_image_2_5` (fond noir, sans texte sauf le logo, aucune référence ni nom de marque). Le titre « The Unleashed Mine » est à vérifier (marques EUIPO / INPI / USPTO) avant toute publication.
+| Rôle | Job Higgsfield |
+|---|---|
+| Symbole H1 : pioche dorée | b4343a83-febe-411b-94ad-963a5f925490 |
+| Symbole H2 : wagonnet d'or | e7b38aba-ec19-4194-970d-e5adc59b2f88 |
+| Symbole H3 : lanterne | 639fd21d-4161-4688-8eb5-0d00df9a22d3 |
+| Symbole H4 : dynamite | 38d9081c-5a47-40b5-bb2b-d8dc6f2dd1df |
+| Wild : pépite géante | 939c4cb7-946c-4030-a5ce-d6e8a33af063 |
+| Scatter : casque de mineur | 6ac07b2d-90af-4f3a-ad18-cc798bbbf201 |
+| Gemme à valeur | db8f9eaf-056a-4340-a8c9-2d1795f1138b |
+| Fond : tunnel de mine | a1d7631f-871e-45d1-ad7c-f68c09298f0d |
+| Logo | 40e7b783-9ed0-4c6a-bf41-e81a63efc42f |
+| Bonus Grand Filon | 6cefa914-155a-407d-84a5-163dd904338f |
+| Bonus Wagonnet fou | d53f2e2d-bf8e-4c59-b194-3061ae1dc4b8 |
+| Bonus Galeries croisées | ec4cb609-2d4a-4e1d-bbb1-47db3afd797c |
+| Bonus Éboulement | b842758f-8ca4-4885-8afb-87f083c4bbb6 |
+| Bonus Filon oblique | af8dce3b-a9ac-464e-a1f5-c2282a3a0681 |
+| Bonus Foreuse | 18b65b7f-b803-40c2-8539-819781b0534b |
+| Bonus Puits multiplicateurs | 5f30420c-ce12-4299-aab2-ce77436b52b9 |
+| Minerai cuivre | 36da17ee-3804-43e0-9cbb-a0d0e7812e83 |
+| Minerai argent | 87e6bbdd-c39f-4d6f-9a95-112386f8518d |
+| Minerai or | b3dca202-2fbe-432c-90e2-5f6e1bba0efc |
+La version « espace » du jeu reste disponible (étiquette git `theme-espace-v1`).

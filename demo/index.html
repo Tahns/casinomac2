@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Outfit:wght@400;600;800&display=swap">
-<title>Stellar Vigil — démo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Outfit:wght@400;600;800&display=swap">
+<title>The Unleashed Mine — démo</title>
 <style>
   :root{--bg:#0a0e1f;--panel:#121832;--line:#2a3566;--gold:#f3c969;--ink:#e9ecff;--dim:#8a93c4;--star:#8fd3ff;--win:#7dffb2}
   *{box-sizing:border-box}
@@ -299,11 +299,35 @@
   .stage.bonus .dock{margin-bottom:2px}
   button:focus-visible,select:focus-visible{outline:3px solid #fff3c4;outline-offset:2px}
   @media (prefers-reduced-motion:reduce){.cell.reel .strip{animation:none}.dock.crawl{filter:none}.cap.pop,.cap.big{animation:none}}
+  /* ===== Thème The Unleashed Mine : pierre, bois, ambre de lanterne ===== */
+  :root{--bg:#120c07;--panel:#24180e;--line:#5a3f22;--gold:#f0b13a;--ink:#f6e9d2;--dim:#b79b78;--star:#ffd27a;--win:#9dffb8}
+  body{background-color:#0d0804;background-image:linear-gradient(#0d0804d0,#0d0804aa 40%,#0d0804e8),url(art/bg.webp);background-size:cover;background-position:center top}
+  body::before,body::after{opacity:.18}
+  .logo{display:flex;flex-direction:column;align-items:center;justify-content:center;height:58px;margin:0 auto;mix-blend-mode:normal;line-height:.9;font-family:'Alfa Slab One','Georgia',serif;letter-spacing:.14em;text-align:center;filter:drop-shadow(0 3px 0 #3a1f08) drop-shadow(0 0 14px #f0a83066)}
+  .logo span{background:linear-gradient(#fff3c4,#f6b73c 55%,#a8641a);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .logo span:first-child{font-size:15px;letter-spacing:.3em}
+  .logo span:last-child{font-size:30px;letter-spacing:.2em}
+  .stage{background:linear-gradient(160deg,#2e2014 0%,#1b120a 55%,#120b06 100%);border-color:#8a6026;box-shadow:0 0 0 1px #0d0804,0 0 0 3px #3a2410,0 10px 40px #000a,inset 0 0 40px #0008}
+  #base{background:#100a05;box-shadow:inset 0 0 22px #000c,0 0 0 2px #a8742c,0 0 0 4px #3a2410}
+  .cell{background:radial-gradient(circle at 50% 35%,#3a2a1b 0%,#1a1109 70%);border-color:#5a3f22}
+  .sky .cell{background:radial-gradient(circle at 50% 40%,#2a1d12 0%,#120b06 75%);border-color:#4a3320}
+  .zone,.cap,.bhead{background:linear-gradient(#2a1c10,#18100a);border-color:#6a4a26}
+  .cap{color:#f6e9d2}
+  .zone.done{background:linear-gradient(#5a3a10,#2a1a06)}
+  .pips i{background:#4a3320}
+  .hud b,.stepper .betval small{color:#d9b377}
+  .tools button{background:linear-gradient(#3a2814,#22160b);border-color:#8a6026;color:#f6e9d2}
+  .dock .ring{filter:none}
+  .rules .card,.card{background:#150d07f2}
+  .celeb{background:radial-gradient(circle,#0009,#000e)}
+  h1,.spinbtn,.buybtn small,.buybtn b,.tools button,.hud b,.ctier,.card h2,.card .tag,.bhead .bname,.rules h2,.rules h3,.cmult,.stepper .betval small,.cap em{font-family:'Alfa Slab One','Georgia',serif;font-weight:400;letter-spacing:.05em}
+  .spinbtn{font-size:12.5px;letter-spacing:.03em}
+  .bhead .bname{font-size:12px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1 class="vh">Stellar Vigil</h1><img class="logo" src="art/logo.webp" alt="Stellar Vigil">
+  <h1 class="vh">The Unleashed Mine</h1><div class="logo" role="img" aria-label="The Unleashed Mine"><span>THE UNLEASHED</span><span>MINE</span></div>
   <div class="sub">Démo jouable — rejoue de vrais résultats du moteur de maths (RTP 96 %). Argent fictif.</div>
   <div class="hud">
     <div><b>Solde</b><span id="bal">1000.00</span></div>
@@ -359,19 +383,19 @@
 <div class="flash" id="flash"></div>
 <div class="celeb hidden" id="celeb"><canvas id="cv"></canvas><div class="cbox"><div class="ctier" id="ctier"></div><div class="cnum" id="cnum">0.00</div><div class="cmult" id="cmult"></div><div class="ctap">Touchez pour continuer</div></div></div>
 <div class="rules hidden" id="rules"><div class="card">
-  <h2>Règles — Stellar Vigil</h2>
+  <h2>Règles — The Unleashed Mine</h2>
   <h3>Jeu de base</h3>
   <ul><li>Grille 5 × 4, 1 024 façons de gagner, gains de gauche à droite.</li>
-  <li>L'Étoile filante (wild) apparaît sur les colonnes 2 à 4 et remplace tous les symboles sauf la Lunette.</li>
-  <li>Une Étoile à valeur peut tomber sur n'importe quelle colonne et paie sur place de 0,2× à 10× la mise.</li></ul>
-  <h3>Nuit des Constellations</h3>
-  <ul><li>3, 4 ou 5 Lunettes déclenchent 10, 12 ou 15 nuits. Le nombre de nuits est fixe.</li>
-  <li>Chaque nuit, de 0 à 3 étoiles tombent sur un ciel de 5 × 5 ; elles y restent jusqu'à la fin du bonus.</li>
-  <li>Des étoiles voisines forment une constellation : chaque étoile gagne un niveau de valeur par lien, jusqu'à +3. Une étoile qui relie deux constellations ajoute un niveau de plus (conjonction).</li>
-  <li>Compléter une zone paie un multiplicateur fixe, une seule fois par bonus : Horizon (ligne du bas) 20×, Méridien (colonne centrale) 100×, Quadrature (les 4 coins) 1 000×, Firmament (ciel complet) 10 000×. Ces multiplicateurs ne sont pas progressifs.</li></ul>
-  <h3>Roues et bonus (version à deux roues)</h3>
-  <ul><li>Dans la version à deux roues, deux roues indépendantes tournent en même temps. La roue des Bonus choisit l'un des sept bonus : Constellations, Comètes, Nova, Croix de Lune, Pluie d'Étoiles, Éclipse ou Galaxie. La roue des Phases de Lune choisit sa richesse : croissant, quartier ou pleine lune (étoiles de plus en plus riches). Aucune des deux ne mène à l'autre.</li>
-  <li>Comètes : une comète traverse une ligne ou une colonne. Nova : un bloc de 4 étoiles. Croix de Lune : une croix de 5 étoiles. Pluie d'Étoiles : une étoile tombe dans chaque colonne. Éclipse : une diagonale d'étoiles. Galaxie : une spirale d'étoiles. Les chances de chaque roue sont celles mesurées sur le jeu.</li></ul>
+  <li>La Pépite géante (wild) apparaît sur les colonnes 2 à 4 et remplace tous les symboles sauf la Lampe.</li>
+  <li>Une Gemme à valeur peut tomber sur n'importe quelle colonne et paie sur place de 0,2× à 10× la mise.</li></ul>
+  <h3>Le bonus de la mine</h3>
+  <ul><li>3, 4 ou 5 Lampes ouvrent la mine : un nombre fixe de coups de pioche (de 2 à 15 selon le bonus tiré).</li>
+  <li>À chaque coup, des gemmes apparaissent sur une paroi de 5 × 5 ; elles y restent jusqu'à la fin du bonus.</li>
+  <li>Dans le Grand Filon, des gemmes voisines forment un filon : chaque gemme gagne un niveau de valeur par lien, jusqu'à +3. Une gemme qui relie deux filons ajoute un niveau de plus (croisement).</li>
+  <li>Compléter une zone paie un multiplicateur fixe, une seule fois par bonus : Galerie (ligne du bas) 20×, Puits central (colonne centrale) 100×, Piliers (les 4 coins) 1 000×, Mine pleine (paroi complète) 10 000×. Ces multiplicateurs ne sont pas progressifs.</li></ul>
+  <h3>Les deux roues</h3>
+  <ul><li>Deux roues indépendantes tournent en même temps. La roue des Bonus choisit l'un des huit bonus : Grand Filon, Wagonnet fou, Dynamite, Galeries croisées, Éboulement, Filon oblique, Foreuse ou Puits multiplicateurs. La roue des Minerais choisit sa richesse : cuivre, argent ou or (gemmes de plus en plus riches). Aucune des deux ne mène à l'autre.</li>
+  <li>Wagonnet fou : un wagonnet traverse une ligne ou une colonne. Dynamite : un bloc de 4 gemmes. Galeries croisées : une croix de 5 gemmes. Éboulement : une gemme tombe dans chaque colonne. Filon oblique : une diagonale de gemmes. Foreuse : une spirale de gemmes. Puits multiplicateurs : chaque colonne est un puits, ses gemmes valent leur somme multipliée par le nombre de gemmes qu'il contient. Les chances de chaque roue sont celles mesurées sur le jeu.</li></ul>
   <h3>Roue de sauvegarde</h3>
   <ul><li>En fin de bonus, si le total est inférieur à un plancher, la roue tourne. Plancher : 25× la mise pour un bonus déclenché en jeu normal ; 80× (le prix payé) pour un bonus acheté.</li>
   <li>La roue relève le total exactement jusqu'au plancher si elle tombe sur « sauvée ». Chance réelle mesurée sur ce jeu : environ <b id="oddsBuy">?</b> en achat, <b id="oddsBase">?</b> sur un bonus déclenché. Ce n'est pas un remboursement garanti.</li>
@@ -379,7 +403,7 @@
   <h3>Chiffres</h3>
   <ul><li>RTP théorique : 96,0 % dans tous les modes. Gain maximum : 10 000× la mise, extrêmement rare (environ 1 fois sur 10 millions en jeu normal).</li>
   <li>Le bonus se déclenche environ 1 spin sur 150 ; environ 28 % des spins gagnent.</li></ul>
-  <p class="warn">Démo à argent fictif : symboles et sons provisoires. Les résultats rejoués proviennent du moteur de maths mais ne constituent pas le jeu final soumis à Stake Engine.</p>
+  <p class="warn">Démo à argent fictif : visuels et sons provisoires. Les résultats rejoués proviennent du moteur de maths mais ne constituent pas le jeu final soumis à Stake Engine.</p>
   <div class="ctl"><button id="rulesclose">Fermer</button></div>
 </div></div>
 <script src="books.js"></script>
@@ -460,28 +484,29 @@ const flash=()=>{const f=$('flash'); f.classList.remove('go'); void f.offsetWidt
 const shake=()=>{const st=$('stage'); st.classList.remove('quake'); void st.offsetWidth; st.classList.add('quake'); setTimeout(()=>st.classList.remove('quake'),700)};
 function sfx(name,arg){ try{ SFX[name](arg) }catch(e){} }
 const ZONE_CELLS={Horizon:[0,1,2,3,4].map(r=>[r,4]),Meridien:[0,1,2,3,4].map(r=>[2,r]),Quadrature:[[0,0],[4,0],[0,4],[4,4]],Firmament:[...Array(25).keys()].map(i=>[Math.floor(i/5),i%5])};
-const ZONES=[['Horizon','Ligne du bas',20],['Meridien','Colonne centrale',100],['Quadrature','Les 4 coins',1000],['Firmament','Ciel complet',10000]];
+const ZONES=[['Horizon','Ligne du bas',20],['Meridien','Colonne centrale',100],['Quadrature','Les 4 coins',1000],['Firmament','Paroi complète',10000]];
+const ZLABEL={Horizon:'Galerie',Meridien:'Puits central',Quadrature:'Piliers',Firmament:'Mine pleine'};
 // --- Réglages d'affichage ---
 let speed=1, turbo=false, modeIdx=0, auto=false, bonusHit=false, savedSpeed=null;
 const sl=ms=>sleep(ms*(turbo?.25:speed));
 // --- Les bonus : nom, couleur, icône, explication ---
 const KINDS={
-  constellation:{name:'Nuit des Constellations',col:'#f3c969',txt:'Des étoiles se posent chaque nuit. Les étoiles voisines se relient et montent de niveau.',
+  constellation:{name:'Le Grand Filon',col:'#f3b33d',txt:'À chaque coup de pioche, des gemmes apparaissent. Les gemmes voisines se relient en filon et prennent de la valeur.',
     icon:'<g stroke="#f3c969" stroke-width="2" fill="none"><path d="M9 34 L22 16 L30 28 L40 10"/></g><g fill="#fff3c4"><circle cx="9" cy="34" r="4"/><circle cx="22" cy="16" r="4"/><circle cx="30" cy="28" r="4"/><circle cx="40" cy="10" r="4"/></g>'},
-  comet:{name:'Pluie de Comètes',col:'#5fd6ff',txt:'Chaque nuit, une comète traverse une ligne ou une colonne et pose une étoile sur chaque case libre.',
+  comet:{name:'Wagonnet Fou',col:'#7ec8e3',txt:'À chaque coup, un wagonnet traverse une ligne ou une colonne et dépose une gemme sur chaque case libre.',
     icon:'<path d="M6 42 L30 18" stroke="#5fd6ff" stroke-width="5" stroke-linecap="round" opacity=".5"/><path d="M12 38 L32 20" stroke="#bff0ff" stroke-width="3" stroke-linecap="round"/><circle cx="34" cy="16" r="8" fill="#e6fbff"/><circle cx="34" cy="16" r="12" fill="none" stroke="#5fd6ff" stroke-width="1.5" opacity=".6"/>'},
-  nova:{name:'Grande Nova',col:'#ffa63d',txt:'Chaque nuit, un bloc de 4 étoiles se pose d\'un coup.',
+  nova:{name:'Dynamite',col:'#ff7a2b',txt:'À chaque coup, une charge de dynamite fait jaillir un bloc de 4 gemmes d\'un coup.',
     icon:'<g fill="#ffd27a"><path d="M24 2 L28 20 L46 24 L28 28 L24 46 L20 28 L2 24 L20 20 Z"/></g><circle cx="24" cy="24" r="6" fill="#fff"/><circle cx="24" cy="24" r="14" fill="none" stroke="#ffa63d" stroke-width="2" opacity=".7"/>'}
 };
-KINDS.cross={name:'Croix de Lune',col:'#c58cff',txt:'Chaque nuit, une croix de 5 étoiles se pose sur le ciel.',
+KINDS.cross={name:'Galeries Croisées',col:'#c58cff',txt:'À chaque coup, une croix de 5 gemmes jaillit de la roche.',
     icon:'<path d="M24 4 V44 M4 24 H44" stroke="#c58cff" stroke-width="3" opacity=".6"/><g fill="#efdcff"><path d="M24 6 L27 21 L24 24 L21 21 Z"/><path d="M24 42 L27 27 L24 24 L21 27 Z"/><path d="M6 24 L21 21 L24 24 L21 27 Z"/><path d="M42 24 L27 21 L24 24 L27 27 Z"/></g><path d="M31 9 A11 11 0 1 0 31 21 A8 8 0 1 1 31 9Z" fill="#fff3c4" transform="translate(6,8) scale(.55)"/>'};
-KINDS.rain={name:"Pluie d'Étoiles",col:'#5fe0a4',txt:'Chaque nuit, une étoile tombe dans chaque colonne et se pose tout en bas.',
+KINDS.rain={name:'Éboulement',col:'#5fe0a4',txt:'À chaque coup, une gemme tombe dans chaque colonne et se pose tout en bas.',
     icon:'<g stroke="#5fe0a4" stroke-width="2.5" stroke-linecap="round" opacity=".55"><path d="M10 4 V22"/><path d="M24 12 V32"/><path d="M38 2 V20"/></g><g fill="#d6ffe9"><path d="M10 28 L13 36 L21 38 L13 40 L10 48 L7 40 L-1 38 L7 36Z" transform="translate(0,-8) scale(.9)"/><path d="M24 36 L27 42 L33 44 L27 46 L24 52 L21 46 L15 44 L21 42Z" transform="translate(0,-10)"/><path d="M38 24 L41 32 L49 34 L41 36 L38 44 L35 36 L27 34 L35 32Z" transform="translate(0,-4) scale(.8)"/></g>'};
-KINDS.eclipse={name:'Éclipse',col:'#ff7a7a',txt:'Chaque nuit, une ombre traverse le ciel en diagonale et allume une étoile sur chaque case libre.',
+KINDS.eclipse={name:'Filon Oblique',col:'#ff7a7a',txt:'À chaque coup, un filon traverse la paroi en diagonale et fait apparaître une gemme sur chaque case libre.',
     icon:'<circle cx="24" cy="24" r="13" fill="#2a1030" stroke="#ff7a7a" stroke-width="2"/><circle cx="24" cy="24" r="19" fill="none" stroke="#ffb0a0" stroke-width="1.5" stroke-dasharray="3 4" opacity=".8"/><path d="M6 42 L42 6" stroke="#fff3c4" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="24" r="4" fill="#fff3c4"/>'};
-KINDS.orbit={name:'Orbites',col:'#ffb04a',txt:'Chaque colonne est une orbite : ses étoiles valent leur somme multipliée par le nombre d\'étoiles qu\'elle contient.',
+KINDS.orbit={name:'Puits Multiplicateurs',col:'#ffb04a',txt:'Chaque colonne est un puits : ses gemmes valent leur somme multipliée par le nombre de gemmes qu\'il contient.',
     icon:'<ellipse cx="24" cy="24" rx="20" ry="8" fill="none" stroke="#ffb04a" stroke-width="2" transform="rotate(-25 24 24)"/><ellipse cx="24" cy="24" rx="20" ry="8" fill="none" stroke="#ffe39a" stroke-width="1.5" opacity=".6" transform="rotate(35 24 24)"/><circle cx="24" cy="24" r="8" fill="#ffd27a"/><circle cx="24" cy="24" r="4" fill="#fff"/><circle cx="40" cy="14" r="3" fill="#fff3c4"/><circle cx="9" cy="33" r="2.5" fill="#fff3c4"/>'};
-KINDS.galaxy={name:'Galaxie',col:'#ff9fe0',txt:"Chaque nuit, l'étoile suivante d'une spirale se pose, du bord du ciel vers son centre.",
+KINDS.galaxy={name:'La Foreuse',col:'#ff9fe0',txt:"À chaque coup, la foreuse creuse en spirale : la gemme suivante apparaît, du bord de la paroi vers son centre.",
     icon:'<path d="M24 24 m0 0 a4 4 0 0 1 8 0 a8 8 0 0 1 -16 0 a12 12 0 0 1 24 0 a16 16 0 0 1 -32 0" fill="none" stroke="#ff9fe0" stroke-width="2.5" stroke-linecap="round"/><g fill="#fff"><circle cx="24" cy="24" r="3.5"/><circle cx="40" cy="24" r="2.2"/><circle cx="8" cy="24" r="2.2"/><circle cx="24" cy="8" r="2"/></g>'};
 // Icônes générées avec Higgsfield (fond noir converti en transparence)
 KINDS.nova.icon='<image href="art/ic_nova.webp" x="0" y="0" width="48" height="48"/>';
@@ -491,10 +516,11 @@ const kindOf=v=>String(v||'constellation').replace(/\+/g,'');
 const tierOf=v=>1+(String(v||'').match(/\+/g)||[]).length;
 const setKind=v=>{curKind=kindOf(v); curTier=tierOf(v); curPlus=curTier>1; document.documentElement.style.setProperty('--bc',KINDS[curKind].col)};
 let curKind='constellation', curPlus=false, curTier=1;
-// Roue des Phases de Lune : elle décide de la richesse du bonus (niveau 1, 2 ou 3), indépendamment de la roue des Bonus.
-const TIER={1:{col:'#2b3a5a',name:'Croissant',icon:'<path d="M31 6 A18 18 0 1 0 31 42 A14 14 0 1 1 31 6Z" fill="#dfe6ff"/>'},
-  2:{col:'#5a4a2b',name:'Quartier de lune',icon:'<path d="M24 6 A18 18 0 0 0 24 42 Z" fill="#fff3c4"/><circle cx="24" cy="24" r="18" fill="none" stroke="#fff3c4" stroke-width="1.6" opacity=".7"/>'},
-  3:{col:'#8a6420',name:'Pleine lune',icon:'<circle cx="24" cy="24" r="22" fill="none" stroke="#ffe39a" stroke-width="2" opacity=".7"/><circle cx="24" cy="24" r="17" fill="#fff6cf"/><circle cx="18" cy="19" r="3" fill="#e8d98f"/><circle cx="29" cy="28" r="4" fill="#e8d98f"/>'}};
+// Roue des Minerais : elle décide de la richesse du bonus (cuivre, argent ou or), indépendamment de la roue des Bonus.
+const NUG=(c1,c2)=>`<path d="M8 32 L14 20 L24 16 L36 20 L41 31 L34 40 L18 41 Z" fill="${c1}" stroke="#2a1608" stroke-width="2" stroke-linejoin="round"/><path d="M14 20 L24 26 L36 20 M24 26 L18 41 M24 26 L34 40" fill="none" stroke="${c2}" stroke-width="1.6" opacity=".8"/><path d="M17 24 L22 21 L20 27Z" fill="#fff" opacity=".7"/>`;
+const TIER={1:{col:'#6b4026',name:'Cuivre',icon:NUG('#d27a43','#f2b184')},
+  2:{col:'#4a525c',name:'Argent',icon:NUG('#cfd6e0','#ffffff')},
+  3:{col:'#8a6420',name:'Or',icon:NUG('#ffd24a','#fff1a8')}};
 // --- Interface ---
 function cap(html,pop=true){const c=$('cap'); c.innerHTML='<span>'+html+'</span>'; if(pop){c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop')}}
 const banner=t=>cap(t);
@@ -502,7 +528,7 @@ function buildBoard(){const b=$('base');b.innerHTML='';for(let r=0;r<4;r++)for(l
 let skyVal={}, skyBase={};
 function buildSky(){ if($('orbits')) $('orbits').innerHTML='';const s=$('sky');s.innerHTML='';for(let r=0;r<5;r++)for(let c=0;c<5;c++){const d=document.createElement('div');d.className='cell';d.id=`s${c}_${r}`;s.appendChild(d)}
   $('links').innerHTML='';$('fx').innerHTML=''; skyVal={}; skyBase={};
-  $('zones').innerHTML=ZONES.map(z=>`<div class="zone" id="z${z[0]}"><b>${z[2]}×</b>${z[0]}<br>${z[1]}<i></i></div>`).join('')}
+  $('zones').innerHTML=ZONES.map(z=>`<div class="zone" id="z${z[0]}"><b>${z[2]}×</b>${ZLABEL[z[0]]}<br>${z[1]}<i></i></div>`).join('')}
 const SYMKEYS=Object.keys(SYM).filter(k=>k!=='S'&&k!=='W');
 // Les rouleaux défilent : une bande de symboles descend dans chaque case et s'arrête colonne après colonne.
 // Suspense : après deux Lunettes, les rouleaux restants ralentissent, la scène s'assombrit et un battement de coeur monte.
@@ -541,7 +567,7 @@ function paintSky(levels,fresh=new Set()){ // levels: [{reel,row,value}]
 function zoneProgress(){ZONES.forEach(z=>{const cells=ZONE_CELLS[z[0]],n=cells.filter(([c,r])=>skyVal[c+','+r]!==undefined).length;const el=$('z'+z[0]); el.querySelector('i').style.width=(100*n/cells.length)+'%'})}
 function buildPips(n){$('pips').innerHTML=Array.from({length:n},()=>'<i></i>').join('')}
 function setPip(night){[...$('pips').children].forEach((p,i)=>{p.className=i<night-1?'done':(i===night-1?'now':'')})}
-function setHead(){const k=KINDS[curKind]; $('bico').innerHTML=k.icon; $('bname').innerHTML=k.name+'+'.repeat(curTier-1)+`<small>${curTier>1?TIER[curTier].name+' : étoiles plus riches':'Bonus en cours'}</small>`}
+function setHead(){const k=KINDS[curKind]; $('bico').innerHTML=k.icon; $('bname').innerHTML=k.name+'+'.repeat(curTier-1)+`<small>${curTier>1?'Minerai : '+TIER[curTier].name.toLowerCase()+' · gemmes plus riches':'Bonus en cours'}</small>`}
 function drawLinks(cons){ // un arbre couvrant par constellation : lisible, sans la forêt de diagonales
   const g=$('links');g.innerHTML='';
   const p=(c,r)=>[(c+.5)*20,(r+.5)*20];
@@ -557,13 +583,13 @@ function showCard(html){const c=$('card'); c.innerHTML=html; c.classList.remove(
 function hideCard(){$('card').classList.add('hidden')}
 async function cardWait(ms){let done=false; const c=$('card'); const h=()=>{done=true}; c.addEventListener('click',h,{once:true}); const t0=performance.now(); while(!done&&performance.now()-t0<ms*(turbo?.25:speed)) await sleep(60); c.removeEventListener('click',h)}
 async function introCard(nights){const k=KINDS[curKind];
-  showCard(`<svg class="cico" viewBox="0 0 48 48">${k.icon}</svg>${curTier>1?`<div class="tag">${TIER[curTier].name.toUpperCase()}</div>`:''}<h2>${k.name}${'+'.repeat(curTier-1)}</h2><p>${k.txt}</p><div class="rows"><b>${nights}</b> nuits${curPlus?' · étoiles plus riches':''}</div><div class="tap">Touchez pour passer</div>`);
+  showCard(`<svg class="cico" viewBox="0 0 48 48">${k.icon}</svg>${curTier>1?`<div class="tag">${TIER[curTier].name.toUpperCase()}</div>`:''}<h2>${k.name}${'+'.repeat(curTier-1)}</h2><p>${k.txt}</p><div class="rows"><b>${nights}</b> coups${curPlus?' · gemmes plus riches':''}</div><div class="tap">Touchez pour passer</div>`);
   sfx(curKind); await cardWait(3600); hideCard()}
 async function summaryCard(total,bet){
   showCard(`<div class="tag">BONUS TERMINÉ</div><h2>${KINDS[curKind].name}${'+'.repeat(curTier-1)}</h2><div class="big" id="sumbig">0.0×</div><div class="rows" id="sumrows"></div><div class="tap">Touchez pour continuer</div>`);
   countTo($('sumbig'),0,total/100,1400); $('sumrows').innerHTML=`<b>${fmt(total*bet)}</b> gagnés sur une mise de ${bet.toFixed(2)}`; sfx(total>=8000?'upgrade':'win'); await cardWait(3200); hideCard()}
 // --- Roues au-dessus de la grille ---
-const RING_COL={constellation:'#2b3a86',comet:'#14607a',nova:'#8a3a1f',cross:'#5a2f86',rain:'#1b6b4c',eclipse:'#7a2f3a',galaxy:'#86306a',orbit:'#8a5a1f'};
+const RING_COL={constellation:'#7a5418',comet:'#2a5a70',nova:'#8a3a1f',cross:'#5a2f86',rain:'#1b6b4c',eclipse:'#7a2f3a',galaxy:'#86306a',orbit:'#6a4a2a'};
 const KIND_ORDER=['constellation','comet','nova','cross','rain','eclipse','galaxy','orbit'];
 function ringPath(s,e,r0,r1){const P=(a,r)=>{a=a*Math.PI/180;return (r*Math.sin(a)).toFixed(2)+' '+(-r*Math.cos(a)).toFixed(2)},L=(e-s)>180?1:0;
   return `M${P(s,r1)} A${r1} ${r1} 0 ${L} 1 ${P(e,r1)} L${P(e,r0)} A${r0} ${r0} 0 ${L} 0 ${P(s,r0)} Z`}
@@ -571,9 +597,9 @@ function wheelSegs(wheel,mode){const W=(window.WHEEL_ODDS||{})[mode]||{};
   const o1=Object.assign({constellation:.22,comet:.13,nova:.13,cross:.11,rain:.11,eclipse:.09,galaxy:.08,orbit:.13},W.kinds||{});
   const o2=Object.assign({1:.6,2:.3,3:.1},W.tiers||{});
   return wheel===1?KIND_ORDER.map(k=>[k,o1[k]]):[1,2,3].map(t=>['tier'+t,o2[t]])}
-const LABEL={constellation:'Constellations',comet:'Comètes',nova:'Nova',cross:'Croix de Lune',rain:"Pluie d'Étoiles",eclipse:'Éclipse',galaxy:'Galaxie',orbit:'Orbites'};
+const LABEL={constellation:'Grand Filon',comet:'Wagonnet fou',nova:'Dynamite',cross:'Galeries croisées',rain:'Éboulement',eclipse:'Filon oblique',galaxy:'Foreuse',orbit:'Puits'};
 // Chaque segment montre l'image de son bonus ou de sa phase (plus de texte ni de pourcentage).
-const SHORT={constellation:'Constell.',comet:'Comètes',nova:'Nova',cross:'Croix',rain:'Pluie',eclipse:'Éclipse',galaxy:'Galaxie',orbit:'Orbites',tier1:'Croissant',tier2:'Quartier',tier3:'Pleine'};
+const SHORT={constellation:'Filon',comet:'Wagonnet',nova:'Dynamite',cross:'Galeries',rain:'Éboulis',eclipse:'Oblique',galaxy:'Foreuse',orbit:'Puits',tier1:'Cuivre',tier2:'Argent',tier3:'Or'};
 function drawRing(id,segs,r0,r1){let a=0; const arcs=segs.map(([k,p])=>{const s=a;a+=p*360;return {k,s,e:a}}); const rm=(r0+r1)/2, band=r1-r0;
   $(id).innerHTML=arcs.map(x=>{const isT=x.k.startsWith('tier'),mid=(x.s+x.e)/2,fill=isT?TIER[+x.k[4]].col:RING_COL[x.k],icon=isT?TIER[+x.k[4]].icon:KINDS[x.k].icon;
     // image + nom : l'image en haut du segment, le nom en dessous (même sens que la roue)
@@ -609,7 +635,7 @@ async function spinRing(n,target){const arcs=ringArcs[n], x=arcs.find(a=>a.k===t
   const g=el.querySelector(`[data-k="${target}"]`); if(g) g.classList.add('hit')}
 async function spinSeasons(e){
   const mode=window.__mode||'base'; initDock(mode); setKind(e.variant);
-  cap('<em>Roue des Bonus</em> et <em>Roue des Phases</em> tournent ensemble…'); await sl(500);
+  cap('<em>Roue des Bonus</em> et <em>Roue des Minerais</em> tournent ensemble…'); await sl(500);
   await Promise.all([spinRing(1,e.kind||kindOf(e.variant)),spinRing(2,'tier'+(e.tier||tierOf(e.variant)))]);
   cap(`Bonus gagné : <em>${KINDS[curKind].name}${'+'.repeat(curTier-1)}</em>${curTier>1?' · '+TIER[curTier].name:''}`); await sl(1100)}
 // --- Roue de sauvegarde (fin de bonus), inchangée ---
@@ -651,36 +677,36 @@ async function playEvents(book,bet){
     case 'winInfo': sfx('win'); e.wins.forEach(w=>w.positions.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win'))); cap('Gain <em>'+fmt(e.totalWin*bet)+'</em> &nbsp;×'+(e.totalWin/100)); await sl(1000); break;
     case 'starPrizes': sfx('win'); e.stars.forEach(p=>$(`b${p.reel}_${p.row-1}`)?.classList.add('win')); cap('Étoiles à valeur : <em>+'+(e.total/100).toFixed(1)+'×</em>'); await sl(1000); break;
     case 'freeSpinTrigger': bonusHit=true; if(auto){auto=false; paintSpin()} if(speed<1){savedSpeed=speed; speed=1} sfx('trigger'); flash(); shake(); document.querySelectorAll('.scat').forEach(x=>x.classList.add('win'));
-      cap(book.events.some(x=>x.type==='seasonWheel')?'<em>BONUS !</em> Les roues choisissent ton bonus':'<em>BONUS !</em> Nuit des Constellations — '+e.totalFs+' nuits'); await sl(1500);
+      cap(book.events.some(x=>x.type==='seasonWheel')?'<em>BONUS !</em> Les roues choisissent ton bonus':'<em>BONUS !</em> Le Grand Filon — '+e.totalFs+' coups'); await sl(1500);
       if(!book.events.some(x=>x.type==='seasonWheel')){setKind('constellation'); buildSky(); shownTotal=0; $('btotal').textContent='0.0×'; setHead(); buildPips(e.totalFs); viewBonus(true); await introCard(e.totalFs)}
       break;
     case 'seasonWheel': await spinSeasons(e); buildSky(); shownTotal=0; $('btotal').textContent='0.0×'; setHead(); buildPips(e.totalNights); viewBonus(true); await introCard(e.totalNights); break;
-    case 'nightStart': night=e.night; setPip(e.night); cap(`<em>Nuit ${e.night}</em> sur ${e.totalNights}`); sfx('night'); await sl(600); break;
+    case 'nightStart': night=e.night; setPip(e.night); cap(`<em>Coup ${e.night}</em> sur ${e.totalNights}`); sfx('night'); await sl(600); break;
     case 'starsLanded': {
       const fresh=new Set(e.stars.map(s=>s.reel+','+s.row)); $('sky').classList.add('focus'); extra.stars+=e.stars.length;
-      if(curKind==='comet'&&!e.stars.length){cap('☄ La comète ne trouve aucune case libre'); sfx('comet'); await sl(900)}
-      else if(curKind==='comet'){ const dir=e.stars.every(s=>s.row===e.stars[0].row)?`la ligne ${e.stars[0].row+1}`:`la colonne ${e.stars[0].reel+1}`; cap(`☄ Une comète traverse <em>${dir}</em> : ${e.stars.length} étoile${e.stars.length>1?'s':''}`); sfx('comet'); const d=fxComet(e.stars); await sleep(d*.55);
+      if(curKind==='comet'&&!e.stars.length){cap('Le wagonnet ne trouve aucune case libre'); sfx('comet'); await sl(900)}
+      else if(curKind==='comet'){ const dir=e.stars.every(s=>s.row===e.stars[0].row)?`la ligne ${e.stars[0].row+1}`:`la colonne ${e.stars[0].reel+1}`; cap(`Un wagonnet traverse <em>${dir}</em> : ${e.stars.length} gemme${e.stars.length>1?'s':''}`); sfx('comet'); const d=fxComet(e.stars); await sleep(d*.55);
         for(const [i,st] of e.stars.entries()){drawStar($(`s${st.reel}_${st.row}`),st.value/100,'fresh'); skyVal[st.reel+','+st.row]=st.value/100; sfx('star',st.value/100); await sl(130)} await sl(500)}
-      else if(curKind==='nova'){ cap(`✦ <em>Nova !</em> Un bloc de ${e.stars.length} étoiles se pose`); sfx('nova'); const d=fxNova(e.stars); await sleep(d);
+      else if(curKind==='nova'){ cap(`<em>Boum !</em> Un bloc de ${e.stars.length} gemmes se pose`); sfx('nova'); const d=fxNova(e.stars); await sleep(d);
         e.stars.forEach((st,i)=>{setTimeout(()=>sfx('star',st.value/100),i*90)}); paintSky(e.stars.map(s=>({reel:s.reel,row:s.row,value:s.value})),fresh); await sl(900)}
       else if(['cross','rain','eclipse','galaxy','orbit'].includes(curKind)){
-        const T={cross:`✚ Une <em>croix de lune</em> se pose : ${e.stars.length} étoile${e.stars.length>1?'s':''}`,rain:`🌠 <em>Pluie d'étoiles</em> : ${e.stars.length} étoile${e.stars.length>1?'s':''} tombent`,
-          orbit:`🪐 Les étoiles tombent sur leurs <em>orbites</em> : ${e.stars.length}`,eclipse:`🌑 Une <em>éclipse</em> traverse le ciel : ${e.stars.length} étoile${e.stars.length>1?'s':''}`,galaxy:`🌀 La <em>galaxie</em> tourne : ${e.stars.length} étoile${e.stars.length>1?'s':''}`};
-        cap(e.stars.length?T[curKind]:'Rien ne se pose cette nuit'); sfx(curKind);
+        const T={cross:`Une <em>croix de galeries</em> se pose : ${e.stars.length} gemme${e.stars.length>1?'s':''}`,rain:`<em>Éboulement</em> : ${e.stars.length} gemme${e.stars.length>1?'s':''} tombent`,
+          orbit:`Les gemmes tombent sur leurs <em>puits</em> : ${e.stars.length}`,eclipse:`Un <em>filon oblique</em> traverse la paroi : ${e.stars.length} gemme${e.stars.length>1?'s':''}`,galaxy:`La <em>foreuse</em> creuse : ${e.stars.length} gemme${e.stars.length>1?'s':''}`};
+        cap(e.stars.length?T[curKind]:'Rien ne se pose ce coup'); sfx(curKind);
         if(curKind==='cross'&&e.stars.length){const d=fxNova(e.stars); await sleep(d*.5)}
         const seq=curKind==='eclipse'?[...e.stars].sort((a,b)=>a.reel-b.reel):e.stars; const gap=curKind==='rain'?160:230;
         const colN=r=>Object.keys(skyVal).filter(k=>+k.split(',')[0]===r).length+e.stars.filter(x=>x.reel===r).length;
         for(const st of seq){const v=curKind==='orbit'?st.value/100*colN(st.reel):st.value/100; drawStar($(`s${st.reel}_${st.row}`),v,'fresh'); skyVal[st.reel+','+st.row]=v; sfx('star',v); await sl(gap)} await sl(500)}
-      else { cap(`✦ <em>${e.stars.length?e.stars.length:'Aucune'}</em> étoile${e.stars.length>1?'s':''} se pose${e.stars.length>1?'nt':''}`); e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*140)); paintSky(e.stars.map(s=>({reel:s.reel,row:s.row,value:s.value})),fresh); await sl(700+e.stars.length*140)}
+      else { cap(`<em>${e.stars.length?e.stars.length:'Aucune'}</em> gemme${e.stars.length>1?'s':''} se pose${e.stars.length>1?'nt':''}`); e.stars.forEach((st,i)=>setTimeout(()=>sfx('star',st.value/100),i*140)); paintSky(e.stars.map(s=>({reel:s.reel,row:s.row,value:s.value})),fresh); await sl(700+e.stars.length*140)}
       zoneProgress(); break}
-    case 'constellationsUpdate': { if(e.orbits&&!e._orb){ e._orb=true; e.stars.forEach(st=>{st.value=st.value*Math.max(1,e.orbits[st.reel])}) } if(e.orbits){showOrbits(e.orbits,true); cap('🪐 <em>Orbites</em> : '+e.orbits.map(n=>'×'+Math.max(1,n)).join(' · ')); }
+    case 'constellationsUpdate': { if(e.orbits&&!e._orb){ e._orb=true; e.stars.forEach(st=>{st.value=st.value*Math.max(1,e.orbits[st.reel])}) } if(e.orbits){showOrbits(e.orbits,true); cap('<em>Puits</em> : '+e.orbits.map(n=>'×'+Math.max(1,n)).join(' · ')); }
       const sizes=e.constellations.map(c=>c.length).sort((a,b)=>b-a); $('sky').classList.remove('focus');
       const before={...skyVal}; paintSky(e.stars,new Set()); drawLinks(e.constellations); zoneProgress();
       const ups=Object.keys(skyVal).filter(k=>before[k]!==undefined&&skyVal[k]>before[k]).length;
-      if(sizes.length){sfx('link'); cap(`🔗 Constellation de <em>${sizes[0]} étoiles</em>${ups?` : ${ups} étoile${ups>1?'s':''} gagne${ups>1?'nt':''} de la valeur`:''}${e.conjunctions?`<br>Conjonction ×${e.conjunctions} : une étoile relie deux constellations`:''}`)} 
+      if(sizes.length){sfx('link'); cap(`Filon de <em>${sizes[0]} gemmes</em>${ups?` : ${ups} gemme${ups>1?'s':''} gagne${ups>1?'nt':''} de la valeur`:''}${e.conjunctions?`<br>Croisement ×${e.conjunctions} : une gemme relie deux filons`:''}`)} 
       await sl(sizes.length?1500:500); break}
-    case 'zonesComplete': sfx('zone'); shake(); extra.zones+=e.zones.reduce((a,z)=>a+z.win,0); e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); cap('🏆 PALIER <em>'+e.zones.map(z=>z.name+' +'+(z.win/100)+'×').join(' et ')+'</em>'); await sl(1700); break;
-    case 'nightPayout': total=e.total; setTotal(e.total,800); cap(e.amount>0?`Nuit ${night} : <em>+${(e.amount/100).toFixed(1)}×</em>`:`Nuit ${night} : rien de nouveau`); if(e.amount>0) sfx('win'); await sl(900); break;
+    case 'zonesComplete': sfx('zone'); shake(); extra.zones+=e.zones.reduce((a,z)=>a+z.win,0); e.zones.forEach(z=>{$('z'+z.name)?.classList.add('done')}); cap('PALIER <em>'+e.zones.map(z=>(ZLABEL[z.name]||z.name)+' +'+(z.win/100)+'×').join(' et ')+'</em>'); await sl(1700); break;
+    case 'nightPayout': total=e.total; setTotal(e.total,800); cap(e.amount>0?`Coup ${night} : <em>+${(e.amount/100).toFixed(1)}×</em>`:`Coup ${night} : rien de nouveau`); if(e.amount>0) sfx('win'); await sl(900); break;
     case 'saverWheel': cap('Roue de sauvegarde…'); await spinWheel(e); setTotal(e.total,500); break;
     case 'freeSpinEnd': await summaryCard(e.amount,bet); viewBonus(false); break;
     case 'finalWin': break;
@@ -688,7 +714,7 @@ async function playEvents(book,bet){
   }
 }
 
-// --- Célébration des gros gains : paliers, compteur et pluie d'étoiles ---
+// --- Célébration des gros gains : paliers, compteur et pluie de gemmes ---
 const TIERS=[[1000,'Légendaire'],[250,'Épique'],[100,'Méga gain'],[50,'Super gain'],[20,'Gros gain']];
 let burstRaf=0;
 function startBurst(strength){const cv=$('cv'), ctx=cv.getContext('2d'); cv.width=innerWidth; cv.height=innerHeight; const W=cv.width,H=cv.height, P=[]; cancelAnimationFrame(burstRaf);
