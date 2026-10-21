@@ -1,5 +1,6 @@
 """Main file for generating results for sample ways-pay game."""
 
+import os
 from gamestate import GameState
 from game_config import GameConfig
 from game_optimization import OptimizationSetup
@@ -11,20 +12,20 @@ from src.write_data.write_configs import generate_configs
 
 if __name__ == "__main__":
 
-    num_threads = 8
-    rust_threads = 20
+    num_threads = 4
+    rust_threads = 4
     batching_size = 50000
     compression = True
     profiling = False
 
     num_sim_args = {
-        "base": int(2e4),
-        "bonus": int(2e4),
+        "base": int(float(os.environ.get("SIMS_BASE", 1e5))),
+        "bonus": int(float(os.environ.get("SIMS_BONUS", 1e5))),
     }
 
     run_conditions = {
-        "run_sims": True,
-        "run_optimization": False,
+        "run_sims": os.environ.get("SIMS","1")=="1",
+        "run_optimization": os.environ.get("OPT","0")=="1",
         "run_analysis": True,
         "run_format_checks": True,
     }

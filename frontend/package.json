@@ -1,0 +1,14 @@
+{
+  "name": "the-unleashed-mine-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "node serve.mjs",
+    "mock": "node tools/mock-rgs/server.mjs",
+    "qa": "node tests/guidelines/run.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.56.1"
+  }
+}
