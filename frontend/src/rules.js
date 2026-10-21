@@ -58,6 +58,7 @@ export function buildRules(data, ctx = {}) {
   const minTrig = trig.length ? trig[0].scatters : 4;
   const minRetrig = retrig.length ? retrig[0].scatters : 3;
   const minCluster = tiers.length ? tiers[0].min : 5;
+  const B = social ? 'play amount' : 'bet';
   const wildName = wild ? wild.name : 'Gold Nugget';
   const scatName = scatter ? scatter.name : 'Dynamite';
 
@@ -66,7 +67,7 @@ export function buildRules(data, ctx = {}) {
     const top = pays[0];
     const last = top.pays[top.pays.length - 1];
     try {
-      example = `<p>Example: with a bet of ${esc(fmt(1_000_000, currency))}, a cluster of ${tierLabel(tiers[tiers.length - 1])} ${esc(top.name)} symbols is worth ${esc(fmt(Math.round(last * 1_000_000), currency))} before any multipliers.</p>`;
+      example = `<p>Example: with a ${B} of ${esc(fmt(1_000_000, currency))}, a cluster of ${tierLabel(tiers[tiers.length - 1])} ${esc(top.name)} symbols is worth ${esc(fmt(Math.round(last * 1_000_000), currency))} before any multipliers.</p>`;
     } catch (e) { example = ''; }
   }
 
@@ -77,13 +78,13 @@ export function buildRules(data, ctx = {}) {
     <p>The Unleashed Mine is a 6-reel, 5-row cluster game. There are no paylines: wins are formed by groups of ${minCluster} or more matching symbols that touch each other horizontally or vertically.</p>
     <p>After every win the winning symbols are removed, the remaining symbols fall down and new symbols drop in from above (tumbles). Tumbles continue as long as new wins are formed, and all wins of a round are added together.</p>
     <p>Trigger the Unleashed Mine free spins, where every winning position becomes a vein that grows a multiplier on each later win.</p>
-    <p>The maximum win is ${commas(wincap)}x the bet. When this limit is reached the round ends immediately and all remaining features are forfeited.</p>
+    <p>The maximum win is ${commas(wincap)}x the ${B}. When this limit is reached the round ends immediately and all remaining features are forfeited.</p>
   ` });
 
   sections.push({ id: 'howto', title: t('rules.tab.howto'), html: `
     <h3>How to play</h3>
     <ol>
-      <li>Choose your bet with the bet - and + buttons.</li>
+      <li>Choose your ${B} with the - and + buttons.</li>
       <li>Press the BET button (or the space bar) to start a round.</li>
       <li>Any group of ${minCluster} or more matching symbols that are adjacent horizontally or vertically is a winning cluster.</li>
       <li>Winning symbols disappear, symbols above fall down and new ones fill the gaps. This repeats while new clusters form.</li>
@@ -95,7 +96,7 @@ export function buildRules(data, ctx = {}) {
       <li>${esc(wildName)} (wild) substitutes for all paying symbols. It never replaces ${esc(scatName)} (scatter).</li>
       <li>A wild can join clusters of different symbols at the same time, but each symbol cluster is evaluated on its own.</li>
       <li>Every cluster is rewarded by its symbol and its size, as shown in the ${esc(social ? 'Win table' : 'Paytable')}. Larger clusters are worth more.</li>
-      <li>All wins are multiples of the bet, and are added together over all tumbles of a round.</li>
+      <li>All wins are multiples of the ${B}, and are added together over all tumbles of a round.</li>
     </ul>
     ${example}
   ` });
@@ -105,7 +106,7 @@ export function buildRules(data, ctx = {}) {
       <tr><th scope="row">${glyph(s.id)} ${esc(s.name)}</th>${s.pays.map((p) => `<td>${p == null ? '-' : esc(num(p)) + 'x'}</td>`).join('')}</tr>`).join('');
   sections.push({ id: 'wins', title: t('rules.tab.wins'), html: `
     <h3>${esc(social ? 'Win table' : 'Paytable')}</h3>
-    <p>Wins are shown as multiples of the bet for a cluster of the given size. Cluster size is the number of connected symbols.</p>
+    <p>Wins are shown as multiples of the ${B} for a cluster of the given size. Cluster size is the number of connected symbols.</p>
     <div class="rl-scroll"><table class="rl-table">
       <thead><tr><th scope="col">Symbol</th>${headCells}</tr></thead>
       <tbody>${rows}</tbody>
@@ -135,15 +136,15 @@ export function buildRules(data, ctx = {}) {
     <table class="rl-table"><thead><tr><th scope="col">Scatters</th><th scope="col">Extra free spins</th></tr></thead><tbody>${retrigRows}</tbody></table>
     <p>When the free spins end, the total win is added to your balance.</p>
     <h3>Maximum win</h3>
-    <p>The maximum win is ${commas(wincap)}x the bet. When it is reached, the round ends and any remaining free spins are forfeited.</p>
+    <p>The maximum win is ${commas(wincap)}x the ${B}. When it is reached, the round ends and any remaining free spins are forfeited.</p>
   ` });
 
   const modeLines = (d.modes || []).map((m) => `${esc(modeName(m.name))}: RTP ${pct(m.rtp)}, max win ${commas(m.maxWin)}x`).join(' · ');
   const modeRows = (d.modes || []).map((m) => `<tr><th scope="row">${esc(modeName(m.name))}</th><td>${num(m.cost)}x</td><td>${pct(m.rtp)}</td><td>${commas(m.maxWin)}x</td></tr>`).join('');
   sections.push({ id: 'modes', title: t('rules.tab.modes'), html: `
     <h3>Game modes</h3>
-    <p><strong>${esc(modeName('base'))}</strong> is the standard game. A round costs the bet (1x).</p>
-    <p><strong>${esc(modeName('bonus'))}</strong> starts the Unleashed Mine free spins directly, without having to land scatters. A round in this mode costs ${num(unleashCost)}x the bet. A confirmation is shown, stating the total cost, before the round starts.</p>
+    <p><strong>${esc(modeName('base'))}</strong> is the standard game. A round costs the ${B} (1x).</p>
+    <p><strong>${esc(modeName('bonus'))}</strong> starts the Unleashed Mine free spins directly, without having to land scatters. A round in this mode costs ${num(unleashCost)}x the ${B}. A confirmation is shown, stating the total cost, before the round starts.</p>
     <p class="rl-rtp">${modeLines}</p>
     <div class="rl-scroll"><table class="rl-table"><thead><tr><th scope="col">Mode</th><th scope="col">Cost</th><th scope="col">RTP</th><th scope="col">Max win</th></tr></thead><tbody>${modeRows}</tbody></table></div>
     <p>The RTP is the expected return over many plays. A maximum win of ${commas(wincap)}x applies to every round, in every mode.</p>
@@ -152,18 +153,18 @@ export function buildRules(data, ctx = {}) {
   sections.push({ id: 'controls', title: t('rules.tab.controls'), html: `
     <h3>Interaction guide</h3>
     <ul class="rl-controls">
-      <li><strong>BET</strong> (or <kbd>Space</kbd>): starts a round at the selected bet. The space bar behaves exactly like this button.</li>
-      <li><strong>Bet - / +</strong>: decreases or increases the bet. Disabled while a round is running.</li>
+      <li><strong>BET</strong> (or <kbd>Space</kbd>): starts a round at the selected ${B}. The space bar behaves exactly like this button.</li>
+      <li><strong>Bet - / +</strong>: decreases or increases the ${B}. Disabled while a round is running.</li>
       <li><strong>AUTOPLAY</strong>: opens the autoplay settings. Choose the number of spins and stop conditions, then confirm to start. Press again to stop.</li>
       <li><strong>TURBO</strong>: speeds up the animations.</li>
-      <li><strong>UNLEASH</strong>: starts the Unleashed Mine free spins directly at ${num(unleashCost)}x the bet, after you confirm the total cost.</li>
+      <li><strong>UNLEASH</strong>: starts the Unleashed Mine free spins directly at ${num(unleashCost)}x the ${B}, after you confirm the total cost.</li>
       <li><strong>SOUND</strong>: mutes or unmutes all sounds.</li>
       <li><strong>INFO</strong>: opens these rules.</li>
       <li><strong>FULLSCREEN</strong>: enters or leaves full screen.</li>
       <li><strong>MENU</strong>: opens the game menu.</li>
       <li><strong>Space bar</strong>: same as the BET button; it also starts a round while no round is running.</li>
     </ul>
-    <p>A round cannot be started when the balance is lower than the bet times the cost of the mode.</p>
+    <p>A round cannot be started when the balance is lower than the ${B} multiplied by the cost multiplier of the selected mode.</p>
   ` });
 
   sections.push({ id: 'legal', title: t('rules.tab.legal'), html: `

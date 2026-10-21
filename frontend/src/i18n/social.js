@@ -15,7 +15,6 @@ export const social = {
   'unleash.hint': 'Start the free spins directly for {mult}x the play amount.',
   'rules.tab.wins': 'Win table',
   'replay.bet': 'PLAY AMOUNT',
-  'replay.line': '{mode}: {amount} · REAL COST: {real}',
 };
 export default social;
 

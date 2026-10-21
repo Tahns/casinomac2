@@ -111,7 +111,7 @@ export const en = {
   'replay.mode': 'MODE',
   'replay.cost': 'REAL COST',
   'replay.multiplier': '{mult}x',
-  'replay.line': '{mode}: {amount} · REAL COST: {real}',
+  'replay.line': '{mode}: {amount} · {mult}x · REAL COST: {real}',
   'replay.lineBase': '{mode}: {amount}',
   'replay.start': 'PLAY',
   'replay.again': 'REPLAY',
