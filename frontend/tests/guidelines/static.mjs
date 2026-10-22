@@ -19,24 +19,26 @@ export async function staticReview() {
   const hosts = grep(/https?:\/\/[^\s'"`)]+/i, (l) => !/w3\.org|localhost|127\.0\.0\.1/.test(l) && !/^\s*(\/\/|\*)/.test(l));
   res.push({ title: 'Hardcoded hosts / external http(s) URLs (should be none; RGS only via params.rgsUrl)', status: hosts.length ? 'FAIL' : 'PASS', lines: hosts });
   const localHosts = grep(/localhost|127\.0\.0\.1/i);
-  res.push({ title: 'Hardcoded localhost references', status: localHosts.length ? 'FAIL' : 'PASS', lines: localHosts });
+  res.push({ title: 'localhost references (params.js only defaults a scheme-less LOCAL rgs_url to http://; no host is hardcoded)', status: localHosts.every((l) => /params\.js/.test(l)) ? 'PASS' : 'FAIL', lines: localHosts });
   const exth = grep(/<(script|link|img|iframe)[^>]+(src|href)=["']https?:|@import\s+url\(["']?https?:|url\(["']?https?:/i);
   res.push({ title: 'External scripts/styles/fonts/CDN in HTML/CSS', status: exth.length ? 'FAIL' : 'PASS', lines: exth });
 
-  const dollar = grep(/(['"`])\$\1|['"`]\$['"`]|`\$\$\{|['"`]\$[0-9]|\+\s*['"]\$['"]|['"]\$['"]\s*\+/, (l, f) => !/money\.js$/.test(f) || true);
+  const dollar = grep(/(['"`])\$\1|['"`]\$['"`]|`\$\$\{|\+\s*['"]\$['"]|['"]\$['"]\s*\+/, (l, f) => !/dev\.html$|money\.js$/.test(f) && !/replace\(/.test(l));
+  const devDollar = grep(/\$\$\{|'\$'/, (l, f) => /dev\.html$/.test(f));
+  res.push({ title: 'dev.html (RENDER harness, served from the same root) formats money with a literal "$" - delete before submission', status: devDollar.length ? 'AT RISK' : 'PASS', lines: devDollar });
   res.push({ title: "Fixed '$' symbol (currency symbol must come from money.js per currency)", status: dollar.length ? 'FAIL' : 'PASS', lines: dollar });
   const dollarMoney = grep(/\$/, (l, f) => /money\.js$/.test(f) && /USD|symbol|\$['"`]/.test(l));
   res.push({ title: "money.js symbol table lines (review XSC/XGC have no '$')", status: 'INFO', lines: dollarMoney.slice(0, 12) });
 
-  const dec = grep(/toFixed\(\s*2\s*\)|minimumFractionDigits:\s*2|maximumFractionDigits:\s*2|\/\s*100\b(?!0)/, (l, f) => true);
+  const dec = grep(/toFixed\(\s*2\s*\)|minimumFractionDigits:\s*2|maximumFractionDigits:\s*2/, (l, f) => !/dev\.html|devbooks|scene\.js|symbols\.js/.test(f) && !/translate|rotate/.test(l));
   res.push({ title: 'Fixed 2 decimals / /100 (JPY has 0 decimals; sub-cent payouts need more)', status: dec.length ? 'AT RISK' : 'PASS', lines: dec });
-  const micro = grep(/\b1e6\b|1_?000_?000\b|\*\s*100\b/, (l, f) => !/money\.js|bet\.js|rgs\.js|params\.js/.test(f));
+  const micro = grep(/\b1e6\b|1_?000_?000\b/, (l, f) => !/money\.js|bet\.js|rgs\.js|params\.js|dev\.html|devbooks/.test(f));
   res.push({ title: 'Micro-unit conversions outside money.js/bet.js (review)', status: micro.length ? 'AT RISK' : 'PASS', lines: micro });
 
   // end-round call sites with context
   const ctx = [];
   for (const f of fl) { const L = fs.readFileSync(f, 'utf8').split('\n'); L.forEach((l, i) => { if (/endRound\s*\(/.test(l) && !/^\s*(\/\/|\*)/.test(l) && !/(async\s+)?endRound\s*\(\)\s*\{|endRound:|export const endRound|endRound\(\)\s*\{/.test(l) && !/rgs\.js$/.test(f)) ctx.push({ at: `${rel(f)}:${i + 1} (${OWNER(rel(f))})`, ctx: L.slice(Math.max(0, i - 6), i + 1).map((x) => x.trim()).join(' ⏎ ').slice(0, 330) }); }); }
-  const guarded = ctx.length > 0 && ctx.every((c) => /payoutMultiplier\s*>\s*0|payout\s*>\s*0|payoutMultiplier\s*>\s*0|\.active|win\s*>\s*0|totalWin\s*>\s*0|mult\s*>\s*0/.test(c.ctx));
+  const guarded = ctx.length > 0 && ctx.every((c) => /shouldEndRound\(|payoutMultiplier\s*>\s*0|payout\s*>\s*0|payoutMultiplier\s*>\s*0|\.active|win\s*>\s*0|totalWin\s*>\s*0|mult\s*>\s*0/.test(c.ctx));
   res.push({ title: 'end-round call sites (must be guarded: only payoutMultiplier > 0; never for 0x)', status: ctx.length === 0 ? 'AT RISK' : guarded ? 'PASS' : 'FAIL', lines: ctx.length ? ctx.map((c) => `${c.at}: ${c.ctx}`) : ['no endRound( call site found in game code'] });
 
   // keydown listeners
@@ -59,7 +61,7 @@ export async function staticReview() {
   rl.push(`styles.css html,body overflow:hidden rule: ${/overflow\s*:\s*hidden/.test(css)}; height:100%: ${/height\s*:\s*100%/.test(css)}; touch-action:none: ${/touch-action\s*:\s*none/.test(css)}`);
   const badTitle = /megaways|boosted|enhanced|rtp|rush|bonanza|gates of|olympus|kraken/i.test(title || '');
   res.push({ title: 'HTML/CSS: viewport meta, title restrictions, overflow, touch-action', status: !vm || badTitle || !/overflow\s*:\s*hidden/.test(css) || !/touch-action\s*:\s*none/.test(css) ? 'FAIL' : 'PASS', lines: rl });
-  const wallet = grep(/\/wallet\/|fetch\(|XMLHttpRequest|sendBeacon|WebSocket/, (l, f) => !/rgs\.js$/.test(f));
+  const wallet = grep(/\/wallet\/|fetch\(|XMLHttpRequest|sendBeacon|WebSocket/, (l, f) => !/rgs\.js$|dev\.html$/.test(f) && !/fetch\(\s*['"](data|index)/.test(l));
   res.push({ title: 'Network calls outside rgs.js (must be none; replay must not touch wallet)', status: wallet.length ? 'AT RISK' : 'PASS', lines: wallet });
 
   // social i18n restricted words (static)

@@ -7,6 +7,16 @@
 - Events handled: reveal (drop in/out, anticipation), winInfo, updateTumbleWin/setTumbleWin, tumbleBoard, updateGrid (veins), freeSpinTrigger (explosion transition), freeSpinRetrigger, updateFreeSpin, freeSpinEnd (count-up), setWin (big/mega/super/epic banner >=15x, >=50x in free spins), wincap, setTotalWin, finalWin. Event amounts are divided by 100 (SDK format); hooks get multipliers of base bet.
 - dev.html: harness with synthetic books (`dev.html?nodev=1` hides the dev bar; `window.__dev.run('bonus',4)`).
 
+## Polish pass (render-polish agent)
+- Symbols: clipped specular sweep (JS picks 2 random idle cells / 650 ms: `.cell.sweep`), inner glow + rim light on gems, breathing (CSS, staggered), lantern flame flicker, nugget/dynamite glow + sparkles, fuse embers. No idle CSS filters on cells (perf): shadows are baked in the sprites.
+- Wins: tinted cluster + halo outline, count-up popups, combo/total chip bump, shake scaled by win size, shard count scaled by win.
+- Anticipation (event `anticipation[]`): other reels dim (`.adim`), spotlight on the reel, red heartbeat frame + `heart` sound loop.
+- Banners: tier colours (data-tier), tier-up flash/ring/shake/stinger, coin fountain from both lower corners, coin rain + `shower` sound, rays `.hi`.
+- Bonus: `body.fs-mode` swaps palette (hot HUD/frame, `.fstint` multiply layer, darker vignette); swap happens under the explosion flash. Veins show glowing jagged cracks + shining badge. Chip "FREE SPINS n/m" hangs on the top frame (portrait hides the HUD fsbox).
+- Scene: light shafts, fog, frame lantern light (`.lit`), crystal glints. fx.js lowers particle count when frames are slow, honours prefers-reduced-motion, skips particles when the tab is hidden.
+- audio.js new sounds: heart, rumble, crack, shower, stinger, tick (+ `audio._sounds` test hook).
+- Portrait: touch targets >=40px (tbtn, +/-), bet stat wider.
+
 ## Needs from other agents
 - CORE: call `renderer.setFormat(x => fm(x * bet))` (new optional method) so popups/banners show money instead of "16.00x" (default). Re-call when the bet changes.
 - CORE: initial `S.muted` should be `audio.muted` (audio restores saved mute and sets body.muted / aria-pressed itself).

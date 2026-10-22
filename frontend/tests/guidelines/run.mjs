@@ -242,6 +242,48 @@ async function main() {
     return [bad ? FAIL : PASS, ...ev];
   });
 
+
+  await check('219b', 'CA$/MX$/XSC/JPY with large balance: no clipping of balance/bet/win at 4 viewports', async () => {
+    const ev = []; let bad = 0;
+    let stressBad = 0;
+    for (const [tier, balance] of [['moderate 12,345.67', 12345670000], ['stress 1,234,567.89', 1234567890000]]) for (const cur of ['CAD', 'MXN', 'XSC']) {
+      for (const vp of VIEWPORTS) {
+        await mockCfg({ currency: cur, balance, bet: { betLevels: [50000000, 100000000], minBet: 50000000, maxBet: 100000000, stepBet: 50000000, defaultBetLevel: 100000000 } });
+        const s = await sess({}, { viewport: vp }); await mockCfg({ force: { category: 'win', mode: 'base' } }); await s.playRound();
+        const r = await s.page.evaluate(() => ['balance', 'bet', 'win', 'unleash-cost'].map((id) => { const e = document.getElementById(id); if (!e) return { id, missing: true }; const cs = getComputedStyle(e); const rc = e.getBoundingClientRect(); let p = e.parentElement, clip = false; for (let i = 0; i < 3 && p; i++, p = p.parentElement) { const pr = p.getBoundingClientRect(); if (rc.left < pr.left - 1 || rc.right > pr.right + 1) { clip = true; break; } } const range = document.createRange(); range.selectNodeContents(e); const tr = range.getBoundingClientRect(); return { id, text: e.textContent, sw: e.scrollWidth, cw: e.clientWidth, textW: Math.round(tr.width), boxW: Math.round(rc.width), clip: e.scrollWidth > e.clientWidth + 1 || clip || tr.width > rc.width + 1, hidden: cs.display === 'none' || cs.visibility === 'hidden' }; }));
+        if (tier.startsWith('stress') && (cur === 'CAD' || vp.name === '400x225')) await s.page.screenshot({ path: path.join(SHOTS, `qa_${cur}_${vp.name}.png`) });
+        await s.close();
+        const clipped = r.filter((x) => x.clip && !x.hidden);
+        if (clipped.length) { if (tier.startsWith('moderate')) bad++; else stressBad++; }
+        ev.push(`[${tier}] ${cur} ${vp.name}: ${r.filter((x) => !x.missing && !x.hidden).map((x) => `${x.id}="${x.text}"(${x.textW}/${x.boxW})${x.clip ? ' CLIPPED' : ''}`).join(' ')}`);
+      }
+    }
+    return [bad ? FAIL : stressBad ? RISK : PASS, `moderate balance clipped cases=${bad}; 7-figure stress clipped cases=${stressBad}`, ...ev];
+  });
+
+  await check(273, 'sub-cent payouts (bet 0.01 x 0.1x win = 0.001) are not shown as 0.00', async () => {
+    const bet = 10000; // 0.01
+    await mockCfg({ currency: 'USD', balance: 100000000, bet: { betLevels: [bet], minBet: bet, maxBet: bet, stepBet: bet, defaultBetLevel: bet } });
+    const st = await mockState(); const small = st.books.base.filter((b) => b.p > 0 && b.p <= 30).map((b) => b.id); const id = small[0];
+    const s = await sess({}); await mockCfg({ force: { id, mode: 'base' } }); await s.playRound();
+    const win = await s.text('#win'); const bal = await s.text('#balance'); const rnd = (await mockState()).round; await s.close();
+    const exp = bet * rnd.payoutMultiplier; // micro
+    const fine = exp % 10000 !== 0; const m = /[0-9.,]+/.exec(win || ''); const val = m ? parseFloat(m[0].replace(/,/g, '')) : NaN;
+    return [Math.abs(val * 1e6 - exp) < 1 && val > 0 ? PASS : FAIL, `book ${id} payoutMultiplier=${rnd.payoutMultiplier}x bet=0.01 -> exact win ${exp / 1e6}; displayed win="${win}"; balance="${bal}"`, `sub-cent payout=${fine}`];
+  });
+
+
+  await check('RULES', 'rules/info content: RTP + max win per mode, symbols, modes+cost, free games/retrigger, controls, disclaimer', async () => {
+    const s = await sess({}); const sc = await collectScreens(s); await s.close();
+    const txt = sc.filter((x) => /^info/.test(x.name)).map((x) => x.text).join('\n'); const low = txt.toLowerCase();
+    const need = { 'RTP': /rtp|return to player/i, 'max win 5000x': /5,?000\s?x/i, 'Ruby': /ruby/i, 'Sapphire': /sapphire/i, 'Emerald': /emerald/i, 'Topaz': /topaz/i, 'Amethyst': /amethyst/i, 'Pickaxe': /pickaxe/i, 'Lantern': /lantern/i, 'Hard hat': /hard hat/i, 'Gold Nugget wild': /nugget/i, 'Dynamite scatter': /dynamite/i, 'cluster of 5+': /5\s?(\+|or more)|five/i, 'UNLEASH mode + 100x': /unleash[\s\S]{0,200}100/i, 'free spins': /free (spins|games)/i, 'retrigger': /retrigger/i, 'tumble': /tumble|cascade/i,
+      'disclaimer: Malfunction voids all wins and plays': /malfunction voids all wins and plays/i, 'disclaimer: consistent internet connection': /consistent internet connection is required/i, 'disclaimer: TM and (c) 2026 Engine': /TM and . 2026 Engine/i, 'disclaimer: Winnings settled per RGS': /settled according to the amount received from the remote game server/i };
+    const missing = Object.entries(need).filter(([, re]) => !re.test(txt)).map(([k]) => k);
+    const rtps = [...txt.matchAll(/(\d{2}\.\d+)\s?%/g)].map((m) => m[1]);
+    const ctl = ['spin', 'autoplay', 'turbo', 'sound', 'space'].filter((k) => !low.includes(k));
+    return [missing.length ? FAIL : ctl.length ? RISK : PASS, `info text length=${txt.length}; RTP-like percentages found: ${J(rtps)}`, 'missing: ' + J(missing), 'controls not mentioned in rules text: ' + J(ctl)];
+  });
+
   for (const lang of ['en', 'zz']) {
     await check(lang === 'en' ? 239 : 240, `lang=${lang}: no keys/undefined/NaN/{...} (all screens)`, async () => {
       const s = await sess({ lang }); const screens = await collectScreens(s);

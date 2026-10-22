@@ -232,5 +232,6 @@ export const audio = {
   get ready() { return !!ctx && ctx.state === 'running'; },
   get bonus() { return bonus; },
   _stop() { clearTimeout(dripTimer); },
+  _sounds: SOUNDS, // test hook: lets the dev harness call a sound without the try/catch
 };
 export default audio;

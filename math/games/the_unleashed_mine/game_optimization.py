@@ -75,8 +75,8 @@ class OptimizationSetup:
                     [
                         {
                             "criteria": "freegame",
-                            "scale_factor": 0.9,
-                            "win_range": (20, 50),
+                            "scale_factor": 0.5,
+                            "win_range": (20, 40),
                             "probability": 1.0,
                         },
                         {

@@ -13,7 +13,7 @@ export function createFx(app) {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, dpr = 1;
   const parts = [];
-  let raf = 0, last = 0;
+  let raf = 0, last = 0, ema = 16, lite = false; // lite: drop half the particles when frames are slow
   const MAX = 900;
 
   function resize() {
@@ -25,7 +25,7 @@ export function createFx(app) {
   resize();
 
   function add(p) {
-    if (REDUCE && Math.random() < .6) return;
+    if ((REDUCE && Math.random() < .6) || (lite && Math.random() < .5)) return;
     if (document.hidden) return;
     if (parts.length > MAX) parts.shift();
     parts.push(p);
@@ -78,7 +78,8 @@ export function createFx(app) {
   }
 
   function tick(now) {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const raw = now - last; ema = ema * .92 + Math.min(raw, 200) * .08; lite = ema > 42;
+    const dt = Math.min(0.05, raw / 1000); last = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'source-over';

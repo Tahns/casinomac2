@@ -606,6 +606,20 @@ export function createRenderer(rootEl) {
     return p;
   }
 
+  // ---------- idle life: one random symbol gets a specular sweep every so often (cheaper than 30 permanent animations) ----------
+  let sweepTimer = 0;
+  if (!REDUCE) {
+    sweepTimer = setInterval(() => {
+      if (S.destroyed || document.hidden) return;
+      const cells = cellsEl.querySelectorAll('.cell:not(.win):not(.dim):not(.fuse):not(.adim)');
+      if (!cells.length) return;
+      for (let k = 0; k < 2; k++) {
+        const el = cells[(Math.random() * cells.length) | 0];
+        el.classList.add('sweep'); setTimeout(() => el.classList.remove('sweep'), 1200);
+      }
+    }, 650);
+  }
+
   // ---------- public ----------
   showBoard(DECOR);
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => fx.resize()) : null;
@@ -617,7 +631,7 @@ export function createRenderer(rootEl) {
     setTurbo(b) { S.turbo = !!b; },
     setFormat(fn) { if (typeof fn === 'function') S.fmt = fn; },
     resize() { fx.resize(); },
-    destroy() { S.destroyed = true; if (ro) ro.disconnect(); fx.clear(); },
+    destroy() { S.destroyed = true; clearInterval(sweepTimer); if (ro) ro.disconnect(); fx.clear(); },
     // exposed for dev/test harness
     _banner: banner, _winBanner: winBanner, _shake: shake, _state: S,
   };
