@@ -81,6 +81,7 @@ class GameConfig(Config):
         }
 
         self.maximum_board_mult = 512
+        self.bonus_floor = 40.0
         self.fs_start_mult = 4
         self.vein_step = 6
 
@@ -194,6 +195,21 @@ class GameConfig(Config):
                     Distribution(
                         criteria="freegame",
                         quota=0.1,
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"FR0": 1},
+                            },
+                            "scatter_triggers": {4: 4, 5: 3, 6: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
+                        },
+                    ),
+                    # Bonus-only criteria: natural free games with at least BONUS_FLOOR x return
+                    # (rejection filter in game_override.check_repeat) -> keeps the median high.
+                    Distribution(
+                        criteria="fgfloor",
+                        quota=0.5,
                         conditions={
                             "reel_weights": {
                                 self.basegame_type: {"BR0": 1},
