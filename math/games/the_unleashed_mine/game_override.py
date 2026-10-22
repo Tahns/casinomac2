@@ -19,7 +19,7 @@ class GameStateOverride(GameExecutables):
 
     def reset_fs_spin(self):
         super().reset_fs_spin()
-        self.reset_grid_mults()
+        self.init_vein_grid()
 
     def assign_special_sym_function(self):
         pass

@@ -58,4 +58,5 @@ if __name__ == "__main__":
         create_stat_sheet(gamestate, custom_keys=custom_keys)
 
     if run_conditions["run_format_checks"]:
+        os.chdir(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')))
         execute_all_tests(config)

@@ -81,6 +81,8 @@ class GameConfig(Config):
         }
 
         self.maximum_board_mult = 512
+        self.fs_start_mult = 3
+        self.vein_step = 5
 
         reels = {"BR0": "BR0.csv", "FR0": "FR0.csv", "WCAP": "WCAP.csv"}
         self.reels = {}
@@ -105,7 +107,7 @@ class GameConfig(Config):
                         conditions={
                             "reel_weights": {
                                 self.basegame_type: {"BR0": 1},
-                                self.freegame_type: {"FR0": 1, "WCAP": 5},
+                                self.freegame_type: {"WCAP": 1},
                             },
                             "scatter_triggers": {4: 1, 5: 2},
                             "force_wincap": True,
@@ -162,7 +164,7 @@ class GameConfig(Config):
                         conditions={
                             "reel_weights": {
                                 self.basegame_type: {"BR0": 1},
-                                self.freegame_type: {"FR0": 1, "WCAP": 5},
+                                self.freegame_type: {"WCAP": 1},
                             },
                             "mult_values": {
                                 self.basegame_type: {

@@ -4,9 +4,9 @@ sys.path.insert(0, "../..")
 sys.path.insert(0, ".")
 from gamestate import GameState
 from game_config import GameConfig
-from src.wins.wins import WinManager
+from src.wins.win_manager import WinManager
 mode, crit, n = sys.argv[1], sys.argv[2], int(sys.argv[3])
-cfg = GameConfig(); gs = GameState(cfg)
+cfg = GameConfig(); import os; cfg.vein_step=int(os.environ.get("VS",cfg.vein_step)); cfg.fs_start_mult=int(os.environ.get("SM",cfg.fs_start_mult)); gs = GameState(cfg)
 bm = [b for b in cfg.bet_modes if b.get_name()==mode][0]
 gs.config.wincap = bm.get_wincap()
 gs.win_manager = WinManager(cfg.basegame_type, cfg.freegame_type, bm.get_wincap())
