@@ -164,12 +164,12 @@ async function main() {
 
   await check(228, 'space bar places a bet, no page scroll, no double fire', async () => {
     const s = await sess({}); await mockClear();
-    await s.page.evaluate(() => document.activeElement && document.activeElement.blur()); await s.page.keyboard.press('Space');
+    await s.page.evaluate(() => document.activeElement && document.activeElement.blur()); await s.page.keyboard.press('Space'); await sleep(500);
     await s.waitIdle(60000).catch(() => {}); await sleep(300);
     const first = plays(await mockLog()).length;
     // after clicking the button it holds focus: Space must still be exactly one bet
-    await s.click('#btn-bet', { force: true }).catch(() => {}); await s.waitIdle(60000).catch(() => {}); await mockClear();
-    await s.page.keyboard.press('Space'); await s.waitIdle(60000).catch(() => {}); await sleep(400);
+    await s.click('#btn-bet', { force: true }).catch(() => {}); await sleep(500); await s.waitIdle(60000).catch(() => {}); await sleep(300); await mockClear();
+    await s.page.keyboard.press('Space'); await sleep(500); await s.waitIdle(60000).catch(() => {}); await sleep(400);
     const second = plays(await mockLog()).length;
     const info = await s.page.evaluate(() => ({ keys: window.__qa.keys.filter((k) => k.code === 'Space'), sy: window.scrollY, st: document.scrollingElement.scrollTop, tgt: document.activeElement && (document.activeElement.id || document.activeElement.tagName) }));
     await s.close();
