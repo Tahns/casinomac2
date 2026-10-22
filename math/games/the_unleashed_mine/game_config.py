@@ -81,8 +81,8 @@ class GameConfig(Config):
         }
 
         self.maximum_board_mult = 512
-        self.fs_start_mult = 3
-        self.vein_step = 5
+        self.fs_start_mult = 4
+        self.vein_step = 6
 
         reels = {"BR0": "BR0.csv", "FR0": "FR0.csv", "WCAP": "WCAP.csv"}
         self.reels = {}
