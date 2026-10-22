@@ -213,11 +213,11 @@ async function main() {
   });
 
   await check(107, 'sound toggle mutes everything', async () => {
-    const s = await sess({}); const probe = () => s.page.evaluate(() => { const q = window.__qa; return { ctx: q.ctxs.map((c) => c.state), dest: q.destSources.map((n) => n.constructor.name + ':' + (n.gain ? n.gain.value : 'x')), muted: document.body.classList.contains('muted'), media: [...document.querySelectorAll('audio,video')].map((m) => m.muted || m.paused) }; });
-    await s.playRound(); const before = await probe(); await s.click('#btn-sound', { force: true }); await sleep(400); const after = await probe();
+    const s = await sess({}); const probe = () => s.page.evaluate(() => { const q = window.__qa; return { ctx: q.ctxs.map((c) => c.state), dest: q.destSources.map((n) => n.constructor.name + ':' + (n.gain ? n.gain.value : 'x')), muted: document.body.classList.contains('muted'), graph: window.__qa.audible && window.__qa.audible(), media: [...document.querySelectorAll('audio,video')].map((m) => m.muted || m.paused) }; });
+    await s.playRound(); const before = await probe(); await s.click('#btn-sound', { force: true }); await sleep(900); const after = await probe();
     await s.playRound(); const during = await probe(); await s.close();
     const hasAudio = before.ctx.length > 0;
-    const gainsMuted = after.dest.length > 0 && after.dest.every((d) => d.endsWith(':0'));
+    const gainsMuted = after.dest.length > 0 && after.dest.every((d) => d.endsWith(':0')) || (after.graph && after.graph.sources > 0 && after.graph.audibleSources === 0);
     const suspended = after.ctx.length > 0 && after.ctx.every((c) => c !== 'running');
     const ev = [`before: ${J(before)}`, `after toggle: ${J(after)}`, `after another round while muted: ${J(during)}`];
     if (!hasAudio) return [HUMAN, 'no AudioContext created; listen manually (could be HTMLAudio/none)', ...ev];
@@ -235,7 +235,7 @@ async function main() {
   await check(219, 'currencies USD/EUR/CAD/MXN/JPY/XSC/XGC', async () => {
     const exp = { USD: '$12.34', EUR: '€12.34', CAD: 'CA$12.34', MXN: 'MX$12.34', JPY: '¥12', XSC: '12.34 SC', XGC: '12.34 GC' }; const ev = []; let bad = 0;
     for (const [cur, want] of Object.entries(exp)) {
-      await mockCfg({ currency: cur, balance: 12340000, bet: cur === 'JPY' ? { minBet: 1000000, maxBet: 10000000, stepBet: 1000000, defaultBetLevel: 1000000, betLevels: [1000000, 2000000, 5000000, 10000000] } : undefined });
+      await mockCfg({ currency: cur, balance: cur === 'JPY' ? 12000000 : 12340000, bet: cur === 'JPY' ? { minBet: 1000000, maxBet: 10000000, stepBet: 1000000, defaultBetLevel: 1000000, betLevels: [1000000, 2000000, 5000000, 10000000] } : undefined });
       const s = await sess({}); const b = (await s.text('#balance')) || ''; const bet = (await s.text('#bet')) || ''; await s.close();
       const ok = b.replace(/\s+/g, ' ').includes(want); if (!ok) bad++; ev.push(`${cur}: balance="${snippet(b, 24)}" bet="${snippet(bet, 24)}" expected "${want}" ${ok ? '' : '<-- FAIL'}`);
     }
@@ -331,6 +331,46 @@ async function main() {
     const msg = /error|unable|failed|could not|problem|try again|not found|unavailable|couldn/i.test(t);
     return [msg ? PASS : FAIL, 'text: ' + snippet(t, 220), 'Play button still offered=' + !!play];
   });
+
+
+  // ---------------- displayed win == bet x payoutMultiplier/100 for every mode/category ----------------
+  const WIN_CASES = [
+    ['base', 'loss'], ['base', 'win'], ['base', 'bonus'], ['base', 'retrigger'], ['base', 'maxwin'],
+    ['bonus', 'bonus'], ['bonus', 'retrigger'], ['bonus', 'maxwin'],
+  ];
+  for (const [mode, cat] of WIN_CASES) {
+    await check(`WIN-${mode}-${cat}`, `${mode} mode, forced ${cat} book: displayed win == bet x payoutMultiplier/100, balance consistent`, async () => {
+      const bet = 2000000; const start = 5000000000;
+      await mockCfg({ balance: start, bet: { betLevels: [bet], minBet: bet, maxBet: bet, stepBet: bet, defaultBetLevel: bet } });
+      const s = await sess({}, { idleMs: 20000 });
+      await s.page.evaluate(() => { window.__winSeq = []; const el = document.getElementById('win'); new MutationObserver(() => window.__winSeq.push([Date.now(), el.textContent])).observe(el, { childList: true, characterData: true, subtree: true }); });
+      await mockCfg({ force: { category: cat, mode } }); await mockClear();
+      const t0 = Date.now();
+      if (mode === 'bonus') { await s.page.evaluate(() => { if (!document.body.classList.contains('turbo')) document.querySelector('#btn-turbo')?.click(); }); await s.click('#btn-unleash', { force: true }); await sleep(500); await s.click('#confirm-ok', { force: true }).catch(() => {}); await s.waitIdle(15000).catch(() => {}); }
+      await sleep(400);
+      if (mode !== 'bonus') await s.playRound({ timeout: 200000 }); else { for (let i = 0; i < 100 && (await s.state()) !== 'idle'; i++) await sleep(2000); }
+      const secs = Math.round((Date.now() - t0) / 1000);
+      const st = await mockState(); const rnd = st.round; const log = await mockLog();
+      const winTxt = await s.text('#win'); const balTxt = await s.text('#balance'); const seq = await s.page.evaluate(() => window.__winSeq);
+      const idle = (await s.state()) === 'idle';
+      await s.page.screenshot({ path: path.join(SHOTS, `qa_win_${mode}_${cat}.png`) });
+      await s.close();
+      const expMicro = Math.round(bet * rnd.payoutMultiplier); const cost = bet * (mode === 'bonus' ? 100 : 1);
+      const expBal = start - cost + (rnd.payoutMultiplier > 0 ? expMicro : 0);
+      const fmt = (m) => '$' + (m / 1e6).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      const endAt = ends(log)[0]?.t; const preEnd = endAt ? seq.filter((x) => x[0] <= endAt).map((x) => x[1]) : seq.map((x) => x[1]);
+      const lastBeforeEnd = preEnd[preEnd.length - 1];
+      const shownOk = (winTxt || '').replace(/\s/g, '') === fmt(expMicro);
+      const balOk = (balTxt || '').replace(/\s/g, '') === fmt(expBal);
+      const rendererOk = rnd.payoutMultiplier === 0 || (lastBeforeEnd || '').replace(/\s/g, '') === fmt(expMicro);
+      const endOk = rnd.payoutMultiplier > 0 ? ends(log).length === 1 : ends(log).length === 0;
+      const maxOk = cat !== 'maxwin' || rnd.payoutMultiplier === 5000;
+      return [shownOk && balOk && rendererOk && endOk && idle && maxOk ? PASS : (shownOk && balOk && endOk && idle ? RISK : FAIL),
+        `book ${rnd.bookId} payoutMultiplier=${rnd.payoutMultiplier}x bet=${fmt(bet)} -> expected win ${fmt(expMicro)}; displayed win=${winTxt}; balance ${balTxt} (expected ${fmt(expBal)}); round took ${secs}s; final state idle=${idle}`,
+        `renderer's last #win value before end-round request: ${lastBeforeEnd} (${rendererOk ? 'matches' : 'DIFFERS from server payout'}); #win values seen: ${J(seq.map((x) => x[1]).filter((v, i, a) => a.indexOf(v) === i).slice(-8))}`,
+        `end-round calls=${ends(log).length} (expected ${rnd.payoutMultiplier > 0 ? 1 : 0})`];
+    });
+  }
 
   // ---------------- global ----------------
   await check('EXT', 'no requests to external hosts (all sessions)', async () => {

@@ -7,7 +7,12 @@ export function normalizeRgsUrl(raw) {
   if (!raw) return '';
   let u = String(raw).trim();
   if (!u) return '';
-  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) u = 'https://' + u.replace(/^\/+/, '');
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) {
+    u = u.replace(/^\/+/, '');
+    // local development hosts have no TLS; everything else defaults to https
+    const local = /^(localhost|127(\.\d{1,3}){3}|\[::1\]|0\.0\.0\.0)(:\d+)?(\/|$)/i.test(u);
+    u = (local ? 'http://' : 'https://') + u;
+  }
   return u.replace(/\/+$/, '');
 }
 

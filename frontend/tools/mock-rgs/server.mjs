@@ -17,14 +17,14 @@ const HAND_BOOKS = {
     { id: 1, payoutMultiplier: 0, events: [
       { index: 0, type: 'reveal', board: [[{name:'L1'},{name:'L2'},{name:'L3'},{name:'L4'},{name:'H1'}],[{name:'L2'},{name:'L3'},{name:'L4'},{name:'H1'},{name:'H2'}],[{name:'L3'},{name:'L4'},{name:'H1'},{name:'H2'},{name:'H3'}],[{name:'L4'},{name:'H1'},{name:'H2'},{name:'H3'},{name:'H4'}],[{name:'H1'},{name:'H2'},{name:'H3'},{name:'H4'},{name:'L1'}],[{name:'H2'},{name:'H3'},{name:'H4'},{name:'L1'},{name:'L2'}]], paddingPositions: [0,0,0,0,0,0], gameType: 'basegame', anticipation: [0,0,0,0,0,0] },
       { index: 1, type: 'setTotalWin', amount: 0 }, { index: 2, type: 'finalWin', amount: 0 } ] },
-    { id: 2, payoutMultiplier: 2.5, events: [
+    { id: 2, payoutMultiplier: 250, events: [
       { index: 0, type: 'reveal', board: [], gameType: 'basegame' },
-      { index: 1, type: 'setWin', amount: 2.5, winLevel: 2 }, { index: 2, type: 'setTotalWin', amount: 2.5 }, { index: 3, type: 'finalWin', amount: 2.5 } ] },
+      { index: 1, type: 'setWin', amount: 250, winLevel: 2 }, { index: 2, type: 'setTotalWin', amount: 250 }, { index: 3, type: 'finalWin', amount: 250 } ] },
   ],
   bonus: [
-    { id: 3, payoutMultiplier: 150, events: [
+    { id: 3, payoutMultiplier: 15000, events: [
       { index: 0, type: 'reveal', board: [], gameType: 'basegame' }, { index: 1, type: 'freeSpinTrigger', totalFs: 10 },
-      { index: 2, type: 'setTotalWin', amount: 150 }, { index: 3, type: 'finalWin', amount: 150 } ] },
+      { index: 2, type: 'setTotalWin', amount: 15000 }, { index: 3, type: 'finalWin', amount: 15000 } ] },
   ],
 };
 
@@ -73,11 +73,14 @@ loadFixtures();
 const hasEv = (b, t) => (b.events || []).some((e) => e.type === t);
 function category(b, mode) {
   const p = Number(b.payoutMultiplier || 0);
-  if (hasEv(b, 'wincap') || p >= 5000) return 'maxwin';
-  if (mode !== 'base' || hasEv(b, 'freeSpinTrigger')) return 'bonus';
+  if (hasEv(b, 'wincap') || p >= 500000) return 'maxwin';
+  if (hasEv(b, 'freeSpinRetrigger')) return 'retrigger';
+  if (hasEv(b, 'freeSpinTrigger')) return 'bonus';           // free-spin trigger (no retrigger)
+  if (p >= 1500) return 'bigwin';                             // >= 15x
   return p > 0 ? 'win' : 'loss';
 }
-const norm = (b) => ({ ...b, payoutMultiplier: Number(b.payoutMultiplier) }); // book payout is a plain multiplier
+// Real SDK books: payoutMultiplier and event amounts are integers x100 (500000 = 5000x). The RGS serves round.payoutMultiplier as a plain multiplier.
+const norm = (b) => ({ ...b, payoutMultiplier: Number(b.payoutMultiplier) / 100 });
 
 // ---------- state ----------
 let S;
@@ -103,8 +106,8 @@ function pickBook(mode, amountMicro) {
   const m = (f?.mode || mode || 'base').toLowerCase();
   const list = books[m] || books.base;
   let b;
-  if (f?.id != null) b = Object.values(books).flat().find((x) => x.id === f.id) || list[0];
-  else if (f?.category) { const c = list.filter((x) => category(x, m) === f.category); b = c.length ? c[Math.floor(Math.random() * c.length)] : list[0]; }
+  if (f?.id != null) b = list.find((x) => x.id === f.id) || Object.values(books).flat().find((x) => x.id === f.id) || list[0];
+  else if (f?.category) { const cat = f.category === 'big' ? 'bigwin' : f.category; const c = list.filter((x) => category(x, m) === cat); b = c.length ? c[Math.floor(Math.random() * c.length)] : null; if (!b) throw new Error('no book of category ' + f.category + ' in ' + m); }
   else b = list[Math.floor(Math.random() * list.length)];
   return { book: norm(b), mode: m };
 }
@@ -179,7 +182,7 @@ const server = http.createServer(async (req, res) => {
       const list = books[m] || books.base;
       const b = list.find((x) => String(x.id) === String(decodeURIComponent(event || ''))) || list[0];
       if (!b) return fail(res, 'ERR_VAL', 'no such event');
-      return send(res, 200, { payoutMultiplier: Number(b.payoutMultiplier), costMultiplier: costs[m] ?? 1, state: b.events, game, version, mode: m });
+      return send(res, 200, { payoutMultiplier: Number(b.payoutMultiplier) / 100, costMultiplier: costs[m] ?? 1, state: b.events, game, version, mode: m });
     }
     if (req.method !== 'POST') return send(res, 404, { error: 'not found' });
     if (p === '/wallet/authenticate') {

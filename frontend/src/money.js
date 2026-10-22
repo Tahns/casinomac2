@@ -38,7 +38,10 @@ export function formatMoney(micro, currency, opts = {}) {
   const meta = currencyMeta(currency);
   const s = decimalString(micro, meta.decimals);
   const neg = s.startsWith('-');
-  const abs = neg ? s.slice(1) : s;
+  const abs0 = neg ? s.slice(1) : s;
+  const dot = abs0.indexOf('.');
+  const whole = dot < 0 ? abs0 : abs0.slice(0, dot);
+  const abs = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (dot < 0 ? '' : abs0.slice(dot));
   return (neg ? '-' : '') + (meta.symbolAfter ? `${abs} ${meta.symbol}` : `${meta.symbol}${abs}`);
 }
 

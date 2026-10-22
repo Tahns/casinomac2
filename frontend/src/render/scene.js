@@ -226,6 +226,8 @@ const LANTERN = `<svg viewBox="0 0 60 150" aria-hidden="true">
 <path d="M17 80V108" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
 <path d="M11 114H49L45 124H15Z" fill="#3b3f45" stroke="#14110c" stroke-width="2" stroke-linejoin="round"/></svg>`;
 
+const GLINTS = [[4.5, 83, 0, '#e6b8ff'], [8, 90, 1.7, '#ffe6ff'], [95, 80, 3.1, '#c9fff7'], [92, 88, .9, '#e6fffb'], [10, 36, 2.4, '#c9fff7'], [90, 28, 4.0, '#ffd6ff'], [3, 60, 3.6, '#ffe9a8'], [97, 55, 1.2, '#ffe9a8']];
+
 export function createScene(app) {
   let host = app.querySelector('#scene');
   if (!host) { host = document.createElement('div'); host.id = 'scene'; app.insertBefore(host, app.firstChild); }
@@ -235,8 +237,12 @@ export function createScene(app) {
     <div class="lay drift-a" data-k=".35"><canvas data-l="far"></canvas></div>
     <div class="lay veins drift-b" data-k=".6"><canvas data-l="veins"></canvas></div>
     <div class="lay drift-b" data-k="1"><canvas data-l="mid"></canvas></div>
+    <div class="shafts"><i></i><i></i><i></i><i></i></div>
     <div class="heat"></div>
     <div class="warm"></div>
+    <div class="fstint"></div>
+    <div class="fog"><i></i><i></i></div>
+    ${GLINTS.map(([x, y, d, c]) => `<span class="glint" style="left:${x}%;top:${y}%;animation-delay:${d}s"><svg viewBox="-10 -10 20 20"><path d="M0 -10 L1.6 -1.6 L10 0 L1.6 1.6 L0 10 L-1.6 1.6 L-10 0 L-1.6 -1.6Z" fill="${c}"/><circle r="2.4" fill="#fff"/></svg></span>`).join('')}
     <canvas class="dustc" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
     <div class="lay2" data-k=".2" style="position:absolute;inset:0"><canvas data-l="timber"></canvas></div>
     <div class="lantern l">${LANTERN}</div><div class="lantern r">${LANTERN.replace(/lg-glow/g, 'lg-glow2').replace(/lg-fl/g, 'lg-fl2')}</div>
@@ -271,12 +277,13 @@ export function createScene(app) {
     m.vx = (Math.random() - .5) * 8; m.vy = m.ember ? -(14 + Math.random() * 26) : -(2 + Math.random() * 8);
     m.ph = Math.random() * TAU; m.a = m.ember ? .55 + Math.random() * .4 : .12 + Math.random() * .3; m.hot = Math.random();
   }
-  for (let i = 0; i < 46; i++) { const m = {}; spawn(m, true); motes.push(m); }
+  const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  for (let i = 0; i < (reduce ? 14 : 46); i++) { const m = {}; spawn(m, true); motes.push(m); }
   let lt = 0, running = true;
   function loop(now) {
     if (!running) return;
     requestAnimationFrame(loop);
-    if (now - lt < 33) return; const dt = Math.min(.1, (now - lt) / 1000); lt = now;
+    if (document.hidden || now - lt < 33) { if (document.hidden) lt = now; return; } const dt = Math.min(.1, (now - lt) / 1000); lt = now;
     dctx.clearRect(0, 0, DW, DH); dctx.globalCompositeOperation = 'lighter';
     const bonus = document.body.classList.contains('fs-mode');
     for (const m of motes) {

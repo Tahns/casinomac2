@@ -34,6 +34,7 @@ export const en = {
   'label.bet': 'BET',
   'label.totalBet': 'TOTAL BET',
   'label.win': 'WIN',
+  'label.combo': 'COMBO',
   'label.totalWin': 'TOTAL WIN',
   'label.freeSpins': 'FREE SPINS',
   'label.spinsLeft': 'Spins left',

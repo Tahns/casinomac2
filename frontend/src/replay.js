@@ -16,6 +16,7 @@ body.replay #replay-ui .rp-msg{width:100%}
 body.replay #replay-btn{font:700 13px system-ui,sans-serif;border:2px solid #ffd700;background:#7a4b10;color:#fff;border-radius:8px;padding:5px 18px;cursor:pointer;min-height:30px}
 body.replay #replay-btn[disabled]{opacity:.5;cursor:default}
 body.replay .rp-badge{position:absolute;top:4px;left:6px;z-index:50;font:700 11px system-ui,sans-serif;color:#ffd700;background:rgba(10,8,5,.7);padding:2px 6px;border-radius:4px}
+@media (max-height:300px){body.replay .rp-badge{display:none}}
 `;
 
 function sanitiseAmount(a) {
@@ -127,6 +128,7 @@ export async function startReplay(opts = {}) {
     setMsg(t('replay.playing'));
     try {
       const r = await ensureRenderer();
+      if (r.setFormat) r.setFormat((x) => formatMoney(Math.round((Number(x) || 0) * replay._amount), currency, { social: isSocial() }));
       const hooks = { onTotal() {}, onWin() {}, onFreeSpinCounter() {} };
       await r.playBook(replay.state, hooks);
     } catch (e) {

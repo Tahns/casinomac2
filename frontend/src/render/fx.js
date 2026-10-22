@@ -1,6 +1,7 @@
 // Particle engine on one overlay canvas (shards, sparks, coins, smoke, rings). Runs only while particles exist.
 const TAU = Math.PI * 2;
 const rnd = (a, b) => a + Math.random() * (b - a);
+const REDUCE = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function createFx(app) {
   let canvas = app.querySelector('#fx');
@@ -24,6 +25,8 @@ export function createFx(app) {
   resize();
 
   function add(p) {
+    if (REDUCE && Math.random() < .6) return;
+    if (document.hidden) return;
     if (parts.length > MAX) parts.shift();
     parts.push(p);
     if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); }
@@ -50,9 +53,9 @@ export function createFx(app) {
       add({ t: 'spark', x: x + rnd(0, w), y: y + rnd(0, h), vx: rnd(-.5, .5) * size, vy: -rnd(1, 4) * size, g: -size * .5, drag: .5, life: rnd(.8, 1.8), age: 0, color: Math.random() < .5 ? '#ffb347' : '#ff6a2a', r: rnd(.02, .06) * size });
     }
   }
-  function coins(x, y, size, n = 30, spread = 1) {
+  function coins(x, y, size, n = 30, spread = 1, angle = -Math.PI / 2, power = 1) {
     for (let i = 0; i < n; i++) {
-      const a = -Math.PI / 2 + rnd(-1, 1) * spread, sp = rnd(size * 1.0, size * 2.1);
+      const a = angle + rnd(-1, 1) * spread, sp = rnd(size * 1.0, size * 2.1) * power;
       add({ t: 'coin', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 2.4, rot: rnd(0, TAU), vr: rnd(5, 12), life: rnd(1.4, 2.4), age: 0, r: rnd(.022, .036) * size });
     }
   }

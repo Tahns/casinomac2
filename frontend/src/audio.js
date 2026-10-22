@@ -93,6 +93,7 @@ const SOUNDS = {
   pop(o) {
     const c = Math.max(1, (o && o.combo) || 1), s = SCALE[Math.min(c - 1, SCALE.length - 1)], f = hz(s);
     noise({ dur: 0.12, vol: 0.2, type: 'highpass', f: 3500, q: 0.7, wet: 0.2 });
+    tone({ f: f / 4, f2: f / 8, dur: 0.14, type: 'sine', vol: 0.2, a: 0.002, wet: 0.05 });
     tone({ f, dur: 0.32, type: 'sine', vol: 0.22, a: 0.002 });
     tone({ f: f * 2.01, dur: 0.22, type: 'sine', vol: 0.1, a: 0.002 });
     tone({ f: f * 3.02, dur: 0.14, type: 'triangle', vol: 0.05, a: 0.002 });
@@ -109,6 +110,7 @@ const SOUNDS = {
   antic() { tone({ f: 180, f2: 900, dur: 0.9, type: 'sawtooth', vol: 0.08, a: 0.2, lp: 1200, q: 4, wet: 0.3 }); noise({ dur: 0.9, vol: 0.06, f: 500, f2: 4000, q: 2, a: 0.3 }); },
   fuse() { for (let i = 0; i < 14; i++) noise({ dur: 0.04, vol: 0.07, type: 'highpass', f: 4000 + Math.random() * 3000, q: 0.7, when: i * 0.06 + Math.random() * 0.03, wet: 0.05 }); },
   explosion() {
+    SOUNDS.crack(); SOUNDS.rumble();
     noise({ dur: 2.0, vol: 0.9, type: 'lowpass', f: 4200, f2: 70, q: 0.9, a: 0.004, wet: 0.5 });
     tone({ f: 150, f2: 26, dur: 1.5, type: 'sine', vol: 0.9, a: 0.003, wet: 0.35 });
     tone({ f: 70, f2: 24, dur: 1.9, type: 'triangle', vol: 0.5, a: 0.01, wet: 0.4 });
@@ -129,6 +131,34 @@ const SOUNDS = {
   },
   coin(o) { coin(0, (o && o.pitch) || 0); },
   count(o) { const p = (o && o.p) || 0; tone({ f: 1400 + p * 900, dur: 0.03, type: 'square', vol: 0.05, a: 0.001, wet: 0.02 }); },
+  heart(o) {
+    // lub-dub heartbeat for anticipation; o.i grows the intensity
+    const k = Math.min(1, 0.55 + ((o && o.i) || 0) * 0.15);
+    tone({ f: 62, f2: 38, dur: 0.16, type: 'sine', vol: 0.5 * k, a: 0.004, wet: 0.1 });
+    tone({ f: 54, f2: 34, dur: 0.18, type: 'sine', vol: 0.36 * k, a: 0.004, when: 0.17, wet: 0.1 });
+    noise({ dur: 0.1, vol: 0.05 * k, type: 'lowpass', f: 300, q: 0.7, wet: 0.05 });
+  },
+  rumble() {
+    noise({ dur: 2.6, vol: 0.5, type: 'lowpass', f: 140, f2: 40, q: 1.2, a: 0.5, wet: 0.2 });
+    tone({ f: 38, f2: 30, dur: 2.4, type: 'sine', vol: 0.55, a: 0.6, wet: 0.2 });
+  },
+  crack() {
+    noise({ dur: 0.09, vol: 0.7, type: 'highpass', f: 1800, q: 0.6, a: 0.001, wet: 0.35 });
+    noise({ dur: 0.35, vol: 0.35, type: 'bandpass', f: 3200, f2: 700, q: 1.2, a: 0.001, wet: 0.4 });
+    tone({ f: 1900, f2: 300, dur: 0.12, type: 'square', vol: 0.12, a: 0.001, lp: 4000 });
+  },
+  shower(o) {
+    // coin shower: n coins clinking with random pitch
+    const n = Math.min(40, (o && o.n) || 18);
+    for (let i = 0; i < n; i++) coin(Math.random() * 1.4, [0, 2, 4, 7, 9, 12][(Math.random() * 6) | 0]);
+  },
+  stinger(o) {
+    // major-key win stinger, level 1..4
+    const lv = Math.max(1, Math.min(4, (o && o.level) || 1)), b = (lv - 1) * 2;
+    [0, 4, 7, 12, 16].slice(0, 3 + lv).forEach((n, i) => tone({ f: hz(n + b, 392), dur: 0.5 + i * 0.12, type: 'triangle', vol: 0.12, a: 0.004, when: i * 0.07, wet: 0.4 }));
+    tone({ f: hz(24 + b, 392), dur: 0.9, type: 'sine', vol: 0.06, when: 0.3, wet: 0.6 });
+  },
+  tick(o) { tone({ f: 700 + ((o && o.p) || 0) * 500, dur: 0.025, type: 'triangle', vol: 0.06, a: 0.001, wet: 0.02 }); },
   drip() {
     const f = 900 + Math.random() * 900;
     tone({ f, f2: f * 0.5, dur: 0.12, type: 'sine', vol: 0.1, a: 0.002, wet: 0.9 });

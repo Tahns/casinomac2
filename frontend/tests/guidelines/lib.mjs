@@ -73,7 +73,8 @@ const INIT = `(() => {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (AC) {
     const origConnect = AudioNode.prototype.connect;
-    AudioNode.prototype.connect = function (dest, ...a) { try { if (dest && dest instanceof AudioDestinationNode) window.__qa.destSources.push(this); } catch (e) {} return origConnect.call(this, dest, ...a); };
+    AudioNode.prototype.connect = function (dest, ...a) { try { if (dest && dest instanceof AudioDestinationNode) window.__qa.destSources.push(this); if (dest instanceof AudioNode) (this.__out || (this.__out = [])).push(dest); (window.__qa.nodes || (window.__qa.nodes = new Set())).add(this); } catch (e) {} return origConnect.call(this, dest, ...a); };
+    window.__qa.audible = () => { const memo = new Map(); const aud = (n, seen) => { if (n instanceof AudioDestinationNode) return true; if (n instanceof GainNode && n.gain.value < 0.001) return false; if (memo.has(n)) return memo.get(n); if (seen.has(n)) return false; seen.add(n); const r = (n.__out || []).some((m) => aud(m, seen)); memo.set(n, r); return r; }; const srcs = [...(window.__qa.nodes || [])].filter((n) => n instanceof OscillatorNode || n instanceof AudioBufferSourceNode || n instanceof ConstantSourceNode); return { sources: srcs.length, audibleSources: srcs.filter((n) => aud(n, new Set())).length, masterGains: [...window.__qa.nodes].filter((n) => n instanceof GainNode && n.gain.value < 0.001).length }; };
     const W = function (...a) { const c = new AC(...a); window.__qa.ctxs.push(c); return c; };
     W.prototype = AC.prototype; window.AudioContext = W; window.webkitAudioContext = W;
   }
@@ -113,6 +114,7 @@ export class Session {
   async clickIfVisible(sel) { if (await this.visible(sel)) { await this.click(sel).catch(() => {}); return true; } return false; }
   // one full round via bet button; resolves when state returns to idle
   async playRound(o = {}) {
+    await this.waitIdle(20000).catch(() => {});
     if (o.turbo !== false) await this.page.evaluate(() => { if (!document.body.classList.contains('turbo')) document.querySelector('#btn-turbo')?.click(); }).catch(() => {});
     await this.click('#btn-bet');
     await sleep(300);

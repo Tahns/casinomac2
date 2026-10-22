@@ -13,6 +13,11 @@ const f = (n) => Math.round(n * 100) / 100;
 const hsl = (h, s, l) => `hsl(${f(h)} ${f(s)}% ${f(Math.max(4, Math.min(96, l)))}%)`;
 const LIGHT = -Math.PI * 0.75; // light comes from the upper left
 
+// idle specular sweep: a skewed white band slides across the symbol, clipped to its silhouette (CSS animation .sw in styles.css)
+function sweep(id, clipInner, x = -34, w = 16) {
+  return `<clipPath id="clip-${id}">${clipInner}</clipPath><g clip-path="url(#clip-${id})" style="pointer-events:none"><rect class="sw" x="${x}" y="-20" width="${w}" height="150" fill="url(#g-sweep)"/></g>`;
+}
+
 function poly(pts, fill, stroke, sw) {
   const p = pts.map((q) => `${f(q[0])},${f(q[1])}`).join(' ');
   return `<polygon points="${p}" fill="${fill}"${stroke ? ` stroke="${stroke}" stroke-width="${sw || 0.7}" stroke-linejoin="round"` : ''}/>`;
@@ -53,8 +58,13 @@ function gem(id, outer, { h, s = 82, l = 48, inner = 0.56, cx = 50, cy = 52 }) {
     const shade = l + 12 + 18 * Math.cos(a - LIGHT) + (i % 2 ? 4 : -2);
     g += poly([tc, scaled[i], scaled[j]], hsl(h, s - 6, shade), 'rgba(255,255,255,.22)', 0.4);
   }
+  // inner glow (radial, clipped to the gem) + rim light
+  g += `<clipPath id="gc-${id}">${poly(outer, '#000')}</clipPath>`;
+  g += `<g clip-path="url(#gc-${id})"><circle cx="${cx - 2}" cy="${cy - 4}" r="30" fill="${hsl(h, 100, 72)}" opacity=".32" style="mix-blend-mode:screen"/></g>`;
+  g += `<polygon points="${outer.map((q) => `${f(q[0])},${f(q[1])}`).join(' ')}" fill="none" stroke="${hsl(h, 100, 82)}" stroke-opacity=".55" stroke-width="1.1" stroke-linejoin="round"/>`;
+  g += sweep(id, poly(outer, '#000'));
   // sparkle + gloss
-  g += `<path d="M${f(outer[0][0] * 0 + 33)} 30 l2.2 5.4 5.4 2.2 -5.4 2.2 -2.2 5.4 -2.2 -5.4 -5.4 -2.2 5.4 -2.2z" fill="#fff" opacity=".92"/>`;
+  g += `<path class="twk" d="M${f(outer[0][0] * 0 + 33)} 30 l2.2 5.4 5.4 2.2 -5.4 2.2 -2.2 5.4 -2.2 -5.4 -5.4 -2.2 5.4 -2.2z" fill="#fff" opacity=".92"/>`;
   g += `<ellipse cx="60" cy="40" rx="6" ry="2.4" fill="#fff" opacity=".35" transform="rotate(-35 60 40)"/>`;
   return `<symbol id="sym-${id}" viewBox="0 0 100 100">${g}</symbol>`;
 }
@@ -79,7 +89,8 @@ function amethyst() {
   g += prism(10, 36, 30, 46, 88, 285, -14, 23, 88);
   g += prism(64, 90, 26, 44, 88, 285, 13, 77, 88);
   g += prism(32, 68, 6, 34, 90, 285, 0, 50, 90);
-  g += `<path d="M44 12 l1.8 4.4 4.4 1.8 -4.4 1.8 -1.8 4.4 -1.8 -4.4 -4.4 -1.8 4.4 -1.8z" fill="#fff" opacity=".9"/>`;
+  g += sweep('L1', '<rect x="10" y="30" width="26" height="58" rx="4"/><rect x="64" y="28" width="26" height="60" rx="4"/><rect x="32" y="8" width="36" height="82" rx="4"/>');
+  g += `<path class="twk" d="M44 12 l1.8 4.4 4.4 1.8 -4.4 1.8 -1.8 4.4 -1.8 -4.4 -4.4 -1.8 4.4 -1.8z" fill="#fff" opacity=".9"/>`;
   return `<symbol id="sym-L1" viewBox="0 0 100 100">${g}</symbol>`;
 }
 
@@ -94,6 +105,7 @@ function pickaxe() {
   g += `<path d="M6 40 Q50 -12 94 40 Q50 22 6 40Z" fill="url(#g-steel)" stroke="#1f2a35" stroke-width="2" stroke-linejoin="round"/>`;
   g += `<path d="M14 36 Q50 2 86 36" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="2" stroke-linecap="round"/>`;
   g += `<path d="M9 40 L5 43 L20 37Z M91 40 L95 43 L80 37Z" fill="#dce6ee" stroke="#1f2a35" stroke-width="1"/>`;
+  g += sweep('L2', '<path d="M6 40 Q50 -12 94 40 Q50 22 6 40Z"/>', -10, 14);
   g += `<rect x="40" y="16" width="20" height="16" rx="3" fill="url(#g-iron)" stroke="#1f2a35" stroke-width="1.8"/>`;
   g += `<circle cx="45" cy="24" r="1.7" fill="#cfd8df"/><circle cx="55" cy="24" r="1.7" fill="#cfd8df"/>`;
   g += '</g>';
@@ -102,13 +114,13 @@ function pickaxe() {
 
 function lantern() {
   let g = `<ellipse cx="50" cy="92" rx="22" ry="3.6" fill="#000" opacity=".32"/>`;
-  g += `<circle cx="50" cy="56" r="40" fill="url(#g-glow)" opacity=".55"/>`;
+  g += `<circle class="lglow" cx="50" cy="56" r="40" fill="url(#g-glow)" opacity=".55"/>`;
   g += `<path d="M36 22 Q36 6 50 6 Q64 6 64 22" fill="none" stroke="#1d1710" stroke-width="5" stroke-linecap="round"/>`;
   g += `<path d="M36 22 Q36 8 50 8 Q64 8 64 22" fill="none" stroke="#9a8260" stroke-width="2.4" stroke-linecap="round"/>`;
   g += `<path d="M30 34 L38 20 H62 L70 34Z" fill="url(#g-iron)" stroke="#1d1710" stroke-width="2" stroke-linejoin="round"/>`;
   g += `<rect x="29" y="34" width="42" height="40" rx="6" fill="url(#g-lamp)" stroke="#1d1710" stroke-width="2"/>`;
-  g += `<path d="M50 70 C40 62 44 54 50 46 C52 52 60 56 58 64 C57 68 54 70 50 70Z" fill="#fff6b0" stroke="#ff9a1a" stroke-width="1.6"/>`;
-  g += `<path d="M50 70 C46 66 47 60 50 56 C53 60 54 66 50 70Z" fill="#fff" opacity=".9"/>`;
+  g += `<g class="flame"><path d="M50 70 C40 62 44 54 50 46 C52 52 60 56 58 64 C57 68 54 70 50 70Z" fill="#fff6b0" stroke="#ff9a1a" stroke-width="1.6"/>`;
+  g += `<path d="M50 70 C46 66 47 60 50 56 C53 60 54 66 50 70Z" fill="#fff" opacity=".9"/></g>`;
   g += `<path d="M39 35 V73 M61 35 V73" stroke="#1d1710" stroke-width="3"/>`;
   g += `<path d="M33 38 V68" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/>`;
   g += `<path d="M26 74 H74 L68 86 H32Z" fill="url(#g-iron)" stroke="#1d1710" stroke-width="2" stroke-linejoin="round"/>`;
@@ -122,6 +134,7 @@ function hardhat() {
   g += `<path d="M42 23 V67 H58 V23 Q50 20 42 23Z" fill="#ffd45a" stroke="#8a4a00" stroke-width="1.6"/>`;
   g += `<path d="M30 30 Q26 46 27 66 M70 30 Q74 46 73 66" fill="none" stroke="#c46a00" stroke-opacity=".6" stroke-width="1.6"/>`;
   g += `<path d="M24 52 Q27 34 40 29" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>`;
+  g += sweep('L4', '<path d="M16 68 Q14 24 50 22 Q86 24 84 68Z"/><rect x="8" y="64" width="84" height="13" rx="6.5"/>');
   g += `<rect x="8" y="64" width="84" height="13" rx="6.5" fill="url(#g-brim)" stroke="#8a4a00" stroke-width="2.2"/>`;
   g += `<circle cx="50" cy="45" r="9" fill="#2b2b2b" stroke="#8a4a00" stroke-width="1.6"/>`;
   g += `<circle cx="50" cy="45" r="6" fill="url(#g-lamp)"/><circle cx="48" cy="43" r="2" fill="#fff"/>`;
@@ -138,9 +151,12 @@ function nugget() {
   g += `<path d="M20 64 Q30 78 52 82 Q36 86 24 78Z" fill="#8a5a00" opacity=".55"/>`;
   g += `<path d="M66 60 Q80 66 70 80 Q62 84 56 80 Q70 74 66 60Z" fill="#a06800" opacity=".5"/>`;
   g += `<path d="M30 50 Q50 42 70 52" fill="none" stroke="#b07a00" stroke-width="1.4" opacity=".6"/>`;
+  g += sweep('W', `<path d="${body}"/>`, -34, 20);
   g += `<text x="51" y="68" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="900" font-size="40" fill="#7a4800" stroke="#fff3b0" stroke-width="1.2" paint-order="stroke">W</text>`;
   g += `<path d="M82 14 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2z" fill="#fff"><animate attributeName="opacity" values="1;.2;1" dur="1.6s" repeatCount="indefinite"/></path>`;
   g += `<path d="M14 24 l1.6 4.4 4.4 1.6 -4.4 1.6 -1.6 4.4 -1.6 -4.4 -4.4 -1.6 4.4 -1.6z" fill="#fff"><animate attributeName="opacity" values=".2;1;.2" dur="1.3s" repeatCount="indefinite"/></path>`;
+  g += `<path d="M88 52 l1.4 3.6 3.6 1.4 -3.6 1.4 -1.4 3.6 -1.4 -3.6 -3.6 -1.4 3.6 -1.4z" fill="#fff"><animate attributeName="opacity" values=".1;1;.1" dur="2.1s" begin=".4s" repeatCount="indefinite"/></path>`;
+  g += `<path d="M44 90 l1.4 3.6 3.6 1.4 -3.6 1.4 -1.4 3.6 -1.4 -3.6 -3.6 -1.4 3.6 -1.4z" fill="#fff"><animate attributeName="opacity" values="1;.1;1" dur="1.9s" repeatCount="indefinite"/></path>`;
   return `<symbol id="sym-W" viewBox="0 0 100 100">${g}</symbol>`;
 }
 
@@ -154,10 +170,15 @@ function dynamite() {
   g += `<path d="M49 31 Q46 20 56 15 Q62 12 64 6" fill="none" stroke="#2a1d10" stroke-width="3.4" stroke-linecap="round"/>`;
   g += `<path d="M49 31 Q46 20 56 15 Q62 12 64 6" fill="none" stroke="#a88a5a" stroke-width="1.2" stroke-dasharray="2 3" stroke-linecap="round"/>`;
   g += `<g><circle cx="64" cy="6" r="9" fill="url(#g-spark)"><animate attributeName="r" values="7;10;7" dur=".5s" repeatCount="indefinite"/></circle><path d="M64 -2 l1.8 6 6 1.8 -6 1.8 -1.8 6 -1.8 -6 -6 -1.8 6 -1.8z" fill="#fff"><animate attributeName="opacity" values="1;.4;1" dur=".35s" repeatCount="indefinite"/></path></g>`;
+  for (let i = 0; i < 4; i++) {
+    const dx = [-10, 9, -5, 12][i], dy = [-16, -12, -20, -18][i], d = [.9, 1.1, .7, 1.3][i], b = [0, .3, .55, .8][i];
+    g += `<circle cx="64" cy="6" r="1.5" fill="#ffd36a"><animate attributeName="cx" values="64;${64 + dx}" dur="${d}s" begin="${b}s" repeatCount="indefinite"/><animate attributeName="cy" values="6;${6 + dy}" dur="${d}s" begin="${b}s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="${d}s" begin="${b}s" repeatCount="indefinite"/></circle>`;
+  }
   return `<symbol id="sym-S" viewBox="0 0 100 100">${g}</symbol>`;
 }
 
 const DEFS = `
+<linearGradient id="g-sweep" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".78"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <linearGradient id="g-wood" x1="0" x2="1"><stop offset="0" stop-color="#b8793a"/><stop offset=".5" stop-color="#e0a35e"/><stop offset="1" stop-color="#7a4a22"/></linearGradient>
 <linearGradient id="g-steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2f7fb"/><stop offset=".5" stop-color="#9fb2c4"/><stop offset="1" stop-color="#4d5f70"/></linearGradient>
 <linearGradient id="g-iron" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b8f95"/><stop offset="1" stop-color="#3b3f45"/></linearGradient>

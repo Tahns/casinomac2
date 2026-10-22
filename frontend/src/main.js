@@ -4,20 +4,17 @@ import { formatMoney, formatAmount, MICRO } from './money.js';
 import { createBetState, modeCost } from './bet.js';
 import { checkPlay, shouldEndRound, needsConfirm, spaceAction, createAutoplay } from './input.js';
 import * as rgs from './rgs.js';
+import * as i18n from './i18n/index.js';
+import { audio } from './audio.js';
+import { createRenderer } from './render/index.js';
 
 const $ = (id) => document.getElementById(id);
-const FALLBACK_TEXT = {
-  'err.insufficient': 'Insufficient balance for this play.', 'err.connection': 'Connection error. Please reload the game.',
-  'err.auth': 'Authentication failed. Please reload the game.', 'err.limit': 'Limit exceeded.',
-  'err.generic': 'Something went wrong. Please try again.', 'err.retry': 'Please try again in a moment.',
-  'err.validation': 'Invalid request.', 'err.session': 'Session expired. Please reload the game.',
-};
-let t = (k, v) => (FALLBACK_TEXT[k] || '').replace(/\{(\w+)\}/g, (m, n) => (v && v[n] != null ? v[n] : m));
+const t = i18n.t;
 async function tryImport(p) { try { return await import(p); } catch (e) { return null; } }
 
 const S = {
   state: 'booting', balance: 0, currency: params.currency || 'USD', config: null, bet: null,
-  mode: 'base', turbo: false, muted: false, renderer: null, audio: null, autoplay: createAutoplay(), lastRound: null,
+  mode: 'base', turbo: false, muted: !!audio.muted, renderer: null, audio, autoplay: createAutoplay(), lastRound: null,
 };
 const fm = (micro) => formatMoney(micro, S.currency, { social: params.social });
 
@@ -33,9 +30,19 @@ function setState(s) {
   updateBetButtons();
   const ap = $('btn-autoplay'); if (ap) ap.disabled = !(idle || S.autoplay.active);
 }
-function setText(id, v) { const e = $(id); if (e) e.textContent = v; }
+function setText(id, v) { const e = $(id); if (e) { e.textContent = v; if (e.classList.contains('val')) fitText(e); } }
+// Shrink long money strings to fit their panel (keeps the symbol; never ellipsized unless extreme).
+function fitText(e) {
+  e.style.fontSize = '';
+  if (!e.clientWidth) return;
+  let fs = parseFloat(getComputedStyle(e).fontSize) || 14;
+  const min = fs * 0.55;
+  while (e.scrollWidth > e.clientWidth + 0.5 && fs > min) { fs *= 0.94; e.style.fontSize = fs.toFixed(1) + 'px'; }
+}
+function fitAll() { ['balance', 'bet', 'win'].forEach((id) => { const e = $(id); if (e) fitText(e); }); }
 function renderBalance() { setText('balance', fm(S.balance)); }
-function renderBet() { setText('bet', fm(S.bet.bet)); const u = $('unleash-cost'); if (u) u.textContent = fm(S.bet.cost('bonus')); updateBetButtons(); }
+function updateRendererFormat() { if (S.renderer && S.renderer.setFormat && S.bet) { const b = S.bet.bet; S.renderer.setFormat((x) => fm(Math.round((Number(x) || 0) * b))); } }
+function renderBet() { setText('bet', fm(S.bet.bet)); const u = $('unleash-cost'); if (u) u.textContent = fm(S.bet.cost('bonus')); updateBetButtons(); updateRendererFormat(); }
 function renderWin(micro) { setText('win', fm(micro || 0)); }
 function updateBetButtons() {
   if (!S.bet) return;
@@ -71,16 +78,22 @@ function confirmDialog(title, text) {
 }
 function fatal(err) {
   setState('error');
+  S.autoplay.stop();
   const kind = err && err.code ? ({ ERR_AUTH: 'auth', ERR_IS: 'session', ERR_ATE: 'session' }[err.code] || (err.code === 'ERR_CONN' || err.code === 'ERR_TIMEOUT' ? 'connection' : 'generic')) : 'connection';
-  return showMessage(t('err.' + kind));
+  // Unrecoverable: the dialog stays; its button reloads the game.
+  const m = $('modal-message'), ok = $('message-ok');
+  setText('message-text', t('err.' + kind)); openModal(m);
+  if (ok) { ok.textContent = t('btn.reload'); ok.addEventListener('click', () => location.reload(), { once: true }); }
+  return new Promise(() => {});
 }
 
 // ---- win/play flow
 function hooks() {
   return {
+    // WIN shows the running total. In free spins setWin/tumble amounts are per spin, so only totals are shown there.
     onTotal: (v) => renderWin(multToMicro(v)),
-    onWin: (v) => renderWin(multToMicro(v)),
-    onFreeSpinCounter: (cur, total) => setText('freespin-counter', total ? `${cur}/${total}` : ''),
+    onWin: (v) => { if (!S.inFs) renderWin(multToMicro(v)); },
+    onFreeSpinCounter: (cur, total) => { S.inFs = !!total; setText('freespin-counter', total ? `${cur}/${total}` : ''); },
   };
 }
 // Renderer reports win as a multiplier of the base bet.
@@ -109,6 +122,7 @@ async function playRound(mode) {
     return false;
   }
   setState('betting');
+  S.inFs = false;
   renderWin(0);
   let res;
   try { res = await rgs.play(S.bet.bet, mode); }
@@ -180,7 +194,7 @@ function onAutoplayConfirm() {
 }
 
 function bindUI() {
-  const on = (id, fn) => { const e = $(id); if (e) e.addEventListener('click', fn); };
+  const on = (id, fn) => { const e = $(id); if (e) e.addEventListener('click', (ev) => { try { audio.play('click'); } catch (x) { /* ignore */ } return fn(ev); }); };
   on('btn-bet', onSpin);
   on('btn-bet-minus', () => { if (S.state === 'idle') { S.bet.down(); renderBet(); } });
   on('btn-bet-plus', () => { if (S.state === 'idle') { S.bet.up(); renderBet(); } });
@@ -215,25 +229,18 @@ function bindUI() {
     if (e.repeat) return;
     if (spaceAction({ state: S.state, modalOpen: modalOpen() }) === 'spin' && !S.autoplay.active) onSpin();
   });
-  window.addEventListener('resize', () => S.renderer && S.renderer.resize && S.renderer.resize());
+  window.addEventListener('resize', () => { fitAll(); if (S.renderer && S.renderer.resize) S.renderer.resize(); });
 }
 
-function applyI18n() {
-  document.querySelectorAll('[data-i18n]').forEach((e) => { e.textContent = t(e.getAttribute('data-i18n')); });
-  document.querySelectorAll('[data-i18n-title]').forEach((e) => { const v = t(e.getAttribute('data-i18n-title')); e.title = v; e.setAttribute('aria-label', v); });
-}
+function applyI18n() { i18n.applyI18n(document); }
 
 async function boot() {
   setState('booting');
-  const i18n = await tryImport('./i18n/index.js');
-  if (i18n && typeof i18n.t === 'function') t = i18n.t;
   document.documentElement.lang = params.lang;
   applyI18n();
-  const aud = await tryImport('./audio.js');
-  S.audio = aud && aud.audio;
-  const rend = await tryImport('./render/index.js');
   const root = $('game') || $('stage') || document.body;
-  if (rend && rend.createRenderer) S.renderer = rend.createRenderer(root);
+  S.renderer = createRenderer(root);
+  S.renderer.setTurbo(S.turbo);
   bindUI();
 
   if (params.replay) {
@@ -243,6 +250,7 @@ async function boot() {
     return showMessage(t('err.generic'));
   }
 
+  if (!params.sessionID || !params.rgsUrl) { setState('error'); return showMessage(t('err.noParams')); }
   setState('authenticating');
   let auth;
   try { auth = await rgs.authenticate(); }

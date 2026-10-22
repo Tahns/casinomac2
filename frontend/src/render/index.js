@@ -23,6 +23,18 @@ export function prepareStatic(app) {
   document.body.classList.add('rendered');
 }
 
+const REDUCE = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+// jagged glowing crack for a vein slot (deterministic per slot)
+function crackSvg(c, r) {
+  let a = (c * 7919 + r * 104729 + 17) >>> 0;
+  const rn = () => { a = (Math.imul(a, 1664525) + 1013904223) >>> 0; return a / 4294967296; };
+  const line = (x, y, ang, n, step) => { let d = `M${x.toFixed(1)} ${y.toFixed(1)}`; for (let i = 0; i < n; i++) { ang += (rn() - .5) * 1.1; x += Math.cos(ang) * step * (.6 + rn() * .8); y += Math.sin(ang) * step * (.6 + rn() * .8); d += `L${x.toFixed(1)} ${y.toFixed(1)}`; } return d; };
+  let d = line(8 + rn() * 20, 4 + rn() * 10, .5 + rn() * .6, 7, 13);
+  d += line(70 + rn() * 22, 92 - rn() * 8, Math.PI + .3 + rn() * .5, 6, 12);
+  d += line(50 + rn() * 14, 50 + rn() * 14, rn() * 6.28, 3, 10);
+  return `<svg class="crack" viewBox="0 0 100 100" aria-hidden="true"><path class="cg" d="${d}"/><path class="cc" d="${d}"/></svg>`;
+}
+
 const nameOf = (s) => (s == null ? 'L1' : typeof s === 'string' ? s : s.name || 'L1');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const raf = () => new Promise((r) => requestAnimationFrame(() => r()));
@@ -57,7 +69,7 @@ export function createRenderer(rootEl) {
       <svg class="outlines" viewBox="0 0 ${COLS} ${ROWS}" preserveAspectRatio="none" aria-hidden="true"></svg>
       <div class="mults"></div><div class="popups"></div>
     </div>
-    <i class="rivet" style="left:2.2%;top:2.6%"></i><i class="rivet" style="right:2.2%;top:2.6%"></i><i class="rivet" style="left:2.2%;bottom:2.6%"></i><i class="rivet" style="right:2.2%;bottom:2.6%"></i>
+    <i class="lit l"></i><i class="lit r"></i><i class="rivet" style="left:2.2%;top:2.6%"></i><i class="rivet" style="right:2.2%;top:2.6%"></i><i class="rivet" style="left:2.2%;bottom:2.6%"></i><i class="rivet" style="right:2.2%;bottom:2.6%"></i>
     <div class="chip combo"></div><div class="chip fsc"></div><div class="chip tw"></div>`;
   root.appendChild(wrap);
   const board = wrap.querySelector('.board');
@@ -69,7 +81,7 @@ export function createRenderer(rootEl) {
     slotEls.push([]); multEls.push([]);
     const g = document.createElement('div'); g.className = 'reelglow'; g.style.setProperty('--c', c); glowsEl.appendChild(g); glowEls.push(g);
     for (let r = 0; r < ROWS; r++) {
-      const s = document.createElement('div'); s.className = 'slot'; s.style.setProperty('--c', c); s.style.setProperty('--r', r); s.innerHTML = '<i></i>';
+      const s = document.createElement('div'); s.className = 'slot'; s.style.setProperty('--c', c); s.style.setProperty('--r', r); s.innerHTML = '<i></i>' + crackSvg(c, r);
       slotsEl.appendChild(s); slotEls[c].push(s);
       const m = document.createElement('div'); m.className = 'mult'; m.style.setProperty('--c', c); m.style.setProperty('--r', r);
       multsEl.appendChild(m); multEls[c].push(m);
@@ -128,7 +140,7 @@ export function createRenderer(rootEl) {
   function paintSlot(c, r, m, animate) {
     const s = slotEls[c][r], mu = multEls[c][r];
     const g = clamp(Math.log2(Math.max(1, m)) / 9, 0, 1);
-    s.classList.toggle('v', m > 0);
+    s.classList.toggle('v', m > 0); s.style.setProperty('--vh', veinHue(m).toFixed(1));
     const i = s.firstChild;
     i.style.setProperty('--vh', veinHue(m).toFixed(1)); i.style.setProperty('--g', g.toFixed(3));
     if (m > 0) {
@@ -157,6 +169,7 @@ export function createRenderer(rootEl) {
 
   // ---------- fx helpers ----------
   function shake(amp = 1, ms = 420) {
+    if (REDUCE) amp *= .25;
     const els = [root, scene.host];
     const n = 12; const px = Math.min(app.clientWidth, app.clientHeight) * 0.012 * amp;
     const frames = Array.from({ length: n + 1 }, (_, i) => {
@@ -169,10 +182,27 @@ export function createRenderer(rootEl) {
     flashEl.style.background = color;
     try { flashEl.animate([{ opacity: peak }, { opacity: 0 }], { duration: T(ms), easing: 'ease-out' }); } catch (e) { /* ignore */ }
   }
-  function chip(el, text, on) { if (text != null) el.textContent = text; el.classList.toggle('on', !!on); }
-  function popup(r, c, html, delay = 0) {
-    const p = document.createElement('div'); p.className = 'pop'; p.style.setProperty('--c', c); p.style.setProperty('--r', r); p.innerHTML = html;
+  function chip(el, text, on) {
+    const changed = text != null && text !== '' && el.textContent !== text;
+    if (text != null) el.textContent = text;
+    el.classList.toggle('on', !!on);
+    if (changed && on) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+  }
+  const fsText = (cur, tot) => `${t('label.freeSpins')} ${cur}/${tot}`;
+  function countUp(el, to, ms, delay) {
+    const t0 = performance.now() + T(delay);
+    const step = (now) => {
+      if (S.destroyed || !el.isConnected) return;
+      const k = clamp((now - t0) / T(ms), 0, 1);
+      if (el.firstChild) el.firstChild.nodeValue = S.fmt(to * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  function popup(r, c, html, delay = 0, val = null) {
+    const p = document.createElement('div'); p.className = 'pop' + (val != null && val >= 5 ? ' big' : ''); p.style.setProperty('--c', c); p.style.setProperty('--r', r); p.innerHTML = html;
     popsEl.appendChild(p);
+    if (val != null && !REDUCE) { p.firstChild.nodeValue = S.fmt(0); countUp(p, val, 480, delay + 80); }
     const a = anim(p, [
       { opacity: 0, transform: 'translate(-50%,-30%) scale(.4)' },
       { opacity: 1, transform: 'translate(-50%,-50%) scale(1.2)', offset: .18 },
@@ -210,7 +240,7 @@ export function createRenderer(rootEl) {
   async function reveal(ev) {
     const nb = normaliseBoard(ev.board);
     if (!nb) return;
-    S.combo = 0; chip(chipCombo, '', false); chip(chipTw, '', false);
+    S.combo = 0; S.lastWin = 0; chip(chipCombo, '', false); chip(chipTw, '', false);
     if (ev.gameType !== 'freegame' && !S.inFs) setMultipliers(null);
     await dropOut();
     audio.play('spin');
@@ -237,11 +267,20 @@ export function createRenderer(rootEl) {
     }
     if (anticCols.length) {
       audio.play('antic'); wrap.classList.add('antic');
-      anticCols.forEach(([c, tm]) => { setTimeout(() => glowEls[c].classList.add('on'), T(Math.max(0, tm - 560))); setTimeout(() => glowEls[c].classList.remove('on'), T(tm + 650)); });
+      const t0 = Math.max(0, anticCols[0][1] - 560), t1 = at + 620;
+      for (let k = 0; t0 + k * 860 < t1; k++) setTimeout(() => { if (!S.destroyed) audio.play('heart', { i: k }); }, T(t0 + k * 860));
+      anticCols.forEach(([c, tm]) => {
+        setTimeout(() => {
+          glowEls[c].classList.add('on');
+          S.grid.forEach((col, ci) => col.forEach((cell) => { if (cell) cell.el.classList.toggle('adim', ci !== c && cell.name !== 'S'); }));
+        }, T(Math.max(0, tm - 560)));
+        setTimeout(() => glowEls[c].classList.remove('on'), T(tm + 650));
+      });
     }
     lands.forEach((tm, c) => setTimeout(() => { if (!S.destroyed) { audio.play('land', { vol: c === 0 ? 1 : .7 }); } }, T(tm)));
     await sleep(at + 620 + 60);
     wrap.classList.remove('antic'); glowEls.forEach((g) => g.classList.remove('on'));
+    cellsEl.querySelectorAll('.adim').forEach((e) => e.classList.remove('adim'));
     // scatter tease
     const sc = [];
     for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) if (S.grid[c][r] && S.grid[c][r].name === 'S') sc.push(S.grid[c][r]);
@@ -262,18 +301,22 @@ export function createRenderer(rootEl) {
     chip(chipCombo, `${t('label.combo')} x${S.combo}`, S.combo > 1);
     clearWins();
     const inWin = new Set();
+    const halo = [];
     let total = 0;
     wins.forEach((w, wi) => {
       const cells = (w.positions || []).map((p) => [p.reel, vis(p.row)]).filter(([c, r]) => inB(c, r));
       cells.forEach(([c, r]) => inWin.add(c + ',' + r));
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const NS = 'http://www.w3.org/2000/svg';
+      cells.forEach(([c, r]) => { const rc = document.createElementNS(NS, 'rect'); rc.setAttribute('class', 'wt'); rc.setAttribute('x', c); rc.setAttribute('y', r); rc.setAttribute('width', 1); rc.setAttribute('height', 1); outl.appendChild(rc); });
+      const hl = document.createElementNS(NS, 'path'); hl.setAttribute('class', 'halo'); hl.setAttribute('d', outlinePath(cells)); outl.appendChild(hl);
+      const path = document.createElementNS(NS, 'path');
       path.setAttribute('d', outlinePath(cells)); path.style.stroke = '#ffe27a';
       outl.appendChild(path);
       total += (w.win || 0) / 100;
       const ov = (w.meta && w.meta.overlay) ? [w.meta.overlay.reel, vis(w.meta.overlay.row)] : cells[Math.floor(cells.length / 2)];
       if (ov && inB(ov[0], ov[1])) {
         const cm = w.meta && Number(w.meta.clusterMult) > 1 ? `<small>${w.meta.clusterMult}x</small>` : '';
-        popup(ov[1], ov[0], `${S.fmt((w.win || 0) / 100)}${cm}`, wi * 120);
+        popup(ov[1], ov[0], `${S.fmt((w.win || 0) / 100)}${cm}`, wi * 120, (w.win || 0) / 100);
       }
       cells.forEach(([c, r]) => {
         const cell = S.grid[c][r]; if (!cell) return; cell.el.classList.add('win');
@@ -281,6 +324,8 @@ export function createRenderer(rootEl) {
       });
     });
     cellsEl.querySelectorAll('.cell:not(.win)').forEach((e) => e.classList.add('dim'));
+    S.lastWin = total;
+    if (total >= 2) shake(.15 + Math.min(total / 40, 1.1), 320);
     audio.play('win', { combo: S.combo });
     const hold = clamp(780 + total * 9, 780, 1500);
     await sleep(hold);
@@ -295,13 +340,13 @@ export function createRenderer(rootEl) {
     cells.forEach(([c, r], i) => {
       const cell = S.grid[c][r]; if (!cell) return;
       const p = cellCenter(c, r); const col = SYM_COLOR[cell.name] || '#ffd54a';
-      fx.shards(p.x, p.y, col, p.size * .35, 7); fx.sparks(p.x, p.y, '#fff6c0', p.size * .3, 5, 6); fx.ring(p.x, p.y, p.size * .6, '255,230,160', .35, 3);
+      fx.shards(p.x, p.y, col, p.size * .35, 6 + Math.min(6, Math.round((S.lastWin || 0) / 8))); fx.sparks(p.x, p.y, '#fff6c0', p.size * .3, 5, 6); fx.ring(p.x, p.y, p.size * .6, '255,230,160', .35, 3);
       cell.el.classList.remove('win', 'dim');
       anim(cell.el, [{ transform: 'scale(1)', opacity: 1, filter: 'brightness(1)' }, { transform: 'scale(1.35)', opacity: 1, filter: 'brightness(2.4)', offset: .35 }, { transform: 'scale(.2) rotate(25deg)', opacity: 0, filter: 'brightness(2)' }],
         { duration: 330, delay: Math.min(i, 8) * 22, easing: 'ease-in', fill: 'forwards' });
       if (i < 9) setTimeout(() => audio.play('pop', { combo: S.combo + Math.floor(i / 3) }), T(i * 40));
     });
-    shake(.35 + Math.min(S.combo, 6) * .08, 280);
+    shake(.3 + Math.min(S.combo, 6) * .07 + Math.min((S.lastWin || 0) / 50, 1), 280);
     await sleep(380);
     cells.forEach(([c, r]) => { const cell = S.grid[c][r]; if (cell) { cell.el.remove(); S.grid[c][r] = null; } });
     cellsEl.querySelectorAll('.dim').forEach((e) => e.classList.remove('dim'));
@@ -362,6 +407,7 @@ export function createRenderer(rootEl) {
       el.append(title, amt, sub);
       const dim = document.createElement('div'); dim.className = 'banner-dim';
       const rays = document.createElement('div'); rays.className = 'rays';
+      if (o.hi) rays.classList.add('hi');
       bannerLayer.append(dim, rays, el); bannerLayer.classList.add('on');
       const done = { v: false };
       let skip = false;
@@ -377,28 +423,48 @@ export function createRenderer(rootEl) {
         if (o.amount != null) {
           const target = Number(o.amount) || 0;
           const dur = T(clamp(1300 + Math.log10(target + 1) * 1000, 1300, 5200));
-          const t0 = performance.now(); let lastTick = 0, lastCoin = 0, lastLabel = null;
+          const t0 = performance.now(); let lastTick = 0, lastCoin = 0, lastLabel = null, tierIdx = 0;
+          const TIERS = ['win.big', 'win.mega', 'win.super', 'win.epic', 'win.max'];
           await new Promise((res) => {
             const step = (now) => {
               if (S.destroyed) { res(); return; }
               const p = skip ? 1 : clamp((now - t0) / dur, 0, 1);
               const v = target * (1 - Math.pow(1 - p, 2.2));
               amt.textContent = S.fmt(v);
-              if (o.tiers) { const k = tierFor(v) || o.tiers0; if (k && k !== lastLabel) { lastLabel = k; setTitle(t(k)); if (lastLabel !== (o.tiers0)) { audio.play('coin'); } } }
+              if (o.tiers) {
+                const k = tierFor(v) || o.tiers0;
+                if (k && k !== lastLabel) {
+                  lastLabel = k; setTitle(t(k)); el.dataset.tier = k;
+                  tierIdx = Math.max(0, TIERS.indexOf(k));
+                  if (k !== o.tiers0) {
+                    audio.play('stinger', { level: tierIdx + 1 }); audio.play('coin');
+                    flash(.3 + tierIdx * .08, 420, '#fff0b0'); shake(.5 + tierIdx * .35, 380);
+                    const r = app.getBoundingClientRect(); fx.ring(r.width / 2, r.height / 2, Math.min(r.width, r.height) * (.5 + tierIdx * .12), '255,226,140', .7, 10);
+                    if (tierIdx >= 2) rays.classList.add('hi');
+                    if (tierIdx >= 3 && !REDUCE) bannerLayer.classList.add('shk');
+                  }
+                }
+              }
               if (now - lastTick > 60 && p < 1) { lastTick = now; audio.play('count', { p }); }
-              if (o.coins && now - lastCoin > 140 && p < 1) { lastCoin = now; const r = app.getBoundingClientRect(); fx.coins(r.width / 2, r.height * .62, Math.min(r.width, r.height), 5, .9); }
+              if (o.coins && now - lastCoin > 150 && p < 1) {
+                lastCoin = now;
+                // coin fountain from both lower corners, stronger with the tier
+                const r = app.getBoundingClientRect(), u = Math.min(r.width, r.height), n = 2 + tierIdx;
+                fx.coins(r.width * .12, r.height * 1.02, u, n, .28, -Math.PI / 2 + .42, 1.25 + tierIdx * .1);
+                fx.coins(r.width * .88, r.height * 1.02, u, n, .28, -Math.PI / 2 - .42, 1.25 + tierIdx * .1);
+              }
               if (p >= 1) res(); else requestAnimationFrame(step);
             };
             requestAnimationFrame(step);
           });
           amt.textContent = S.fmt(target);
           anim(amt, [{ transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 300, easing: 'cubic-bezier(.2,1.6,.4,1)' });
-          if (o.coins) { const r = app.getBoundingClientRect(); fx.coins(r.width / 2, r.height * .62, Math.min(r.width, r.height), 36, 1.2); if (target >= 50) fx.coinRain(40, Math.min(r.width, r.height)); }
+          if (o.coins) { const r = app.getBoundingClientRect(); fx.coins(r.width / 2, r.height * .62, Math.min(r.width, r.height), 36, 1.2); if (target >= 30) fx.coinRain(target >= 100 ? 60 : 36, Math.min(r.width, r.height)); audio.play('shower', { n: target >= 50 ? 32 : 16 }); }
         }
         const t1 = performance.now(); const hold = T(o.hold != null ? o.hold : 1400);
         await new Promise((res) => { const w = (now) => { if (S.destroyed || skip && now - t1 > T(220) || now - t1 > hold) res(); else requestAnimationFrame(w); }; requestAnimationFrame(w); });
         await Promise.all([anim(el, [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.1)' }], { duration: 320, fill: 'forwards' }), anim(dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 320, fill: 'forwards' }), anim(rays, [{ opacity: 1 }, { opacity: 0 }], { duration: 320, fill: 'forwards' })]);
-        bannerLayer.removeEventListener('pointerdown', onSkip);
+        bannerLayer.removeEventListener('pointerdown', onSkip); bannerLayer.classList.remove('shk');
         el.remove(); dim.remove(); rays.remove();
         if (!bannerLayer.children.length) bannerLayer.classList.remove('on');
         done.v = true; resolve();
@@ -409,7 +475,7 @@ export function createRenderer(rootEl) {
   async function winBanner(x, opts = {}) {
     const tier = tierFor(x);
     audio.play('bigwin', { level: x >= 100 ? 3 : x >= 50 ? 2 : 1 });
-    await banner({ title: t(opts.title || tier || 'win.big'), amount: x, kind: 'win', coins: true, tiers: !opts.title, tiers0: 'win.big', hold: 1300, sub: opts.sub });
+    await banner({ title: t(opts.title || tier || 'win.big'), amount: x, kind: 'win', coins: true, hi: x >= 50, tiers: !opts.title, tiers0: 'win.big', hold: 1300, sub: opts.sub });
   }
 
   // ---------- free spins ----------
@@ -428,13 +494,15 @@ export function createRenderer(rootEl) {
     const total = Number(ev.totalFs) || 0;
     const sc = scatterCells(ev);
     clearWins();
-    audio.play('scatter', { n: 4 }); audio.play('fuse');
+    audio.play('scatter', { n: 4 }); audio.play('fuse'); audio.play('rumble');
     sc.forEach((cell) => { cell.el.classList.add('fuse'); const p = cellCenter(cell.c, cell.r); fx.glow(p.x, p.y, p.size * 1.3, '255,90,40', 1.0); fx.sparks(p.x, p.y, '#ffb347', p.size * .35, 14, 6); });
     cellsEl.querySelectorAll('.cell:not(.fuse)').forEach((e) => e.classList.add('dim'));
     shake(.8, 700);
     await sleep(1100);
     // detonate
     audio.play('explosion'); flash(.95, 900, '#fff3d0'); shake(2.6, 1100);
+    setBonusMode(true); // palette swap hides under the flash
+    { const r0 = app.getBoundingClientRect(); fx.ring(r0.width / 2, r0.height / 2, Math.max(r0.width, r0.height) * .7, '255,170,80', 1.0, 18); fx.smoke(r0.width / 2, r0.height / 2, Math.min(r0.width, r0.height) * .6, 10, '40,20,14'); }
     const rect = app.getBoundingClientRect();
     sc.forEach((cell) => {
       const p = cellCenter(cell.c, cell.r);
@@ -454,10 +522,9 @@ export function createRenderer(rootEl) {
     fx.embers(0, rect.height * .5, rect.width, rect.height * .5, 60, Math.min(rect.width, rect.height) * .25);
     await sleep(1100);
     clearCells(); setMultipliers(null);
-    setBonusMode(true);
     S.fsTotal = total; S.fsCur = 0;
     hook('onFreeSpinCounter', 0, total);
-    chip(chipFs, `0/${total}`, true);
+    chip(chipFs, fsText(0, total), true);
     audio.play('fsStart');
     await banner({ title: t('fs.trigger'), sub: t('fs.start', { n: total }), kind: 'fs', hold: 2300, dimAmt: .92 });
   }
@@ -471,8 +538,9 @@ export function createRenderer(rootEl) {
     await sleep(900);
     clearWins();
     if (tot > S.fsTotal) S.fsTotal = tot;
-    audio.play('retrigger');
-    await banner({ title: t('fs.retrigger', { n: add }), kind: 'fs', hold: 1300, dimAmt: .6, rays: true });
+    audio.play('retrigger'); audio.play('stinger', { level: 2 }); flash(.5, 600, '#ffe0a0');
+    { const r = app.getBoundingClientRect(); fx.coins(r.width / 2, r.height * .6, Math.min(r.width, r.height), 24, 1.1); }
+    await banner({ title: t('fs.retrigger', { n: add }), kind: 'fs', hold: 1300, dimAmt: .6, rays: true, hi: true });
   }
   async function fsEnd(ev) {
     const x = (Number(ev.amount) || 0) / 100;
@@ -500,7 +568,7 @@ export function createRenderer(rootEl) {
       case 'freeSpinRetrigger': return fsRetrigger(ev);
       case 'updateFreeSpin': {
         S.fsCur = Number(ev.amount) || 0; if (ev.total) S.fsTotal = Number(ev.total);
-        hook('onFreeSpinCounter', S.fsCur, S.fsTotal); chip(chipFs, `${S.fsCur}/${S.fsTotal}`, true);
+        hook('onFreeSpinCounter', S.fsCur, S.fsTotal); chip(chipFs, fsText(S.fsCur, S.fsTotal), true);
         if (!S.inFs) setBonusMode(true);
         return sleep(S.fsCur > 1 ? 120 : 300);
       }
