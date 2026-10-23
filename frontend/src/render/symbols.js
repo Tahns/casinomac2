@@ -101,7 +101,7 @@ function crystal(x0, x1, tip, sh, base, rot, px, py, C) {
 }
 function amethyst() {
   const C = { base: '#8A4FA0', light: '#C28BD8', dark: '#6A3D6E' };
-  let g = crystal(10, 36, 32, 46, 88, -16, 23, 88, C) + crystal(64, 90, 28, 44, 88, 15, 77, 88, C);
+  let g = crystal(14, 38, 32, 46, 88, -14, 26, 88, C) + crystal(62, 86, 28, 44, 88, 13, 74, 88, C);
   g += crystal(31, 69, 6, 30, 90, 0, 50, 90, C);
   g += T('M12 88Q50 79 88 88L90 94Q50 99 10 94Z', '#6A3D6E', { ht: 1, sw: 3 });
   g += hl('M40 36Q39 52 40 68');
@@ -114,11 +114,11 @@ function pickaxe() {
   g += T('M44.5 20H55.5L56.5 90Q50 95 43.5 90Z', '#C8782E');
   g += fillOnly('M50 20H55.5L56.5 90Q53 92.5 50 93Z', '#8F4F1B', 1);
   g += lines('M50 24V90', 1.6);
-  g += T('M10 40Q50 -8 90 40Q80 38 70 33Q50 19 30 33Q20 38 10 40Z', '#9FB3BA');
-  g += fillOnly('M50 12Q74 14 90 40Q80 38 70 33Q60 22 50 20Z', '#5E7580', 1);
+  g += T('M6 44Q50 -14 94 44Q82 42 72 35Q50 18 28 35Q18 42 6 44Z', '#9FB3BA');
+  g += fillOnly('M50 8Q78 12 94 44Q82 42 72 35Q60 22 50 17Z', '#5E7580', 1);
   g += T('M38 14H62V30H38Z', '#B8352A', { sw: 3.2 });
   g += `<path d="M42 19H58" stroke="${PAPER}" stroke-width="2.4" stroke-linecap="round"/>`;
-  g += hl('M20 36Q36 14 50 11', 3.2);
+  g += hl('M16 38Q32 14 50 9', 3.2);
   g += '</g>';
   g += star4(82, 80, 8, PAPER, 'twk');
   return `<symbol id="sym-L2" viewBox="0 0 100 100">${g}</symbol>`;

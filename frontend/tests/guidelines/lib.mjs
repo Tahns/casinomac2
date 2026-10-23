@@ -9,9 +9,12 @@ import { fileURLToPath } from 'node:url';
 export const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const FRONT = path.resolve(HERE, '../..');
 export const SHOTS = path.join(FRONT, 'tests/shots');
-export const GAME = 'http://localhost:5173';
-export const RGS = 'http://localhost:5180';
-export const SESSION = 'qa-session';
+// Live bindings: set by ensureServers() (own free ports per run) and setSid() (unique sessionID per test).
+export let GAME = '';
+export let RGS = '';
+export let SESSION = 'qa-session';
+export const RUN_ID = Math.random().toString(36).slice(2, 7);
+export function setSid(id) { SESSION = `qa-${RUN_ID}-${id}`; return SESSION; }
 
 const req = createRequire(import.meta.url);
 export function loadPlaywright() {
@@ -31,22 +34,36 @@ export function httpJson(method, url, body) {
     r.on('error', reject); if (body !== undefined) r.write(JSON.stringify(body)); r.end();
   });
 }
-export const mockCfg = (c) => httpJson('POST', RGS + '/__mock/config', c);
+const sidq = () => '?sid=' + encodeURIComponent(SESSION);
+export const mockCfg = (c) => httpJson('POST', RGS + '/__mock/config' + sidq(), c);
 export const mockReset = () => mockCfg({ reset: true, reloadFixtures: true });
-export const mockLog = () => httpJson('GET', RGS + '/__mock/log');
-export const mockClear = () => httpJson('POST', RGS + '/__mock/log/clear', {});
-export const mockState = () => httpJson('GET', RGS + '/__mock/state');
+export const mockLog = () => httpJson('GET', RGS + '/__mock/log' + sidq());
+export const mockClear = () => httpJson('POST', RGS + '/__mock/log/clear' + sidq(), {});
+export const mockState = () => httpJson('GET', RGS + '/__mock/state' + sidq());
 export const plays = (log) => log.filter((l) => l.path.startsWith('/wallet/play'));
 export const ends = (log) => log.filter((l) => l.path.startsWith('/wallet/end-round'));
 
-function portUp(port) { return new Promise((res) => { const r = http.get({ hostname: 'localhost', port, path: '/' , timeout: 800}, (x) => { x.resume(); res(true); }); r.on('error', () => res(false)); r.on('timeout', () => { r.destroy(); res(false); }); }); }
 const children = [];
-export async function ensureServers() {
-  if (!(await portUp(5173))) children.push(spawn('node', [path.join(FRONT, 'serve.mjs')], { stdio: 'inherit' }));
-  if (!(await portUp(5180))) children.push(spawn('node', [path.join(FRONT, 'tools/mock-rgs/server.mjs')], { stdio: 'inherit' }));
-  for (let i = 0; i < 50 && !((await portUp(5173)) && (await portUp(5180))); i++) await sleep(200);
+function spawnOwn(script, env, re) {
+  return new Promise((resolve, reject) => {
+    const c = spawn(process.execPath, [script], { env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+    children.push(c);
+    let buf = ''; const to = setTimeout(() => reject(new Error('timeout starting ' + script + ': ' + buf)), 10000);
+    c.stdout.on('data', (d) => { buf += d; const m = re.exec(buf); if (m) { clearTimeout(to); resolve(Number(m[1])); } });
+    c.stderr.on('data', (d) => { buf += d; });
+    c.on('exit', (code) => { clearTimeout(to); reject(new Error(script + ' exited ' + code + ': ' + buf)); });
+  });
 }
-export function stopServers() { for (const c of children) c.kill(); }
+// Always spawns OWN static server + OWN mock RGS (never reuses a running one). Ports: random free ports, or env PORTS="game,rgs".
+export async function ensureServers() {
+  const [gp, rp] = (process.env.PORTS || '0,0').split(',').map((x) => Number(x) || 0);
+  const gamePort = await spawnOwn(path.join(FRONT, 'tools/mock-rgs/static-server.mjs'), { PORT: String(gp) }, /static server http:\/\/localhost:(\d+)/);
+  const rgsPort = await spawnOwn(path.join(FRONT, 'tools/mock-rgs/server.mjs'), { MOCK_PORT: String(rp) }, /mock RGS http:\/\/localhost:(\d+)/);
+  GAME = 'http://localhost:' + gamePort; RGS = 'http://localhost:' + rgsPort;
+  console.log(`own servers: game ${GAME}  rgs ${RGS}  run ${RUN_ID}`);
+}
+export function stopServers() { for (const c of children) { try { c.removeAllListeners('exit'); c.kill('SIGKILL'); } catch {} } children.length = 0; }
+for (const sig of ['exit', 'SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { stopServers(); if (sig !== 'exit') process.exit(130); });
 
 export async function waitForGame(maxMs) {
   const t0 = Date.now();
@@ -57,7 +74,7 @@ export async function waitForGame(maxMs) {
   return false;
 }
 
-const LOCAL_OK = new Set(['localhost:5173', 'localhost:5180', '127.0.0.1:5173', '127.0.0.1:5180']);
+const localOk = (host) => [GAME, RGS].some((b) => { const h = new URL(b).host; return host === h || host === h.replace('localhost', '127.0.0.1'); });
 export const VIEWPORTS = [
   { name: '1024x576', width: 1024, height: 576 },
   { name: '400x225', width: 400, height: 225 },
@@ -93,7 +110,7 @@ export class Session {
     page.on('requestfailed', (r) => this.failed.push({ url: r.url(), err: r.failure()?.errorText }));
     page.on('console', (m) => { if (m.type() === 'error') this.consoleErrors.push(m.text()); });
     page.on('pageerror', (e) => this.pageErrors.push(String(e && e.message || e)));
-    const q = { sessionID: SESSION, rgs_url: RGS, lang: 'en', device: vp.touch ? 'mobile' : 'desktop', ...query };
+    const q = { sessionID: SESSION, rgs_url: RGS + '/s/' + encodeURIComponent(SESSION), lang: 'en', device: vp.touch ? 'mobile' : 'desktop', ...query };
     for (const k of Object.keys(q)) if (q[k] === null) delete q[k];
     this.url = GAME + '/index.html?' + new URLSearchParams(q).toString();
     await page.goto(this.url, { waitUntil: 'load' });
@@ -101,7 +118,7 @@ export class Session {
     return this;
   }
   externalReqs() {
-    return this.reqs.filter((r) => { try { const u = new URL(r.url); if (u.protocol === 'data:' || u.protocol === 'blob:' || u.protocol === 'about:') return false; return !LOCAL_OK.has(u.host); } catch { return false; } });
+    return this.reqs.filter((r) => { try { const u = new URL(r.url); if (u.protocol === 'data:' || u.protocol === 'blob:' || u.protocol === 'about:') return false; return !localOk(u.host); } catch { return false; } });
   }
   async bodyClass() { return this.page.evaluate(() => document.body.className).catch(() => ''); }
   async waitIdle(ms = 45000) { await this.page.waitForFunction(() => document.body.classList.contains('state-idle'), null, { timeout: ms }); }

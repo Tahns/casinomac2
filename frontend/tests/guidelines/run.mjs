@@ -2,14 +2,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  FRONT, SHOTS, GAME, RGS, SESSION, VIEWPORTS, loadPlaywright, ensureServers, stopServers, waitForGame, Session,
+  FRONT, SHOTS, GAME, RGS, SESSION, setSid, VIEWPORTS, loadPlaywright, ensureServers, stopServers, waitForGame, Session,
   mockCfg, mockReset, mockLog, mockClear, mockState, plays, ends, sleep, nums, snippet, HERE,
 } from './lib.mjs';
 import { staticReview } from './static.mjs';
 
 const arg = (k, d) => (process.argv.find((a) => a.startsWith('--' + k + '=')) || '').split('=')[1] ?? d;
 const WAIT = Number(arg('wait', 240)) * 1000;
-const ONLY = arg('only', '') ? arg('only', '').split(',') : null;
+const ONLY_S = process.env.QA_ONLY || arg('only', '');
+const ONLY = ONLY_S ? ONLY_S.split(',').map((x) => x.trim()).filter(Boolean) : null; // QA_ONLY=181,222 (or --only=)
+const REPORT = process.env.QA_REPORT || path.join(HERE, 'REPORT.md');
 
 const results = []; // {id,title,status,evidence[]}
 const allSessions = [];
@@ -24,7 +26,7 @@ function rec(id, title, status, ...evidence) { results.push({ id, title, status,
 async function check(id, title, fn) {
   if (ONLY && !ONLY.includes(String(id))) return;
   for (let attempt = 0; attempt < 2; attempt++) {
-    try { await mockReset(); await mockClear(); const r = await fn(); if (r) rec(id, title, r[0], r.slice(1)); return; }
+    try { setSid(String(id) + (attempt ? 'r' : '')); await mockReset(); await mockClear(); const r = await fn(); if (r) rec(id, title, r[0], r.slice(1)); return; }
     catch (e) { if (attempt === 0 && /crashed|Target closed|Browser has been closed/i.test(String(e && e.message))) { console.log('retrying after browser crash:', id); continue; } rec(id, title, FAIL, 'runner exception: ' + snippet(e.stack || e.message, 400)); return; }
   }
 }
@@ -64,7 +66,7 @@ async function main() {
   if (!ready) { writeReport(stat, false); stopServers(); return; }
   pw = loadPlaywright();
   browser = await pw.chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--no-sandbox', '--disable-dev-shm-usage'] });
-  const mstate = await mockState(); console.log('mock books:', mstate.bookSource);
+  setSid('boot'); const mstate = await mockState(); console.log('mock books:', mstate.bookSource);
 
   await check(181, 'authenticate on load hits rgs_url with sessionID', async () => {
     const s = await sess({}); const log = await mockLog(); await s.close();
@@ -442,8 +444,8 @@ function writeReport(stat, ran) {
   md += rs.map((r) => `### [${r.id}] ${r.title} - ${r.status}\n\n${r.evidence.map((e) => '- ' + String(e).replace(/\|/g, '\\|')).join('\n')}\n`).join('\n');
   md += '\n## Static code review\n\n' + stat.map((s) => `### ${s.title} - ${s.status}\n\n${s.lines.length ? s.lines.map((l) => '- ' + l).join('\n') : '- none found'}\n`).join('\n');
   md += '\n## NEEDS A HUMAN (always)\n\n- Real audio audibility on a device (graph-level mute is checked above).\n- Visual quality of the four screenshots in `tests/shots/qa_*.png`.\n- Touch behaviour on a real phone (pinch/double-tap zoom).\n';
-  fs.writeFileSync(path.join(HERE, 'REPORT.md'), md);
-  console.log('\nreport written to tests/guidelines/REPORT.md');
+  fs.writeFileSync(REPORT, md);
+  console.log('\nreport written to ' + REPORT);
   for (const s of stat) console.log(`${s.status.padEnd(14)} static: ${s.title} (${s.lines.length} lines)`);
   console.log(`\nTOTAL: ${count(PASS)} PASS, ${count(FAIL)} FAIL, ${count(RISK)} AT RISK, ${count(HUMAN)} HUMAN`);
 }
