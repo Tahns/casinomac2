@@ -207,7 +207,7 @@ async function main() {
   });
 
   await check(31, 'unleash: one press sends no play, dialog shows cost; cancel safe; confirm plays bonus', async () => {
-    const s = await sess({}); await mockClear(); await s.click('#btn-unleash', { force: true }); await sleep(800);
+    const s = await sess({}); await s.setBet(1); await s.waitEnabled('#btn-unleash', 3000).catch(() => {}); await mockClear(); await s.click('#btn-unleash'); await s.waitVisible('#modal-confirm', 3000).catch(() => {});
     const shown = await s.visible('#modal-confirm'); const txt = (await s.text('#modal-confirm')) || ''; const p0 = plays(await mockLog()).length;
     await s.click('#confirm-cancel', { force: true }).catch(() => {}); await sleep(600); const p1 = plays(await mockLog()).length;
     await s.click('#btn-unleash', { force: true }); await sleep(500); await s.click('#confirm-ok', { force: true }).catch(() => {}); await sleep(1200);

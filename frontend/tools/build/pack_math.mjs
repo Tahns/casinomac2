@@ -208,7 +208,7 @@ if (await waitStable()) {
     }
     if (key(snap()) !== after) FAIL('source changed while copying; discard dist/math_upload and re-run');
     if (!fails.length) {
-      fs.writeFileSync(path.join(OUT, 'MANIFEST.txt'), `# The Unleashed Mine math upload set (sha256, bytes, file)\n# generated ${new Date().toISOString()} from ${path.relative(ROOT, SRC)}\n# Upload ONLY the files above this line's listing; MANIFEST.txt is documentation, not part of the strict index.json set.\n` + man.join('\n') + '\n');
+      fs.writeFileSync(path.join(OUT, 'MANIFEST.txt'), `# The Unleashed Mine math upload set (sha256, bytes, file)\n# generated ${new Date().toISOString()} from ${path.relative(ROOT, SRC)}\n# Upload only the files listed below (index.json + each mode's csv and zst); MANIFEST.txt is documentation, not part of the strict index.json set.\n` + man.join('\n') + '\n');
       console.log(`\npacked ${man.length} files into ${path.relative(ROOT, OUT)}/ (+ MANIFEST.txt)`);
     }
   }
