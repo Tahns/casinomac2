@@ -6,6 +6,14 @@ export function modeCost(mode) {
   const c = MODE_COSTS[mode];
   return typeof c === 'number' ? c : 1;
 }
+// UNLEASH is sold at round prices and never below a minimum price (display-currency units, converted to micro).
+// 50 units in most currencies; larger round numbers where 50 units is worth very little.
+export const UNLEASH_MIN_PRICE = { USD: 50, EUR: 50, CAD: 50, GBP: 50, XSC: 50, XGC: 50, XEC: 50, MXN: 1000, JPY: 7500 };
+export function unleashMinPrice(currency) {
+  const u = UNLEASH_MIN_PRICE[String(currency || '').toUpperCase()];
+  return Math.round((typeof u === 'number' ? u : 50) * 1000000);
+}
+export function unleashAvailable(bet, currency) { return totalCost(bet, 'bonus') >= unleashMinPrice(currency); }
 export function totalCost(bet, mode) { return Math.round(bet * modeCost(mode)); }
 export function canAfford(balance, bet, mode) { return Number(balance) >= totalCost(bet, mode); }
 

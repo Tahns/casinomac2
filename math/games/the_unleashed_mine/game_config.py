@@ -192,17 +192,57 @@ class GameConfig(Config):
                             "force_freegame": True,
                         },
                     ),
-                    # Bonus-only criteria: natural free games with at least BONUS_FLOOR x return
-                    # (rejection filter in game_override.check_repeat) -> keeps the median high.
+                    # Bonus-only criteria: one criterion per scatter tier so the optimizer can pin
+                    # the share of purchases per tier (10 / 12 / 15 / 18-20 starting free spins).
+                    # Natural free games with at least bonus_floor x (rejection filter in check_repeat).
                     Distribution(
-                        criteria="fgfloor",
+                        criteria="fgfloor4",
                         quota=0.5,
                         conditions={
                             "reel_weights": {
                                 self.basegame_type: {"BR0": 1},
                                 self.freegame_type: {"FR0": 1},
                             },
-                            "scatter_triggers": {4: 4, 5: 3, 6: 1},
+                            "scatter_triggers": {4: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
+                        },
+                    ),
+                    Distribution(
+                        criteria="fgfloor5",
+                        quota=0.22,
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"FR0": 1},
+                            },
+                            "scatter_triggers": {5: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
+                        },
+                    ),
+                    Distribution(
+                        criteria="fgfloor6",
+                        quota=0.12,
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"FR0": 1},
+                            },
+                            "scatter_triggers": {6: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
+                        },
+                    ),
+                    Distribution(
+                        criteria="fgfloor7",
+                        quota=0.158,
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"FR0": 1},
+                            },
+                            "scatter_triggers": {7: 3, 8: 1},
                             "force_wincap": False,
                             "force_freegame": True,
                         },

@@ -1,7 +1,7 @@
 // Boot + state machine: booting -> authenticating -> idle -> betting -> playing -> settling -> idle
 import { params } from './params.js';
 import { formatMoney, formatAmount, MICRO } from './money.js';
-import { createBetState, modeCost } from './bet.js';
+import { createBetState, modeCost, unleashMinPrice, unleashAvailable } from './bet.js';
 import { checkPlay, shouldEndRound, needsConfirm, spaceAction, createAutoplay } from './input.js';
 import * as rgs from './rgs.js';
 import * as i18n from './i18n/index.js';
@@ -26,7 +26,8 @@ function setState(s) {
     b.classList.add('state-' + s);
   }
   const idle = s === 'idle';
-  ['btn-bet', 'btn-bet-minus', 'btn-bet-plus', 'btn-unleash'].forEach((id) => { const e = $(id); if (e) e.disabled = !idle; });
+  ['btn-bet', 'btn-bet-minus', 'btn-bet-plus'].forEach((id) => { const e = $(id); if (e) e.disabled = !idle; });
+  updateUnleashButton();
   updateBetButtons();
   const ap = $('btn-autoplay'); if (ap) ap.disabled = !(idle || S.autoplay.active);
 }
@@ -42,7 +43,16 @@ function fitText(e) {
 function fitAll() { ['balance', 'bet', 'win'].forEach((id) => { const e = $(id); if (e) fitText(e); }); }
 function renderBalance() { setText('balance', fm(S.balance)); }
 function updateRendererFormat() { if (S.renderer && S.renderer.setFormat && S.bet) { const b = S.bet.bet; S.renderer.setFormat((x) => fm(Math.round((Number(x) || 0) * b))); } }
-function renderBet() { setText('bet', fm(S.bet.bet)); const u = $('unleash-cost'); if (u) u.textContent = fm(S.bet.cost('bonus')); updateBetButtons(); updateRendererFormat(); }
+function unleashOk() { return !!S.bet && unleashAvailable(S.bet.bet, S.currency); }
+function updateUnleashButton() {
+  const btn = $('btn-unleash'); if (!btn) return;
+  const ok = unleashOk();
+  btn.disabled = !(S.state === 'idle' && ok);
+  btn.classList.toggle('below-min', !ok);
+  const u = $('unleash-cost');
+  if (u && S.bet) u.textContent = ok ? fm(S.bet.cost('bonus')) : t('unleash.from', { min: fm(unleashMinPrice(S.currency)) });
+}
+function renderBet() { setText('bet', fm(S.bet.bet)); updateUnleashButton(); updateBetButtons(); updateRendererFormat(); }
 function renderWin(micro) { setText('win', fm(micro || 0)); }
 function updateBetButtons() {
   if (!S.bet) return;
@@ -167,6 +177,7 @@ async function onSpin() {
 }
 async function onUnleash() {
   if (S.state !== 'idle' || modalOpen()) return;
+  if (!unleashOk()) { await showMessage(t('unleash.minPrice', { min: fm(unleashMinPrice(S.currency)) })); return; }
   const cost = S.bet.cost('bonus');
   const chk = checkPlay(S.balance, S.bet.bet, 'bonus');
   if (!chk.ok) { await showMessage(t('err.insufficient', { cost: fm(cost) })); return; }

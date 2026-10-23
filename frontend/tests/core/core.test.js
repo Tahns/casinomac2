@@ -98,3 +98,13 @@ test('rgs: invalid host is an error, play/endRound plumbing', async () => {
   const ipb = async () => ({ ok: false, status: 400, json: async () => ({ code: 'ERR_IPB' }) });
   await assert.rejects(createRgs({ rgsUrl: 'https://x', sessionID: 's', fetchImpl: ipb }).play(1, 'base'), { code: 'ERR_IPB' });
 });
+
+import { unleashMinPrice, unleashAvailable } from '../../src/bet.js';
+test('UNLEASH minimum price: 50 units (USD/EUR), bigger round floors for MXN/JPY', () => {
+  assert.equal(unleashMinPrice('EUR'), 50_000_000);
+  assert.equal(unleashMinPrice('MXN'), 1000_000_000);
+  assert.equal(unleashMinPrice('JPY'), 7500_000_000);
+  assert.equal(unleashAvailable(400_000, 'EUR'), false); // 0.40 x 100 = 40 < 50
+  assert.equal(unleashAvailable(500_000, 'EUR'), true);  // 0.50 x 100 = 50
+  assert.equal(unleashAvailable(1_000_000, 'USD'), true);
+});

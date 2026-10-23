@@ -74,6 +74,8 @@ export const en = {
   'unleash.title': 'UNLEASH',
   'unleash.confirm': 'UNLEASH starts the Unleashed Mine free spins directly and costs {cost} for this round. Continue?',
   'unleash.cost': 'UNLEASH {cost}',
+  'unleash.from': 'from {min}',
+  'unleash.minPrice': 'UNLEASH is available from {min}. Raise the amount to unlock it.',
   'unleash.hint': 'Start the free spins directly for {mult}x the bet.',
 
   'win.big': 'BIG WIN',

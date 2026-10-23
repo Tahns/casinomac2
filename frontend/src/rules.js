@@ -1,5 +1,6 @@
 // Rules / info / help screens rendered into #modal-info.
 import { t, isSocial, socialize } from './i18n/index.js';
+import { unleashMinPrice } from './bet.js';
 
 let params = {};
 let formatMoney = null;
@@ -146,7 +147,7 @@ export function buildRules(data, ctx = {}) {
   sections.push({ id: 'modes', title: t('rules.tab.modes'), html: `
     <h3>Game modes</h3>
     <p><strong>${esc(modeName('base'))}</strong> is the standard game. A round costs the ${B} (1x).</p>
-    <p><strong>${esc(modeName('bonus'))}</strong> starts the Unleashed Mine free spins directly, without having to land scatters. A round in this mode costs ${num(unleashCost)}x the ${B}. A confirmation is shown, stating the total cost, before the round starts.</p>
+    <p><strong>${esc(modeName('bonus'))}</strong> starts the Unleashed Mine free spins directly, without having to land scatters. A round in this mode costs ${num(unleashCost)}x the ${B}. A confirmation is shown, stating the total cost, before the round starts. ${esc(modeName('bonus'))} is available from a minimum price of ${esc(fmt(unleashMinPrice(currency), currency))}; below that price the button stays inactive.</p>
     <p class="rl-rtp">${modeLines}</p>
     <div class="rl-scroll"><table class="rl-table"><thead><tr><th scope="col">Mode</th><th scope="col">Cost</th><th scope="col">RTP</th><th scope="col">Max win</th></tr></thead><tbody>${modeRows}</tbody></table></div>
     <p>The RTP is the expected return over many plays. A maximum win of ${commas(wincap)}x applies to every round, in every mode.</p>

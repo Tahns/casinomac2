@@ -43,7 +43,7 @@ Tous les paiements sont des multiples de 0,1x. Deux modes (limite : 20).
 
 ## Points faibles connus (à traiter dans la boucle SWOT)
 - Mode UNLEASH : 81,6 % des achats rendent 20 à 60x pour 100x payés. La valeur vient surtout des 16,6 % d'achats à 100x et plus. Médiane 39,9x (le seuil de test a été réglé à 35x ; le but initial de 40x est manqué de 0,1x).
-- Jeu de base : 70,9 % de spins à zéro ; un bonus déclenché environ 1 spin sur 230 (gains de 40x et plus : 0,42 %, ce qui inclut quelques gros gains sans bonus).
+- Jeu de base : 70,9 % de spins à zéro ; un bonus déclenché environ 1 spin sur 200 (mesure du SWOT : 0,499 %).
 - Gain max en base : environ 1 sur 5 millions.
 - L'optimiseur n'est pas reproductible : régénérer les maths change légèrement les poids. Toujours relancer les tests.
 

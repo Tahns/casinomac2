@@ -31,7 +31,7 @@ class GameStateOverride(GameExecutables):
             if win_criteria is not None and self.final_win != win_criteria:
                 self.repeat = True
 
-            if self.criteria == "fgfloor" and self.final_win < self.config.bonus_floor:
+            if self.criteria.startswith("fgfloor") and self.final_win < self.config.bonus_floor:
                 self.repeat = True
 
             if self.get_current_distribution_conditions()["force_freegame"] and not (self.triggered_freegame):
