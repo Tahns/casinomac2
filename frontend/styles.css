@@ -45,7 +45,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
   grid-template-areas:"logo game ctrl" "info game ctrl"}
 /* MASCOT hooks: WIRING adds <div id="mascot-slot"> inside #app; the grid reserves its room only when it exists */
 #app:has(#mascot-slot){grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"logo game ctrl" "info game ctrl" "mascot game ctrl"}
-#mascot-slot{grid-area:mascot;position:relative;z-index:4;min-width:0;min-height:0;pointer-events:none;container-type:size;margin:0 var(--gap) var(--gap)}
+#mascot-slot{grid-area:mascot;position:relative;z-index:2;min-width:0;min-height:0;max-height:none;width:auto;aspect-ratio:auto;pointer-events:none;container-type:size;margin:0 var(--gap) var(--gap);--gh:min(76cqh,117cqw)}
+#mascot-slot .gus-wrap{width:100%!important;height:100%!important;display:flex;align-items:flex-end;justify-content:center}
+#mascot-slot .gus{flex:none;width:calc(var(--gh)*.857);height:var(--gh)}
 #scene{position:absolute;inset:0;z-index:0;overflow:hidden;background:var(--sc-bg)}
 #logo-area{grid-area:logo;z-index:3;display:flex;justify-content:center;align-items:flex-start;padding:calc(var(--gap)*1.2 + min(100vw,100vh)*.05) calc(var(--gap) + min(100vw,100vh)*.035) 0;min-width:0}
 #game{grid-area:game;z-index:2;position:relative;container-type:size;min-width:0;min-height:0;touch-action:none}
@@ -159,6 +161,7 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
   .mini{min-width:15px;min-height:15px;width:15px;height:15px}
   .stat{padding-left:3px;padding-right:3px}
   #mascot-slot{margin:0 2px 2px}
+  #mascot-slot .gus-wrap{align-items:flex-end}
 }
 
 /* ---------- portrait ---------- */
@@ -166,10 +169,14 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
   #app{--side:0px;--fs:clamp(10px,3.3vw,19px);--gap:clamp(4px,1.4vw,10px);
     grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;
     grid-template-areas:"logo" "game" "info" "ctrl"}
-  #app:has(#mascot-slot){grid-template-rows:auto minmax(0,1fr) 22% auto auto;grid-template-areas:"logo" "game" "mascot" "info" "ctrl"}
+  #app:has(#mascot-slot){grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"logo" "game" "info" "ctrl"}
   #app:has(#mascot-slot) #hud-ctrl{grid-row:auto}
-  #mascot-slot{margin:0 var(--gap)}
-  #logo-area{padding:calc(var(--gap)*1 + 100vw*.06) calc(var(--gap) + 100vw*.04) 0}
+  #mascot-slot{grid-area:game;align-self:end;justify-self:start;width:min(30vw,140px);height:clamp(70px,14vh,150px);margin:0 0 0 var(--gap);--gh:100cqh}
+  #mascot-slot .gus-wrap{justify-content:flex-start}
+  #app:has(#mascot-slot) .board-wrap{--cell:min(calc(100cqw / 6.5),calc(100cqh / 5.3));top:calc(var(--gap)*.6);transform:translate(-50%,0)}
+  .lantern{width:clamp(22px,7.5vw,34px);margin-left:calc(clamp(22px,7.5vw,34px)*-.5)}
+  .lantern.l{left:8%}.lantern.r{left:92%}
+  #logo-area{padding:calc(var(--gap)*1 + 100vw*.05) calc(100vw*.14) 0}
   .logo svg{max-height:min(15vh,116px);margin:0 auto}
   .logo .stack{display:none}.logo .wide{display:block}
   #hud-info{flex-direction:row;align-items:stretch;gap:var(--gap)}
@@ -223,7 +230,7 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
 
 .cell{position:absolute;left:calc(var(--c)*16.6667%);top:calc(var(--r)*20%);width:16.6667%;height:20%;will-change:transform;transform:translateZ(0)}
 .cell .sym-svg{display:block;width:100%;height:100%;padding:6%;overflow:visible;will-change:transform;transform-origin:50% 92%}
-.cell.dim .sym-svg,.cell.adim .sym-svg{filter:saturate(.35) brightness(.8)}
+.cell.dim .sym-svg,.cell.adim .sym-svg{opacity:.7}
 .cell.win{z-index:2}
 /* idle: limited-animation bob (hard steps) */
 .cell:not(.win):not(.dim):not(.fuse):not(.adim) .sym-svg{animation:bob 3.4s steps(1,end) infinite;animation-delay:calc(var(--c,0)*-.43s + var(--r,0)*-.71s)}
@@ -258,10 +265,10 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
 .outlines path.halo{stroke:var(--ink)!important;stroke-width:.15;stroke-opacity:1}
 .outlines rect.wt{fill:rgba(232,169,43,.3)}
 .popups{z-index:5;pointer-events:none}
-.pop{position:absolute;left:calc((var(--c) + .5)*16.6667%);top:calc((var(--r) + .5)*20%);transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--num);font-weight:900;font-size:calc(var(--cell)*.3);line-height:1;color:var(--ink);
+.popups .pop{position:absolute;left:calc((var(--c) + .5)*16.6667%);top:calc((var(--r) + .5)*20%);transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--num);font-weight:900;font-size:calc(var(--cell)*.3);line-height:1;color:var(--ink);
   padding:calc(var(--cell)*.2) calc(var(--cell)*.3);background:var(--pop-cream) center/100% 100% no-repeat;text-align:center}
-.pop small{display:block;font-size:.55em;color:var(--brick)}
-.pop.big{background-image:var(--pop-mustard);font-size:calc(var(--cell)*.34);color:var(--brick)}
+.popups .pop small{display:block;font-size:.55em;color:var(--brick)}
+.popups .pop.big{background-image:var(--pop-mustard);font-size:calc(var(--cell)*.34);color:var(--brick)}
 .chip{position:absolute;z-index:8;pointer-events:none;font-family:var(--num);font-weight:900;font-size:calc(var(--cell)*.27);line-height:1;color:var(--ink);padding:calc(var(--cell)*.07) calc(var(--cell)*.2);border-radius:calc(var(--cell)*.3);
   background:var(--mustard);border:calc(var(--cell)*.03) solid var(--ink);box-shadow:calc(var(--cell)*.04) calc(var(--cell)*.05) 0 var(--ink);opacity:0;transform:scale(.6);transition:opacity .2s steps(2,end),transform .25s steps(3,end);white-space:nowrap}
 .chip.on{opacity:1;transform:scale(1)}
@@ -434,3 +441,8 @@ body.state-error #loading{opacity:0;visibility:hidden;pointer-events:none}
   .twk,.wink{opacity:0}
   .fl2{opacity:0}
 }
+
+/* comic onomatopoeia bubble spawned by fx.js on banners */
+.sfx-pop{position:absolute;left:4%;top:7%;z-index:3;pointer-events:none;font-size:clamp(13px,6.5vmin,70px);animation:sfxin .4s steps(4,end) 1,sfxwob .5s steps(1,end) .4s infinite alternate}
+@keyframes sfxin{0%{transform:scale(.2) rotate(-20deg);opacity:0}60%{transform:scale(1.3) rotate(-4deg);opacity:1}100%{transform:scale(1) rotate(-6deg)}}
+@keyframes sfxwob{0%{transform:rotate(-6deg) scale(1)}100%{transform:rotate(-3deg) scale(1.06)}}

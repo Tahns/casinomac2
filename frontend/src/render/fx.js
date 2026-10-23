@@ -1,6 +1,7 @@
 // Cartoon particle engine on one overlay canvas: dust puffs, 4-point stars, flat coins, comic burst rings.
 // Same API as before (shards/sparks/embers/coins/coinRain/smoke/ring/glow/clear) so index.js keeps working;
 // shapes are flat colour with a thick dark outline and move in ~12 fps steps (limited animation). Counts are capped.
+import { t } from '../i18n/index.js';
 const TAU = Math.PI * 2;
 const INK = '#2B1A12', PAPER = '#F4E8C8';
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -155,6 +156,30 @@ export function createFx(app) {
     ctx.globalAlpha = 1;
     if (parts.length) raf = requestAnimationFrame(tick);
     else { raf = 0; ctx.clearRect(0, 0, W, H); }
+  }
+
+  // comic onomatopoeia (i18n keys fx.*) next to win / free-spin banners
+  if (typeof MutationObserver !== 'undefined') {
+    const KEY = { 'win.big': 'fx.kaching', 'win.mega': 'fx.pow', 'win.super': 'fx.wow', 'win.epic': 'fx.boom', 'win.max': 'fx.boom' };
+    const layer = () => app.querySelector('.banner-layer');
+    const sync = (banner) => {
+      const L = layer(); if (!L || !banner) return;
+      let s = L.querySelector('.sfx-pop');
+      const key = banner.classList.contains('fs') ? 'fx.boom' : (KEY[banner.dataset.tier] || (banner.classList.contains('win') ? 'fx.kaching' : null));
+      if (!key) { if (s) s.remove(); return; }
+      let txt = ''; try { txt = t(key); } catch (e) { txt = ''; } if (!txt || txt === key) return;
+      if (!s) { s = document.createElement('div'); s.className = 'sfx sfx-pop'; L.appendChild(s); }
+      if (s.textContent !== txt) { s.textContent = txt; s.style.animation = 'none'; void s.offsetWidth; s.style.animation = ''; s.className = 'sfx sfx-pop ' + (key === 'fx.pow' ? 'teal' : key === 'fx.boom' ? 'brick' : key === 'fx.wow' ? 'mustard' : ''); }
+    };
+    const mo = new MutationObserver((recs) => {
+      for (const r of recs) {
+        if (r.type === 'attributes') { sync(r.target); continue; }
+        r.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('banner')) sync(n); });
+        r.removedNodes.forEach((n) => { if (n.classList && n.classList.contains('banner')) { const L = layer(); const s = L && L.querySelector('.sfx-pop'); if (s && !L.querySelector('.banner')) s.remove(); } });
+      }
+    });
+    const hook = () => { const L = layer(); if (L) mo.observe(L, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-tier'] }); else setTimeout(hook, 500); };
+    hook();
   }
 
   return { resize, shards, sparks, embers, coins, coinRain, smoke, ring, glow, clear() { parts.length = 0; }, get count() { return parts.length; } };

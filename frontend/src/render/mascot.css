@@ -300,9 +300,9 @@
 }
 .gus-bubble[hidden] { display: none; }
 .gus-bubble::after, .gus-bubble::before { content: ""; position: absolute; width: 0; height: 0; }
-.gus-wrap[data-bubble="top"] .gus-bubble { left: 50%; bottom: 96%; translate: -50% 0; }
-.gus-wrap[data-bubble="top"] .gus-bubble::before { left: 50%; top: 100%; margin-left: -6px; border: 9px solid transparent; border-top: 14px solid #2B1A12; border-bottom: 0; }
-.gus-wrap[data-bubble="top"] .gus-bubble::after { left: 50%; top: 100%; margin: -3px 0 0 -4px; border: 7px solid transparent; border-top: 10px solid #F4E8C8; border-bottom: 0; }
+.gus-wrap[data-bubble="top"] .gus-bubble { left: 2%; right: auto; bottom: 78%; translate: none; max-width: 98%; white-space: normal; font-size: max(10px, min(calc(var(--gus-h, 240px) * .1), 7.5cqw)); }
+.gus-wrap[data-bubble="top"] .gus-bubble::before { left: 28%; top: 100%; margin-left: -6px; border: 9px solid transparent; border-top: 14px solid #2B1A12; border-bottom: 0; }
+.gus-wrap[data-bubble="top"] .gus-bubble::after { left: 28%; top: 100%; margin: -3px 0 0 -4px; border: 7px solid transparent; border-top: 10px solid #F4E8C8; border-bottom: 0; }
 .gus-wrap[data-bubble="left"] .gus-bubble { right: 88%; top: 6%; }
 .gus-wrap[data-bubble="left"] .gus-bubble::before { left: 100%; top: 50%; margin-top: -8px; border: 9px solid transparent; border-left: 14px solid #2B1A12; border-right: 0; }
 .gus-wrap[data-bubble="left"] .gus-bubble::after { left: 100%; top: 50%; margin: -5px 0 0 -3px; border: 7px solid transparent; border-left: 10px solid #F4E8C8; border-right: 0; }
@@ -313,3 +313,10 @@
   .gus-bubble.pop { animation: g-bpop .3s steps(3) 1; }
 }
 @keyframes g-bpop { 0% { transform: scale(.4, .3); } 40% { transform: scale(1.18, 1.12); } 70% { transform: scale(.94); } 100% { transform: none; } }
+
+/* portrait: Gus sits bottom-left, the bubble goes to his right over free space (never over the grid) */
+@media (max-aspect-ratio: 11/10) {
+  .gus-wrap[data-bubble="top"] .gus-bubble { left: 96%; bottom: 38%; max-width: 62vw; white-space: nowrap; font-size: max(11px, 3.6vh); }
+  .gus-wrap[data-bubble="top"] .gus-bubble::before { left: auto; right: 100%; top: 50%; margin: -8px 0 0; border: 9px solid transparent; border-right: 14px solid #2B1A12; border-left: 0; border-top-color: transparent; }
+  .gus-wrap[data-bubble="top"] .gus-bubble::after { left: auto; right: 100%; top: 50%; margin: -5px -3px 0 0; border: 7px solid transparent; border-right: 10px solid #F4E8C8; border-left: 0; border-top-color: transparent; }
+}
