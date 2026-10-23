@@ -434,6 +434,31 @@ async function main() {
   });
 
 
+  await check('REPLAY-LONG', 'replay of the longest bonus book in the fixtures finishes (seconds measured, >60 s flagged); speed control present?', async () => {
+    const st = await mockState(); setSid('REPLAY-LONG');
+    const fs2 = JSON.parse(fs.readFileSync(path.join(FRONT, 'fixtures/index.json'), 'utf8')); void fs2;
+    // longest bonus book by event count, read straight from the fixture file
+    const file = fs.readdirSync(path.join(FRONT, 'fixtures')).find((f) => /^books_bonus.*\.jsonl$/.test(f));
+    const books = fs.readFileSync(path.join(FRONT, 'fixtures', file), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    const big = books.reduce((a, b) => (b.events.length > a.events.length ? b : a)); void st;
+    const s = await sess(replayQ({ event: String(big.id) }), { noWait: true });
+    const play = await (async () => { for (let i = 0; i < 10; i++) { const b = await findBtn(s, /play|start/i); if (b) return b; await sleep(500); } return null; })();
+    const speedCtl = await findBtn(s, /turbo|speed|fast|skip|x2|2x/i); const turboVisible = await s.visible('#btn-turbo');
+    const errs = []; s.page.on('pageerror', (e) => errs.push(String(e.message || e)));
+    const t0 = Date.now(); let secs = null; let msg = '';
+    if (play) {
+      await play.click({ timeout: 2000 }).catch(() => {});
+      while (Date.now() - t0 < 240000) {
+        if (await findBtn(s, /again|replay|restart/i)) { secs = Math.round((Date.now() - t0) / 100) / 10; break; }
+        await sleep(1000);
+      }
+    }
+    msg = snippet(await rText(s), 160); await s.page.screenshot({ path: path.join(SHOTS, 'qa_replay_long.png') }); await s.close();
+    const ev = [`longest bonus book: id ${big.id}, ${big.events.length} events, payout ${big.payoutMultiplier / 100}x`, `replay finished in ${secs === null ? 'NOT FINISHED within 240 s' : secs + ' s'}`, `speed/turbo control visible in replay: ${!!speedCtl || turboVisible}`, 'text at end: ' + msg, 'page errors: ' + J(errs)];
+    if (secs === null || errs.length) return [FAIL, ...ev];
+    return [secs > 60 ? RISK : PASS, ...ev];
+  });
+
   // ---------------- displayed win == bet x payoutMultiplier/100 for every mode/category ----------------
   const WIN_CASES = [
     ['base', 'loss'], ['base', 'win'], ['base', 'bonus'], ['base', 'retrigger'], ['base', 'maxwin'],
