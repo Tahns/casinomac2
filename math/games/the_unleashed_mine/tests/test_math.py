@@ -158,7 +158,8 @@ def test_fuse_events_well_formed(mode):
                     # blast conditions not met (or nothing convertible: very rare)
             # a spin that ended without closing the fuse must be a wincap spin
             if not closed:
-                # (the SDK keeps revealing the remaining free spins after the cap, without evaluating them)
+                # (after the cap the books still list the remaining free spins, each showing the capped total with an unresolved fuse;
+                # the front end skips everything between 'wincap' and 'freeSpinEnd')
                 assert any(e["type"] == "wincap" for e in b["events"])
     assert n_spins > 100 and n_blast > 0 and n_fizzle > 0
 

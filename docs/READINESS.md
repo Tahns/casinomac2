@@ -38,7 +38,7 @@ Recomputed from the CSVs by `pack_math.mjs` (RTP = sum(weight x payout/100) / su
 | Mode | Cost | Rows | RTP | Hit rate | Max win | P(max win) | Median | Min payout |
 |---|---|---|---|---|---|---|---|---|
 | base | 1x | 100,000 | 96.0000% | 29.071% | 5,000.0x | 1 in 5,000,025 | 0x | 0x |
-| bonus (UNLEASH) | 100x | 100,000 | 96.0000% | 100.000% | 5,000.0x | 1 in 50,000 | 39.9x of the 100x cost | 30x |
+| bonus (UNLEASH) | 100x | 100,000 | 96.0000% | 100.000% | 5,000.0x | 1 in 50,000 | 42.6x of the 100x cost | 30x |
 
 Both modes are within 0.0000% of each other; max win equals the 5,000x cap in `game_config.py` and `config.json` (`maxWin: 5000`). The front-end `data/rules_data.json` shows the same RTP and max win. Result also in `dist/math_validation.json`.
 

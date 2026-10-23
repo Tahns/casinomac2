@@ -660,9 +660,12 @@ export function createRenderer(rootEl) {
     const run = async () => {
       S.hooks = hooks || {};
       M.wonRound = false; M.intro = false; M.base = 'think'; pose(S.inFs ? 'dance' : 'think');
+      let capped = false; // after the win cap the book still lists the remaining free spins (not evaluated): go straight to the end
       for (const ev of events || []) {
         if (S.destroyed) break;
+        if (capped && ev && ev.type !== 'freeSpinEnd' && ev.type !== 'finalWin') continue;
         try { await handle(ev); } catch (e) { console.error('render event', ev && ev.type, e); }
+        if (ev && ev.type === 'wincap') capped = true;
       }
       if (fuse && fuse.active) fuse.clear();
       M.intro = false; M.base = 'idle';
