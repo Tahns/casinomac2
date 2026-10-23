@@ -10,3 +10,6 @@ demo/stellar_vigil_demo.html
 demo/art/raw_*.png
 demo/art/contact*.png
 demo/stellar_vigil_demo_wheels.html
+
+# build output
+dist/

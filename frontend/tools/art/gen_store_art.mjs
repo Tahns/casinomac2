@@ -36,9 +36,9 @@ function starN(x, y, ro, ri, n, fill, sw = 5, rot = -90) {
 function gus() {
   let s = '';
   // pickaxe behind
-  s += line('M150,-30 L232,-420', C.ink, 30) + line('M150,-30 L232,-420', C.wood, 18);
-  s += P('M140,-440 Q230,-505 330,-425 Q262,-452 236,-405 Q205,-452 140,-440Z', C.steel, 6);
-  s += line('M170,-448 Q230,-478 290,-440', C.cream, 5);
+  s += line('M150,-30 L222,-340', C.ink, 30) + line('M150,-30 L222,-340', C.wood, 18);
+  s += P('M140,-360 Q225,-420 320,-345 Q255,-372 226,-325 Q198,-370 140,-360Z', C.steel, 6);
+  s += line('M170,-366 Q225,-394 282,-358', C.cream, 5);
   // boots + legs
   s += E(-62, -28, 62, 32, '#7A4A2A') + E(62, -28, 62, 32, '#7A4A2A');
   s += line('M-110,-40 q50,-12 100,0', C.ink, 5) + line('M10,-40 q50,-12 100,0', C.ink, 5);
@@ -65,8 +65,8 @@ function gus() {
   // eyes + brows
   s += E(-34, -378, 21, 25, '#FFFDF4', 5) + E(34, -378, 21, 25, '#FFFDF4', 5);
   s += `<circle cx="-30" cy="-374" r="9" fill="${C.ink}"/><circle cx="38" cy="-374" r="9" fill="${C.ink}"/><circle cx="-27" cy="-378" r="3" fill="#fff"/><circle cx="41" cy="-378" r="3" fill="#fff"/>`;
-  s += line('M-64,-418 Q-36,-446 -8,-414', C.ink, 20) + line('M-64,-418 Q-36,-446 -8,-414', '#D8D4C8', 11);
-  s += line('M8,-414 Q36,-446 64,-418', C.ink, 20) + line('M8,-414 Q36,-446 64,-418', '#D8D4C8', 11);
+  s += `<g transform="translate(0 8)">` + line('M-64,-418 Q-36,-440 -8,-414', C.ink, 20) + line('M-64,-418 Q-36,-440 -8,-414', '#D8D4C8', 11);
+  s += line('M8,-414 Q36,-440 64,-418', C.ink, 20) + line('M8,-414 Q36,-440 64,-418', '#D8D4C8', 11) + '</g>';
   // nose
   s += E(0, -340, 30, 25, C.skin2, 6);
   s += `<path d="M-14,-350 q6,-6 12,-2" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>`;
@@ -74,12 +74,14 @@ function gus() {
   s += P('M0,-318 Q-38,-346 -88,-326 Q-142,-306 -112,-262 Q-120,-290 -66,-292 Q-30,-290 0,-304 Q30,-290 66,-292 Q120,-290 112,-262 Q142,-306 88,-326 Q38,-346 0,-318Z', '#DAD6CA', 6);
   s += line('M-30,-312 q-24,8 -50,2 M30,-312 q24,8 50,2 M-60,-300 q-20,10 -40,2 M60,-300 q20,10 40,2', '#8E8A80', 3);
   // helmet
+  s += '<g transform="translate(0 -52)">';
   s += P('M-98,-378 Q-108,-496 0,-506 Q108,-496 98,-378 Z', C.yellow, 7);
   s += dots('M40,-500 Q100,-490 98,-378 L50,-380 Q60,-450 40,-500Z', 0.3);
   s += R(-116, -394, 232, 28, 14, C.mustard, 6);
   s += R(-12, -506, 24, 112, 6, C.orange, 4);
   s += E(0, -446, 30, 30, C.cream, 6) + starN(0, -446, 22, 8, 8, C.yellow, 3);
   s += line('M-46,-470 l-22,-16 M46,-470 l22,-16 M0,-486 l0,-26', C.cream, 6);
+  s += '</g>';
   return s;
 }
 
@@ -141,12 +143,12 @@ function cart() {
 // ---------------- TNT bundle with lit fuse (local: base center at 0,0) ----------------
 function tnt() {
   let s = '';
-  const stick = (x, rot) => `<g transform="translate(${x} 0) rotate(${rot})">` +
-    R(-38, -250, 76, 250, 18, C.brick, 7) + R(-38, -165, 76, 60, 0, C.cream, 5) +
-    `<text x="0" y="-120" text-anchor="middle" font-family="'Arial Black','DejaVu Sans',sans-serif" font-weight="900" font-size="38" fill="${C.ink}">TNT</text>` +
+  const stick = (x, rot, lab) => `<g transform="translate(${x} 0) rotate(${rot})">` +
+    R(-38, -250, 76, 250, 18, C.brick, 7) + R(-38, -170, 76, 72, 0, C.cream, 5) +
+    (lab ? `<text x="0" y="-122" text-anchor="middle" font-family="'Arial Black','DejaVu Sans',sans-serif" font-weight="900" font-size="38" fill="${C.ink}">TNT</text>` : '') +
     dots('M-38,-250 h24 v250 h-24z', 0.35) + `</g>`;
-  s += stick(-62, -6) + stick(62, 6) + stick(0, 0);
-  s += R(-100, -170, 200, 26, 10, C.mustard, 5) + R(-100, -90, 200, 26, 10, C.mustard, 5);
+  s += stick(-62, -6, 0) + stick(62, 6, 0) + stick(0, 0, 1);
+  s += R(-100, -225, 200, 26, 10, C.mustard, 5) + R(-100, -50, 200, 26, 10, C.mustard, 5);
   s += line('M0,-250 Q-30,-300 20,-330 Q60,-355 40,-395', C.ink, 14) + line('M0,-250 Q-30,-300 20,-330 Q60,-355 40,-395', C.cream, 6);
   s += starN(40, -410, 62, 24, 8, C.yellow, 6, -90) + starN(40, -410, 34, 14, 8, C.cream, 4, -67);
   s += star4(-40, -470, 26, C.cream, 4) + star4(112, -440, 20, C.cream, 4);
@@ -183,7 +185,7 @@ function beam(x, y, w, h) {
 
 function title(cx, cy, lines, sizes, widths, rot = -3) {
   let out = '';
-  const ys = []; let y = cy; lines.forEach((_, i) => { ys.push(y); y += sizes[i] * 0.98; });
+  const ys = []; let y = cy; lines.forEach((_, i) => { ys.push(y); y += (sizes[i + 1] || 0) * 0.95; });
   const t = (i, extra) => `<text x="${cx}" y="${ys[i]}" text-anchor="middle" font-family="Rockwell,'Rockwell Extra Bold','Roboto Slab','Arvo','Courier New','DejaVu Serif',Georgia,serif" font-weight="900" font-size="${sizes[i]}" textLength="${widths[i]}" lengthAdjust="spacingAndGlyphs" stroke-linejoin="round" ${extra}>${lines[i]}</text>`;
   lines.forEach((_, i) => {
     out += t(i, `transform="translate(11 14)" fill="${C.ink}" stroke="${C.ink}" stroke-width="40"`);
@@ -225,7 +227,7 @@ const clipsFor = (n, ys, sizes, cx, w) => ys.map((y, i) => `<clipPath id="lowerH
 function build(kind) {
   if (kind === 'tile') {
     const W = 1536, H = 2048, sizes = [150, 215, 215], lines = ['THE', 'UNLEASHED', 'MINE'], widths = [420, 1260, 760];
-    const cy0 = 260, ys = []; let y = cy0; lines.forEach((_, i) => { ys.push(y); y += sizes[i] * .98; });
+    const cy0 = 230, ys = []; let y = cy0; lines.forEach((_, i) => { ys.push(y); y += (sizes[i + 1] || 0) * .95; });
     let s = defs(W, H) + `<defs>${clipsFor(3, ys, sizes, W / 2, 800)}</defs>`;
     s += rays(W / 2, 1150, W, H);
     // frame
@@ -243,32 +245,32 @@ function build(kind) {
     s += rock('M80,1900 Q140,1850 220,1880 Q270,1910 250,1960 Q150,1990 80,1960Z', C.steel);
     s += rock(`M${W - 90},1900 Q${W - 150},1850 ${W - 240},1880 Q${W - 290},1920 ${W - 270},1970 Q${W - 160},2000 ${W - 90},1960Z`, C.steel);
     // Gus
-    s += `<g transform="translate(420 1780) scale(1.75)">${gus()}</g>`;
+    s += `<g transform="translate(470 1780) scale(1.7)">${gus()}</g>`;
     // cart
-    s += `<g transform="translate(880 1500) scale(1.08)">${cart()}</g>`;
+    s += `<g transform="translate(930 1500) scale(1.08)">${cart()}</g>`;
     // TNT
-    s += `<g transform="translate(1290 1830) scale(.82)">${tnt()}</g>`;
+    s += `<g transform="translate(1330 1840) scale(.95)">${tnt()}</g>`;
     s += rock('M560,1960 Q640,1900 740,1950 Q790,1990 740,2030 Q620,2048 560,2010Z', C.cream);
     // title
     s += title(W / 2, cy0 + 70, lines, sizes, widths, -3);
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${s}</svg>`;
   }
-  const W = 1920, H = 1080, sizes = [90, 170, 170], lines = ['THE', 'UNLEASHED', 'MINE'], widths = [250, 1000, 520];
-  const cy0 = 190, ys = []; let y = cy0; lines.forEach((_, i) => { ys.push(y); y += sizes[i] * .98; });
-  let s = defs(W, H) + `<defs>${clipsFor(3, ys, sizes, 1250, 700)}</defs>`;
+  const W = 1920, H = 1080, sizes = [90, 160, 160], lines = ['THE', 'UNLEASHED', 'MINE'], widths = [230, 900, 470];
+  const cy0 = 190, ys = []; let y = cy0; lines.forEach((_, i) => { ys.push(y); y += (sizes[i + 1] || 0) * .95; });
+  let s = defs(W, H) + `<defs>${clipsFor(3, ys, sizes, 1280, 700)}</defs>`;
   s += rays(1000, 640, W, H);
   s += post(30, 0, 100, H) + post(W - 130, 0, 100, H);
   s += beam(10, 10, W - 20, 84);
   s += sparkles([[600, 330, 34], [1760, 300, 30], [1700, 900, 26], [330, 200, 24], [900, 170, 20, C.mustard]]);
-  s += boom(1680, 560, 50, 12) + boom(520, 620, 40, -10);
-  s += burst(1640, 410, 170, 'KA-BOOM!', 66);
+  s += boom(1800, 800, 44, 12) + boom(520, 620, 40, -10);
+  s += burst(1745, 600, 120, 'KA-BOOM!', 48);
   s += rock('M0,900 Q80,830 200,850 Q300,810 420,880 L520,900 L520,1080 L0,1080Z', C.orange);
   s += rock(`M${W},880 Q${W - 100},800 ${W - 240},830 Q${W - 340},800 ${W - 420},870 L${W - 520},900 L${W - 520},1080 L${W},1080Z`, C.brick);
   s += rock('M300,980 Q500,930 700,980 Q900,940 1100,985 Q1300,945 1500,990 L1600,1080 L300,1080Z', '#8A4420');
-  s += `<g transform="translate(330 1000) scale(1.5)">${gus()}</g>`;
-  s += `<g transform="translate(1010 800) scale(.98)">${cart()}</g>`;
-  s += `<g transform="translate(1590 1010) scale(.8)">${tnt()}</g>`;
-  s += title(1250, cy0 + 60, lines, sizes, widths, -3);
+  s += `<g transform="translate(340 1000) scale(1.5)">${gus()}</g>`;
+  s += `<g transform="translate(1000 765) scale(.98)">${cart()}</g>`;
+  s += `<g transform="translate(1530 1015) scale(.78)">${tnt()}</g>`;
+  s += title(1280, cy0 + 40, lines, sizes, widths, -3);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${s}</svg>`;
 }
 
