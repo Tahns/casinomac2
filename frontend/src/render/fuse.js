@@ -62,6 +62,7 @@ export function createFuse(ctx) {
   }
 
   function clear(fade = false) {
+    st.pending = null;
     st.gen++;
     const nodes = [...svg.childNodes], bm = st.boom;
     st.cells = []; st.burned = 0; st.nodes = []; st.segs = []; st.scorch = []; st.spark = null; st.match = null; st.boom = null; st.smoke = 0;
@@ -179,7 +180,7 @@ export function createFuse(ctx) {
   }
 
   // ---------------- events ----------------
-  async function path(ev) {
+  async function drawPath(ev) {
     const cells = normCells(ev && ev.cells);
     if (cells.length < 2) return;
     const burned = clamp(Math.round(Number(ev.burned) || 0), 0, cells.length);
@@ -202,7 +203,13 @@ export function createFuse(ctx) {
     if (!fast) await sleep(380);
   }
 
+  // The path is telegraphed in every book but a fuse that never catches is noise: draw it only at the first burn.
+  async function path(ev) {
+    st.pending = ev || null;
+  }
+
   async function burn(ev) {
+    if (!st.cells.length && st.pending) { const pe = st.pending; st.pending = null; await drawPath(pe); }
     if (!st.cells.length) return;
     const gen = st.gen;
     let to = Number(ev && ev.burned);
@@ -246,6 +253,7 @@ export function createFuse(ctx) {
   }
 
   async function blast(ev) {
+    if (!st.cells.length && st.pending) { const pe = st.pending; st.pending = null; await drawPath(pe); }
     const cells = normCells(ev && ev.cells);
     const gen = st.gen;
     const fast = turbo(), still = reduced;
@@ -311,6 +319,7 @@ export function createFuse(ctx) {
 
   async function fizzle(ev) {
     void ev;
+    st.pending = null;
     if (!st.cells.length) return;
     const gen = st.gen;
     const k = Math.max(0, Math.min(st.burned, st.cells.length) - 1), p = st.cells[k] || st.cells[0], c = ctr(p);
@@ -318,7 +327,6 @@ export function createFuse(ctx) {
     // limp 'psst' puffs, rope fades, Gus shrugs
     spawnSmoke(c.x, c.y, 3, '#cdbfa8');
     try { const px = ctx.cellCenter(p.reel, p.row); if (ctx.fx && !reduced) ctx.fx.smoke(px.x, px.y, px.size * .4, 3); } catch (e) { /* ignore */ }
-    pose('shrug', 1700);
     if (st.spark && !reduced && !turbo()) { try { st.spark.g.animate([{ opacity: 1, transform: `translate(${c.x}px,${c.y}px) scale(1)` }, { opacity: 0, transform: `translate(${c.x}px,${c.y}px) scale(.1)` }], { duration: 420, fill: 'forwards' }); } catch (e) { /* ignore */ } }
     if (!turbo()) await sleep(reduced ? 500 : 650);
     if (gen !== st.gen) return;

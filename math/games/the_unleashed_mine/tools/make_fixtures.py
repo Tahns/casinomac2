@@ -20,7 +20,21 @@ def kinds(b):
 
 
 def pick(mode, rng):
-    p = {"zero": [], "small": [], "medium": [], "big": [], "mega": [], "trigger": [], "retrigger": [], "wincap": [], "tumble": []}
+    # reservoir-sample each category (the bonus file does not fit in memory otherwise)
+    seen = {}
+    class Res(list):
+        def __init__(self, name):
+            super().__init__(); self.name = name
+        def append(self, b):
+            n = seen[self.name] = seen.get(self.name, 0) + 1
+            if len(self) < 400:
+                super().append(b)
+            else:
+                j = rng.randrange(n)
+                if j < 400:
+                    self[j] = b
+    p = {"zero": [], "small": [], "medium": [], "big": [], "mega": [], "trigger": [], "retrigger": [], "wincap": [], "tumble": [], "fuseBlast": [], "fuseFizzle": [], "fuseBlastFree": [], "fuseFizzleFree": []}
+    p = {k: Res(k) for k in p}
     for b in books(mode):
         m = b["payoutMultiplier"] / 100
         ev = kinds(b)
@@ -39,6 +53,18 @@ def pick(mode, rng):
             p["big"].append(b)
         else:
             p["mega"].append(b)
+        gt = None
+        fl = set()
+        for e in b["events"]:
+            if e["type"] == "reveal":
+                gt = e["gameType"]
+            elif e["type"] in ("fuseBlast", "fuseFizzle"):
+                fl.add((e["type"], gt))
+        for t_, g_ in fl:
+            if t_ == "fuseBlast" and g_ == "basegame": p["fuseBlast"].append(b)
+            if t_ == "fuseFizzle" and g_ == "basegame": p["fuseFizzle"].append(b)
+            if t_ == "fuseBlast" and g_ == "freegame": p["fuseBlastFree"].append(b)
+            if t_ == "fuseFizzle" and g_ == "freegame": p["fuseFizzleFree"].append(b)
         if "freeSpinTrigger" in ev:
             p["trigger"].append(b)
         if "freeSpinRetrigger" in ev:
@@ -78,13 +104,13 @@ if __name__ == "__main__":
     rng = random.Random(7)
     allpicks = {}
     for mode, counts in {
-        "base": {"zero": 90, "small": 60, "medium": 50, "big": 30, "mega": 15, "trigger": 30, "retrigger": 5, "tumble": 20, "wincap": 3},
-        "bonus": {"small": 20, "medium": 90, "big": 90, "mega": 60, "retrigger": 30, "wincap": 3},
+        "base": {"zero": 90, "small": 60, "medium": 50, "big": 30, "mega": 15, "trigger": 30, "retrigger": 5, "tumble": 20, "wincap": 3, "fuseBlast": 25, "fuseFizzle": 10},
+        "bonus": {"small": 20, "medium": 90, "big": 90, "mega": 60, "retrigger": 30, "wincap": 3, "fuseBlastFree": 30, "fuseFizzleFree": 15},
     }.items():
         out, picks = build(mode, counts, rng, find_wincap(mode))
         # trim to ~300
         ids = list(out)
-        out_list = [out[i] for i in ids][:330]
+        out_list = [out[i] for i in ids][:380]
         keep = {b["id"] for b in out_list}
         json.dump(out_list, open(f"{FIX}/books_{mode}_sample.json", "w"), separators=(",", ":"))
         allpicks[mode] = {c: [i for i in v if i in keep] for c, v in picks.items()}

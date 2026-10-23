@@ -1,6 +1,13 @@
 from game_calculations import GameCalculations
 from src.calculations.cluster import Cluster
-from game_events import update_grid_mult_event
+import random
+from game_events import (
+    update_grid_mult_event,
+    fuse_path_event,
+    fuse_burn_event,
+    fuse_blast_event,
+    fuse_fizzle_event,
+)
 from src.events.events import update_freespin_event
 
 
@@ -60,3 +67,63 @@ class GameExecutables(GameCalculations):
         self.win_manager.reset_spin_win()
         self.tumblewin_mult = 0
         self.win_data = {}
+
+    # ---------------------------------------------------------------- Fuse Line
+    def make_fuse_path(self):
+        """One self-avoiding path per spin, from a random cell of reel 0 (right weight 2, up 1, down 1).
+        Uses the SDK's seeded `random`, so books are reproducible. Emits fusePath right after reveal."""
+        cfg = self.config.fuse_params.get(self.gametype)
+        self.fuse = None
+        if not cfg:
+            return
+        n_reels = self.config.num_reels
+        while True:
+            path = [(0, random.randrange(self.config.num_rows[0]))]
+            while len(path) < cfg["len"]:
+                reel, row = path[-1]
+                opts, wts = [], []
+                for dr, dc, w in ((1, 0, 2), (0, -1, 1), (0, 1, 1)):
+                    nr, nc = reel + dr, row + dc
+                    if nr < n_reels and 0 <= nc < self.config.num_rows[nr] and (nr, nc) not in path:
+                        opts.append((nr, nc))
+                        wts.append(w)
+                if not opts:
+                    break
+                path.append(random.choices(opts, weights=wts)[0])
+            if len(path) == cfg["len"]:
+                break
+        self.fuse = {"path": path, "burn": min(cfg["b0"], cfg["len"]), "cfg": cfg, "spent": False}
+        fuse_path_event(self)
+
+    def advance_fuse(self):
+        """Called after a winning step once the tumble refill landed."""
+        f = getattr(self, "fuse", None)
+        if not f or f["spent"]:
+            return
+        new = min(f["burn"] + f["cfg"]["adv"], len(f["path"]))
+        if new > f["burn"]:
+            cells = f["path"][f["burn"] : new]
+            f["burn"] = new
+            fuse_burn_event(self, cells)
+
+    def resolve_fuse(self):
+        """Board is dead (and no wincap). Blast if enough cells are burnt, else fizzle. Returns True
+        if the board changed and must be re-evaluated."""
+        f = getattr(self, "fuse", None)
+        if not f or f["spent"]:
+            return False
+        f["spent"] = True
+        if f["burn"] >= f["cfg"]["detmin"]:
+            replaced = []
+            for r, c in f["path"][: f["burn"]]:
+                name = self.board[r][c].name
+                if name not in ("S", "W"):
+                    replaced.append((r, c, name))
+            if replaced:
+                for r, c, _ in replaced:
+                    self.board[r][c] = self.create_symbol("W")
+                self.get_special_symbols_on_board()
+                fuse_blast_event(self, replaced)
+                return True
+        fuse_fizzle_event(self)
+        return False

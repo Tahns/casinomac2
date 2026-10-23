@@ -51,6 +51,8 @@ export function buildRules(data, ctx = {}) {
   const maxMult = d.maxVeinMultiplier || 512;
   const veinStart = d.veinStart || 1;
   const veinStep = d.veinStep || 1;
+  const fuseLen = d.fuseLen || 8;
+  const fuseDetMin = d.fuseDetMin || 3;
   const tiers = d.tiers || [];
   const symbols = d.symbols || [];
   const pays = symbols.filter((s) => Array.isArray(s.pays));
@@ -124,6 +126,14 @@ export function buildRules(data, ctx = {}) {
   sections.push({ id: 'features', title: t('rules.tab.features'), html: `
     <h3>Tumbles</h3>
     <p>After each win, winning symbols are removed and the remaining symbols drop down. New symbols fill the empty positions. The tumbling continues until no new win is formed.</p>
+    <h3>Fuse Line</h3>
+    <ul>
+      <li>Each round, a fuse is laid along a path of ${fuseLen} connected positions on the board, starting on the first reel. The first position of the path is already lit.</li>
+      <li>Every time a winning cluster is removed, the fuse burns one more position along its path.</li>
+      <li>When no more wins are possible and the fuse has burned ${fuseDetMin} or more positions, it explodes: the burned positions turn into ${esc(wild ? wild.name : 'wild')} wilds, then the board is checked for wins again. ${esc(scatName)} scatter positions are never changed.</li>
+      <li>If the fuse has burned fewer than ${fuseDetMin} positions, it goes out and nothing changes. The fuse is not shown until it starts to burn.</li>
+      <li>The fuse is active in the base game and during the free spins.</li>
+    </ul>
     <h3>Unleashed Mine free spins</h3>
     <p>${minTrig} or more ${esc(scatName)} scatters anywhere on the board during a tumble sequence of a round trigger the Unleashed Mine free spins.</p>
     <table class="rl-table"><thead><tr><th scope="col">Scatters</th><th scope="col">Free spins awarded</th></tr></thead><tbody>${trigRows}</tbody></table>

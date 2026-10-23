@@ -84,6 +84,12 @@ class GameConfig(Config):
         self.bonus_floor = 30.0
         self.fs_start_mult = 3
         self.vein_step = 3
+        # Fuse Line (docs/ORIGINAL_FEATURES.md): per game type. len=N path cells, b0=cells burnt at reveal,
+        # adv=cells burnt per winning cascade step, detmin=burnt cells needed to detonate. None disables.
+        self.fuse_params = {
+            self.basegame_type: {"len": 8, "b0": 1, "adv": 1, "detmin": 3},
+            self.freegame_type: {"len": 8, "b0": 1, "adv": 1, "detmin": 3},
+        }
 
         reels = {"BR0": "BR0.csv", "FR0": "FR0.csv", "WCAP": "WCAP.csv"}
         self.reels = {}

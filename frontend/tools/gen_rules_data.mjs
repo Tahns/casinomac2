@@ -49,6 +49,8 @@ const freespinTriggers = baseM ? toPairs(baseM[1]) : [];
 const retrigger = freeM ? toPairs(freeM[1]) : [];
 const maxMult = Number((src.match(/maximum_board_mult\s*=\s*(\d+)/) || [])[1]) || null;
 const veinStart = Number((src.match(/fs_start_mult\s*=\s*(\d+)/) || [])[1]) || 1;
+const fuseLen = Number((src.match(/"len"\s*:\s*(\d+)/) || [])[1]) || 8;
+const fuseDetMin = Number((src.match(/"detmin"\s*:\s*(\d+)/) || [])[1]) || 3;
 const veinStep = Number((src.match(/vein_step\s*=\s*(\d+)/) || [])[1]) || 1;
 const wincap = Number((src.match(/self\.wincap\s*=\s*([\d.]+)/) || [])[1]) || null;
 const cfgRtp = Number((src.match(/self\.rtp\s*=\s*([\d.]+)/) || [])[1]) || null;
@@ -100,7 +102,7 @@ if (!modes.length) {
   modes = cfgModes.map((m) => ({ name: m.name, cost: m.cost, rtp: cfgRtp, maxWin: maxWins[m.name] ?? wincap }));
 }
 
-const data = { provisional, symbols, tiers, freespinTriggers, retrigger, maxVeinMultiplier: maxMult, veinStart, veinStep, wincap, modes, generatedFrom };
+const data = { provisional, symbols, tiers, freespinTriggers, retrigger, maxVeinMultiplier: maxMult, veinStart, veinStep, fuseLen, fuseDetMin, wincap, modes, generatedFrom };
 if (notes.length) data.notes = notes;
 fs.mkdirSync(path.join(feRoot, 'data'), { recursive: true });
 fs.writeFileSync(path.join(feRoot, 'data/rules_data.json'), JSON.stringify(data, null, 2) + '\n');

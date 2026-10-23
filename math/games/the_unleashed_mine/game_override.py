@@ -15,6 +15,7 @@ class GameStateOverride(GameExecutables):
         # Reset parameters relevant to local game only
         self.tumble_win = 0
         self.trigger_scatters = None
+        self.fuse = None
         # Clear the position-multiplier grid every spin so a previous freegame's
         # sticky grid cannot leak into a later base spin (the grid is re-zeroed at
         # freegame start by reset_fs_spin and accumulates only within a feature).
