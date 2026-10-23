@@ -127,7 +127,12 @@ export class Session {
   async visible(sel) { return this.page.locator(sel).first().isVisible().catch(() => false); }
   async visibleText() { return this.page.evaluate(() => { const t = document.body.innerText || ''; const attrs = [...document.querySelectorAll('[title],[aria-label],[placeholder]')].filter((e) => e.offsetParent !== null || getComputedStyle(e).position === 'fixed').map((e) => [e.title, e.getAttribute('aria-label'), e.getAttribute('placeholder')].filter(Boolean).join(' | ')); return t + '\n' + attrs.join('\n') + '\n[title] ' + document.title; }); }
   async allText() { return this.page.evaluate(() => { const c = document.body.cloneNode(true); c.querySelectorAll('script,style').forEach((n) => n.remove()); return c.textContent.replace(/\s+/g, ' '); }); }
-  async click(sel, o = {}) { await this.page.locator(sel).first().click({ timeout: 4000, force: o.force, noWaitAfter: true }); }
+  // animated buttons (pulsing SPIN) may never be "stable" under CPU load: retry once with force after the element is visible+enabled
+  async click(sel, o = {}) {
+    const loc = this.page.locator(sel).first();
+    try { await loc.click({ timeout: o.force ? 4000 : 2500, force: o.force, noWaitAfter: true }); }
+    catch (e) { if (o.force) throw e; await this.waitEnabled(sel, 4000); await loc.click({ timeout: 3000, force: true, noWaitAfter: true }); }
+  }
   async clickIfVisible(sel) { if (await this.visible(sel)) { await this.click(sel).catch(() => {}); return true; } return false; }
   // one full round via bet button; resolves when state returns to idle
   async playRound(o = {}) {
