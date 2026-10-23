@@ -45,7 +45,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
   grid-template-areas:"logo game ctrl" "info game ctrl"}
 /* MASCOT hooks: WIRING adds <div id="mascot-slot"> inside #app; the grid reserves its room only when it exists */
 #app:has(#mascot-slot){grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"logo game ctrl" "info game ctrl" "mascot game ctrl"}
-#mascot-slot{grid-area:mascot;position:relative;z-index:2;min-width:0;min-height:0;max-height:none;width:auto;aspect-ratio:auto;pointer-events:none;container-type:size;margin:0 var(--gap) var(--gap);--gh:min(76cqh,117cqw)}
+#mascot-slot{grid-area:mascot;position:relative;z-index:3;min-width:0;min-height:0;max-height:none;width:auto;aspect-ratio:auto;pointer-events:none;container-type:size;margin:0 var(--gap) var(--gap);--gh:min(76cqh,117cqw)}
 #mascot-slot .gus-wrap{width:100%!important;height:100%!important;display:flex;align-items:flex-end;justify-content:center}
 #mascot-slot .gus{flex:none;width:calc(var(--gh)*.857);height:var(--gh)}
 #scene{position:absolute;inset:0;z-index:0;overflow:hidden;background:var(--sc-bg)}
@@ -171,7 +171,7 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
     grid-template-areas:"logo" "game" "info" "ctrl"}
   #app:has(#mascot-slot){grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"logo" "game" "info" "ctrl"}
   #app:has(#mascot-slot) #hud-ctrl{grid-row:auto}
-  #mascot-slot{grid-area:game;align-self:end;justify-self:start;width:min(30vw,140px);height:clamp(70px,14vh,150px);margin:0 0 0 var(--gap);--gh:100cqh}
+  #mascot-slot{grid-area:game;align-self:end;justify-self:start;width:min(30vw,140px);height:clamp(64px,10.5vh,100px);margin:0 0 0 var(--gap);--gh:100cqh}
   #mascot-slot .gus-wrap{justify-content:flex-start}
   #app:has(#mascot-slot) .board-wrap{--cell:min(calc(100cqw / 6.5),calc(100cqh / 5.3));top:calc(var(--gap)*.6);transform:translate(-50%,0)}
   .lantern{width:clamp(22px,7.5vw,34px);margin-left:calc(clamp(22px,7.5vw,34px)*-.5)}

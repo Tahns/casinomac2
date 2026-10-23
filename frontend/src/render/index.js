@@ -3,6 +3,7 @@
 import { ensureSprite, symbolMarkup, SYM_COLOR, SYMBOLS } from './symbols.js';
 import { createScene } from './scene.js';
 import { createFx } from './fx.js';
+import { createFuse } from './fuse.js';
 import { buildLogo } from './logo.js';
 import { audio } from '../audio.js';
 import { applyI18n, t } from '../i18n/index.js';
@@ -593,11 +594,31 @@ export function createRenderer(rootEl) {
     setMultipliers(null);
   }
 
+  // ---------- FUSE LINE (events fusePath / fuseBurn / fuseBlast / fuseFizzle; drawing lives in fuse.js) ----------
+  let fuse = null;
+  try {
+    fuse = createFuse({
+      board, fx, audio, t, reduced: REDUCE,
+      cellCenter, pose, shake, flash, sleep,
+      turbo: () => S.turbo, destroyed: () => S.destroyed,
+      cellEl: (c, r) => (S.grid[c] && S.grid[c][r] ? S.grid[c][r].el : null),
+      swapCell: (c, r, name) => {
+        const cell = S.grid[c] && S.grid[c][r]; if (!cell) return false;
+        cell.name = name; cell.el.className = 'cell s-' + name; cell.el.innerHTML = symbolMarkup(name); return true;
+      },
+    });
+  } catch (e) { console.error('fuse init', e); fuse = null; }
+  // ---------- end FUSE LINE ----------
+
   // ---------- main loop ----------
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   async function handle(ev) {
     switch (ev.type) {
-      case 'reveal': return reveal(ev);
+      case 'reveal': if (fuse) fuse.clear(); return reveal(ev);
+      case 'fusePath': return fuse ? fuse.path(ev) : null;
+      case 'fuseBurn': return fuse ? fuse.burn(ev) : null;
+      case 'fuseBlast': return fuse ? fuse.blast(ev) : null;
+      case 'fuseFizzle': return fuse ? fuse.fizzle(ev) : null;
       case 'winInfo': return showWins(ev);
       case 'setTumbleWin': case 'updateTumbleWin': {
         const x = (Number(ev.amount) || 0) / 100; hook('onWin', x); chip(chipTw, S.fmt(x), x > 0); return null;
@@ -639,6 +660,7 @@ export function createRenderer(rootEl) {
         if (S.destroyed) break;
         try { await handle(ev); } catch (e) { console.error('render event', ev && ev.type, e); }
       }
+      if (fuse && fuse.active) fuse.clear();
       M.intro = false; M.base = 'idle';
       if (S.inFs) pose('dance');
       else if (M.wonRound) { M.losses = 0; mBase(); }
@@ -679,7 +701,7 @@ export function createRenderer(rootEl) {
     resize() { fx.resize(); },
     // mascot hook for the UI layer (UNLEASH confirm)
     mascot: { pose, say },
-    destroy() { S.destroyed = true; try { if (M.m) M.m.destroy(); } catch (e) { /* ignore */ } clearTimeout(M.timer); clearInterval(sweepTimer); if (ro) ro.disconnect(); fx.clear(); },
+    destroy() { S.destroyed = true; try { if (M.m) M.m.destroy(); } catch (e) { /* ignore */ } clearTimeout(M.timer); clearInterval(sweepTimer); if (fuse) fuse.destroy(); if (ro) ro.disconnect(); fx.clear(); },
     // exposed for dev/test harness
     _banner: banner, _winBanner: winBanner, _shake: shake, _state: S,
   };

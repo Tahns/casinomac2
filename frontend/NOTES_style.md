@@ -15,7 +15,7 @@ All exported names/signatures are unchanged (`ensureSprite, symbolMarkup, SYM_CO
 
 ## Mascot hooks (WIRING creates `<div id="mascot-slot">` inside `#app`)
 - CSS is conditional on `#app:has(#mascot-slot)`: desktop/landscape = new grid row `mascot` in the left column under logo + stats (side width 33vh clamp 72..236 px = about 18% of 1024); `#hud-ctrl` then spans 3 rows.
-- Portrait (`max-aspect-ratio:11/10`): extra grid row of `22%` height between the board and the HUD (`grid-template-rows:auto 1fr 22% auto auto` in `styles.css`, search "22%" to tune). The board shrinks accordingly (about 290 px wide at 425x812).
+- Portrait (`max-aspect-ratio:11/10`) REVISED: no extra row. Slot overlays the bottom-left of the game area (height clamp 64..100px), the board is top-aligned at ~96% of the width, the bubble goes to Gus's right (mascot.css). Lanterns shrunk and logo padded so they never touch.
 - `max-height:360px` landscape (400x225): same left-column row, small (about 70x90 px).
 - Slot styling: `position:relative; z-index:4; pointer-events:none; container-type:size` so the mascot can size with `cqw/cqh`.
 
@@ -26,3 +26,9 @@ Onomatopoeia bubbles exist as CSS only: `.sfx` (+ `.teal/.brick/.mustard`). WIRI
 - MASCOT speech bubble ("NICE ONE!") overflows the left edge of the screen at 800x450 and 400x225 (mascot.css, not mine).
 - `index.html` still has inline red/gold gem colours in the loading screen and favicon; CSS overrides the loader gem fill/stroke.
 - `index.js` still toggles `.sweep` and sets inline `stroke:#ffe27a` on outline paths (CSS overrides with `!important`); `.sw` is hidden.
+
+## Review round 2
+- Bubbles: fixed a selector clash (`.pop` styled the speech bubble); bubbles now clamp inside the left column (desktop), sit right of Gus (portrait) or over his body (400x225); never over BALANCE/BET/WIN, grid or buttons. Gus is sized to the column (`--gh` in `#mascot-slot`; index.html's base `max-height:28%` is overridden).
+- Non-winning symbols: `.dim/.adim` = opacity .7, no desaturation.
+- Currency: real page shows `$1,000.00 / $1.00 / $0.00` (verified with the URL from the brief). dev.html shows bare numbers because it sets text directly; not a bug.
+- KA-CHING!/POW!/WOW!/BOOM!: fx.js watches `.banner-layer` and shows `.sfx-pop` (keys fx.kaching, fx.pow, fx.wow, fx.boom via t(), verified present in en.js). big=KA-CHING, mega=POW, super=WOW, epic/max and free-spin trigger=BOOM.

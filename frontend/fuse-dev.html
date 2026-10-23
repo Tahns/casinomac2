@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>The Unleashed Mine - fuse dev</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+<style>
+#devbar{position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;flex-wrap:wrap;gap:3px;padding:3px;background:rgba(0,0,0,.7);font:11px system-ui}
+#devbar button{font:inherit;padding:3px 6px;border-radius:4px;border:1px solid #b88a3a;background:#2b1b0f;color:#ffd98a}
+body.nodev #devbar{display:none}
+</style>
+</head>
+<body class="state-idle">
+<div id="devmount"></div>
+<div id="devbar"></div>
+<script type="module">
+// Dev harness: re-uses the real index.html markup, wires the renderer to synthetic books (no RGS needed).
+const html = await (await fetch('index.html')).text();
+const doc = new DOMParser().parseFromString(html, 'text/html');
+document.getElementById('devmount').replaceWith(doc.getElementById('app'));
+const { createRenderer } = await import('./src/render/index.js');
+const { BOOKS } = await import('./src/render/devbooks.js');
+const { audio } = await import('./src/audio.js');
+const q = new URLSearchParams(location.search);
+if (q.get('nodev')) document.body.classList.add('nodev');
+const renderer = createRenderer(document.getElementById('game'));
+const $ = (id) => document.getElementById(id);
+let bet = 1000000; const fmt = (x) => (x * 1).toFixed(2);
+renderer.setFormat((x) => `$${(x * bet / 1e6).toFixed(2)}`);
+const hooks = { onTotal: (x) => { $('win').textContent = fmt(x * bet / 1e6); }, onWin: (x) => { $('win').textContent = fmt(x * bet / 1e6); }, onFreeSpinCounter: (c, t) => { $('freespin-counter').textContent = t ? `${c}/${t}` : ''; } };
+$('balance').textContent = '1000.00'; $('bet').textContent = '1.00'; $('win').textContent = '0.00'; $('unleash-cost').textContent = '100.00';
+let busy = false;
+async function run(name, arg) {
+  if (busy) return; busy = true; document.body.className = document.body.className.replace(/state-\w+/, 'state-playing');
+  try { await renderer.playBook(BOOKS[name](arg), hooks); } finally { busy = false; document.body.className = document.body.className.replace(/state-\w+/, 'state-idle'); }
+}
+window.__dev = { renderer, run, BOOKS, hooks, audio };
+// ?book=fuseBlast&turbo=1 runs one book on load; window.__dev.log collects the event types as they are handled
+if (q.get('turbo')) { document.body.classList.add('turbo'); renderer.setTurbo(true); }
+if (q.get('book')) setTimeout(() => run(q.get('book')), 400);
+const bar = $('devbar');
+[['fuseBlast'], ['fuseBlastDry'], ['fuseBlastAdv2'], ['fuseFizzle'], ['fuseFizzleNoWin'], ['fuseFree'], ['baseWin'], ['noWin']].forEach(([n, a]) => {
+  const b = document.createElement('button'); b.textContent = n; b.onclick = () => run(n, a); bar.appendChild(b);
+});
+const tb = document.createElement('button'); tb.textContent = 'turbo'; tb.onclick = () => { const on = !document.body.classList.contains('turbo'); document.body.classList.toggle('turbo', on); renderer.setTurbo(on); }; bar.appendChild(tb);
+$('btn-turbo').onclick = tb.onclick; $('btn-bet').onclick = () => run('fuseBlast');
+$('btn-sound').onclick = () => { audio.setMuted(!audio.muted); };
+$('btn-menu').onclick = () => $('hud-ctrl').classList.toggle('menu-open');
+$('btn-unleash').onclick = () => run('fuseFree');
+$('btn-info').onclick = async () => { const r = await import('./src/rules.js'); r.openRules(); };
+</script>
+</body>
+</html>

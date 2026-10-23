@@ -316,7 +316,13 @@
 
 /* portrait: Gus sits bottom-left, the bubble goes to his right over free space (never over the grid) */
 @media (max-aspect-ratio: 11/10) {
-  .gus-wrap[data-bubble="top"] .gus-bubble { left: 96%; bottom: 38%; max-width: 62vw; white-space: nowrap; font-size: max(11px, 3.6vh); }
+  .gus-wrap[data-bubble="top"] .gus-bubble { left: 96%; bottom: 14%; max-width: 62vw; white-space: nowrap; font-size: max(11px, 3.6vh); }
   .gus-wrap[data-bubble="top"] .gus-bubble::before { left: auto; right: 100%; top: 50%; margin: -8px 0 0; border: 9px solid transparent; border-right: 14px solid #2B1A12; border-left: 0; border-top-color: transparent; }
   .gus-wrap[data-bubble="top"] .gus-bubble::after { left: auto; right: 100%; top: 50%; margin: -5px -3px 0 0; border: 7px solid transparent; border-right: 10px solid #F4E8C8; border-left: 0; border-top-color: transparent; }
+}
+
+/* very small landscape (400x225): keep the bubble over Gus's body, never over the WIN panel */
+@media (orientation: landscape) and (max-height: 360px) {
+  .gus-wrap[data-bubble="top"] .gus-bubble { bottom: 14%; font-size: 9px; padding: .25em .5em .3em; border-width: 2px; }
+  .gus-wrap[data-bubble="top"] .gus-bubble::before, .gus-wrap[data-bubble="top"] .gus-bubble::after { display: none; }
 }
