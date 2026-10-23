@@ -53,7 +53,7 @@ export function createFx(app) {
     const m = Math.min(5, Math.ceil(n / 2));
     for (let i = 0; i < m; i++) {
       const a = rnd(0, TAU), sp = rnd(size * 1.5, size * speed);
-      add({ t: 'star', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 4, drag: 1.8, rot: rnd(0, TAU), vr: rnd(-5, 5), life: rnd(.35, .7), age: 0, color, r: rnd(.07, .13) * size + 2 });
+      add({ t: 'star', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 4, drag: 1.8, rot: rnd(0, TAU), vr: rnd(-5, 5), life: rnd(.35, .7), age: 0, color, r: rnd(.12, .2) * size + 3 });
     }
   }
   function embers(x, y, w, h, n, size) {
