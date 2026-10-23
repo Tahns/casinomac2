@@ -122,11 +122,11 @@
 .p-celebrate .m-wide { display: inline; }
 .p-celebrate .eyesHappy { display: inline; }
 .p-celebrate .eyeL, .p-celebrate .eyeR { display: none; }
-.p-celebrate .must { transform: translateY(-4px); }
+.p-celebrate .must { transform: translateY(-11px); }
 .p-celebrate .browL { transform: translateY(-8px) rotate(-8deg); }
 .p-celebrate .browR { transform: translateY(-8px) rotate(8deg); }
-.p-celebrate .armL { transform: rotate(152deg); }
-.p-celebrate .armR { transform: rotate(-152deg); }
+.p-celebrate .armL { transform: rotate(160deg); }
+.p-celebrate .armR { transform: rotate(-160deg); }
 .p-celebrate .hat { transform: translateY(-52px) rotate(-16deg); }
 .p-celebrate .pick { display: none; }
 .p-celebrate .burst2, .p-celebrate .confetti, .p-celebrate .stars, .p-celebrate .mlh { display: inline; }

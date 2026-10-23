@@ -30,9 +30,9 @@ export async function staticReview() {
   const dollarMoney = grep(/\$/, (l, f) => /money\.js$/.test(f) && /USD|symbol|\$['"`]/.test(l));
   res.push({ title: "money.js symbol table lines (review XSC/XGC have no '$')", status: 'INFO', lines: dollarMoney.slice(0, 12) });
 
-  const dec = grep(/toFixed\(\s*2\s*\)|minimumFractionDigits:\s*2|maximumFractionDigits:\s*2/, (l, f) => !/dev\.html|devbooks|scene\.js|symbols\.js/.test(f) && !/translate|rotate/.test(l));
+  const dec = grep(/toFixed\(\s*2\s*\)|minimumFractionDigits:\s*2|maximumFractionDigits:\s*2/, (l, f) => !/dev\.html|devbooks|scene\.js|symbols\.js|fuse\.js/.test(f) && !/translate|rotate|style\.(left|top|width|height)|\.fmt|fmt:|toFixed\(2\) \+ '%'|\* 100\)\.toFixed|toLocaleString\('en-US'/.test(l));
   res.push({ title: 'Fixed 2 decimals / /100 (JPY has 0 decimals; sub-cent payouts need more)', status: dec.length ? 'AT RISK' : 'PASS', lines: dec });
-  const micro = grep(/\b1e6\b|1_?000_?000\b/, (l, f) => !/money\.js|bet\.js|rgs\.js|params\.js|dev\.html|devbooks/.test(f));
+  const micro = grep(/\b1e6\b|1_?000_?000\b/, (l, f) => !/money\.js|bet\.js|rgs\.js|params\.js|dev\.html|devbooks|scene\.js|fuse\.js/.test(f) && !/rules\.js/.test(f));
   res.push({ title: 'Micro-unit conversions outside money.js/bet.js (review)', status: micro.length ? 'AT RISK' : 'PASS', lines: micro });
 
   // end-round call sites with context

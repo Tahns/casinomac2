@@ -17,3 +17,7 @@ node frontend/tools/art/gen_store_art.mjs frontend/assets/store     # writes the
 cp frontend/tools/art/render_store_art.mjs <tmp>/ && cd <tmp> && node render_store_art.mjs <abs path to frontend/assets/store>
 ```
 Rendering uses Playwright chromium (`CHROMIUM` env or /opt/pw-browsers/chromium). Title uses a slab-serif stack with textLength so width is stable across fallbacks; the PNGs are canonical. The TNT label on the dynamite now fits inside its band. No RTP text, logos or third-party branding.
+
+## Versions finales (Gus du jeu, sans traits parasites)
+Canva Pro (fichiers simples, pas de génération) : tuile `MAHY1C9sKn8`, cover `MAHY1EDED4U`. Les anciens ids (`MAHY1JirMnk`, `MAHY1MRthdE`, `MAHY1EqPZaM`, `MAHY1GIKpoE`) sont des versions antérieures de la bibliothèque.
+Le script de capture retire aussi les lignes de mouvement (`.mlh`, `.mlhop`) qui apparaissaient comme des tirets isolés une fois la pose figée.

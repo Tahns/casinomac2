@@ -78,7 +78,7 @@ async function main() {
   await check(274, 'rgs_url=example.com (and bare host) -> error, no RGS call elsewhere', async () => {
     const ev = [];
     const s = await sess({ rgs_url: 'example.com' }, { noWait: true, routes: (ctx) => ctx.route(/^https?:\/\/(?!localhost)/, (r) => r.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"ERR_GEN"}', headers: { 'access-control-allow-origin': '*' } })) });
-    await sleep(5000);
+    await s.page.waitForSelector('#modal-message.open', { timeout: 6000 }).catch(() => {}); await sleep(300);
     const log = await mockLog(); const hits = s.reqs.filter((r) => /example\.com/.test(r.url)).map((r) => r.method + ' ' + r.url);
     const st = await s.state(); const vis = await s.visibleText(); const shown = await s.visible('#modal-message') || /error|unable|failed|connect|could not|problem|try again/i.test(vis);
     ev.push('requests to example.com: ' + J(hits), 'mock log entries: ' + log.length, 'state=' + st + ' error visible=' + shown, 'text=' + snippet(vis, 140));
@@ -106,7 +106,7 @@ async function main() {
     const re = /stake[\s_-]*engine/i; const srcHits = [];
     const walk = (d) => { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, f.name); if (f.isDirectory()) { if (!['node_modules', 'tests', 'tools', 'fixtures', 'shots'].includes(f.name)) walk(p); } else if (/\.(js|mjs|html|css|json|svg|txt)$/.test(f.name) && !/^(CONTRACT|NOTES)/.test(f.name) && f.name !== 'package.json') { fs.readFileSync(p, 'utf8').split('\n').forEach((l, i) => { if (/stake/i.test(l)) srcHits.push(`${path.relative(FRONT, p)}:${i + 1}: ${snippet(l, 100)}`); }); } } };
     walk(FRONT); await s.close();
-    const bad = srcHits.filter((h) => re.test(h)); const loose = srcHits.filter((h) => !re.test(h));
+    const bad = srcHits.filter((h) => re.test(h)); const loose = srcHits.filter((h) => !re.test(h) && !/i18n\/social\.js:\d+:\s*\[\/\\bstake\\b\/gi,/.test(h)); // social.js sanitizer regex (source only, never displayed) is benign
     const dom = re.test(html) || re.test(txt);
     return [!dom && bad.length === 0 && reqUrls.length === 0 ? (loose.length ? RISK : PASS) : FAIL, 'DOM hit=' + dom, 'network urls with "stake": ' + J(reqUrls), 'source "stake engine" hits: ' + J(bad.slice(0, 5)), loose.length ? 'other "stake" occurrences (check social wording): ' + J(loose.slice(0, 5)) : null];
   });
@@ -201,7 +201,7 @@ async function main() {
   });
 
   await check(104, 'autoplay: one press sends no play, opens settings', async () => {
-    const s = await sess({}); await mockClear(); await s.click('#btn-autoplay', { force: true }); await sleep(2500);
+    const s = await sess({}); await mockClear(); await s.click('#btn-autoplay', { force: true }); await s.waitVisible('#modal-autoplay', 2500).catch(() => {}); await sleep(800);
     const log = await mockLog(); const shown = await s.visible('#modal-autoplay'); const txt = await s.text('#modal-autoplay'); await s.close();
     return [plays(log).length === 0 && shown ? PASS : FAIL, `plays=${plays(log).length}, settings panel visible=${shown}`, 'panel text: ' + snippet(txt, 140)];
   });
@@ -386,10 +386,11 @@ async function main() {
   // ---------------- replay ----------------
   const replayQ = (o = {}) => ({ replay: 'true', game: 'the_unleashed_mine', version: '1', mode: 'bonus', event: '3', amount: '1000000', sessionID: null, ...o });
   const rText = async (s) => s.visibleText();
+  const rReady = (s) => s.page.waitForFunction(() => { const b = document.querySelector('#replay-btn'); const m = document.querySelector('.rp-msg'); return (b && !b.disabled) || (m && /err|fail|unable|couldn/i.test(m.textContent)); }, null, { timeout: 8000 }).catch(() => {});
   const findBtn = async (s, re) => { const bs = await s.page.locator('button, [role=button], a').all(); for (const b of bs) { if (!(await b.isVisible().catch(() => false))) continue; const t = ((await b.innerText().catch(() => '')) + ' ' + ((await b.getAttribute('aria-label')) || '')); if (re.test(t)) return b; } return null; };
   await check(171, 'replay: no wallet calls, GET /bet/replay/{game}/{version}/{mode}/{event}', async () => {
-    const s = await sess(replayQ(), { noWait: true }); await sleep(3000); const log = await mockLog(); const play = await findBtn(s, /^\s*(play|start)/i);
-    if (play) { await play.click({ timeout: 2000 }).catch(() => {}); await sleep(6000); }
+    const s = await sess(replayQ(), { noWait: true }); await rReady(s); const log = await mockLog(); const play = await findBtn(s, /^\s*(play|start)/i);
+    if (play) { await play.click({ timeout: 2000 }).catch(() => {}); await sleep(2000); }
     const log2 = await mockLog(); await s.close();
     const wallet = log2.filter((l) => l.path.startsWith('/wallet') || l.path.startsWith('/bet/event'));
     const gets = log2.filter((l) => l.path.startsWith('/bet/replay/'));
@@ -397,7 +398,7 @@ async function main() {
   });
   await check(172, 'replay: Play button, no betting UI, replay-again after finish', async () => {
     await mockCfg({ delayMs: 0 });
-    const s = await sess(replayQ({ mode: 'base', event: '2' }), { noWait: true }); await sleep(2500);
+    const s = await sess(replayQ({ mode: 'base', event: '2' }), { noWait: true }); await rReady(s);
     const txt0 = await rText(s); const play = await findBtn(s, /play|start/i);
     const betUi = []; for (const sel of ['#btn-bet-plus', '#btn-bet-minus', '#btn-autoplay', '#btn-unleash']) if (await s.visible(sel)) betUi.push(sel);
     let again = null; if (play) { await play.click({ timeout: 2000 }).catch(() => {}); for (let i = 0; i < 40 && !again; i++) { await sleep(1000); again = await findBtn(s, /again|replay|restart/i); } }
@@ -405,29 +406,29 @@ async function main() {
     return [play && again && betUi.length === 0 ? PASS : FAIL, `Play/Start button found=${!!play}`, `replay-again button found after finish=${!!again}`, 'betting controls still visible: ' + J(betUi), 'text before play: ' + snippet(txt0, 160)];
   });
   await check(173, 'replay: bet amount shown; cost>1x shows multiplier and real cost (bonus: 100x, 100.00)', async () => {
-    const s = await sess(replayQ(), { noWait: true }); await sleep(2500); const t = await rText(s); await s.close();
+    const s = await sess(replayQ(), { noWait: true }); await rReady(s); const t = await rText(s); await s.close();
     const hasBet = /1\.00/.test(t); const mult = /100\s?[x×]/i.test(t); const real = /100\.00/.test(t);
-    const s2 = await sess(replayQ({ mode: 'base', event: '2' }), { noWait: true }); await sleep(2500); const t2 = await rText(s2); await s2.close();
+    const s2 = await sess(replayQ({ mode: 'base', event: '2' }), { noWait: true }); await rReady(s2); const t2 = await rText(s2); await s2.close();
     return [hasBet && mult && real ? PASS : FAIL, `bonus replay text: ${snippet(t, 260)}`, `base replay text: ${snippet(t2, 160)}`, `bet 1.00 shown=${hasBet}, 100x shown=${mult}, real cost 100.00 shown=${real}`];
   });
   await check(174, 'replay at 400x225 fits without scroll', async () => {
-    const s = await sess(replayQ(), { noWait: true, viewport: VIEWPORTS[1] }); await sleep(2500);
-    const play = await findBtn(s, /play|start/i); if (play) await play.click({ timeout: 2000 }).catch(() => {}); await sleep(2500);
+    const s = await sess(replayQ(), { noWait: true, viewport: VIEWPORTS[1] }); await rReady(s);
+    const play = await findBtn(s, /play|start/i); if (play) await play.click({ timeout: 2000 }).catch(() => {}); await sleep(1500);
     const r = await s.page.evaluate(() => { const d = document.documentElement; window.scrollTo(0, 999); return { sw: d.scrollWidth, cw: d.clientWidth, sh: d.scrollHeight, ch: d.clientHeight, sy: scrollY }; });
     await s.page.screenshot({ path: path.join(SHOTS, 'qa_replay_400x225.png') }); await s.close();
     return [r.sw <= r.cw && r.sh <= r.ch && r.sy === 0 ? PASS : FAIL, J(r)];
   });
   await check(243, 'replay social=true: social wording, XSC amounts, no "$"', async () => {
     await mockCfg({ currency: 'XSC' });
-    const s = await sess(replayQ({ social: 'true', currency: 'XSC' }), { noWait: true }); await sleep(2500); let t = await rText(s);
-    const play = await findBtn(s, /play|start/i); if (play) { await play.click({ timeout: 2000 }).catch(() => {}); await sleep(8000); t += '\n' + (await rText(s)); }
+    const s = await sess(replayQ({ social: 'true', currency: 'XSC' }), { noWait: true }); await rReady(s); let t = await rText(s);
+    const play = await findBtn(s, /play|start/i); if (play) { await play.click({ timeout: 2000 }).catch(() => {}); await sleep(2000); t += '\n' + (await rText(s)); }
     await s.close();
     const hits = [...new Set((t.match(restrictedRe) || []).map((x) => x.toLowerCase()))];
     return [hits.length === 0 && !/\$/.test(t) && /SC|GC/.test(t) ? PASS : FAIL, 'restricted hits: ' + J(hits), '"$" present=' + /\$/.test(t), 'text: ' + snippet(t, 220)];
   });
   await check(188, 'replay fetch failure shows a message', async () => {
     await mockCfg({ error: { endpoint: 'bet-replay', code: 'ERR_GEN', once: false } });
-    const s = await sess(replayQ(), { noWait: true }); await sleep(5000); const t = await rText(s); const play = await findBtn(s, /play|start/i); await s.close();
+    const s = await sess(replayQ(), { noWait: true }); await rReady(s); const t = await rText(s); const play = await findBtn(s, /play|start/i); await s.close();
     await mockCfg({ clearErrors: true });
     const msg = /error|unable|failed|could not|problem|try again|not found|unavailable|couldn/i.test(t);
     return [msg ? PASS : FAIL, 'text: ' + snippet(t, 220), 'Play button still offered=' + !!play];

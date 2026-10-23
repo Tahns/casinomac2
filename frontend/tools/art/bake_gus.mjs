@@ -38,7 +38,7 @@ for (const pose of POSES) {
         el.setAttribute('style', `transform-box:view-box;transform-origin:${ox} ${oy};transform:${cs.transform}`);
       }
     }
-    svg.querySelectorAll('.burst').forEach((e) => e.remove()); // scene supplies its own starburst
+    svg.querySelectorAll('.burst, .mlh, .mlhop').forEach((e) => e.remove()); // scene supplies its own starburst; motion lines look like stray dashes when frozen
     svg.querySelectorAll('[data-rm]').forEach((e) => e.remove());
     svg.querySelectorAll('.o').forEach((e) => { e.setAttribute('fill', 'none'); e.setAttribute('stroke', '#2B1A12'); e.setAttribute('stroke-linejoin', 'round'); e.setAttribute('stroke-linecap', 'round'); });
     svg.querySelectorAll('*').forEach((e) => { e.removeAttribute('class'); });
