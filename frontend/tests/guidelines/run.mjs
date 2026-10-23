@@ -168,19 +168,19 @@ async function main() {
 
   await check(228, 'space bar places a bet, no page scroll, no double fire', async () => {
     const s = await sess({}); await mockClear();
-    await s.page.evaluate(() => document.activeElement && document.activeElement.blur()); await s.page.keyboard.press('Space'); await sleep(500);
-    await s.waitIdle(60000).catch(() => {}); await sleep(300);
+    const waitPlays = async (n, ms = 6000) => { const t0 = Date.now(); while (Date.now() - t0 < ms && plays(await mockLog()).length < n) await sleep(100); await sleep(400); };
+    const settle = async () => { await s.page.waitForFunction(() => !document.body.classList.contains('state-betting') && !document.body.classList.contains('state-playing') && !document.body.classList.contains('state-settling'), null, { timeout: 60000 }).catch(() => {}); await s.waitIdle(60000).catch(() => {}); await s.waitEnabled('#btn-bet', 4000).catch(() => {}); };
+    await s.page.evaluate(() => document.activeElement && document.activeElement.blur()); await s.page.keyboard.press('Space'); await waitPlays(1); await settle();
     const first = plays(await mockLog()).length;
     // after clicking the button it holds focus: Space must still be exactly one bet
-    await s.click('#btn-bet', { force: true }).catch(() => {}); await sleep(500); await s.waitIdle(60000).catch(() => {}); await sleep(300); await mockClear();
-    await s.page.keyboard.press('Space'); await sleep(500); await s.waitIdle(60000).catch(() => {}); await sleep(400);
+    await s.click('#btn-bet'); await waitPlays(2); await settle(); await mockClear();
+    await s.page.keyboard.press('Space'); await waitPlays(1); await settle();
     const second = plays(await mockLog()).length;
     const info = await s.page.evaluate(() => ({ keys: window.__qa.keys.filter((k) => k.code === 'Space'), sy: window.scrollY, st: document.scrollingElement.scrollTop, tgt: document.activeElement && (document.activeElement.id || document.activeElement.tagName) }));
     await s.close();
     const prevented = info.keys.every((k) => k.prevented);
     return [first === 1 && second === 1 && prevented && info.sy === 0 ? PASS : FAIL, `Space w/o focus -> plays=${first}; Space with button focused -> plays=${second} (must be 1)`, 'keydown Space events: ' + J(info.keys), `scrollY=${info.sy} scrollTop=${info.st} activeElement=${info.tgt}`];
   });
-
   await check(227, 'no scrollbars/scroll at 4 viewports (idle + after bet + rules open)', async () => {
     const ev = []; let bad = 0;
     for (const vp of VIEWPORTS) {
@@ -533,6 +533,7 @@ function writeReport(stat, ran) {
   md += rs.map((r) => `### [${r.id}] ${r.title} - ${r.status}\n\n${r.evidence.map((e) => '- ' + String(e).replace(/\|/g, '\\|')).join('\n')}\n`).join('\n');
   md += '\n## Static code review\n\n' + stat.map((s) => `### ${s.title} - ${s.status}\n\n${s.lines.length ? s.lines.map((l) => '- ' + l).join('\n') : '- none found'}\n`).join('\n');
   md += '\n## NEEDS A HUMAN (always)\n\n- Real audio audibility on a device (graph-level mute is checked above).\n- Visual quality of the four screenshots in `tests/shots/qa_*.png`.\n- Touch behaviour on a real phone (pinch/double-tap zoom).\n';
+  try { md += '\n' + fs.readFileSync(path.join(HERE, 'TRIAGE.md'), 'utf8'); } catch {}
   fs.writeFileSync(REPORT, md);
   console.log('\nreport written to ' + REPORT);
   for (const s of stat) console.log(`${s.status.padEnd(14)} static: ${s.title} (${s.lines.length} lines)`);

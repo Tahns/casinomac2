@@ -82,8 +82,8 @@ class GameConfig(Config):
 
         self.maximum_board_mult = 512
         self.bonus_floor = 30.0
-        self.fs_start_mult = 4
-        self.vein_step = 6
+        self.fs_start_mult = 3
+        self.vein_step = 3
 
         reels = {"BR0": "BR0.csv", "FR0": "FR0.csv", "WCAP": "WCAP.csv"}
         self.reels = {}
@@ -197,7 +197,7 @@ class GameConfig(Config):
                     # Natural free games with at least bonus_floor x (rejection filter in check_repeat).
                     Distribution(
                         criteria="fgfloor4",
-                        quota=0.5,
+                        quota=0.55,
                         conditions={
                             "reel_weights": {
                                 self.basegame_type: {"BR0": 1},
@@ -210,7 +210,7 @@ class GameConfig(Config):
                     ),
                     Distribution(
                         criteria="fgfloor5",
-                        quota=0.22,
+                        quota=0.25,
                         conditions={
                             "reel_weights": {
                                 self.basegame_type: {"BR0": 1},
@@ -236,7 +236,7 @@ class GameConfig(Config):
                     ),
                     Distribution(
                         criteria="fgfloor7",
-                        quota=0.158,
+                        quota=0.079,
                         conditions={
                             "reel_weights": {
                                 self.basegame_type: {"BR0": 1},

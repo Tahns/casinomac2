@@ -139,12 +139,13 @@ export class Session {
     await this.waitIdle(20000).catch(() => {});
     if (o.turbo !== false) await this.page.evaluate(() => { if (!document.body.classList.contains('turbo')) document.querySelector('#btn-turbo')?.click(); }).catch(() => {});
     await this.click('#btn-bet');
-    await sleep(300);
+    await this.page.waitForFunction(() => !document.body.classList.contains('state-idle'), null, { timeout: 3000, polling: 30 }).catch(() => {}); // left idle (may be missed for instant 0x rounds)
+    await sleep(150);
     await this.waitIdle(o.timeout || 60000).catch(() => {});
   }
   // resilient waits (no fixed sleeps): visible / enabled / disabled
   async waitVisible(sel, ms = 4000) { await this.page.locator(sel).first().waitFor({ state: 'visible', timeout: ms }); }
-  async waitEnabled(sel, ms = 4000) { await this.page.waitForFunction((s) => { const e = document.querySelector(s); return !!e && !e.disabled && e.offsetParent !== null; }, sel, { timeout: ms }); }
+  async waitEnabled(sel, ms = 4000) { await this.page.waitForFunction((s) => { const e = document.querySelector(s); if (!e || e.disabled) return false; const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; }, sel, { timeout: ms }); }
   async isDisabled(sel) { return this.page.locator(sel).first().isDisabled().catch(() => null); }
   // step the bet display to a numeric value (display units) with +/-; returns true when reached
   async setBet(val) {
