@@ -65,8 +65,13 @@ function setBalance(b) { if (b && typeof b.amount === 'number') { S.balance = b.
 
 // ---- modals
 function modalOpen() { return !!document.querySelector('.modal.open'); }
-function openModal(el) { if (el) { el.hidden = false; el.classList.add('open'); } }
-function closeModal(el) { if (el) { el.hidden = true; el.classList.remove('open'); } }
+const BEHIND = ['game', 'hud-info', 'hud-ctrl', 'logo-area'];
+function syncInert() {
+  const on = modalOpen();
+  BEHIND.forEach((id) => { const e = $(id); if (!e) return; if (on) e.setAttribute('inert', ''); else e.removeAttribute('inert'); });
+}
+function openModal(el) { if (el) { el.hidden = false; el.classList.add('open'); syncInert(); } }
+function closeModal(el) { if (el) { el.hidden = true; el.classList.remove('open'); syncInert(); } }
 function showMessage(text) {
   return new Promise((res) => {
     const m = $('modal-message'); if (!m) { res(); return; }
@@ -89,7 +94,7 @@ function confirmDialog(title, text) {
 function fatal(err) {
   setState('error');
   S.autoplay.stop();
-  const kind = err && err.code ? ({ ERR_AUTH: 'auth', ERR_IS: 'session', ERR_ATE: 'session' }[err.code] || (err.code === 'ERR_CONN' || err.code === 'ERR_TIMEOUT' ? 'connection' : 'generic')) : 'connection';
+  const kind = (err && err.code && ({ ERR_AUTH: 'auth', ERR_IS: 'session', ERR_ATE: 'session', ERR_LOC: 'session', ERR_MAINTENANCE: 'maintenance' }[err.code])) || 'connection';
   // Unrecoverable: the dialog stays; its button reloads the game.
   const m = $('modal-message'), ok = $('message-ok');
   setText('message-text', t('err.' + kind)); openModal(m);
@@ -138,6 +143,9 @@ async function playRound(mode) {
   try { res = await rgs.play(S.bet.bet, mode); }
   catch (e) {
     S.autoplay.stop(); syncAutoplayUI();
+    // The request may have been processed without its answer reaching us (lost response / server error /
+    // expired session): the round state is unknown, so the player must reload to finish any open round.
+    if (!e.code || ['ERR_CONN', 'ERR_TIMEOUT', 'ERR_GEN', 'ERR_IS', 'ERR_ATE', 'ERR_LOC', 'ERR_MAINTENANCE'].includes(e.code)) { await fatal(e); return false; }
     setState('idle');
     const key = e.code === 'ERR_IPB' ? 'insufficient' : ({ ERR_VAL: 'validation', ERR_GLE: 'limit', ERR_ACT: 'retry' }[e.code] || (e.code === 'ERR_CONN' || e.code === 'ERR_TIMEOUT' ? 'connection' : 'generic'));
     await showMessage(t('err.' + key, { cost: fm(chk.cost) }));
@@ -172,18 +180,19 @@ function syncAutoplayUI() {
 }
 
 async function onSpin() {
-  if (S.state !== 'idle' || S.autoplay.active) return;
+  if (S.state !== 'idle' || S.autoplay.active || modalOpen()) return;
   await playRound('base');
 }
 async function onUnleash() {
-  if (S.state !== 'idle' || modalOpen()) return;
+  if (S.state !== 'idle' || modalOpen() || S.autoplay.active || S.noBuy) return;
   if (!unleashOk()) { await showMessage(t('unleash.minPrice', { min: fm(unleashMinPrice(S.currency)) })); return; }
   const cost = S.bet.cost('bonus');
   const chk = checkPlay(S.balance, S.bet.bet, 'bonus');
   if (!chk.ok) { await showMessage(t('err.insufficient', { cost: fm(cost) })); return; }
   if (needsConfirm(modeCost('bonus'))) {
     const ok = await confirmDialog(t('unleash.title'), t('unleash.confirm', { cost: fm(cost) }));
-    if (!ok) return;
+    if (!ok || S.state !== 'idle' || S.autoplay.active) return;
+    if (S.bet.cost('bonus') !== cost || !unleashOk()) return; // the stated cost must be the cost that is played
   }
   try { if (S.renderer && S.renderer.mascot) { S.renderer.mascot.pose('plunger', 1600); S.renderer.mascot.say('mascot.fs', 2000, true); } } catch (e) { /* ignore */ }
   await playRound('bonus');
@@ -224,10 +233,21 @@ function bindUI() {
     const b = $('btn-sound'); if (b) b.setAttribute('aria-pressed', String(S.muted));
     if (S.audio && S.audio.setMuted) S.audio.setMuted(S.muted);
   });
+  on('btn-menu', () => {
+    const c = $('hud-ctrl'); if (!c) return;
+    const open = c.classList.toggle('menu-open');
+    const b = $('btn-menu'); if (b) b.setAttribute('aria-expanded', String(open));
+  });
+  document.addEventListener('click', (ev) => {
+    const c = $('hud-ctrl'); if (!c || !c.classList.contains('menu-open')) return;
+    const keep = ev.target && ev.target.closest && (ev.target.closest('#btn-menu') || (ev.target.closest('.tools') && ev.target.closest('#btn-sound')));
+    if (keep) return;
+    c.classList.remove('menu-open'); const b = $('btn-menu'); if (b) b.setAttribute('aria-expanded', 'false');
+  });
   on('btn-info', async () => {
     const r = await tryImport('./rules.js');
     const fn = r && (r.openRules || r.showRules || r.default);
-    if (typeof fn === 'function') fn();
+    if (typeof fn === 'function') fn({ currency: S.currency, social: params.social, formatMoney: fm });
   });
   on('btn-fullscreen', () => {
     try {
@@ -237,10 +257,13 @@ function bindUI() {
   });
   window.addEventListener('keydown', (e) => {
     if (e.code !== 'Space' && e.key !== ' ') return;
+    if (params.replay || !S.bet || S.noSpace) return;
     e.preventDefault();
     if (e.repeat) return;
     if (spaceAction({ state: S.state, modalOpen: modalOpen() }) === 'spin' && !S.autoplay.active) onSpin();
   });
+  // any dialog (also the rules opened by rules.js) makes the UI behind it inert
+  try { const mo = new MutationObserver(syncInert); document.querySelectorAll('.modal').forEach((m) => mo.observe(m, { attributes: true, attributeFilter: ['class', 'hidden'] })); } catch (e) { /* ignore */ }
   window.addEventListener('resize', () => { fitAll(); if (S.renderer && S.renderer.resize) S.renderer.resize(); });
 }
 
@@ -248,7 +271,7 @@ function applyI18n() { i18n.applyI18n(document); }
 
 async function boot() {
   setState('booting');
-  document.documentElement.lang = params.lang;
+  document.documentElement.lang = 'en'; // only English text is shipped; unknown/other langs fall back to English
   applyI18n();
   const root = $('game') || $('stage') || document.body;
   S.renderer = createRenderer(root);
@@ -276,6 +299,10 @@ async function boot() {
   if (fs) {
     if (fs.disabledFullscreen && $('btn-fullscreen')) $('btn-fullscreen').hidden = true;
     if (fs.disabledTurbo && $('btn-turbo')) $('btn-turbo').hidden = true;
+    if (fs.disabledSpacebar) S.noSpace = true;
+    if (fs.disabledAutoplay && $('btn-autoplay')) { $('btn-autoplay').hidden = true; $('btn-autoplay').disabled = true; }
+    if (fs.disabledBuyFeature) { S.noBuy = true; ['btn-unleash'].forEach((id) => { const e = $(id); if (e) { e.hidden = true; e.disabled = true; } }); }
+    if (fs.socialCasino && !params.social) { try { params.social = true; i18n.setSocial(true); applyI18n(); renderBalance(); renderBet(); renderWin(0); } catch (e) { /* ignore */ } }
   }
   setState('idle');
 

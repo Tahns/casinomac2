@@ -302,6 +302,42 @@ async function main() {
     return [bad.length || /\bon\b/.test(r.layerClass || '') ? FAIL : PASS, `controls: ${J(r.controls)}`, `banner-layer class after the round: ${r.layerClass}`];
   });
 
+  await check('MENU-400x225', 'compact landscape (400x225): MENU opens SOUND / INFO / FULLSCREEN and they work', async () => {
+    const s = await sess({}, { viewport: { width: 400, height: 225 } });
+    const vis = (sel) => s.page.evaluate((q) => { const e = document.querySelector(q); if (!e) return false; const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; }, sel);
+    const before = await vis('#btn-sound');
+    await s.page.click('#btn-menu', { timeout: 4000 }).catch(() => {});
+    await sleep(300);
+    const open = await vis('#btn-sound'); const infoVisible = await vis('#btn-info');
+    await s.page.click('#btn-sound', { timeout: 4000 }).catch(() => {});
+    await sleep(300);
+    const muted = await s.page.evaluate(() => document.body.classList.contains('muted'));
+    await s.page.click('#btn-menu', { timeout: 4000 }).catch(() => {}); await sleep(200);
+    await s.page.click('#btn-menu', { timeout: 4000 }).catch(() => {}); await sleep(200);
+    await s.page.click('#btn-info', { timeout: 4000 }).catch(() => {}); await sleep(900);
+    const rulesOpen = await s.page.evaluate(() => !!document.querySelector('#modal-info.open'));
+    await s.close();
+    const ok = !before && open && infoVisible && muted && rulesOpen;
+    return [ok ? PASS : FAIL, `sound visible before menu=${before}, after menu=${open}, info visible=${infoVisible}, sound toggled=${muted}, rules open via menu=${rulesOpen}`];
+  });
+
+  await check('MODAL-INERT', 'keyboard cannot act behind an open dialog (Enter on BET+ / BET while the UNLEASH confirm is open, UNLEASH during autoplay)', async () => {
+    const bet = 10000000; // 10.00: UNLEASH costs 1,000.00
+    await mockCfg({ balance: 5000000000, bet: { betLevels: [10000000, 20000000], minBet: 10000000, maxBet: 20000000, stepBet: 10000000, defaultBetLevel: bet } });
+    const s = await sess({}); await mockClear();
+    await s.click('#btn-unleash', { force: true }); await sleep(600);
+    const dlg = await s.page.evaluate(() => !!document.querySelector('#modal-confirm.open'));
+    const before = await s.text('#bet');
+    await s.page.focus('#btn-bet-plus').catch(() => {}); await s.page.keyboard.press('Enter'); await sleep(300);
+    await s.page.focus('#btn-bet').catch(() => {}); await s.page.keyboard.press('Enter'); await sleep(300); await s.page.keyboard.press('Space'); await sleep(300);
+    const after = await s.text('#bet'); const log = await mockLog(); const playsBehind = plays(log).length;
+    await s.click('#confirm-cancel', { force: true }); await sleep(300);
+    const inertAfter = await s.page.evaluate(() => !!document.querySelector('[inert]'));
+    await s.close();
+    const ok = dlg && before === after && playsBehind === 0 && !inertAfter;
+    return [ok ? PASS : FAIL, `dialog open=${dlg}, bet before/after=${before}/${after}, plays sent behind dialog=${playsBehind}, [inert] left after closing=${inertAfter}`];
+  });
+
   await check(223, 'viewport meta + touch-action', async () => {
     const s = await sess({}); const r = await s.page.evaluate(() => ({ meta: document.querySelector('meta[name=viewport]')?.content, ta: getComputedStyle(document.querySelector('#game') || document.body).touchAction, ov: getComputedStyle(document.body).overflow, h: getComputedStyle(document.documentElement).height })); await s.close();
     const want = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';

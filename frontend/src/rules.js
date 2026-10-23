@@ -90,7 +90,7 @@ export function buildRules(data, ctx = {}) {
     <h3>How to play</h3>
     <ol>
       <li>Choose your ${B} with the - and + buttons.</li>
-      <li>Press the BET button (or the space bar) to start a round.</li>
+      <li>Press the SPIN button (or the space bar) to start a round.</li>
       <li>Any group of ${minCluster} or more matching symbols that are adjacent horizontally or vertically is a winning cluster.</li>
       <li>Winning symbols disappear, symbols above fall down and new ones fill the gaps. This repeats while new clusters form.</li>
       <li>The total win of the round is shown at the end and is added to your balance.</li>
@@ -98,7 +98,7 @@ export function buildRules(data, ctx = {}) {
     <h3>How wins form</h3>
     <ul>
       <li>Clusters are made of the same symbol touching horizontally or vertically. Diagonal neighbours do not connect.</li>
-      <li>${esc(wildName)} (wild) substitutes for all paying symbols. It never replaces ${esc(scatName)} (scatter).</li>
+      <li>${esc(wildName)} (wild) substitutes for all winning symbols. It never replaces ${esc(scatName)} (scatter).</li>
       <li>A wild can join clusters of different symbols at the same time, but each symbol cluster is evaluated on its own.</li>
       <li>Every cluster is rewarded by its symbol and its size, as shown in the ${esc(social ? 'Win table' : 'Paytable')}. Larger clusters are worth more.</li>
       <li>All wins are multiples of the ${B}, and are added together over all tumbles of a round.</li>
@@ -117,7 +117,7 @@ export function buildRules(data, ctx = {}) {
       <tbody>${rows}</tbody>
     </table></div>
     <p>Cluster sizes in the header are the number of matching symbols in the cluster. Symbols on the table are listed from highest to lowest value.</p>
-    ${wild ? `<p>${glyph('W')} <strong>${esc(wild.name)}</strong> is wild and substitutes for all paying symbols (not for ${esc(scatName)}).</p>` : ''}
+    ${wild ? `<p>${glyph('W')} <strong>${esc(wild.name)}</strong> is wild and substitutes for all winning symbols (not for ${esc(scatName)}).</p>` : ''}
     ${scatter ? `<p>${glyph('S')} <strong>${esc(scatter.name)}</strong> is the scatter. It does not form clusters, and it triggers the free spins wherever it lands.</p>` : ''}
   ` });
 
@@ -128,8 +128,8 @@ export function buildRules(data, ctx = {}) {
     <p>After each win, winning symbols are removed and the remaining symbols drop down. New symbols fill the empty positions. The tumbling continues until no new win is formed.</p>
     <h3>Fuse Line</h3>
     <ul>
-      <li>Each round, a fuse is laid along a path of ${fuseLen} connected positions on the board, starting on the first reel. The first position of the path is already lit.</li>
-      <li>Every time a winning cluster is removed, the fuse burns one more position along its path.</li>
+      <li>On every spin of the base game and of the free spins, a fuse is laid along a path of ${fuseLen} connected positions on the board, starting on the first reel. The first position of the path is already lit.</li>
+      <li>Every time a winning tumble step removes winning symbols, the fuse burns one more position along its path, whatever the number of clusters in that step.</li>
       <li>When no more wins are possible and the fuse has burned ${fuseDetMin} or more positions, it explodes: the burned positions turn into ${esc(wild ? wild.name : 'wild')} wilds, then the board is checked for wins again. ${esc(scatName)} scatter positions are never changed.</li>
       <li>If the fuse has burned fewer than ${fuseDetMin} positions, it goes out and nothing changes. The fuse is not shown until it starts to burn.</li>
       <li>The fuse is active in the base game and during the free spins.</li>
@@ -166,7 +166,7 @@ export function buildRules(data, ctx = {}) {
   sections.push({ id: 'controls', title: t('rules.tab.controls'), html: `
     <h3>Interaction guide</h3>
     <ul class="rl-controls">
-      <li><strong>BET</strong> (or <kbd>Space</kbd>): starts a round at the selected ${B}. The space bar behaves exactly like this button.</li>
+      <li><strong>SPIN</strong> (or <kbd>Space</kbd>): starts a round at the selected ${B}. The space bar behaves exactly like this button.</li>
       <li><strong>Bet - / +</strong>: decreases or increases the ${B}. Disabled while a round is running.</li>
       <li><strong>AUTOPLAY</strong>: opens the autoplay settings. Choose the number of spins and stop conditions, then confirm to start. Press again to stop.</li>
       <li><strong>TURBO</strong>: speeds up the animations.</li>
@@ -175,7 +175,7 @@ export function buildRules(data, ctx = {}) {
       <li><strong>INFO</strong>: opens these rules.</li>
       <li><strong>FULLSCREEN</strong>: enters or leaves full screen.</li>
       <li><strong>MENU</strong>: opens the game menu.</li>
-      <li><strong>Space bar</strong>: same as the BET button; it also starts a round while no round is running.</li>
+      <li><strong>Space bar</strong>: same as the SPIN button; it also starts a round while no round is running.</li>
     </ul>
     <p>A round cannot be started when the balance is lower than the ${B} multiplied by the cost multiplier of the selected mode.</p>
   ` });
@@ -217,9 +217,9 @@ export function loadRulesData() {
   return dataPromise;
 }
 
-export async function renderRules(container, data) {
+export async function renderRules(container, data, ctx) {
   const d = data === undefined ? await loadRulesData() : data;
-  const { sections } = buildRules(d);
+  const { sections } = buildRules(d, ctx || {});
   if (typeof document !== 'undefined' && !document.getElementById('rules-style')) {
     const st = document.createElement('style');
     st.id = 'rules-style';
@@ -247,10 +247,10 @@ export async function renderRules(container, data) {
 
 function modalEl() { return typeof document !== 'undefined' ? document.getElementById('modal-info') : null; }
 
-export async function openRules() {
+export async function openRules(ctx) {
   const el = modalEl();
   if (!el) return;
-  await renderRules(el);
+  await renderRules(el, undefined, ctx);
   el.hidden = false;
   el.removeAttribute('hidden');
   el.classList.add('open');

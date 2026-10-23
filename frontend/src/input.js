@@ -21,7 +21,7 @@ export function shouldEndRound(round) {
 export function roundHasFeature(round) {
   const ev = (round && round.state) || [];
   return ev.some((e) => e && (e.type === 'freeSpinTrigger' || e.type === 'freeSpinEnd')) ||
-    (round && round.mode === 'bonus');
+    (round && String(round.mode || '').toLowerCase() === 'bonus');
 }
 
 // mode that needs a confirm dialog (cost > 2x)

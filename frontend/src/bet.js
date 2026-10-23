@@ -8,7 +8,9 @@ export function modeCost(mode) {
 }
 // UNLEASH is sold at round prices and never below a minimum price (display-currency units, converted to micro).
 // 50 units in most currencies; larger round numbers where 50 units is worth very little.
-export const UNLEASH_MIN_PRICE = { USD: 50, EUR: 50, CAD: 50, GBP: 50, XSC: 50, XGC: 50, XEC: 50, MXN: 1000, JPY: 7500 };
+export const UNLEASH_MIN_PRICE = { USD: 50, EUR: 50, CAD: 50, GBP: 50, XSC: 50, XGC: 50, XEC: 50, MXN: 1000, JPY: 7500,
+  // approx. 50 EUR in round numbers for other common currencies (to be confirmed per market)
+  KRW: 75000, IDR: 800000, VND: 1300000, CLP: 50000, INR: 4500, PHP: 3000, THB: 1800, CNY: 400, ZAR: 1000, BRL: 300, PEN: 200, ARS: 50000, COP: 200000, TRY: 1700, RUB: 5000, NGN: 80000, PLN: 200, SEK: 550, NOK: 550, DKK: 370, CHF: 50, NZD: 90, AUD: 80 };
 export function unleashMinPrice(currency) {
   const u = UNLEASH_MIN_PRICE[String(currency || '').toUpperCase()];
   return Math.round((typeof u === 'number' ? u : 50) * 1000000);
