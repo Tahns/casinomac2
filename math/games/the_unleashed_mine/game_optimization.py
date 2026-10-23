@@ -69,15 +69,14 @@ class OptimizationSetup:
                     "wincap": ConstructConditions(
                         rtp=0.001, av_win=wincaps["bonus"], search_conditions=wincaps["bonus"]
                     ).return_dict(),
-                    "freegame": ConstructConditions(rtp=0.15, hr="x").return_dict(),
-                    "fgfloor": ConstructConditions(rtp=0.809, hr="x").return_dict(),
+                    "fgfloor": ConstructConditions(rtp=0.959, hr="x").return_dict(),
                 },
                 "scaling": ConstructScaling(
                     [
                         {
                             "criteria": "fgfloor",
                             "scale_factor": 1.0,
-                            "win_range": (40, 60),
+                            "win_range": (30, 50),
                             "probability": 1.0,
                         },
                         {

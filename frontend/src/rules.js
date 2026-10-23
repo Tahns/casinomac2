@@ -48,6 +48,8 @@ export function buildRules(data, ctx = {}) {
   const unleashCost = bonus ? bonus.cost : 100;
   const wincap = d.wincap || 5000;
   const maxMult = d.maxVeinMultiplier || 512;
+  const veinStart = d.veinStart || 1;
+  const veinStep = d.veinStep || 1;
   const tiers = d.tiers || [];
   const symbols = d.symbols || [];
   const pays = symbols.filter((s) => Array.isArray(s.pays));
@@ -77,7 +79,7 @@ export function buildRules(data, ctx = {}) {
     <h3>The Unleashed Mine</h3>
     <p>The Unleashed Mine is a 6-reel, 5-row cluster game. There are no paylines: wins are formed by groups of ${minCluster} or more matching symbols that touch each other horizontally or vertically.</p>
     <p>After every win the winning symbols are removed, the remaining symbols fall down and new symbols drop in from above (tumbles). Tumbles continue as long as new wins are formed, and all wins of a round are added together.</p>
-    <p>Trigger the Unleashed Mine free spins, where every winning position becomes a vein that grows a multiplier on each later win.</p>
+    <p>Trigger the Unleashed Mine free spins, where every position holds a vein multiplier that grows each time the position takes part in a win.</p>
     <p>The maximum win is ${commas(wincap)}x the ${B}. When this limit is reached the round ends immediately and all remaining features are forfeited.</p>
   ` });
 
@@ -126,10 +128,10 @@ export function buildRules(data, ctx = {}) {
     <table class="rl-table"><thead><tr><th scope="col">Scatters</th><th scope="col">Free spins awarded</th></tr></thead><tbody>${trigRows}</tbody></table>
     <h3>Veins and multipliers</h3>
     <ul>
-      <li>During the free spins, every position that takes part in a winning cluster becomes a vein with a multiplier of 1x.</li>
-      <li>Each time a vein position takes part in another win, its multiplier grows by 1, up to a maximum of ${maxMult}x.</li>
+      <li>When the free spins begin, every position on the board holds a vein multiplier of ${veinStart}x.</li>
+      <li>Each time a position takes part in a winning cluster, its multiplier grows by ${veinStep}, up to a maximum of ${maxMult}x.</li>
       <li>Veins stay on the board for the whole free spins feature, even when symbols tumble away from the position.</li>
-      <li>The win of a cluster is its value from the ${esc(social ? 'Win table' : 'Paytable')} multiplied by the sum of the multipliers of all positions in the cluster. Positions that are not yet veins count as 0, and a cluster with no veins is worth its normal value.</li>
+      <li>The win of a cluster is its value from the ${esc(social ? 'Win table' : 'Paytable')} multiplied by the sum of the multipliers of all positions in the cluster.</li>
     </ul>
     <h3>Retrigger</h3>
     <p>${minRetrig} or more ${esc(scatName)} scatters during the free spins award extra free spins.</p>

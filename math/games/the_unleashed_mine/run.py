@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     num_threads = 4
     rust_threads = 4
-    batching_size = 12500
+    batching_size = 6250
     compression = True
     profiling = False
 

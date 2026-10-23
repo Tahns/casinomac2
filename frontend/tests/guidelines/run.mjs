@@ -23,8 +23,10 @@ async function sess(query, o) { const s = new Session(browser); allSessions.push
 function rec(id, title, status, ...evidence) { results.push({ id, title, status, evidence: evidence.flat().filter(Boolean) }); console.log(`${status.padEnd(14)} [${id}] ${title}\n    ${evidence.flat().filter(Boolean).join('\n    ')}`); }
 async function check(id, title, fn) {
   if (ONLY && !ONLY.includes(String(id))) return;
-  try { await mockReset(); await mockClear(); const r = await fn(); if (r) rec(id, title, r[0], r.slice(1)); }
-  catch (e) { rec(id, title, FAIL, 'runner exception: ' + snippet(e.stack || e.message, 400)); }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try { await mockReset(); await mockClear(); const r = await fn(); if (r) rec(id, title, r[0], r.slice(1)); return; }
+    catch (e) { if (attempt === 0 && /crashed|Target closed|Browser has been closed/i.test(String(e && e.message))) { console.log('retrying after browser crash:', id); continue; } rec(id, title, FAIL, 'runner exception: ' + snippet(e.stack || e.message, 400)); return; }
+  }
 }
 const J = JSON.stringify;
 const fmtLog = (log) => log.map((l) => `${l.method} ${l.path} ${snippet(J(l.body), 90)}`);

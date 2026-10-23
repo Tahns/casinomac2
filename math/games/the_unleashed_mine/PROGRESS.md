@@ -8,3 +8,5 @@ Step1 findings: slowness = `wincap` criteria never reached (old WCAP strip diver
 - 1e5 bonus OOM-killed (cgroup); fixed with batching_size=12500.
 - bonus: scatter_triggers {4:4,5:3,6:1} (10/12/15 spins) & opt scaling 20-40 x0.5 to lift median; rerunning bonus 1e5 (SIMS_BASE=0) + OPT
 - added bonus criteria fgfloor (>=40x filter in check_repeat), freegame rtp .15 / fgfloor .809; rerun bonus 1e5 (SIMS_BASE=0, OPT=1)
+- OOM again -> batching_size 6250
+- freegame+fgfloor combo made optimizer miss targets (RTP .81): bonus now only wincap + fgfloor(>=30x) rtp .959
