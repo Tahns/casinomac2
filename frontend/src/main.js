@@ -1,6 +1,6 @@
 // Boot + state machine: booting -> authenticating -> idle -> betting -> playing -> settling -> idle
 import { params } from './params.js';
-import { formatMoney, formatAmount, MICRO } from './money.js';
+import { formatMoney, formatAmount, currencyMeta, MICRO } from './money.js';
 import { createBetState, modeCost, unleashMinPrice, unleashAvailable } from './bet.js';
 import { checkPlay, shouldEndRound, needsConfirm, spaceAction, createAutoplay } from './input.js';
 import * as rgs from './rgs.js';
@@ -42,7 +42,13 @@ function fitText(e) {
 }
 function fitAll() { ['balance', 'bet', 'win'].forEach((id) => { const e = $(id); if (e) fitText(e); }); }
 function renderBalance() { setText('balance', fm(S.balance)); }
-function updateRendererFormat() { if (S.renderer && S.renderer.setFormat && S.bet) { const b = S.bet.bet; S.renderer.setFormat((x) => fm(Math.round((Number(x) || 0) * b))); } }
+function updateRendererFormat() {
+  if (!(S.renderer && S.renderer.setFormat && S.bet)) return;
+  const b = S.bet.bet;
+  const unit = Math.pow(10, 6 - currencyMeta(S.currency).decimals); // minor unit in micro-units
+  // count-up frames show whole minor units (no 6-decimal flicker); final amounts stay exact
+  S.renderer.setFormat((x) => fm(Math.round((Number(x) || 0) * b)), (x) => fm(Math.round(Math.round((Number(x) || 0) * b) / unit) * unit));
+}
 function unleashOk() { return !!S.bet && unleashAvailable(S.bet.bet, S.currency); }
 function updateUnleashButton() {
   const btn = $('btn-unleash'); if (!btn) return;
@@ -138,6 +144,7 @@ async function playRound(mode) {
   }
   setState('betting');
   S.inFs = false;
+  if (S.renderer && S.renderer.setCost) S.renderer.setCost(modeCost(mode));
   renderWin(0);
   let res;
   try { res = await rgs.play(S.bet.bet, mode); }
@@ -310,6 +317,7 @@ async function boot() {
   const r = auth.round;
   if (r && r.active) {
     setState('playing');
+    if (S.renderer && S.renderer.setCost) S.renderer.setCost(modeCost(String(r.mode || 'base').toLowerCase()));
     try { await runEvents(r); } catch (e) { console.error(e); }
     try { await settle(r); } catch (e) { return fatal(e); }
     setState('idle');

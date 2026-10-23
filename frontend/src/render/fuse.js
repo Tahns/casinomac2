@@ -180,12 +180,24 @@ export function createFuse(ctx) {
   }
 
   // ---------------- events ----------------
+  let capShown = 0;
+  function caption() {
+    if (capShown >= 3 || reduced) return;
+    capShown++;
+    try {
+      const el = document.createElement('div'); el.className = 'fz-cap'; el.textContent = (ctx.t ? ctx.t('fx.fuse') : '') || '';
+      if (!el.textContent) return;
+      layer.appendChild(el); setTimeout(() => el.remove(), 2200);
+    } catch (e) { /* ignore */ }
+  }
+
   async function drawPath(ev) {
     const cells = normCells(ev && ev.cells);
     if (cells.length < 2) return;
     const burned = clamp(Math.round(Number(ev.burned) || 0), 0, cells.length);
     build(cells, burned);
     layer.classList.add('on');
+    caption();
     const gen = st.gen;
     pose('think');
     snd('fuse');

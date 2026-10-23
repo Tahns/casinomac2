@@ -48,7 +48,7 @@ export function createRenderer(rootEl) {
   const fx = createFx(app);
 
   const S = {
-    turbo: false, destroyed: false, combo: 0, pad: 1, fsTotal: 0, fsCur: 0, inFs: false, hooks: {},
+    cost: 1, turbo: false, destroyed: false, combo: 0, pad: 1, fsTotal: 0, fsCur: 0, inFs: false, hooks: {},
     fmt: (x) => `${(Math.round(x * 100) / 100).toFixed(2)}x`,
     grid: Array.from({ length: COLS }, () => Array(ROWS).fill(null)),
     pads: Array(COLS).fill('L1'),
@@ -229,7 +229,7 @@ export function createRenderer(rootEl) {
     const step = (now) => {
       if (S.destroyed || !el.isConnected) return;
       const k = clamp((now - t0) / T(ms), 0, 1);
-      if (el.firstChild) el.firstChild.nodeValue = S.fmt(to * (1 - Math.pow(1 - k, 3)));
+      if (el.firstChild) el.firstChild.nodeValue = (S.fmtTick || S.fmt)(to * (1 - Math.pow(1 - k, 3)));
       if (k < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -427,12 +427,14 @@ export function createRenderer(rootEl) {
   }
 
   // ---------- banners ----------
+  // x is a multiple of the base bet; tiers use the multiple of what the round cost (UNLEASH: 100x the bet).
   function tierFor(x) {
     if (x >= WINCAP) return 'win.max';
-    if (x >= 100) return 'win.epic';
-    if (x >= 50) return 'win.super';
-    if (x >= 30) return 'win.mega';
-    if (x >= 15) return 'win.big';
+    const r = x / (S.cost || 1);
+    if (r >= 100) return 'win.epic';
+    if (r >= 50) return 'win.super';
+    if (r >= 30) return 'win.mega';
+    if (r >= 15) return 'win.big';
     return null;
   }
   function banner(o) {
@@ -467,7 +469,7 @@ export function createRenderer(rootEl) {
               if (S.destroyed) { res(); return; }
               const p = skip ? 1 : clamp((now - t0) / dur, 0, 1);
               const v = target * (1 - Math.pow(1 - p, 2.2));
-              amt.textContent = S.fmt(v);
+              amt.textContent = (S.fmtTick || S.fmt)(v);
               if (o.tiers) {
                 const k = tierFor(v) || o.tiers0;
                 if (k && k !== lastLabel) {
@@ -589,7 +591,7 @@ export function createRenderer(rootEl) {
     const x = (Number(ev.amount) || 0) / 100;
     clearWins();
     audio.play('fsEnd'); pose('celebrate'); say('mascot.big', 2400, true);
-    await banner({ title: t('fs.end'), amount: x, kind: 'win', coins: x > 0, hold: 2200, sub: tierFor(x) ? t(tierFor(x)) : '', dimAmt: .94 });
+    await banner({ title: t('fs.end'), amount: x, kind: 'win', coins: x >= (S.cost || 1), hold: 2200, sub: tierFor(x) ? t(tierFor(x)) : '', dimAmt: .94 });
     setBonusMode(false);
     chip(chipFs, '', false);
     hook('onFreeSpinCounter', 0, 0);
@@ -640,7 +642,7 @@ export function createRenderer(rootEl) {
         const x = (Number(ev.amount) || 0) / 100; hook('onWin', x);
         chip(chipCombo, '', false);
         const min = S.inFs ? 50 : 15;
-        if (x >= min) { chip(chipTw, '', false); await winBanner(x); }
+        if (x / (S.cost || 1) >= min) { chip(chipTw, '', false); await winBanner(x); }
         return null;
       }
       case 'setTotalWin': hook('onTotal', (Number(ev.amount) || 0) / 100); return null;
@@ -699,7 +701,8 @@ export function createRenderer(rootEl) {
     playBook,
     setMultipliers: (g) => setMultipliers(g, false),
     setTurbo(b) { S.turbo = !!b; },
-    setFormat(fn) { if (typeof fn === 'function') S.fmt = fn; },
+    setCost(c) { S.cost = Number(c) > 0 ? Number(c) : 1; },
+    setFormat(fn, tick) { if (typeof fn === 'function') { S.fmt = fn; S.fmtTick = typeof tick === 'function' ? tick : fn; } },
     resize() { fx.resize(); },
     // mascot hook for the UI layer (UNLEASH confirm)
     mascot: { pose, say },

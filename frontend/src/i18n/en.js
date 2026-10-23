@@ -95,6 +95,7 @@ export const en = {
   'fs.endWin': 'Free spins total win: {amount}',
   'fs.press': 'Press to continue',
 
+  'fx.fuse': 'FUSE LINE!',
   'fx.kaching': 'KA-CHING!',
   'fx.pow': 'POW!',
   'fx.boom': 'BOOM!',

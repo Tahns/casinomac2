@@ -124,6 +124,7 @@ export async function startReplay(opts = {}) {
     const i2 = buildInfo({ amount: params.replayAmount, costMultiplier: costMult, mode: params.replayMode, currency, formatMoney });
     lineEl.textContent = i2.line;
     replay._amount = i2.amt;
+    replay._cost = costMult;
     setMsg('');
     btn.dataset.mode = 'start';
     btn.disabled = false;
@@ -138,6 +139,7 @@ export async function startReplay(opts = {}) {
     try {
       const r = await ensureRenderer();
       if (r.setTurbo) r.setTurbo(turbo);
+      if (r.setCost) r.setCost(replay._cost || 1);
       if (r.setFormat) r.setFormat((x) => formatMoney(Math.round((Number(x) || 0) * replay._amount), currency, { social: isSocial() }));
       const hooks = { onTotal() {}, onWin() {}, onFreeSpinCounter() {} };
       await r.playBook(replay.state, hooks);

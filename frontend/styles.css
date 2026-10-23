@@ -3,7 +3,7 @@
 :root{
   --paper:#F4E8C8; --mustard:#E8A92B; --orange:#D9622B; --brick:#B8352A; --teal:#2E8C8C; --night:#1E2F4A; --ink:#2B1A12; --olive:#7A8B3A; --plum:#6A3D6E;
   --ink-dim:#5a3a2a; --bg:#2a1620;
-  --panel:#F4E8C8; --panel2:#BFE3D6; --panel-win:#E8A92B; --panel-bet:#2E8C8C; --btn:#E8A92B; --btn2:#2E8C8C; --btn3:#D9622B;
+  --panel:#F4E8C8; --panel2:#BFE3D6; --panel-win:#E8A92B; --panel-bet:#1F6B6B; --btn:#E8A92B; --btn2:#2E8C8C; --btn3:#D9622B;
   --frame:#A8642F; --frame-dk:#7E4624; --tile:#EBD9AC; --board:#1E2F4A; --accent:#E8A92B; --hot-edge:#D9622B;
   /* scene palette (read by scene.js; free-spin mode swaps them) */
   --sc-bg:#3A2230; --sc-rock-c:#4B2B3E; --sc-rock-b:#5E3347; --sc-rock-a:#7A4A33; --sc-lite:#8A5A55; --sc-dot:#2B1A12;
@@ -452,4 +452,14 @@ body.state-error #loading{opacity:0;visibility:hidden;pointer-events:none}
 @media (max-height:360px), (max-aspect-ratio:11/10){
   .hud-bet .betrow{flex-wrap:wrap;justify-content:center;row-gap:calc(var(--fs)*.15)}
   .hud-bet .betrow .val{order:-1;flex:0 0 100%;min-width:0;text-align:center;text-overflow:clip}
+}
+
+/* contrast + hit areas (SWOT 2): WIN in ink on mustard, UNLEASH darker orange, 40px hit area on the small round buttons */
+.hud-win .val{color:var(--ink)}
+.unleash{background:#B4491D}
+.mini::after{content:"";position:absolute;inset:-9px}
+@media (max-height:360px){ .mini::after{inset:-12px} }
+@media (max-aspect-ratio:11/10){
+  .gus-bubble{max-width:46vw}
+  .gus-bubble{font-size:clamp(10px,3.3vw,15px)!important}
 }
