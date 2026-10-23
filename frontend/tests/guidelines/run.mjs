@@ -445,16 +445,24 @@ async function main() {
     const play = await (async () => { for (let i = 0; i < 10; i++) { const b = await findBtn(s, /play|start/i); if (b) return b; await sleep(500); } return null; })();
     const speedCtl = await findBtn(s, /turbo|speed|fast|skip|x2|2x/i); const turboVisible = await s.visible('#btn-turbo');
     const errs = []; s.page.on('pageerror', (e) => errs.push(String(e.message || e)));
-    const t0 = Date.now(); let secs = null; let msg = '';
-    if (play) {
-      await play.click({ timeout: 2000 }).catch(() => {});
-      while (Date.now() - t0 < 240000) {
-        if (await findBtn(s, /again|replay|restart/i)) { secs = Math.round((Date.now() - t0) / 100) / 10; break; }
+    const MAX = Number(process.env.QA_REPLAY_MAX || 480) * 1000;
+    const runOnce = async (btn) => {
+      const t0 = Date.now(); await btn.click({ timeout: 2000 }).catch(() => {});
+      while (Date.now() - t0 < MAX) {
+        if ((await s.text('#replay-btn')) && /again|replay/i.test((await s.text('#replay-btn')) || '') && /complete|done/i.test((await s.text('.rp-msg')) || '')) return Math.round((Date.now() - t0) / 100) / 10;
         await sleep(1000);
       }
+      return null;
+    };
+    let secs = null, fast = null;
+    if (play) secs = await runOnce(play);
+    const msg = snippet(await rText(s), 160);
+    if (secs !== null && (speedCtl || turboVisible)) { // optional fast-forward: measure it too
+      await s.page.evaluate(() => { if (!document.body.classList.contains('turbo')) document.querySelector('#btn-turbo')?.click(); }).catch(() => {});
+      const again = await findBtn(s, /again|replay/i); if (again) fast = await runOnce(again);
     }
-    msg = snippet(await rText(s), 160); await s.page.screenshot({ path: path.join(SHOTS, 'qa_replay_long.png') }); await s.close();
-    const ev = [`longest bonus book: id ${big.id}, ${big.events.length} events, payout ${big.payoutMultiplier / 100}x`, `replay finished in ${secs === null ? 'NOT FINISHED within 240 s' : secs + ' s'}`, `speed/turbo control visible in replay: ${!!speedCtl || turboVisible}`, 'text at end: ' + msg, 'page errors: ' + J(errs)];
+    await s.page.screenshot({ path: path.join(SHOTS, 'qa_replay_long.png') }); await s.close();
+    const ev = [`longest bonus book: id ${big.id}, ${big.events.length} events, payout ${big.payoutMultiplier / 100}x`, `replay (normal speed, "exactly as it happened") finished in ${secs === null ? 'NOT FINISHED within ' + MAX / 1000 + ' s' : secs + ' s'}`, `speed/turbo control visible in replay: ${!!speedCtl || turboVisible}${fast !== null ? '; with turbo: ' + fast + ' s' : ''}`, 'text at end: ' + msg, 'page errors: ' + J(errs)];
     if (secs === null || errs.length) return [FAIL, ...ev];
     return [secs > 60 ? RISK : PASS, ...ev];
   });

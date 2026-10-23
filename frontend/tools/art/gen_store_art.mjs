@@ -32,58 +32,13 @@ function starN(x, y, ro, ri, n, fill, sw = 5, rot = -90) {
   return P(d + 'Z', fill, sw);
 }
 
-// ---------------- Old Gus (local coords: feet at y=0, x centered, ~500 tall) ----------------
-function gus() {
-  let s = '';
-  // pickaxe behind
-  s += line('M150,-30 L222,-340', C.ink, 30) + line('M150,-30 L222,-340', C.wood, 18);
-  s += P('M140,-360 Q225,-420 320,-345 Q255,-372 226,-325 Q198,-370 140,-360Z', C.steel, 6);
-  s += line('M170,-366 Q225,-394 282,-358', C.cream, 5);
-  // boots + legs
-  s += E(-62, -28, 62, 32, '#7A4A2A') + E(62, -28, 62, 32, '#7A4A2A');
-  s += line('M-110,-40 q50,-12 100,0', C.ink, 5) + line('M10,-40 q50,-12 100,0', C.ink, 5);
-  s += P('M-108,-285 Q-120,-150 -98,-52 L-10,-52 L0,-140 L10,-52 L98,-52 Q120,-150 108,-285 Z', C.brick, 6);
-  s += dots('M-108,-285 Q-120,-150 -98,-52 L-10,-52 L0,-140 L-30,-200 L-60,-285 Z', 0.35);
-  // bib pocket
-  s += R(-34, -215, 68, 52, 8, C.mustard, 5) + line('M-24,-206 h48', C.ink, 3);
-  // arms: left cheering (viewer left), right holding pickaxe
-  s += line('M-100,-275 Q-165,-300 -196,-410', C.ink, 52) + line('M-100,-275 Q-165,-300 -196,-410', C.cream, 40);
-  s += E(-200, -430, 30, 30, C.skin, 6);
-  s += line('M100,-275 Q150,-250 160,-182', C.ink, 52) + line('M100,-275 Q150,-250 160,-182', C.cream, 40);
-  s += E(160, -166, 30, 30, C.skin, 6);
-  s += line('M-208,-448 l-8,-18 M-196,-455 l0,-20 M-182,-452 l8,-18', C.ink, 5);
-  // collar + buttons
-  s += E(0, -292, 74, 26, C.cream, 6);
-  s += E(-70, -266, 11, 11, C.mustard, 4) + E(70, -266, 11, 11, C.mustard, 4);
-  // head
-  s += E(-90, -345, 22, 26, C.skin, 6) + E(90, -345, 22, 26, C.skin, 6);
-  s += E(0, -348, 92, 88, C.skin, 7);
-  s += dots('M60,-420 Q96,-380 78,-310 Q50,-290 20,-300 Q70,-340 60,-420Z', 0.3);
-  s += E(-52, -322, 17, 12, '#E88A78', 0) + E(52, -322, 17, 12, '#E88A78', 0);
-  // mouth (open, cheering)
-  s += P('M-30,-286 Q0,-255 30,-286 Q0,-296 -30,-286Z', '#7A1F1A', 5) + `<path d="M-14,-274 Q0,-262 14,-274 Q0,-268 -14,-274Z" fill="#E8776F"/>`;
-  // eyes + brows
-  s += E(-34, -378, 21, 25, '#FFFDF4', 5) + E(34, -378, 21, 25, '#FFFDF4', 5);
-  s += `<circle cx="-30" cy="-374" r="9" fill="${C.ink}"/><circle cx="38" cy="-374" r="9" fill="${C.ink}"/><circle cx="-27" cy="-378" r="3" fill="#fff"/><circle cx="41" cy="-378" r="3" fill="#fff"/>`;
-  s += `<g transform="translate(0 8)">` + line('M-64,-418 Q-36,-440 -8,-414', C.ink, 20) + line('M-64,-418 Q-36,-440 -8,-414', '#D8D4C8', 11);
-  s += line('M8,-414 Q36,-440 64,-418', C.ink, 20) + line('M8,-414 Q36,-440 64,-418', '#D8D4C8', 11) + '</g>';
-  // nose
-  s += E(0, -340, 30, 25, C.skin2, 6);
-  s += `<path d="M-14,-350 q6,-6 12,-2" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>`;
-  // moustache
-  s += P('M0,-318 Q-38,-346 -88,-326 Q-142,-306 -112,-262 Q-120,-290 -66,-292 Q-30,-290 0,-304 Q30,-290 66,-292 Q120,-290 112,-262 Q142,-306 88,-326 Q38,-346 0,-318Z', '#DAD6CA', 6);
-  s += line('M-30,-312 q-24,8 -50,2 M30,-312 q24,8 50,2 M-60,-300 q-20,10 -40,2 M60,-300 q20,10 40,2', '#8E8A80', 3);
-  // helmet
-  s += '<g transform="translate(0 -52)">';
-  s += P('M-98,-378 Q-108,-496 0,-506 Q108,-496 98,-378 Z', C.yellow, 7);
-  s += dots('M40,-500 Q100,-490 98,-378 L50,-380 Q60,-450 40,-500Z', 0.3);
-  s += R(-116, -394, 232, 28, 14, C.mustard, 6);
-  s += R(-12, -506, 24, 112, 6, C.orange, 4);
-  s += E(0, -446, 30, 30, C.cream, 6) + starN(0, -446, 22, 8, 8, C.yellow, 3);
-  s += line('M-46,-470 l-22,-16 M46,-470 l22,-16 M0,-486 l0,-26', C.cream, 6);
-  s += '</g>';
-  return s;
-}
+// ---------------- Old Gus: the in-game mascot, baked by bake_gus.mjs from src/render/mascot.js/.css ----------------
+// Fragment viewBox is -20 -24 240 280; feet centre at (100,249). gus(pose, x, y, h) puts the feet centre at (x,y), height h (px).
+const GUS = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'gus_poses.json'), 'utf8')).poses;
+const gus = (pose, x, y, h, flip = 1) => {
+  const k = h / 280;
+  return `<g transform="translate(${x} ${y}) scale(${k * flip} ${k}) translate(-100 -249)">${GUS[pose]}</g>`;
+};
 
 // ---------------- gems ----------------
 function gem(x, y, s, kind) {
@@ -145,7 +100,7 @@ function tnt() {
   let s = '';
   const stick = (x, rot, lab) => `<g transform="translate(${x} 0) rotate(${rot})">` +
     R(-38, -250, 76, 250, 18, C.brick, 7) + R(-38, -170, 76, 72, 0, C.cream, 5) +
-    (lab ? `<text x="0" y="-122" text-anchor="middle" font-family="'Arial Black','DejaVu Sans',sans-serif" font-weight="900" font-size="38" fill="${C.ink}">TNT</text>` : '') +
+    (lab ? `<text x="0" y="-125" text-anchor="middle" font-family="'Arial Black','DejaVu Sans',sans-serif" font-weight="900" font-size="34" textLength="62" lengthAdjust="spacingAndGlyphs" fill="${C.ink}">TNT</text>` : '') +
     dots('M-38,-250 h24 v250 h-24z', 0.35) + `</g>`;
   s += stick(-62, -6, 0) + stick(62, 6, 0) + stick(0, 0, 1);
   s += R(-100, -225, 200, 26, 10, C.mustard, 5) + R(-100, -50, 200, 26, 10, C.mustard, 5);
@@ -232,7 +187,6 @@ function build(kind) {
     s += rays(W / 2, 1150, W, H);
     // frame
     s += post(40, 0, 120, H) + post(W - 160, 0, 120, H);
-    s += P(`M160,1180 L330,1000 L330,1060 L160,1250Z`, C.wood, 6) + P(`M${W - 160},1180 L${W - 330},1000 L${W - 330},1060 L${W - 160},1250Z`, C.wood, 6);
     s += beam(20, 20, W - 40, 100);
     // sparkles + burst
     s += sparkles([[250, 700, 38], [1300, 640, 30], [210, 1000, 26], [1330, 960, 40], [700, 760, 22, C.mustard], [1150, 820, 26]]);
@@ -245,9 +199,9 @@ function build(kind) {
     s += rock('M80,1900 Q140,1850 220,1880 Q270,1910 250,1960 Q150,1990 80,1960Z', C.steel);
     s += rock(`M${W - 90},1900 Q${W - 150},1850 ${W - 240},1880 Q${W - 290},1920 ${W - 270},1970 Q${W - 160},2000 ${W - 90},1960Z`, C.steel);
     // Gus
-    s += `<g transform="translate(470 1780) scale(1.7)">${gus()}</g>`;
+    s += gus('bigwin', 410, 1900, 1000);
     // cart
-    s += `<g transform="translate(930 1500) scale(1.08)">${cart()}</g>`;
+    s += `<g transform="translate(985 1500) scale(1.0)">${cart()}</g>`;
     // TNT
     s += `<g transform="translate(1330 1840) scale(.95)">${tnt()}</g>`;
     s += rock('M560,1960 Q640,1900 740,1950 Q790,1990 740,2030 Q620,2048 560,2010Z', C.cream);
@@ -267,7 +221,7 @@ function build(kind) {
   s += rock('M0,900 Q80,830 200,850 Q300,810 420,880 L520,900 L520,1080 L0,1080Z', C.orange);
   s += rock(`M${W},880 Q${W - 100},800 ${W - 240},830 Q${W - 340},800 ${W - 420},870 L${W - 520},900 L${W - 520},1080 L${W},1080Z`, C.brick);
   s += rock('M300,980 Q500,930 700,980 Q900,940 1100,985 Q1300,945 1500,990 L1600,1080 L300,1080Z', '#8A4420');
-  s += `<g transform="translate(340 1000) scale(1.5)">${gus()}</g>`;
+  s += gus('celebrate', 340, 1035, 780);
   s += `<g transform="translate(1000 765) scale(.98)">${cart()}</g>`;
   s += `<g transform="translate(1530 1015) scale(.78)">${tnt()}</g>`;
   s += title(1280, cy0 + 40, lines, sizes, widths, -3);

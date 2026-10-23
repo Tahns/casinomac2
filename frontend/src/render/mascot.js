@@ -74,15 +74,22 @@ function buildSVG(uid) {
   // redraw the right hand on top of the pickaxe handle so it grips it
   const gripR = '';
 
-  // ---- plunger (TNT box)
+  // ---- plunger (TNT box stands beside him so legs + rod stay visible)
   const plunger =
     `<g class="plunger">` +
     part('plbar',
-      sh('M96.5,176L103.5,176L103.5,226L96.5,226Z', C.steel) +
-      sh('M74,162A6,6 0 0 1 80,156L120,156A6,6 0 0 1 126,162A6,6 0 0 1 120,168L80,168A6,6 0 0 1 74,162Z', C.wood)) +
-    sh('M62,222L138,222L138,250L62,250Z', C.red, 'M112,222L140,222L140,252L112,252Z') +
-    `<text x="100" y="243" text-anchor="middle" font-family="Impact,'Arial Black',sans-serif" font-size="17" font-weight="900" fill="${C.cream}" stroke="${C.ink}" stroke-width="1.2" letter-spacing="1">TNT</text>` +
+      sh('M179.5,190L184.5,190L184.5,224L179.5,224Z', C.steel) +
+      sh('M162,176A5,5 0 0 1 167,171L197,171A5,5 0 0 1 202,176A5,5 0 0 1 197,181L167,181A5,5 0 0 1 162,176Z', C.wood)) +
+    sh('M158,224L206,224L206,250L158,250Z', C.red, 'M190,224L208,224L208,252L190,252Z') +
+    `<path class="fine" d="M158,230L206,230M158,244L206,244" stroke="${C.ink}" stroke-width="1.8" fill="none"/>` +
+    `<text x="182" y="241.5" text-anchor="middle" font-family="Impact,'Arial Black',sans-serif" font-size="11" font-weight="900" fill="${C.cream}" stroke="${C.ink}" stroke-width=".9" letter-spacing=".6">TNT</text>` +
     `</g>`;
+
+  // ---- pickaxe resting behind his shoulder (poses where the hand is busy)
+  const pickBack = `<g class="pickBack">` +
+    sh('M122,214L131,218L176,98L167,94Z', C.wood) +
+    sh('M138,98C154,56 214,66 222,112C206,92 188,88 171,94C156,90 142,92 138,98Z', C.steel, 'M170,60L226,60L226,112L170,112Z') +
+    sh('M162,84L180,92L174,106L156,98Z', C.navy) + `</g>`;
 
   // ---- eyes
   const eyeShape =
@@ -143,6 +150,14 @@ function buildSVG(uid) {
 
   // ---- fx
   const fxBurst = `<g class="burst">${sh(burstPath(100, 112, 104, 66, 12), C.mustard)}${`<path d="${burstPath(100, 112, 70, 44, 12)}" fill="${C.cream}" stroke="${C.ink}" stroke-width="3" stroke-linejoin="round" opacity=".95"/>`}</g>`;
+  const fxBurst2 = `<g class="burst2">${sh(burstPath(100, 92, 128, 86, 14), C.orange, 'M100,-50L240,-50L240,230L100,230Z')}</g>`;
+  const cfCols = [C.red, C.teal, C.mustard, C.orange, C.cream, C.plum, C.olive];
+  const cfPos = [[-12,24],[20,-16],[52,-24],[148,-22],[182,-10],[210,22],[-16,76],[216,80],[-6,126],[206,128],[-4,176],[204,176]];
+  const confetti = `<g class="confetti">${cfPos.map(([x, y], i) => {
+    const fill = cfCols[i % cfCols.length], k = i % 3;
+    const d = k === 0 ? `M${x-7},${y-4}L${x+7},${y-4}L${x+7},${y+4}L${x-7},${y+4}Z` : k === 1 ? `M${x},${y-9}L${x+7},${y}L${x},${y+9}L${x-7},${y}Z` : star4(x, y, 10);
+    return `<g class="cf" style="transform-origin:${x}px ${y}px;animation-delay:${(i % 4) * .13}s"><path d="${d}" fill="${fill}" stroke="${C.ink}" stroke-width="2" stroke-linejoin="round"/></g>`;
+  }).join('')}</g>`;
   const starAt = (x, y, r, fill, delay) =>
     `<g class="star" style="transform-origin:${x}px ${y}px;animation-delay:${delay}s">${sh(star4(x, y, r), fill)}</g>`;
   const stars = `<g class="stars">${starAt(18, 40, 17, C.mustard, 0)}${starAt(186, 30, 21, C.cream, .15)}${starAt(8, 150, 14, C.cream, .3)}${starAt(194, 140, 17, C.mustard, .45)}${starAt(150, -8, 12, C.mustard, .2)}</g>`;
@@ -157,8 +172,9 @@ function buildSVG(uid) {
 
   return `<svg class="gus" xmlns="http://www.w3.org/2000/svg" viewBox="-20 -24 240 280" role="img" aria-label="Old Gus the miner">
 <defs><pattern id="${uid}ht" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="2.5" cy="2.5" r="1.35" fill="${C.ink}" opacity=".5"/></pattern></defs>
-${shadow}${fxBurst}
+${shadow}${fxBurst}${fxBurst2}
 <g class="body"><g class="body-a">
+${pickBack}
 ${part('legL', leg.replace('matrix(-1 0 0 1 200 0)', 'matrix(1 0 0 1 0 0)'))}${part('legR', leg)}
 ${part('torso', torso)}
 ${plunger}
@@ -166,7 +182,7 @@ ${part('armL', arm)}${armR}${gripR}
 ${head}
 ${sweat}${mlh}${tdots}
 </g></g>
-${mlhop}${stars}
+${mlhop}${stars}${confetti}
 </svg>`;
 }
 

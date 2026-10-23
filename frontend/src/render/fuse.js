@@ -259,18 +259,19 @@ export function createFuse(ctx) {
     if (gen !== st.gen || dead()) return;
     // 2. BOOM
     const cn = cells.length ? centroid(cells) : (st.cells.length ? centroid(st.cells.slice(0, Math.max(1, st.burned))) : { x: 3, y: 2.5 });
-    const bm = boomArt(cn.x, cn.y); st.boom = bm;
+    const bm = boomArt(clamp(cn.x, 1.6, 4.4), clamp(cn.y, 1.4, 3.6)); st.boom = bm;
     snd('explosion');
     try { if (ctx.flash && !still) ctx.flash(.7, 380, '#fff1c4'); } catch (e) { /* ignore */ }
     try { if (ctx.shake) ctx.shake(still ? .3 : 1.5, 560); } catch (e) { /* ignore */ }
+    let boomAnim = null;
     if (!still) {
-      try { bm.animate([{ transform: 'translate(-50%,-50%) scale(.15) rotate(-12deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.25) rotate(4deg)', opacity: 1, offset: .35 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-2deg)', opacity: 1, offset: .6 }, { transform: 'translate(-50%,-50%) scale(1.06) rotate(0)', opacity: 1, offset: .85 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 0 }], { duration: T(1250), easing: 'ease-out', fill: 'forwards' }); } catch (e) { /* ignore */ }
+      try { boomAnim = bm.animate([{ transform: 'translate(-50%,-50%) scale(.15) rotate(-12deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.25) rotate(4deg)', opacity: 1, offset: .35 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-2deg)', opacity: 1, offset: .6 }, { transform: 'translate(-50%,-50%) scale(1.06) rotate(0)', opacity: 1, offset: .85 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 0 }], { duration: T(1250), easing: 'ease-out', fill: 'forwards' }); } catch (e) { /* ignore */ }
     } else {
-      try { bm.animate([{ opacity: 0 }, { opacity: 1, offset: .2 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: 1100, fill: 'forwards' }); } catch (e) { /* ignore */ }
+      try { boomAnim = bm.animate([{ opacity: 0 }, { opacity: 1, offset: .2 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: 1100, fill: 'forwards' }); } catch (e) { /* ignore */ }
     }
     // particles (capped inside fx)
     if (ctx.fx && !still) {
-      cells.slice(0, 8).forEach((p) => { try { const c = ctx.cellCenter(p.reel, p.row); ctx.fx.sparks(c.x, c.y, '#ffd24a', c.size * .35, 8, 6); ctx.fx.smoke(c.x, c.y, c.size * .5, 3); ctx.fx.ring(c.x, c.y, c.size * .75, '255,200,90', .4, 4); ctx.fx.glow(c.x, c.y, c.size * 1.1, '255,160,40', .45); } catch (e) { /* ignore */ } });
+      cells.slice(0, 6).forEach((p) => { try { const c = ctx.cellCenter(p.reel, p.row); ctx.fx.sparks(c.x, c.y, '#ffd24a', c.size * .35, 8, 6); ctx.fx.ring(c.x, c.y, c.size * .75, '255,200,90', .4, 4); ctx.fx.glow(c.x, c.y, c.size * .8, '255,160,40', .35); } catch (e) { /* ignore */ } });
     }
     // 3. cells flash then pop into nuggets (squash and stretch), staggered along the fuse
     const order = [...cells].sort((a, b) => { const ia = st.cells.findIndex((p) => p.reel === a.reel && p.row === a.row), ib = st.cells.findIndex((p) => p.reel === b.reel && p.row === b.row); return ia - ib; });
@@ -300,8 +301,8 @@ export function createFuse(ctx) {
     // rope: everything turns to ash and fades while the burst plays
     clear(true);
     st.boom = bm;
-    await Promise.all(jobs);
-    await sleep(fast ? 120 : 380);
+    await Promise.all([...jobs, boomAnim ? boomAnim.finished.catch(() => {}) : null]);
+    await sleep(fast ? 120 : 200);
     if (bm.isConnected) bm.remove();
     st.boom = null;
     pose('think');

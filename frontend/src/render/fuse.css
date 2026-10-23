@@ -33,5 +33,5 @@
 .fz-burst-out{fill:#4a2c14;stroke:#4a2c14;stroke-width:.08;stroke-linejoin:round}
 .fz-burst-mid{fill:#ff6a2a}
 .fz-burst-in{fill:#ffd24a}
-.fz-boom-text{position:relative;font:900 calc(var(--u)*.78)/1 Impact,"Arial Black","Haettenschweiler",sans-serif;letter-spacing:.02em;color:#fff6d0;-webkit-text-stroke:calc(var(--u)*.05) #4a2c14;paint-order:stroke fill;text-shadow:calc(var(--u)*.05) calc(var(--u)*.06) 0 #c2381f;transform:rotate(-6deg)}
+.fz-boom-text{position:relative;font:900 calc(var(--u)*.78)/1 Impact,"Arial Black","Haettenschweiler",sans-serif;letter-spacing:.02em;color:#fff3b0;-webkit-text-stroke:calc(var(--u)*.075) #2a1409;paint-order:stroke fill;text-shadow:calc(var(--u)*.05) calc(var(--u)*.06) 0 #c2381f;transform:rotate(-6deg)}
 @media (prefers-reduced-motion:reduce){.fz-spark-in{animation:none!important}.fz-spark.hot .fz-spark-in{transform:scale(1.3)}}

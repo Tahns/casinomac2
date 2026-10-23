@@ -27,6 +27,8 @@
 .must, .must-a { transform-origin: 100px 118px; }
 .plbar, .plbar-a { transform-origin: 100px 170px; }
 .burst { transform-origin: 100px 112px; }
+.burst2 { transform-origin: 100px 92px; }
+.plbar, .plbar-a { transform-origin: 182px 176px; }
 .shadow { transform-origin: 100px 249px; }
 .lamp-rays { transform-origin: 100px 31px; }
 
@@ -36,7 +38,7 @@
 .lidL, .lidR { transform: translateY(calc(var(--lid) * 1px)); }
 .pup { transform: translate(calc(var(--lx) * 1px), calc(var(--ly) * 1px)); }
 .eyeR .pup { transform: translate(calc(var(--lx) * -1px), calc(var(--ly) * 1px)); }
-.m, .eyesHappy, .burst, .stars, .sweat, .mlh, .mlhop, .tdots, .handThink, .plunger, .must-s { display: none; }
+.m, .eyesHappy, .burst, .burst2, .confetti, .pickBack, .stars, .sweat, .mlh, .mlhop, .tdots, .handThink, .plunger, .must-s { display: none; }
 .must-n { display: inline; }
 
 .armL, .armR, .head, .hat, .browL, .browR, .lidL, .lidR, .eyeL, .eyeR, .must, .body, .torso { transition: transform .14s steps(3); }
@@ -59,7 +61,8 @@
 .p-happy .browR { transform: translateY(-4px) rotate(6deg); }
 .p-happy .armL { transform: rotate(38deg); }
 .p-happy .armR { transform: rotate(-38deg); }
-.p-happy .mlhop { display: inline; }
+.p-happy .mlhop, .p-happy .pickBack, .p-shrug .pickBack, .p-dance .pickBack { display: inline; }
+.p-happy .pick, .p-shrug .pick { display: none; }
 
 .p-bigwin .m-wide { display: inline; }
 .p-bigwin .must { transform: translateY(-6px); }
@@ -86,15 +89,15 @@
 .p-shock .sweat, .p-shock .mlh { display: inline; }
 .p-shock .body { transform: scale(1.06, .95); }
 
-.p-plunger { --lid: -11; --ly: 1; }
+.p-plunger { --lid: -11; --ly: 1; --lx: 3; }
 .p-plunger .m-open { display: inline; }
 .p-plunger .plunger { display: inline; }
 .p-plunger .pick { display: none; }
-.p-plunger .armL { transform: rotate(-60deg) scaleY(.75); }
-.p-plunger .armR { transform: rotate(60deg) scaleY(.75); }
+.p-plunger .armL { transform: rotate(150deg) scaleY(.9); }
+.p-plunger .armR { transform: rotate(-52deg) scaleY(.71); }
 .p-plunger .browL { transform: translateY(5px) rotate(14deg); }
 .p-plunger .browR { transform: translateY(5px) rotate(-14deg); }
-.p-plunger .head { transform: translateY(2px) rotate(3deg); }
+.p-plunger .head { transform: translateY(1px) rotate(-3deg); }
 
 .p-shrug { --lid: -14; --ly: 4; }
 .p-shrug .m-frown { display: inline; }
@@ -104,7 +107,6 @@
 .p-shrug .browR { transform: translateY(2px) rotate(18deg); }
 .p-shrug .armL { transform: rotate(84deg) scaleY(.82); }
 .p-shrug .armR { transform: rotate(-84deg) scaleY(.82); }
-.p-shrug .pick { transform: rotate(-24deg); }
 .p-shrug .sweat { display: inline; }
 
 .p-dance .m-open { display: inline; }
@@ -120,13 +122,14 @@
 .p-celebrate .m-wide { display: inline; }
 .p-celebrate .eyesHappy { display: inline; }
 .p-celebrate .eyeL, .p-celebrate .eyeR { display: none; }
-.p-celebrate .must { transform: translateY(-6px); }
-.p-celebrate .browL { transform: translateY(-7px) rotate(-8deg); }
-.p-celebrate .browR { transform: translateY(-7px) rotate(8deg); }
-.p-celebrate .armL { transform: rotate(150deg); }
-.p-celebrate .armR { transform: rotate(-150deg); }
-.p-celebrate .pick { transform: rotate(160deg); }
-.p-celebrate .burst, .p-celebrate .stars, .p-celebrate .mlh { display: inline; }
+.p-celebrate .must { transform: translateY(-4px); }
+.p-celebrate .browL { transform: translateY(-8px) rotate(-8deg); }
+.p-celebrate .browR { transform: translateY(-8px) rotate(8deg); }
+.p-celebrate .armL { transform: rotate(152deg); }
+.p-celebrate .armR { transform: rotate(-152deg); }
+.p-celebrate .hat { transform: translateY(-52px) rotate(-16deg); }
+.p-celebrate .pick { display: none; }
+.p-celebrate .burst2, .p-celebrate .confetti, .p-celebrate .stars, .p-celebrate .mlh { display: inline; }
 
 /* ---------- animation (limited: few frames, hard steps) ---------- */
 @media (prefers-reduced-motion: no-preference) {
@@ -157,7 +160,8 @@
   .p-bigwin .hat-a { animation: g-hatbounce .72s steps(1) infinite; }
   .p-bigwin .armL-a { animation: g-wavea .36s steps(1) infinite; }
   .p-bigwin .armR-a { animation: g-waveb .36s steps(1) infinite; }
-  .p-bigwin .burst, .p-celebrate .burst { animation: g-spin 1s steps(3) infinite; }
+  .p-bigwin .burst, .p-celebrate .burst2 { animation: g-spin 1s steps(3) infinite; }
+  .p-celebrate .cf { animation: g-cfall 1.2s steps(1) infinite; }
   .p-bigwin .star, .p-celebrate .star, .p-dance .star { animation: g-twinkle .6s steps(1) infinite; }
   .p-bigwin .mlh { animation: g-blinkfx .36s steps(1) infinite; }
   .p-bigwin .lamp-rays, .p-celebrate .lamp-rays { animation: g-flick .3s steps(1) infinite; }
@@ -207,6 +211,7 @@
   /* celebrate: long fanfare loop with a hat toss */
   .p-celebrate .body-a { animation: g-hop3 1.6s steps(1) infinite; }
   .p-celebrate .shadow { animation: g-shadow 1.6s steps(1) infinite; }
+  .p-celebrate .hat { transform: none; }
   .p-celebrate .hat-a { animation: g-toss 3.2s steps(1) infinite; }
   .p-celebrate .armL-a { animation: g-wavea .4s steps(1) infinite; }
   .p-celebrate .armR-a { animation: g-waveb .4s steps(1) infinite; }
@@ -255,8 +260,8 @@
 @keyframes g-drop { 0% { transform: translateY(-4px); opacity: 1; } 75% { transform: translateY(16px); opacity: 1; } 100% { transform: translateY(20px); opacity: 0; } }
 
 @keyframes g-pl-bar { 0%, 44% { transform: none; } 46% { transform: translateY(-8px); } 50%, 82% { transform: translateY(26px); } 90%, 100% { transform: none; } }
-@keyframes g-pl-armL { 0%, 44% { transform: rotate(-60deg) scaleY(.75); } 46% { transform: rotate(-72deg) scaleY(.66); } 50%, 82% { transform: rotate(-43deg) scaleY(.96); } 90%, 100% { transform: rotate(-60deg) scaleY(.75); } }
-@keyframes g-pl-armR { 0%, 44% { transform: rotate(60deg) scaleY(.75); } 46% { transform: rotate(72deg) scaleY(.66); } 50%, 82% { transform: rotate(43deg) scaleY(.96); } 90%, 100% { transform: rotate(60deg) scaleY(.75); } }
+@keyframes g-pl-armL { 0%, 44% { transform: rotate(150deg) scaleY(.9); } 46% { transform: rotate(138deg) scaleY(.9); } 50%, 82% { transform: rotate(170deg) scaleY(.9); } 90%, 100% { transform: rotate(150deg) scaleY(.9); } }
+@keyframes g-pl-armR { 0%, 44% { transform: rotate(-52deg) scaleY(.71); } 46% { transform: rotate(-63deg) scaleY(.64); } 50%, 82% { transform: rotate(-32deg) scaleY(1.05); } 90%, 100% { transform: rotate(-52deg) scaleY(.71); } }
 @keyframes g-pl-body { 0%, 30% { transform: none; } 38% { transform: translateY(2px) scale(1.04, .96) rotate(-2deg); } 46% { transform: translateY(-4px) scale(.97, 1.05); } 50% { transform: translateY(6px) scale(1.12, .86); } 54% { transform: translate(-10px, -12px) scale(.92, 1.12) rotate(-9deg); } 62% { transform: translate(-6px, -4px) rotate(-6deg); } 74% { transform: translate(-2px, 0) rotate(-2deg); } 86%, 100% { transform: none; } }
 @keyframes g-pl-head { 0%, 46% { transform: none; } 54% { transform: translateY(-3px) rotate(-8deg); } 74% { transform: rotate(-3deg); } 86%, 100% { transform: none; } }
 @keyframes g-pl-mopen { 0%, 49% { opacity: 1; } 50%, 86% { opacity: 0; } 90%, 100% { opacity: 1; } }
@@ -273,7 +278,7 @@
 @keyframes g-kickL { 0% { transform: translateY(0); } 25% { transform: translateY(-8px) rotate(8deg); } 50% { transform: translateY(0); } 75% { transform: translateY(-2px); } }
 @keyframes g-kickR { 0% { transform: translateY(0); } 25% { transform: translateY(-2px); } 50% { transform: translateY(0); } 75% { transform: translateY(-8px) rotate(-8deg); } }
 @keyframes g-danceL { 0% { transform: rotate(120deg); } 50% { transform: rotate(30deg); } }
-@keyframes g-danceR { 0% { transform: rotate(-30deg); } 50% { transform: rotate(-120deg); } }
+@keyframes g-danceR { 0% { transform: rotate(-30deg); } 50% { transform: rotate(-100deg); } }
 @keyframes g-hatswing { 0% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
 @keyframes g-hop3 {
   0% { transform: translateY(0) scale(1.14, .85); }
@@ -285,7 +290,8 @@
   76% { transform: translateY(-10px) scale(.96, 1.05); }
   88%, 100% { transform: none; }
 }
-@keyframes g-toss { 0%, 8% { transform: none; } 12% { transform: translateY(-30px) rotate(-60deg); } 20% { transform: translateY(-62px) rotate(-170deg); } 30% { transform: translateY(-66px) rotate(-280deg); } 40% { transform: translateY(-36px) rotate(-340deg); } 50% { transform: translateY(-4px) rotate(-360deg); } 56% { transform: translateY(3px); } 62%, 100% { transform: none; } }
+@keyframes g-toss { 0%, 6% { transform: none; } 10% { transform: translateY(-3px) scale(1.04, .92); } 18% { transform: translateY(-36px) rotate(-30deg); } 30% { transform: translateY(-64px) rotate(-150deg); } 42% { transform: translateY(-58px) rotate(-260deg); } 54% { transform: translateY(-30px) rotate(-330deg); } 62% { transform: translateY(-6px) rotate(-360deg); } 68% { transform: translateY(3px) scale(1.05, .9); } 74%, 100% { transform: none; } }
+@keyframes g-cfall { 0% { transform: translateY(0) rotate(0); } 25% { transform: translateY(7px) rotate(40deg); } 50% { transform: translateY(14px) rotate(90deg); } 75% { transform: translateY(21px) rotate(140deg); } }
 
 /* ---------- speech bubble (retro comic) ---------- */
 .gus-bubble {
