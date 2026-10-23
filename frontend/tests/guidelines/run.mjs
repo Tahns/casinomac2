@@ -477,7 +477,7 @@ async function main() {
     if (play) secs = await runOnce(play);
     const msg = snippet(await rText(s), 160);
     if (secs !== null && (speedCtl || turboVisible)) { // optional fast-forward: measure it too
-      await s.page.evaluate(() => { if (!document.body.classList.contains('turbo')) document.querySelector('#btn-turbo')?.click(); }).catch(() => {});
+      await s.page.evaluate(() => { const r = document.querySelector('#replay-turbo'); if (r) { if (r.getAttribute('aria-pressed') !== 'true') r.click(); } else if (!document.body.classList.contains('turbo')) document.querySelector('#btn-turbo')?.click(); }).catch(() => {});
       const again = await findBtn(s, /again|replay/i); if (again) fast = await runOnce(again);
     }
     await s.page.screenshot({ path: path.join(SHOTS, 'qa_replay_long.png') }); await s.close();
