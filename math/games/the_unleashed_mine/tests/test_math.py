@@ -54,8 +54,8 @@ def test_bonus_shape():
             median = p / 100
             break
     mean = sum(w * p / 100 for _, w, p in rows) / W
-    # measured 39.9x on 1e5 books; gate at 35% of the 100x price
-    assert median >= 35, median
+    # measured 43.6x on 1e5 books; gate at 40% of the 100x price
+    assert median >= 40, median
     assert mean / median <= 3, mean / median
 
 

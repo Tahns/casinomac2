@@ -77,10 +77,18 @@ class OptimizationSetup:
                     # One fence per scatter tier: shares of purchases are pinned by hr (1 / share).
                     # 4 scatters (10 spins) 88 %, 5 (12) 10 %, 6 (15) 1.78 %, 7-8 (18/20) remainder ~0.2 %.
                     # rtp = share x mean win of the tier (mean 10-spin tier ~93x).
-                    "fgfloor4": ConstructConditions(rtp=TIER_RTP[4], hr=1 / TIER_SHARE[4]).return_dict(),
-                    "fgfloor5": ConstructConditions(rtp=TIER_RTP[5], hr=1 / TIER_SHARE[5]).return_dict(),
-                    "fgfloor6": ConstructConditions(rtp=TIER_RTP[6], hr=1 / TIER_SHARE[6]).return_dict(),
-                    "fgfloor7": ConstructConditions(rtp=TIER_RTP[7], hr="x").return_dict(),
+                    "fgfloor4": ConstructConditions(
+                        rtp=TIER_RTP[4], hr=1 / TIER_SHARE[4], search_conditions={"bonusTier": "4"}
+                    ).return_dict(),
+                    "fgfloor5": ConstructConditions(
+                        rtp=TIER_RTP[5], hr=1 / TIER_SHARE[5], search_conditions={"bonusTier": "5"}
+                    ).return_dict(),
+                    "fgfloor6": ConstructConditions(
+                        rtp=TIER_RTP[6], hr=1 / TIER_SHARE[6], search_conditions={"bonusTier": "6"}
+                    ).return_dict(),
+                    "fgfloor7": ConstructConditions(
+                        rtp=TIER_RTP[7], hr="x", search_conditions={"bonusTier": "7"}
+                    ).return_dict(),
                 },
                 "scaling": ConstructScaling(
                     [
@@ -96,8 +104,8 @@ class OptimizationSetup:
                     max_m2m=8,
                     pmb_rtp=1.0,
                     sim_trials=5000,
-                    test_spins=[10, 20, 50],
-                    test_weights=[0.6, 0.2, 0.2],
+                    test_spins=[50, 100, 200],
+                    test_weights=[0.3, 0.4, 0.3],
                     score_type="rtp",
                 ).return_dict(),
             },

@@ -61,6 +61,9 @@ class GameStateOverride(GameExecutables):
     def run_freespin_from_base(self, scatter_key="scatter"):
         # remember the scatter count that started the feature (free-spin boards overwrite it)
         self.trigger_scatters = self.count_special_symbols(scatter_key)
+        if self.criteria.startswith("fgfloor"):
+            # force-record key the optimizer uses to pin the share of each scatter tier
+            self.record({"bonusTier": min(self.trigger_scatters, 7)})
         super().run_freespin_from_base(scatter_key)
 
     def check_repeat(self) -> None:

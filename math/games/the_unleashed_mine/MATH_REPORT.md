@@ -1,51 +1,65 @@
 # The Unleashed Mine — rapport maths
 
-Mesuré sur les fichiers publiés `library/publish_files` (100 000 livres par mode, optimiseur Rust du SDK). Tests : `../../env/bin/python -m pytest tests -q` (7 passent).
+Mesuré sur les fichiers publiés `library/publish_files` (100 000 livres par mode, optimiseur Rust du SDK). Tests : `../../env/bin/python -m pytest tests -q` (8 passent).
 
 ## Grille et règles
 - 6 rouleaux x 5 rangées, gains par amas (5 symboles identiques adjacents ou plus), cascades.
 - Wild W (Pépite d'or) remplace les symboles payants, pas le scatter S (Dynamite).
-- 4+ scatters : free spins « Unleashed Mine » : 4 → 10, 5 → 12, 6 → 15, 7 → 18, 8 → 20. Relance avec 3+ scatters : 3 → 5, 4 → 8, 5 → 10, 6 → 12, 7 → 15, 8 → 18.
-- Veines à multiplicateurs (free spins seulement) : chaque case démarre à x4 ; chaque case d'un amas gagnant gagne +6 ; plafond x512 par case. Gain d'un amas = valeur de table x somme des multiplicateurs de ses cases.
+- 4+ scatters : free spins « Unleashed Mine » : 4 → 10, 5 → 12, 6 → 15, 7 → 18, 8 → 20 (9 et plus paient comme 8). Relance avec 3+ scatters : 3 → 5, 4 → 8, 5 → 10, 6 → 12, 7 → 15, 8 → 18.
+- Veines à multiplicateurs (free spins seulement) : chaque case démarre à x3 ; chaque case d'un amas gagnant gagne +3 ; plafond x512 par case. Gain d'un amas = valeur de table x somme des multiplicateurs de ses cases.
 - Gain max 5 000x la mise.
 
 ## Modes
 | Mode | Coût | RTP | Gain max | Taux de gain | Médiane |
 |---|---|---|---|---|---|
 | base | 1x | 96,000 % | 5 000x (environ 1 / 5 000 000) | 29,1 % | 0x |
-| bonus (UNLEASH) | 100x | 96,000 % | 5 000x (environ 1 / 50 000) | 100 % (plancher 30x) | 39,9x |
+| bonus (UNLEASH) | 100x | 96,000 % | 5 000x (1 / 50 000) | 100 % (plancher 30x) | 43,6x |
 
-Tous les paiements sont des multiples de 0,1x. Deux modes (limite : 20).
+Tous les paiements sont des multiples de 0,1x. Deux modes (limite : 20). Mesuré sur 100 000 livres par mode.
+
+## UNLEASH : nombre de scatters (changement v4)
+Exigence : à l'achat, le minimum de scatters (4 → 10 free spins) est la règle, plus de scatters est rare.
+Part pondérée des achats par nombre de free spins de départ (livres x table de poids, outil `trig.py`) :
+
+| Free spins | 10 (4 scat.) | 12 (5) | 15 (6) | 18 (7) | 20 (8) |
+|---|---|---|---|---|---|
+| Part des achats | 88,00 % | 10,00 % | 1,78 % | 0,17 % | 0,05 % |
+
+Comment : (1) un critère par palier (`fgfloor4`..`fgfloor7`, quotas de simulation 0,55 / 0,25 / 0,12 / 0,079, plancher 30x) ; (2) chaque livre enregistre une clé de force `bonusTier` (nombre de scatters, 7 pour 7 et plus) et l'optimiseur définit une clôture par palier (`game_optimization.py`, `TIER_SHARE` fixe la part par `hr`, `TIER_RTP` le RTP du palier) ; (3) `check_repeat` ne garde que les livres dont le nombre réel de scatters au déclenchement (après cascades) est celui du palier ; (4) le SDK ne sait forcer qu'un scatter par rouleau (6 max) et bouclait sans fin pour 7-8 : `force_special_board` est surchargé (6 forcés, les autres Dynamite posés sur des cases au hasard).
+
+Compensation : le RTP cible est obtenu avec des veines plus douces (x3 / +3 au lieu de x4 / +6). Moyenne naturelle d'un palier 10 spins (plancher 30x) : 101x (médiane 69x), contre 139x (médiane 89x) avec x4 / +6 ; l'optimiseur n'a donc qu'à raboter environ 8 % au lieu d'environ 30 %. Moyenne visée par palier : 93,6x / 109x / 135x / 138x.
 
 ## Répartition des gains — base (part des spins, part du RTP)
 | Gain | Spins | Part du RTP |
 |---|---|---|
 | 0x | 70,9 % | 0 |
-| 0 à 1x | 11,2 % | 5,6 % |
-| 1 à 2x | 4,7 % | 6,7 % |
-| 2 à 5x | 10,2 % | 33,3 % |
-| 5 à 10x | 2,4 % | 13,3 % |
-| 10 à 40x | 0,07 % | 1,9 % |
-| 40 à 100x | 0,33 % | 22,7 % |
-| 100 à 500x | 0,09 % | 11,7 % |
+| 0 à 1x | 10,4 % | 5,6 % |
+| 1 à 2x | 5,7 % | 7,7 % |
+| 2 à 5x | 10,4 % | 33,8 % |
+| 5 à 10x | 2,1 % | 11,9 % |
+| 10 à 40x | 0,09 % | 2,5 % |
+| 40 à 100x | 0,32 % | 22,0 % |
+| 100 à 500x | 0,08 % | 11,8 % |
 | 500x et plus | 0,001 % | 0,8 % |
 
 ## Répartition des gains — UNLEASH
 | Gain | Achats | Part du RTP |
 |---|---|---|
-| 20 à 40x | 50,1 % | 17,4 pts |
-| 40 à 60x | 31,5 % | 13,9 pts |
-| 60 à 100x | 1,7 % | 1,4 pts |
-| 100 à 200x | 4,2 % | 6,2 pts |
-| 200 à 500x | 8,2 % | 26,9 pts |
-| 500 à 1 000x | 3,9 % | 26,2 pts |
-| 1 000x et plus | 0,33 % | 4,1 pts |
+| 30 à 40x | 31,9 % | 11,2 pts |
+| 40 à 60x | 38,1 % | 16,8 pts |
+| 60 à 100x | 7,6 % | 6,1 pts |
+| 100 à 200x | 10,2 % | 14,2 pts |
+| 200 à 500x | 9,8 % | 31,1 pts |
+| 500 à 1 000x | 2,4 % | 15,4 pts |
+| 1 000x et plus | 0,10 % | 1,2 pts |
+(la tranche 20-40 de `buckets.py` ne contient que 30-40x : plancher 30x.)
 
-## Points faibles connus (à traiter dans la boucle SWOT)
-- Mode UNLEASH : 81,6 % des achats rendent 20 à 60x pour 100x payés. La valeur vient surtout des 16,6 % d'achats à 100x et plus. Médiane 39,9x (le seuil de test a été réglé à 35x ; le but initial de 40x est manqué de 0,1x).
-- Jeu de base : 70,9 % de spins à zéro ; un bonus déclenché environ 1 spin sur 200 (mesure du SWOT : 0,499 %).
+## Points faibles connus
+- UNLEASH : 70 % des achats rendent 30 à 60x pour 100x payés (avant : 82 % à 20-60x, 50 % à 20-40x). La médiane monte de 39,9x à 43,6x, mais l'optimiseur donne toujours une forme bimodale (amas 40-50x et queue 200-1 000x) quel que soit le réglage essayé (moyenne naturelle plus basse x2/+3, échelle de fenêtre 30-45 x0,5, test_spins 10/20/50 ou 50/100/200) ; seul le nombre de scatters est maintenant maîtrisé.
+- Jeu de base : 70,9 % de spins à zéro ; un bonus déclenché environ 1 spin sur 200.
 - Gain max en base : environ 1 sur 5 millions.
-- L'optimiseur n'est pas reproductible : régénérer les maths change légèrement les poids. Toujours relancer les tests.
+- L'optimiseur n'est pas reproductible : régénérer les maths change légèrement les poids (médiane 43,3 à 44,5x sur les essais). Toujours relancer les tests.
+- Fichier books_bonus.jsonl.zst : 262 Mo (100 000 livres).
 
 ## Régénérer
 ```
