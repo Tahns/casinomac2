@@ -42,7 +42,7 @@ export function createEngine(c, o = {}) {
   const comp = c.createDynamicsCompressor(); comp.threshold.value = -16; comp.knee.value = 8; comp.ratio.value = 8; comp.attack.value = 0.003; comp.release.value = 0.2;
   const lim = c.createWaveShaper();
   { const N = 2049, cv = new Float32Array(N); for (let i = 0; i < N; i++) { const x = (i / (N - 1)) * 2 - 1, ax = Math.abs(x); const y = ax < 0.7 ? ax : 0.7 + 0.27 * Math.tanh((ax - 0.7) / 0.27); cv[i] = x < 0 ? -y : y; } lim.curve = cv; }
-  master.connect(comp); comp.connect(lim); lim.connect(c.destination);
+  master.connect(comp); if (o.noLimit) comp.connect(c.destination); else { comp.connect(lim); lim.connect(c.destination); } // noLimit: test hook to measure the pre-limiter peak
 
   const sfx = c.createGain(); sfx.gain.value = 0.9; sfx.connect(master);
   // reverb (short, shared)
@@ -266,12 +266,12 @@ export function createEngine(c, o = {}) {
 
   // ---- jazz bed ----
   // A bus per mood instance: fades in, and fades out when the mood changes (so already-queued lookahead notes die with it).
-  function newBus() {
-    const bus = c.createGain(); bus.gain.setValueAtTime(0.0001, c.currentTime); bus.gain.linearRampToValueAtTime(o.bedVol == null ? 0.7 : o.bedVol, c.currentTime + 0.1);
+  function newBus(mood) {
+    const bus = c.createGain(); bus.gain.setValueAtTime(0.0001, c.currentTime); bus.gain.linearRampToValueAtTime(o.bedVol == null ? 0.45 : o.bedVol, c.currentTime + 0.1);
     bus.connect(master);
     const send = c.createGain(); send.gain.value = 0.18; bus.connect(send); send.connect(verbSend);
     const trem = c.createGain(); trem.gain.value = 0.75; trem.connect(bus);
-    const lfo = c.createOscillator(); lfo.frequency.value = 4.6; const lg = c.createGain(); lg.gain.value = 0.25; lfo.connect(lg); lg.connect(trem.gain); lfo.start(c.currentTime); reg(lfo, true);
+    const lfo = c.createOscillator(); lfo.frequency.value = BEDS[mood] ? 2.5 * BEDS[mood].bpm / 60 : 4.6; /* tremolo locked to the beat: whole cycles per loop => seamless */ const lg = c.createGain(); lg.gain.value = 0.25; lfo.connect(lg); lg.connect(trem.gain); lfo.start(c.currentTime); reg(lfo, true);
     return {
       bus, trem,
       release() { const t = c.currentTime; try { bus.gain.cancelScheduledValues(t); bus.gain.setValueAtTime(bus.gain.value, t); bus.gain.linearRampToValueAtTime(0, t + 0.2); lfo.stop(t + 0.3); } catch (e) { /* ignore */ } },
@@ -373,9 +373,9 @@ function init() {
 }
 
 function applyMood() {
-  if (!engine || !started || bed.cur === mood) return;
+  if (!engine || !started || muted || bed.cur === mood) return;
   if (bed.B) bed.B.release();
-  bed.B = mood === 'off' ? null : engine.newBus();
+  bed.B = mood === 'off' ? null : engine.newBus(mood);
   bed.cur = mood; bed.idx = 0; bed.next = 0;
 }
 
@@ -384,7 +384,9 @@ const LOOKAHEAD = 0.35, TICK = 80;
 function tick() {
   bed.timer = setTimeout(tick, TICK);
   try {
-    if (!ctx || !engine || muted || document.hidden || ctx.state !== 'running' || !bed.B || bed.cur === 'off') { bed.next = 0; return; }
+    if (!ctx || !engine || muted || document.hidden || ctx.state !== 'running') { bed.next = 0; return; }
+    applyMood();
+    if (!bed.B || bed.cur === 'off') { bed.next = 0; return; }
     const info = engine.bedInfo(bed.cur), now = ctx.currentTime;
     if (!bed.next || bed.next < now - 0.1) { bed.next = now + 0.06; bed.idx = Math.ceil(bed.idx / 4) * 4; } // (re)start on a bar line
     while (bed.next < now + LOOKAHEAD) { engine.bedBeat(bed.cur, bed.idx, bed.next, bed.B); bed.next += info.beat; bed.idx++; }
@@ -420,7 +422,7 @@ export const audio = {
     if (master && ctx) {
       master.gain.cancelScheduledValues(ctx.currentTime);
       master.gain.setTargetAtTime(muted ? 0 : 0.8, ctx.currentTime, 0.02);
-      if (muted) { engine.killAll(); bed.next = 0; } // nothing queued may sound after unmute
+      if (muted) { engine.killAll(); bed.next = 0; bed.B = null; bed.cur = 'off'; } // nothing queued may sound after unmute
     }
     syncUi();
   },

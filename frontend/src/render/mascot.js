@@ -45,7 +45,7 @@ function buildSVG(uid) {
   // ---- legs
   const leg = mirror(
     sh('M66,196L95,196L95,228L64,228Z', C.red) +
-    sh('M50,248C46,236 54,224 70,222L97,222L99,248Z', C.boot, 'M40,240L110,240L110,252L40,252Z') +
+    sh('M48,248C44,236 52,224 68,222L94,222L96,248Z', C.boot, 'M40,240L110,240L110,252L40,252Z') +
     ln('M60,232Q76,228 94,232', 'fine') + ln('M52,244L98,244', 'fine'));
 
   // ---- torso
@@ -66,8 +66,8 @@ function buildSVG(uid) {
   const handR = ''; // hand is part of mirrored arm
   const pick =
     `<g class="pick">` +
-    sh('M147.5,240L155,240L155,108L147.5,108Z', C.wood) +
-    sh('M114,122C126,96 176,96 188,122C176,111 164,110 151,112C138,110 126,111 114,122Z', C.steel, 'M150,90L200,90L200,130L150,130Z') +
+    sh('M146.5,240L156,240L156,108L146.5,108Z', C.wood) +
+    sh('M108,128C120,90 182,90 194,128C182,113 166,111 151,114C136,111 120,113 108,128Z', C.steel, 'M150,90L200,90L200,130L150,130Z') +
     sh('M143,104L159,104L159,118L143,118Z', C.navy) +
     `</g>`;
   const armR = part('armR', pick + mirror(arm));

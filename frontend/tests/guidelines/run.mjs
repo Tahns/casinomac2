@@ -216,6 +216,61 @@ async function main() {
     return [p0 === 0 && p1 === 0 && shown && costShown && pl.length === 1 && /bonus/i.test(pl[0].body.mode) ? PASS : FAIL, `dialog visible=${shown} text="${snippet(txt, 150)}"`, `plays before confirm=${p0}, after cancel=${p1}, after OK=${pl.length} ${pl[0] ? J(pl[0].body) : ''}`];
   });
 
+  // ---- UNLEASH minimum price (src/bet.js UNLEASH_MIN_PRICE): below it the button is disabled, shows "from <min>", sends no play
+  const unlCases = {
+    USD: { sym: '$', min: 50, levels: [0.1, 0.2, 0.5, 1, 2], below: [0.1, 0.2], at: 0.5 },
+    JPY: { sym: '¥', min: 7500, levels: [50, 75, 100, 200], below: [50], at: 75 },
+    MXN: { sym: 'MX$', min: 1000, levels: [5, 10, 20, 50], below: [5], at: 10 },
+  };
+  for (const [cur, c] of Object.entries(unlCases)) {
+    await check('UNL-MIN-' + cur, `UNLEASH below minimum (${cur} ${c.min}): disabled + "from" text + no play; at minimum: confirm dialog and bonus play`, async () => {
+      const lv = c.levels.map((x) => Math.round(x * 1e6));
+      await mockCfg({ currency: cur, balance: 5e11, bet: { betLevels: lv, minBet: lv[0], maxBet: lv[lv.length - 1], stepBet: lv[0], defaultBetLevel: lv[lv.length - 1] } });
+      const s = await sess({}); await mockClear(); const ev = []; let ok = true;
+      for (const b of c.below) {
+        const reached = await s.setBet(b);
+        const dis = await s.isDisabled('#btn-unleash'); const cost = (await s.text('#unleash-cost')) || '';
+        const cls = await s.page.evaluate(() => document.getElementById('btn-unleash').className);
+        await s.click('#btn-unleash', { force: true }).catch(() => {}); await sleep(400);
+        const dlg = await s.visible('#modal-confirm') || await s.visible('#modal-message'); await s.closeOverlays();
+        const fromOk = /from/i.test(cost) && nums(cost.replace(/,/g, '')).includes(c.min);
+        ev.push(`bet ${b}: reached=${reached} disabled=${dis} class has below-min=${/below-min/.test(cls)} cost label="${snippet(cost, 30)}" dialog opened=${dlg}`);
+        if (!(reached && dis === true && fromOk && !dlg)) ok = false;
+      }
+      const pBelow = plays(await mockLog()).length; if (pBelow !== 0) { ok = false; }
+      ev.push('plays sent below minimum=' + pBelow);
+      const reached = await s.setBet(c.at); await s.waitEnabled('#btn-unleash', 2000).catch(() => {});
+      const dis = await s.isDisabled('#btn-unleash'); const cost = (await s.text('#unleash-cost')) || '';
+      await s.click('#btn-unleash'); await s.waitVisible('#modal-confirm', 3000).catch(() => {});
+      const dlg = await s.visible('#modal-confirm'); const dtxt = (await s.text('#modal-confirm')) || '';
+      await s.click('#confirm-ok').catch(() => {}); await sleep(900);
+      const pl = plays(await mockLog());
+      ev.push(`bet ${c.at} (cost ${c.min}): reached=${reached} disabled=${dis} label="${snippet(cost, 30)}" confirm visible=${dlg} text="${snippet(dtxt, 100)}"`, `plays after OK=${pl.length} ${pl[0] ? J(pl[0].body) : ''}`);
+      await s.close();
+      const atOk = reached && dis === false && !/from/i.test(cost) && dlg && nums(dtxt.replace(/,/g, '')).includes(c.min) && pl.length === 1 && /bonus/i.test(pl[0].body.mode) && pl[0].body.amount === Math.round(c.at * 1e6);
+      return [ok && atOk ? PASS : FAIL, ...ev];
+    });
+  }
+  await check('UNL-PRICE', 'UNLEASH cost label and confirm dialog show round values (bet x100) for every bet in the round ladder', async () => {
+    const ladder = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]; const lv = ladder.map((x) => Math.round(x * 1e6));
+    await mockCfg({ balance: 5e11, bet: { betLevels: lv, minBet: lv[0], maxBet: lv[lv.length - 1], stepBet: lv[0], defaultBetLevel: lv[0] } });
+    const s = await sess({}); const ev = []; let bad = 0;
+    for (const b of ladder) {
+      const reached = await s.setBet(b); const cost = ((await s.text('#unleash-cost')) || '').replace(/,/g, ''); const want = b * 100;
+      const shown = nums(cost)[0]; const avail = want >= 50;
+      let line = `bet ${b}: label="${snippet(cost, 24)}"`;
+      if (avail) {
+        const roundVal = shown === want && Number.isInteger(shown);
+        await s.click('#btn-unleash'); await s.waitVisible('#modal-confirm', 3000).catch(() => {}); const d = ((await s.text('#modal-confirm')) || '').replace(/,/g, ''); await s.closeOverlays();
+        const dOk = nums(d).includes(want); line += ` dialog="${snippet(d, 60)}"`;
+        if (!(reached && roundVal && dOk)) { bad++; line += ' <-- FAIL'; }
+      } else if (!(reached && /from/i.test(cost))) { bad++; line += ' <-- FAIL (expected "from" label)'; }
+      ev.push(line);
+    }
+    await s.close();
+    return [bad ? FAIL : PASS, ...ev];
+  });
+
   await check(107, 'sound toggle mutes everything', async () => {
     const s = await sess({}); const probe = () => s.page.evaluate(() => { const q = window.__qa; return { ctx: q.ctxs.map((c) => c.state), dest: q.destSources.map((n) => n.constructor.name + ':' + (n.gain ? n.gain.value : 'x')), muted: document.body.classList.contains('muted'), graph: window.__qa.audible && window.__qa.audible(), media: [...document.querySelectorAll('audio,video')].map((m) => m.muted || m.paused) }; });
     await s.playRound(); const before = await probe(); await s.click('#btn-sound', { force: true }); await sleep(900); const after = await probe();

@@ -137,6 +137,22 @@ export class Session {
     await sleep(300);
     await this.waitIdle(o.timeout || 60000).catch(() => {});
   }
+  // resilient waits (no fixed sleeps): visible / enabled / disabled
+  async waitVisible(sel, ms = 4000) { await this.page.locator(sel).first().waitFor({ state: 'visible', timeout: ms }); }
+  async waitEnabled(sel, ms = 4000) { await this.page.waitForFunction((s) => { const e = document.querySelector(s); return !!e && !e.disabled && e.offsetParent !== null; }, sel, { timeout: ms }); }
+  async isDisabled(sel) { return this.page.locator(sel).first().isDisabled().catch(() => null); }
+  // step the bet display to a numeric value (display units) with +/-; returns true when reached
+  async setBet(val) {
+    for (let i = 0; i < 40; i++) {
+      const cur = nums(await this.text('#bet'))[0];
+      if (cur === val) return true;
+      const sel = cur < val ? '#btn-bet-plus' : '#btn-bet-minus';
+      if (await this.isDisabled(sel)) return false;
+      await this.click(sel);
+      await this.page.waitForFunction((c) => { const t = (document.querySelector('#bet')?.textContent || '').match(/[0-9]+(?:[.,][0-9]+)?/); return !t || parseFloat(t[0].replace(',', '.')) !== c; }, cur, { timeout: 2000 }).catch(() => {});
+    }
+    return false;
+  }
   async closeOverlays() {
     for (let i = 0; i < 3; i++) {
       await this.page.keyboard.press('Escape').catch(() => {});

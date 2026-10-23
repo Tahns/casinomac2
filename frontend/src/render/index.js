@@ -82,7 +82,9 @@ export function createRenderer(rootEl) {
       const mod = await import('./mascot.js');
       if (S.destroyed || !mod || typeof mod.createMascot !== 'function') return;
       slot.innerHTML = '';
-      M.m = mod.createMascot(slot, { size: 'auto', reduced: REDUCE });
+      const h = slot.getBoundingClientRect().height || 0;
+      const size = Math.round(Math.min(260, Math.max(90, h || window.innerHeight * 0.3)));
+      M.m = mod.createMascot(slot, { size, reduced: REDUCE });
       M.m.setPose('idle');
     } catch (e) { M.m = null; }
   })();

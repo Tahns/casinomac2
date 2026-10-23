@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Old Gus - mascot dev</title>
+<link rel="stylesheet" href="src/render/mascot.css">
+<style>
+ body{margin:0;background:#1E2F4A;color:#F4E8C8;font:14px system-ui,sans-serif;padding:16px}
+ h1{margin:0 0 10px;font-size:18px}
+ .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px}
+ .cell{background:#F4E8C8;color:#2B1A12;border:3px solid #2B1A12;border-radius:10px;padding:8px;text-align:center;position:relative}
+ .cell h2{margin:0 0 4px;font:700 13px system-ui}
+ .stage{display:flex;align-items:flex-end;justify-content:center;gap:10px;min-height:150px;padding-top:34px}
+ .frame{width:400px;height:225px;background:#7A8B3A;border:3px solid #2B1A12;position:relative;margin:14px 0;overflow:visible}
+ .frame .host{position:absolute;right:8px;bottom:6px}
+ .sec{margin:18px 0 6px;font-weight:700}
+ .btns button{margin:2px;padding:4px 8px}
+ body.solo .grid,body.solo .sec,body.solo h1,body.solo .btns,body.solo .frame{display:none}
+ #solo{display:none}body.solo #solo{display:flex;align-items:flex-end;gap:30px;padding:60px 40px}
+</style></head><body>
+<h1>Old Gus - all poses</h1>
+<div class="btns" id="btns"></div>
+<div class="grid" id="grid"></div>
+<div class="sec">400x225 frame, small variant (90px)</div>
+<div class="frame" id="frame"><div class="host" id="fh"></div></div>
+<div id="solo"></div>
+<script type="module">
+import { createMascot, POSES } from './src/render/mascot.js';
+const q = new URLSearchParams(location.search);
+const grid = document.getElementById('grid');
+const all = [];
+if (q.get('pose')) {
+  document.body.classList.add('solo');
+  const solo = document.getElementById('solo');
+  const sz = +(q.get('size') || 360);
+  const m = createMascot(solo, { size: sz, pose: q.get('pose'), bubble: 'right' });
+  if (q.get('say')) m.say(q.get('say'), 0);
+  window.__m = m;
+} else {
+  for (const p of POSES) {
+    const c = document.createElement('div'); c.className = 'cell'; c.id = 'cell-' + p;
+    c.innerHTML = `<h2>${p}</h2><div class="stage"></div>`;
+    grid.appendChild(c);
+    const st = c.querySelector('.stage');
+    all.push(createMascot(st, { size: 120, pose: p }), createMascot(st, { size: 240, pose: p }));
+  }
+  const fm = createMascot(document.getElementById('fh'), { size: 90, pose: 'idle' });
+  const b = document.getElementById('btns');
+  for (const p of POSES) { const x = document.createElement('button'); x.textContent = p; x.onclick = () => fm.setPose(p); b.appendChild(x); }
+  const s = document.createElement('button'); s.textContent = 'say'; s.onclick = () => fm.say('BIG WIN!', 1800); b.appendChild(s);
+  window.__fm = fm;
+}
+</script></body></html>
