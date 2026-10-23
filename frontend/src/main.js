@@ -185,6 +185,7 @@ async function onUnleash() {
     const ok = await confirmDialog(t('unleash.title'), t('unleash.confirm', { cost: fm(cost) }));
     if (!ok) return;
   }
+  try { if (S.renderer && S.renderer.mascot) { S.renderer.mascot.pose('plunger', 1600); S.renderer.mascot.say('mascot.fs', 2000, true); } } catch (e) { /* ignore */ }
   await playRound('bonus');
 }
 function onAutoplayButton() {

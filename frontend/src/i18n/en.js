@@ -95,6 +95,12 @@ export const en = {
   'fs.endWin': 'Free spins total win: {amount}',
   'fs.press': 'Press to continue',
 
+  'mascot.win': 'Nice one!',
+  'mascot.big': 'Hold onto your hat!',
+  'mascot.shock': 'Uh-oh...',
+  'mascot.fs': "Let's dig in!",
+  'mascot.lose': "Next one's the one!",
+
   'settings.sound': 'Sound',
   'settings.turbo': 'Turbo',
   'settings.on': 'ON',

@@ -57,6 +57,36 @@ export function createRenderer(rootEl) {
   const T = (ms) => ms * (S.turbo ? 0.42 : 1);
   const sleep = (ms) => new Promise((r) => setTimeout(r, T(ms)));
   const hook = (n, ...a) => { try { const f = S.hooks && S.hooks[n]; if (f) f(...a); } catch (e) { console.error('hook', n, e); } };
+  // ---------- mascot (optional: the game works unchanged when the module is missing) ----------
+  const M = { intro: false, m: null, base: 'idle', timer: 0, sayAt: 0, losses: 0, wonRound: false, pending: [] };
+  const mPose = (name) => { if (REDUCE && name === 'dance') name = 'happy'; try { if (M.m) M.m.setPose(name); } catch (e) { /* ignore */ } };
+  const mBase = () => { clearTimeout(M.timer); M.timer = 0; mPose(S.inFs ? 'dance' : M.base); };
+  // pose(name, holdMs): show a pose, then return to the resting pose of the moment (think / dance)
+  function pose(name, hold = 0) {
+    if (S.destroyed) return;
+    clearTimeout(M.timer); M.timer = 0;
+    mPose(name);
+    if (hold) M.timer = setTimeout(() => { M.timer = 0; if (!S.destroyed) mPose(S.inFs ? 'dance' : M.base); }, hold);
+  }
+  function say(key, ms = 2200, force = false) {
+    if (S.destroyed || !M.m || typeof M.m.say !== 'function') return;
+    const now = Date.now();
+    if (!force && now - M.sayAt < 3500) return;
+    M.sayAt = now;
+    try { M.m.say(t(key), ms); } catch (e) { /* ignore */ }
+  }
+  (async () => {
+    try {
+      const slot = document.getElementById('mascot-slot');
+      if (!slot) return;
+      const mod = await import('./mascot.js');
+      if (S.destroyed || !mod || typeof mod.createMascot !== 'function') return;
+      slot.innerHTML = '';
+      M.m = mod.createMascot(slot, { size: 'auto', reduced: REDUCE });
+      M.m.setPose('idle');
+    } catch (e) { M.m = null; }
+  })();
+
   const anim = (el, frames, opts) => {
     try { const a = el.animate(frames, { fill: 'backwards', ...opts, duration: T(opts.duration), delay: T(opts.delay || 0) }); return a.finished.catch(() => {}); } catch (e) { return Promise.resolve(); }
   };
@@ -266,7 +296,7 @@ export function createRenderer(rootEl) {
       lands.push(at + 620 * .64);
     }
     if (anticCols.length) {
-      audio.play('antic'); wrap.classList.add('antic');
+      audio.play('antic'); wrap.classList.add('antic'); pose('shock'); say('mascot.shock', 2400, true);
       const t0 = Math.max(0, anticCols[0][1] - 560), t1 = at + 620;
       for (let k = 0; t0 + k * 860 < t1; k++) setTimeout(() => { if (!S.destroyed) audio.play('heart', { i: k }); }, T(t0 + k * 860));
       anticCols.forEach(([c, tm]) => {
@@ -280,12 +310,13 @@ export function createRenderer(rootEl) {
     lands.forEach((tm, c) => setTimeout(() => { if (!S.destroyed) { audio.play('land', { vol: c === 0 ? 1 : .7 }); } }, T(tm)));
     await sleep(at + 620 + 60);
     wrap.classList.remove('antic'); glowEls.forEach((g) => g.classList.remove('on'));
+    if (anticCols.length && !M.intro) pose(S.inFs ? 'dance' : 'think');
     cellsEl.querySelectorAll('.adim').forEach((e) => e.classList.remove('adim'));
     // scatter tease
     const sc = [];
     for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) if (S.grid[c][r] && S.grid[c][r].name === 'S') sc.push(S.grid[c][r]);
     if (sc.length >= 3) {
-      audio.play('scatter', { n: sc.length - 2 });
+      audio.play('scatter', { n: sc.length - 2 }); pose('shock', 1400); say('mascot.shock');
       sc.forEach((cell) => { cell.el.classList.add('win'); const p = cellCenter(cell.c, cell.r); fx.sparks(p.x, p.y, '#ff8a3a', p.size * .35, 10, 5); fx.glow(p.x, p.y, p.size * 1.1, '255,100,40', .7); });
       shake(.6, 400);
       await sleep(sc.length >= 4 ? 700 : 900);
@@ -327,6 +358,7 @@ export function createRenderer(rootEl) {
     S.lastWin = total;
     if (total >= 2) shake(.15 + Math.min(total / 40, 1.1), 320);
     audio.play('win', { combo: S.combo });
+    M.wonRound = true; pose('happy', 1300); if (S.combo === 1 && !S.inFs) say('mascot.win');
     const hold = clamp(780 + total * 9, 780, 1500);
     await sleep(hold);
   }
@@ -475,6 +507,7 @@ export function createRenderer(rootEl) {
   async function winBanner(x, opts = {}) {
     const tier = tierFor(x);
     audio.play('bigwin', { level: x >= 100 ? 3 : x >= 50 ? 2 : 1 });
+    M.wonRound = true; pose('bigwin'); say('mascot.big', 2600, true);
     await banner({ title: t(opts.title || tier || 'win.big'), amount: x, kind: 'win', coins: true, hi: x >= 50, tiers: !opts.title, tiers0: 'win.big', hold: 1300, sub: opts.sub });
   }
 
@@ -489,18 +522,22 @@ export function createRenderer(rootEl) {
     S.inFs = on;
     document.body.classList.toggle('fs-mode', on); app.classList.toggle('fs-mode', on);
     audio.setBonus(on);
+    try { if (typeof audio.setMood === 'function') audio.setMood(on ? 'freespins' : 'base'); } catch (e) { /* ignore */ }
+    if (!on) mBase(); else if (!M.intro) pose('dance');
   }
   async function fsTrigger(ev) {
     const total = Number(ev.totalFs) || 0;
     const sc = scatterCells(ev);
     clearWins();
     audio.play('scatter', { n: 4 }); audio.play('fuse'); audio.play('rumble');
+    pose('shock'); say('mascot.shock', 2000, true);
     sc.forEach((cell) => { cell.el.classList.add('fuse'); const p = cellCenter(cell.c, cell.r); fx.glow(p.x, p.y, p.size * 1.3, '255,90,40', 1.0); fx.sparks(p.x, p.y, '#ffb347', p.size * .35, 14, 6); });
     cellsEl.querySelectorAll('.cell:not(.fuse)').forEach((e) => e.classList.add('dim'));
     shake(.8, 700);
     await sleep(1100);
     // detonate
     audio.play('explosion'); flash(.95, 900, '#fff3d0'); shake(2.6, 1100);
+    M.intro = true; pose('plunger');
     setBonusMode(true); // palette swap hides under the flash
     { const r0 = app.getBoundingClientRect(); fx.ring(r0.width / 2, r0.height / 2, Math.max(r0.width, r0.height) * .7, '255,170,80', 1.0, 18); fx.smoke(r0.width / 2, r0.height / 2, Math.min(r0.width, r0.height) * .6, 10, '40,20,14'); }
     const rect = app.getBoundingClientRect();
@@ -525,8 +562,9 @@ export function createRenderer(rootEl) {
     S.fsTotal = total; S.fsCur = 0;
     hook('onFreeSpinCounter', 0, total);
     chip(chipFs, fsText(0, total), true);
-    audio.play('fsStart');
+    audio.play('fsStart'); say('mascot.fs', 2400, true);
     await banner({ title: t('fs.trigger'), sub: t('fs.start', { n: total }), kind: 'fs', hold: 2300, dimAmt: .92 });
+    M.intro = false; pose('dance');
   }
   async function fsRetrigger(ev) {
     const sc = scatterCells(ev);
@@ -538,14 +576,14 @@ export function createRenderer(rootEl) {
     await sleep(900);
     clearWins();
     if (tot > S.fsTotal) S.fsTotal = tot;
-    audio.play('retrigger'); audio.play('stinger', { level: 2 }); flash(.5, 600, '#ffe0a0');
+    audio.play('retrigger'); audio.play('stinger', { level: 2 }); pose('happy', 1400); flash(.5, 600, '#ffe0a0');
     { const r = app.getBoundingClientRect(); fx.coins(r.width / 2, r.height * .6, Math.min(r.width, r.height), 24, 1.1); }
     await banner({ title: t('fs.retrigger', { n: add }), kind: 'fs', hold: 1300, dimAmt: .6, rays: true, hi: true });
   }
   async function fsEnd(ev) {
     const x = (Number(ev.amount) || 0) / 100;
     clearWins();
-    audio.play('fsEnd');
+    audio.play('fsEnd'); pose('celebrate'); say('mascot.big', 2400, true);
     await banner({ title: t('fs.end'), amount: x, kind: 'win', coins: x > 0, hold: 2200, sub: tierFor(x) ? t(tierFor(x)) : '', dimAmt: .94 });
     setBonusMode(false);
     chip(chipFs, '', false);
@@ -594,10 +632,16 @@ export function createRenderer(rootEl) {
   function playBook(events, hooks) {
     const run = async () => {
       S.hooks = hooks || {};
+      M.wonRound = false; M.intro = false; M.base = 'think'; pose(S.inFs ? 'dance' : 'think');
       for (const ev of events || []) {
         if (S.destroyed) break;
         try { await handle(ev); } catch (e) { console.error('render event', ev && ev.type, e); }
       }
+      M.intro = false; M.base = 'idle';
+      if (S.inFs) pose('dance');
+      else if (M.wonRound) { M.losses = 0; mBase(); }
+      else if (++M.losses >= 3) { M.losses = 0; pose('shrug', 2200); say('mascot.lose', 2400, true); }
+      else mBase();
       clearWins();
       chip(chipCombo, '', false); chip(chipTw, '', false);
     };
@@ -631,7 +675,9 @@ export function createRenderer(rootEl) {
     setTurbo(b) { S.turbo = !!b; },
     setFormat(fn) { if (typeof fn === 'function') S.fmt = fn; },
     resize() { fx.resize(); },
-    destroy() { S.destroyed = true; clearInterval(sweepTimer); if (ro) ro.disconnect(); fx.clear(); },
+    // mascot hook for the UI layer (UNLEASH confirm)
+    mascot: { pose, say },
+    destroy() { S.destroyed = true; try { if (M.m) M.m.destroy(); } catch (e) { /* ignore */ } clearTimeout(M.timer); clearInterval(sweepTimer); if (ro) ro.disconnect(); fx.clear(); },
     // exposed for dev/test harness
     _banner: banner, _winBanner: winBanner, _shake: shake, _state: S,
   };
