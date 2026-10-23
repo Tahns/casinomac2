@@ -273,7 +273,7 @@ async function main() {
 
   await check(107, 'sound toggle mutes everything', async () => {
     const s = await sess({}); const probe = () => s.page.evaluate(() => { const q = window.__qa; return { ctx: q.ctxs.map((c) => c.state), dest: q.destSources.map((n) => n.constructor.name + ':' + (n.gain ? n.gain.value : 'x')), muted: document.body.classList.contains('muted'), graph: window.__qa.audible && window.__qa.audible(), media: [...document.querySelectorAll('audio,video')].map((m) => m.muted || m.paused) }; });
-    await s.playRound(); const before = await probe(); await s.click('#btn-sound', { force: true }); await sleep(900); const after = await probe();
+    await s.playRound(); const before = await probe(); await s.page.waitForSelector('.banner', { state: 'detached', timeout: 20000 }).catch(() => {}); await s.click('#btn-sound', { force: true }); await sleep(900); const after = await probe();
     await s.playRound(); const during = await probe(); await s.close();
     const hasAudio = before.ctx.length > 0;
     const gainsMuted = after.dest.length > 0 && after.dest.every((d) => d.endsWith(':0')) || (after.graph && after.graph.sources > 0 && after.graph.audibleSources === 0);
@@ -282,6 +282,24 @@ async function main() {
     if (!hasAudio) return [HUMAN, 'no AudioContext created; listen manually (could be HTMLAudio/none)', ...ev];
     if (after.muted && (gainsMuted || suspended)) return [PASS, 'body.muted + master gain 0 / context not running', ...ev];
     return [HUMAN, 'cannot prove mute from graph state', ...ev];
+  });
+
+  await check('CLICK-AFTER-FEATURE', 'after a free-spins round no overlay covers the controls (bet, sound, info stay clickable)', async () => {
+    const bet = 2000000;
+    await mockCfg({ balance: 5000000000, bet: { betLevels: [bet], minBet: bet, maxBet: bet, stepBet: bet, defaultBetLevel: bet } });
+    const s = await sess({}, { idleMs: 20000 });
+    await mockCfg({ force: { category: 'bonus', mode: 'base' } });
+    await s.page.evaluate(() => { if (!document.body.classList.contains('turbo')) document.querySelector('#btn-turbo')?.click(); });
+    await s.playRound({ timeout: 200000 });
+    await sleep(1500);
+    const r = await s.page.evaluate(() => {
+      const hit = (id) => { const e = document.getElementById(id); if (!e) return { id, missing: true }; const b = e.getBoundingClientRect(); const top = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2); return { id, ok: top === e || e.contains(top), top: top && (top.id || top.className || top.tagName) }; };
+      const layer = document.querySelector('.banner-layer');
+      return { controls: ['btn-bet', 'btn-sound', 'btn-info'].map(hit), layerClass: layer ? layer.className : null };
+    });
+    await s.close();
+    const bad = r.controls.filter((c) => !c.missing && !c.ok);
+    return [bad.length || /\bon\b/.test(r.layerClass || '') ? FAIL : PASS, `controls: ${J(r.controls)}`, `banner-layer class after the round: ${r.layerClass}`];
   });
 
   await check(223, 'viewport meta + touch-action', async () => {

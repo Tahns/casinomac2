@@ -122,6 +122,8 @@ export function createRenderer(rootEl) {
   }
   let bannerLayer = app.querySelector('.banner-layer');
   if (!bannerLayer) { bannerLayer = document.createElement('div'); bannerLayer.className = 'banner-layer'; app.appendChild(bannerLayer); }
+  // The layer only intercepts clicks while a banner is really on screen (never leave it covering the controls).
+  function syncBannerLayer() { try { bannerLayer.classList.toggle('on', !!bannerLayer.querySelector('.banner')); } catch (e) { /* ignore */ } }
   let flashEl = app.querySelector('#flash');
   if (!flashEl) { flashEl = document.createElement('div'); flashEl.id = 'flash'; app.appendChild(flashEl); }
 
@@ -501,7 +503,7 @@ export function createRenderer(rootEl) {
         await Promise.all([anim(el, [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.1)' }], { duration: 320, fill: 'forwards' }), anim(dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 320, fill: 'forwards' }), anim(rays, [{ opacity: 1 }, { opacity: 0 }], { duration: 320, fill: 'forwards' })]);
         bannerLayer.removeEventListener('pointerdown', onSkip); bannerLayer.classList.remove('shk');
         el.remove(); dim.remove(); rays.remove();
-        if (!bannerLayer.children.length) bannerLayer.classList.remove('on');
+        syncBannerLayer(); requestAnimationFrame(syncBannerLayer);
         done.v = true; resolve();
       };
       run();
@@ -614,7 +616,7 @@ export function createRenderer(rootEl) {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   async function handle(ev) {
     switch (ev.type) {
-      case 'reveal': if (fuse) fuse.clear(); return reveal(ev);
+      case 'reveal': if (fuse) fuse.clear(); syncBannerLayer(); return reveal(ev);
       case 'fusePath': return fuse ? fuse.path(ev) : null;
       case 'fuseBurn': return fuse ? fuse.burn(ev) : null;
       case 'fuseBlast': return fuse ? fuse.blast(ev) : null;

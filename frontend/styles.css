@@ -300,6 +300,7 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
 #flash{position:absolute;inset:0;z-index:26;pointer-events:none;background:#fff;opacity:0}
 .banner-layer{position:absolute;inset:0;z-index:30;display:grid;place-items:center;pointer-events:none;overflow:hidden}
 .banner-layer.on{pointer-events:auto}
+.banner-layer:not(:has(.banner)){pointer-events:none}
 .banner-dim{position:absolute;inset:0;background:radial-gradient(rgba(106,61,110,.55) 1.6px,transparent 2.2px) 0 0/9px 9px,rgba(43,26,18,.8);opacity:0}
 .rays{position:absolute;left:50%;top:50%;width:170vmax;height:170vmax;margin:-85vmax 0 0 -85vmax;opacity:0;background:repeating-conic-gradient(from 0deg,rgba(232,169,43,.32) 0 7.5deg,transparent 7.5deg 15deg);animation:raysp 24s steps(48,end) infinite}
 @keyframes raysp{to{transform:rotate(360deg)}}
