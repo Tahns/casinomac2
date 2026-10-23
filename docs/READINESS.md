@@ -21,7 +21,7 @@ Status key: READY = file exists and passed; HUMAN = a click in Studio is still n
 ### 3. Front-end version published - zip READY, upload HUMAN
 - Build: `node frontend/tools/build/build_front.mjs` (reads `frontend/VERSION` = 1.0.0)
 - Output: `dist/the_unleashed_mine_front_v1.0.0.zip` (82,522 bytes at last build; sha256 printed by the build and listed per file in `dist/front_MANIFEST.txt`), and the same files unzipped in `dist/front/`.
-- Contents (23 files incl. mascot): `index.html` at the zip root, `styles.css`, `src/**` (runtime modules only; `src/render/devbooks.js` is excluded because nothing imports it), `data/rules_data.json`. No tests, tools, fixtures, notes, dev pages, screenshots or store art.
+- Contents (22 files incl. the mascot module and its CSS): `index.html` at the zip root, `styles.css`, `src/**` (runtime modules only; `src/render/devbooks.js` is excluded because nothing imports it), `data/rules_data.json`. No tests, tools, fixtures, notes, dev pages, screenshots or store art.
 - Static checks done by the build: no absolute `/path` URLs, no `http(s)://` literals other than SVG namespace URLs (none found), no missing references. The build exits 1 if any appears.
 - Sub-path test: `PW_DIR=<dir with node_modules/playwright-core> node frontend/tools/build/verify_build.mjs` serves `dist/front` at `http://localhost:5230/game/v1/` with the mock RGS on 5231 (URL `?sessionID=t&rgs_url=http://localhost:5231&lang=en&currency=USD&device=desktop&social=false&demo=false`), places a bet at 1280x720 and 412x800 and screenshots to `dist/verify_*.png`. Last run: 0 console errors or warnings, 0 HTTP 404s, 0 failed requests; RGS calls `/wallet/authenticate` 200 and `/wallet/play` 200; balance 1,000.00 -> 999.00 after the bet.
 - Re-run the build after any source change; the zip must be rebuilt after the other agents finish restyling.
@@ -59,6 +59,6 @@ Both modes are within 0.0000% of each other; max win equals the 5,000x cap in `g
 6. Attach the published front version and math version to the game, then open ONE review and paste `docs/SUBMISSION_TEXT.md` (check 7). Wait for the result before opening another.
 
 ## Known open items
-- Front sources and store art were being restyled at build time; re-run steps 3 and the guideline suite after they settle.
+- Front sources and store art were being restyled at build time; re-run the front build (check 3), the sub-path test and the guideline suite after they settle.
 - QA report AT RISK items: "stake" word appears only in a social-wording replacement rule (`src/i18n/social.js`, not displayed); wide currency strings clip only in a 7-figure balance stress case.
 - No legal clearance, trademark search or patent opinion has been done; this file claims none.
