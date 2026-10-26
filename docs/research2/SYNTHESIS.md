@@ -22,7 +22,7 @@ Rule P (pre-result sequences, our reading of UKGC RTS 14E/14G; the clause number
 
 | Conflict | Pick | Why |
 |---|---|---|
-| Mid-round growth (01 forbids, 02 C2 ranks it 2nd, 03 puts a lens/pool ladder in, 08 proves it) | None in v2; Skyscraper Floors deferred | "Expand" element of US10964173 and LNW growth families (gap_01 3d); books 1.9-4.9x bigger; couples RTP tuning |
+| Mid-round growth (01 forbids, 02 C2 ranks it 2nd, 03 puts a lens/pool ladder in, 08 proves it) | None in v2; Skyscraper Floors deferred | "Expand" element of US10964173 and LNW growth families (gap_01 section 3, note d); books 1.9-4.9x bigger; couples RTP tuning |
 | Per-spin layout (02, 08) vs one grid per mode (01) | Per-spin pick from 4 fixed masks, base game only | Orchestrator (a); costless fallback = `layout_weights={mezzanine:1}`; attorney flag kept |
 | Hit rate toward 42% (07) vs P(return > stake) (04) | P(return > stake) | Sub-stake hits cannot be celebrated (UKGC 14F); 69% of paying base spins return <= stake |
 | Sliders: 4 incl. Ambient (04) vs 3 (06) | Master, Music, Effects + Mute | No ambient bus exists; adding one later is ~10 lines |
@@ -108,6 +108,7 @@ Metric: P(return > stake) = P(R > C), C = bet x mode cost, R = running return of
 | 8 | L8 First-spin briefing card (once, skippable, replayable in Info) and L19 blueprint morph | none | M2 |
 | 9 | L12 Secret Entrance picker with honest per-door facts; neutral Debrief when R <= C (L20) | [31], [266], RTS 14A; no countdown, no default | M3 |
 | 10 | L10 Layered audio stems per tier, `winLike` flag on every sound | RTS 14F sound clause | M3 |
+
 Deferred: L17 scenery picker, L18 stamp album (statelessness), L21 snapshot, L22 attract mode, mascot lines "Next one's the one." and "Same time tomorrow?" are replaced (09 4.3).
 
 ## 5. Animation spec, top 20 (ids J = 05; levels L0-L3 from lever 1; all honour turbo `T()`, skip and the motion store)
@@ -134,6 +135,7 @@ Deferred: L17 scenery picker, L18 stamp album (statelessness), L21 snapshot, L22
 | 18 | Ballroom Blackout spotlight | lightRoute, winInfo.meta.lit | dim overlay (opacity) 300 ms; window steps 250 ms stepped 12 fps; x4 tag 125 ms; symbols stay readable at rest | 6 |
 | 19 | Retrigger tickets (J31) | freeSpinRetrigger | <= 5 tickets, 1.2 s, hit-stop 83 | 5 |
 | 20 | Neutral Debrief + stamps (J22) | freeSpinEnd, finalWin | R <= C: card 250 ms, count 600 ms, stamp FILED, no rays/coins/cheer; R > C: DECLASSIFIED + staircase | 4,6 |
+
 Systems (built once, owners in section 9): motion store consumer (Full/Calm/Still), trauma camera (MAX 1.6% of short side, rot 0.8 deg), hit-stop via `document.getAnimations()`, flash governor (<= 2 flashes per second, <= 0.5 peak, cream/lemon, red treated as saturated), quality governor (EMA > 24 ms: fewer particles; > 40 ms: Calm), fx engine rewrite (cut candidate).
 
 ## 6. Menu and audio settings
@@ -146,6 +148,7 @@ Systems (built once, owners in section 9): motion store consumer (Full/Calm/Stil
 | Display | Motion Auto/Full/Calm/Still; Screen flash effects; High contrast; Session summary | Auto; off (on if reduced motion); `prefers-contrast`; on | `am_settings` JSON `{v:1,...}` | summary locked on when `displayNetPosition` or `displaySessionTimer`; Calm/Still never shorten the round |
 | Play | Turbo, Autoplay panel, (cut: break reminder) | off | NOT stored | hidden by `disabledTurbo` / `disabledAutoplay` |
 | Info | Rules, Win table, Controls, Modes and RTP, RTP line, session summary, version | - | - | text from `rules_data.json`; "Win table" in social |
+
 - **Storage:** every access in try/catch, in-memory fallback, clamp and whitelist on read, debounce 200 ms, flush on `pagehide`; never store turbo, autoplay, bet, `lang`, flags.
 - **Flags (all 12):** `socialCasino`, `disabledFullscreen`, `disabledTurbo`, `disabledSuperTurbo` (replay skip factor), `disabledAutoplay`, `disabledSlamstop` (no banner skip before the count-up ends), `disabledSpacebar`, `disabledBuyFeature`, `displayNetPosition`, `displayRTP`, `displaySessionTimer`, `minimumRoundDuration` (assumed ms; next round not before t0+min, also in turbo and autoplay). Exact official names beyond the first three are unconfirmed (RGS.md elides them).
 - **Audio graph:** `sfxBus` and `musicBus` feed `master -> compressor -> limiter`; music gets its own reverb return (otherwise 3% of every bed note leaks into the Effects slider); targets by `setTargetAtTime(g, t, 0.03)`; music or sfx at 0 stops queuing; optional duck -6 dB under big-win stingers; the free-spin bed moves off an E-tonic twang (09 5), human ear check needed.
@@ -159,6 +162,7 @@ Systems (built once, owners in section 9): motion store consumer (Full/Calm/Stil
 | 2 | `bonus` | 100x | 96.000% / 5000x | 100k (existing) | The Briefing door | 0 (reuse) + recompress 2.5 min | 317 -> ~130 MB |
 | 3 | `entrance_orders` | 100x | 96.000% / 5000x | 50k | Sealed Orders | ~4-8 min (~20 ms/book) | ~150 -> ~65 MB |
 | 4 | `entrance_blackout` | 100x | 96.000% / 5000x | 50k | Ballroom Blackout (fallback `entrance_fuse`: ~11 min, 280 -> 115 MB) | ~6-12 min (~28 ms/book) | ~165 -> ~70 MB |
+
 - Total about 0.68 GB at level 3 (at the 0.7 GB default) and about 0.29 GB at level 15. Serial CPU for one v2 rebuild (computed from 08's ms/book): simulation about 12 min (base 1.5 + Orders 4.2 + Blackout 5.8; 23 min if `bonus` is re-simulated) + optimizer 4 + reweight 6 s + recompress 8 + tests 5 = ~30 min (~41 min with `bonus`), plus ~20 min of calibration loops (3-5 samples of 2000 books, ~15 s each, per mission) and the base is simulated twice (M2 and M3). The 80-120 min figure is the worst case (re-simulating `bonus`, 100k books everywhere, tuning loops).
 - Display names (i18n `mode.*`, word screen passes per 09): `bonus` = "Secret Entrance: Stage Door", `entrance_orders` = "Secret Entrance: Coat Check", `entrance_blackout` = "Secret Entrance: Service Stairs". Index names contain no "buy"/"super"/"bet" words [225].
 - RAM: ~270 KB per 30 KB book; batch 6250 (books <= 30 KB), 3125 (>= 60 KB), 4 threads x 6250 = 6.7 GB peak. Call `create_books` once per mode. Run new modes in one invocation (`generate_configs` hashes every mode's files), counts multiples of threads x batch, seed offset per mode.
@@ -166,33 +170,46 @@ Systems (built once, owners in section 9): motion store consumer (Full/Calm/Stil
 - **Ask Stake later:** max size per book file and per game; accepted zstd levels and minimum books per mode; whether config `numRows` must match per-spin shapes and whether review accepts a per-spin `layout`; whether `name` in `index.json` is shown to players; official RTP spread tolerance across modes (0.5 point is unofficial) and `is_feature`/`is_buybonus` semantics incl. how buy modes are hidden per jurisdiction. Fallbacks: zstd 3 (still ~0.68 GB), 50k -> 25k books on the niche doors, drop Annex, `layout_weights={mezzanine:1}`.
 
 ## 8. EVENT CONTRACT delta (math emits, front end replays)
+
 General: all amounts are integers in 1/100 x of the bet (multiples of 10). Unknown event types are ignored by the v1 renderer (`default: return null`). Old books (no `layout`, no `missionAssigned`) must play as Mezzanine and `briefing` with step 8. `event_config_<mode>.json` lists every emitted type: CI asserts the renderer handles each.
+
 **1. `layout` NEW**, at most once per book, index 0, directly before the base `reveal`; absent = Mezzanine. `rows` is the frame height (5|6); `cells[r]` = sorted geometric visible rows present in reel r; `links` reserved (empty).
 ```json
 {"index":0,"type":"layout","id":"atrium","name":"Atrium","cols":6,"rows":5,"cells":[[1,2,3],[0,1,2,3,4],[0,1,2,3,4],[0,1,2,3,4],[0,1,2,3,4],[1,2,3]],"cellCount":26,"links":[]}
 ```
+
 **2. `reveal` CHANGED:** `board[r]` has `len(cells[r])+2` symbols (top and bottom pad); `anticipation` and `paddingPositions` keep 6 entries. Atrium: reel 0 and 5 have 5 symbols, reels 1-4 have 7.
+
 **3. Position conventions.** `winInfo`, `tumbleBoard.explodingSymbols`, `freeSpinTrigger/Retrigger.positions` stay COMPACT-PADDED (`padded = compactIndex+1`); geometric row = `cells[reel][padded-1]`. Atrium: `{"reel":0,"row":2}` is geometric row 2, `{"reel":1,"row":2}` is geometric row 1. `fuse*` and `lightRoute` use geometric visible rows (never padded). One helper, `geo.js`, owns the mapping; a golden fixture per layout tests it.
+
 **4. `missionAssigned` NEW**, after `freeSpinTrigger`, before the first `updateGlobalMult`. `mission` in `briefing|orders|blackout` (reserved `fuse`); `payTiming` in `step|spinEnd`; `lens` only for `blackout`; `fuseLen` is also the length of every `fusePath.cells` (do not hard-code 8).
 ```json
 {"index":5,"type":"missionAssigned","mission":"blackout","totalFs":12,"dialStart":1,"dialStep":3,"dialCap":100,"payTiming":"step","lens":{"w":2,"h":2,"mult":4},"layout":"mezzanine","fuseLen":8}
 ```
+
 **5. `updateGlobalMult` UNCHANGED** (`{"index":6,"type":"updateGlobalMult","globalMult":4}`); the "+N" chip reads `dialStep` from `missionAssigned` (v1 tests assert +8: update them).
+
 **6. `lightRoute` NEW** (blackout), once per free spin right after `reveal`, before `fusePath`. `route[k]` = top-left geometric cell of the window at evaluation step k; after the last entry the window stays on it; the window always fits the board.
 ```json
 {"index":8,"type":"lightRoute","w":2,"h":2,"lensMult":4,"route":[{"reel":1,"row":0},{"reel":2,"row":1},{"reel":3,"row":2},{"reel":4,"row":1},{"reel":3,"row":0},{"reel":2,"row":1}]}
 ```
+
 `winInfo.wins[].meta` gains `lit` (any cluster cell inside the window) and `lensMult` (4|1); `win == winWithoutMult x globalMult x lensMult`:
 ```json
 {"index":14,"type":"winInfo","totalWin":320,"wins":[{"symbol":"L3","clusterSize":5,"win":320,"positions":[{"reel":0,"row":2},{"reel":1,"row":2},{"reel":2,"row":2},{"reel":2,"row":3},{"reel":3,"row":3}],"meta":{"globalMult":4,"clusterMult":1,"winWithoutMult":20,"overlay":{"reel":1,"row":2},"lit":true,"lensMult":4}}]}
 ```
+
 **7. Orders (`payTiming:"spinEnd"`):** `winInfo.wins[].meta.banked=true`, `win == winWithoutMult` (x1), `updateTumbleWin.amount` carries the running BANK; the renderer must not add banked amounts to the WIN counter or celebrate them. **`caseOpen` NEW**, after the last tumble/blast of a spin with bank > 0, before `setWin`; `win == bank x mult`, `setWin.amount == caseOpen.win`; on the cap `capped:true` and `wincap` follows; no `caseOpen` after `wincap`.
 ```json
 {"index":31,"type":"caseOpen","bank":120,"mult":22,"win":2640,"capped":false}
 ```
+
 Orders spin order: `reveal, fusePath, winInfo(banked), updateTumbleWin, updateGlobalMult, tumbleBoard, fuseBurn, ..., fuseFizzle|fuseBlast(+tumble cascade), caseOpen, setWin, setTotalWin, updateFreeSpin`. Blackout: `reveal, lightRoute, fusePath, winInfo(lit), ...` (unchanged afterwards).
+
 **8. UNCHANGED:** `freeSpinTrigger`, `freeSpinRetrigger`, `freeSpinEnd`, `setWin`/`setTotalWin`, `wincap`, `finalWin`. Staging never reads `winLevel`; the front end uses payout / (bet x mode cost).
+
 **9. Replay and mock:** `replay=true&mode=entrance_orders` plays the same events and still shows the play amount and, for cost 100, the multiplier and real cost [174]; the mock RGS (WP10) serves the new modes with `costMultiplier` 100.
+
 **10. Not events:** `library/shares.json` (not uploaded): `{"base":{"layout":{"mezzanine":0.51,...},"mission":{"briefing":0.40,...},"pGtStake":0.117,"hit":0.236},"entrance_orders":{"medianX":..,"pGtPrice":..,"rtp":0.96,"maxWin":5000}}`, copied by `gen_rules_data.mjs` into `data/rules_data.json`; the Info tab and the entrance dialog print only these.
 
 ## 9. Work packages (11, disjoint file ownership; paths relative to `frontend_mambo/` unless `math/`)
@@ -210,12 +227,17 @@ Orders spin order: `reveal, fusePath, winInfo(banked), updateTumbleWin, updateGl
 | 9 MATH-PIPELINE | the single CPU queue, calibration, reweight, recompress, shares, report; owns the tunables (`calib_params.py`*: dial steps, lens mult, wild count, paytable scale, mission weights, imported by `game_config.py`) so calibration loops never wait for WP8 | `math/games/agent_mambo/{run.py,calib_params.py*,reels/**,tools/**,tests/test_math.py,MATH_REPORT.md,PROGRESS.md,library/**}` | 7, 8 | each mode RTP 96.000% +-0.0005; P(5000x) = 1/50k per door; `shares.json`; hashes valid (`rgs_verification`); total <= 0.7 GB; `final_checks` pass; P(R > stake) report vs targets |
 | 10 QA | e2e harness, baseline, guideline runner, mock RGS | `tests/e2e/**`*, `tests/guidelines/**`, `tests/core/**`, `tests/text/**`, `tools/mock-rgs/**`, `package.json`, `tests/shots/**` | step 0 | 60 fps capture + flash/luminance script; baseline at 30 and 36 cells, 4 viewports, 4x CPU; G1-G9 plus scripted subset of Engine [181]-[275]; zero console errors incl. replay |
 | 11 CONTENT-RELEASE | rules text and data, fixtures, contract docs, store art, build | `src/rules.js`, `src/i18n/en_rules.js`*, `data/rules_data.json`, `tools/gen_rules_data.mjs`, `fixtures/**`, `CONTRACT.md`, `tools/build/**`, `tools/art/**`, `dist/**`, `VERSION`, `docs/v2/**`* | 9 (shares) | RTP and max win per mode, every layout and mission with final shares, [185] verbatim, word screen pass, sober tile and cover, `verify:build` green |
+
 (* = new file; `src/i18n/index.js` merges the partials after `en.js`, so a partial wins.) **Art inventory (all new art drawn in code, owner WP6 unless noted; heroine rig and 5 outfits already exist in `docs/research2/art/`, v2 uses `inspectrice` base + `lab`, `trench`, `casino`; `vault` reserved for The Long Fuse):** orders envelope with flap + SEALED/OPENED stamps; spotlight cone + dim overlay + x4 tag; folding costume screen + poof; blueprint grid + four outlines + name stamp; dossier folder + TOP SECRET stamp; door + keyhole iris; FILED / DECLASSIFIED stamps and Debrief card; per-mission palette tokens (lair, hat-check, ballroom) swapped under the wipe by WP5's scene.js. About 10 props, no new character art.
+
 Interfaces frozen in step 0: `settings.get/set/on`, `settings.capabilities`; `audio.setVolume(kind,pct)/getVolume/preview/onChange/setMuted/play(id)`; `mascot.react(kind,info)` (+ legacy `pose/say`); `LAYERS=[{id,onEvent(ev,ctx),reset()}]` in `layers/index.js`; `geo.setLayout/toGeo/toPadded`; `celebrate.level(R,C)`.
+
 **Schedule (T = start, 8 h):** T+0:00-0:25 step 0 (WP1/4/6 create stubs, `<link>` tags, i18n partials, API skeletons; nobody else touches shared files). T+0:25-1:00 baseline (WP10) then Annex gate at 1:00. **M1** T+0:25-3:00, gate G1 at 3:00 (hard stop 3:30): menu + sliders + heroine + gate on v1 books, `npm run qa` green = SHIPPABLE. **M2**: WP7 from 0:25 (done 2:30), renderer shape work 2:00-4:30 against hand-made devbooks, base smoke 3:00, go/no-go L14 at 4:30, 100k base + optimizer, gate G2 at 5:30 (hard stop 6:00) = SHIPPABLE. **M3**: WP8 from 0:25; Blackout SDK gate 2:00; calibration 2:30-6:00; door sims 6:00-6:30; base final + optimizer 6:30-6:45; reweight + recompress + tests to 7:30; G3 at 7:30; final zip 7:30-8:00. CPU queue order (single owner WP9): layout smoke, Orders calib, Blackout calib, base 100k + optimizer (M2), Orders 50k, Blackout 50k, base final + optimizer, reweight, recompress, tests.
+
 **Cut line (always shippable):** states S1 = v1 books + v2 front end; S2 + floor plans; S3 + Sealed Orders; S4 + Ballroom Blackout. Cut order: Blackout first (not converged at 6:30 -> weight 0 and renormalise, or The Long Fuse if its config calibration converges in 40 min), then Orders, then floor plans (`layout_weights={mezzanine:1}`), never M1. Cut at M1 if late: fx typed-array rewrite, camera push-in, hit-stop, logo stamp, ripple, text size, break reminder, ducking.
 
 ## 10. Honest risks and what remains for a human
+
 **Top risks**
 1. Cluster rule (b): US12094305 / US12536877 read on size-paid clusters; US9558634 / US9886816 read on any adjacency group; US9542808 on the tumble loop; the built v1 already uses all three. Note only: costless fallback = flat award per tier (`c_flat`, paytable edit, k 1.69, smallest pay 0.17x, dial step 9.3, ~1 day, a textual argument vs US12094305 only, none vs US9558634); non-adjacency fallback = pay-anywhere with per-symbol minimums (`scatter_ps5`, k about 0.43, 5-8 days, kills tubes/hex, per-layout thresholds). Flip only if counsel says a claim reads AND no licence or invalidity route exists (leads: US2003/0157981, US2003/0045345, US2015/0379804). Not built; gap_02's 0.5-day evaluator switch is NOT adopted.
 2. Floor plans: attorney on IGT US8012011 / US8562416 / US11954977, BTG Megaways (number unknown), Aristocrat US11151842; possible Stake review objection to per-spin shapes.
@@ -227,6 +249,7 @@ Interfaces frozen in step 0: `settings.get/set/on`, `settings.capabilities`; `au
 8. Platform unknowns (section 7 list); book size and `is_buybonus` semantics.
 9. Heroine and [217]: glamour only; whitelist of clips; sober tile and cover; the casino gown is the most fitted costume (fallback: trench cut).
 10. Book/SDK pitfalls: jagged `IndexError`, `numRows` leak, missing `opt_params`, `generate_configs` needing every mode's files, silent drop of sims when counts are not multiples, same seeds across modes.
+
 **For a human:** IP attorney (items 1-2 above, the mission proximity notes in section 2, the lists in 01 section 6 and 03 section 7, non-US families EP/AU/GB/CA and trademark class 9/28/41 searches in USPTO, EUIPO, WIPO, UKIPO for Agent Mambo, Mambo Star, Clearance Dial, Sealed Orders, Ballroom Blackout, Secret Entrance); listening test of the mix, loudness on speakers and Bluetooth, the new bed against reference tracks; real-device performance and touch drag on sliders (iOS silent switch); screen-reader pass; flash analysis on a recorded run with PEAT or equivalent; Mission X side-by-side screenshots; Stake Studio upload and review ([217], [253]); answers to the Stake questions; native-speaker read of names (French, Spanish); the 10-second test with real viewers.
 
 ## Sources (load-bearing; quality in brackets)
