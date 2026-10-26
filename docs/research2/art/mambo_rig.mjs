@@ -1,0 +1,692 @@
+// mambo_rig.mjs - runtime animation rig for "Mambo" (browser ES module, no dependencies).
+//
+//   import { createHeroine } from './mambo_rig.mjs';
+//   const h = createHeroine(document.getElementById('hero'), { outfit: 'inspectrice' });
+//   h.setLook('grid'); h.setMood('sly'); h.play('winBig'); h.setOutfit('casino'); h.destroy();
+//
+// What it is: a part-based skeletal rig (SVG groups with pivots, noodle limbs rebuilt every frame from Bezier curves,
+// 8-viseme morphing mouth, eyes with sclera / iris / pupil / highlight / upper lid / lower lid / lashes), a fixed-timestep
+// damped-spring solver, a timeline player with named tracks (pose, look, mouth, set, impulse, fx, cue...), interruptible
+// procedural clips, a seeded micro-behaviour director (blink, saccades, weight shift, idle gags) and a tiny particle layer.
+// Only attributes (transform, d, opacity, display) are written, batched once per frame; no layout reads in the frame loop.
+// Reduced motion (prefers-reduced-motion or {reduced:true}): no springs, no breathing, no saccades, poses swap instantly.
+// L / R = SCREEN left / right. She faces RIGHT (toward the grid, which sits on her right).
+
+import {
+  PAL, INK, OL, REST, GROUND, f, clamp, lerp, rotp, cubicD, cubicSub, cubicTan, limb, tf, ellD, line, circ, part, G, star,
+  makeCtx, defsCommon, buildHead, gloveKinds, GLOVE_GRIP, shoeArt, tubeEls, eyeGeom, browPath,
+  VISEMES, VISEME_NAMES, MOUTH_LEN, mouthPaths, mixVisemes,
+} from './mambo_art.mjs';
+import { OUTFIT_DEFS, OUTFIT_KEYS } from './mambo_outfits.mjs';
+
+// ====================================================================== easing library
+export const Ease = {
+  linear: (t) => t, in: (t) => t * t, out: (t) => 1 - (1 - t) * (1 - t), inOut: (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2),
+  outBack: (t) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+  snap: (t) => (t < 0.5 ? 0 : 1), steps: (n) => (t) => Math.floor(clamp(t, 0, 0.9999) * n) / (n - 1 || 1),
+  parabola: (t) => 4 * t * (1 - t), pulse: (t) => Math.sin(Math.PI * clamp(t, 0, 1)),
+};
+
+// ====================================================================== parameters
+// Every number below is a spring-driven channel. `G` = spring group (stiffness k, damping c), `P` = primary (limited-animation sampling).
+const GROUPS = {
+  body: [150, 15], leg: [210, 18], head: [120, 13], lid: [1500, 78], brow: [520, 40], look: [1700, 90], arm: [270, 20], cap: [230, 11], fx: [600, 45], root: [190, 16],
+};
+const DEF = {
+  // name: [rest value, group, primary?]
+  rx: [0, 'root', 1], rrot: [0, 'root', 1], sq: [0, 'root', 1], spin: [0, 'root', 0],
+  hipX: [0, 'body', 1], hipTilt: [0, 'body', 1],
+  lax: [0, 'leg', 1], lay: [0, 'leg', 1], lb1: [6, 'leg', 1], lb2: [-5, 'leg', 1], lsr: [-6, 'leg', 1], lsf: [-1, 'leg', 1],
+  rax: [0, 'leg', 1], ray: [0, 'leg', 1], rb1: [-6, 'leg', 1], rb2: [5, 'leg', 1], rsr: [6, 'leg', 1], rsf: [1, 'leg', 1],
+  ux: [0, 'body', 1], uy: [0, 'body', 1], lean: [0, 'body', 1], shr: [0, 'body', 1],
+  hx: [0, 'head', 1], hy: [0, 'head', 1], htilt: [0, 'head', 1], turn: [0.55, 'head', 1],
+  uL: [0.55, 'lid', 0], uR: [0.55, 'lid', 0], joyL: [0, 'lid', 0], joyR: [0, 'lid', 0], lowL: [0.1, 'lid', 0], lowR: [0.1, 'lid', 0],
+  stars: [0, 'fx', 0], wide: [0, 'lid', 0], pup: [1, 'lid', 0], lookx: [0.5, 'look', 0], looky: [0.1, 'look', 0],
+  bLy: [3, 'brow', 0], bLr: [-4, 'brow', 0], bLa: [5, 'brow', 0], bRy: [-7, 'brow', 0], bRr: [-10, 'brow', 0], bRa: [10, 'brow', 0],
+  cy: [0, 'cap', 1], cr: [0, 'cap', 1],
+  alx: [146, 'arm', 1], aly: [394, 'arm', 1], alb1: [14, 'arm', 1], alb2: [6, 'arm', 1], alr: [0, 'arm', 1], alsx: [1, 'arm', 1], alsy: [1, 'arm', 1],
+  arx: [254, 'arm', 1], ary: [394, 'arm', 1], arb1: [-14, 'arm', 1], arb2: [-6, 'arm', 1], arr: [0, 'arm', 1], arsx: [1, 'arm', 1], arsy: [1, 'arm', 1],
+  beam: [0, 'fx', 0], accRot: [10, 'arm', 1], blush: [0.4, 'fx', 0],
+};
+const NAMES = Object.keys(DEF), NP = NAMES.length, IX = {}; NAMES.forEach((n, i) => { IX[n] = i; });
+const REST_VALUES = NAMES.map((n) => DEF[n][0]);
+
+// discrete channels (swapped, not sprung)
+const DISCRETE_DEF = { gl: 'fist', gr: 'fist', prop: 'L', layL: 'front', layR: 'front', mouth: 'smirk' };
+
+// ---------------------------------------------------------------------- poses (only the channels that differ from rest)
+export const POSES = {
+  idle: { hipX: 5, hipTilt: -3, lean: 3, htilt: -3, lax: -10, lsr: -12, rax: 3,
+    arx: 247, ary: 354, arb1: -48, arb2: -42, arr: 28, gr: 'fist', alx: 150, aly: 396, alb1: 12, alb2: 8, gl: 'fist', prop: 'L', accRot: 24 },
+  point: { hipX: -6, hipTilt: 3, lean: 5, turn: 0.75, htilt: 2, lookx: 1, looky: 0, lax: -26, rax: 30, lsr: -4, rsr: 8,
+    alx: 150, aly: 352, alb1: 48, alb2: 42, alr: -28, gl: 'fist',
+    arx: 372, ary: 262, arb1: -4, arb2: 4, arr: -90, gr: 'fist', prop: 'R', accRot: -90, beam: 1, uL: 0.62, uR: 0.62, mouth: 'smirk' },
+  smallwin: { hipX: -6, hipTilt: 4, lean: -4, htilt: 5, turn: 0.35, lax: -8, rax: 14, ray: -30, rsr: 40, rb1: -12, rb2: 16, uL: 0, lowL: 0.7, joyR: 0.7, uR: 0.6, bLy: 10, bLr: 6, bRy: -10,
+    arx: 262, ary: 186, arb1: -40, arb2: -30, arr: 10, gr: 'fist', alx: 142, aly: 392, alb1: 16, alb2: 8, gl: 'fist', prop: 'L', accRot: 20, mouth: 'grin' },
+  bigwin: { ry: 0, lean: 0, htilt: 6, turn: 0.4, uL: 1, uR: 1, stars: 1, wide: 0.15, lax: -20, lay: -34, lsr: -30, rax: 22, ray: -40, rsr: 34, lb1: 14, rb1: -14, cy: -34, cr: 14, hipTilt: 5, shr: 2,
+    alx: 98, aly: 118, alb1: 30, alb2: -20, alr: 20, gl: 'fist', prop: 'L', accRot: 160, arx: 302, ary: 112, arb1: -30, arb2: 22, arr: -20, gr: 'open', mouth: 'laugh', bLy: -4, bRy: -14, bLa: 8, bRa: 12, bLr: -8, bRr: -10 },
+  shock: { lean: -3, uy: -3, shr: 8, hy: -4, htilt: 3, turn: 0.15, uL: 1.1, uR: 1.1, wide: 0.55, pup: 0.45, lookx: 0, looky: 0, cy: -58, cr: 10, lax: 10, rax: -10, lsr: -2, rsr: 2,
+    alx: 168, aly: 192, alb1: 26, alb2: -18, alr: 70, gl: 'open', arx: 232, ary: 190, arb1: -26, arb2: 18, arr: -70, gr: 'open', mouth: 'oh', prop: '', bLy: -9, bRy: -12, bLr: 4, bRr: -4, bLa: 10, bRa: 12 },
+  shrug: { shr: 9, htilt: 8, lean: -2, turn: 0.4, lookx: 0.8, looky: -0.6, uL: 0.5, uR: 0.5, bLy: -2, bLr: 12, bRy: -4, bRr: -14, lax: -6, rax: 6,
+    alx: 82, aly: 330, alb1: 22, alb2: -18, alr: 70, gl: 'fist', prop: 'L', accRot: 70, arx: 322, ary: 322, arb1: -24, arb2: 20, arr: -70, gr: 'open', mouth: 'wry' },
+  anticipation: { lean: 8, hx: 8, hy: 2, htilt: 5, turn: 0.8, hipTilt: -4, hipX: 4, lookx: 1, looky: 0.15, uL: 0.5, uR: 0.5, bRy: -12, bRr: -16, bRa: 14, bLy: 6, lax: -8, rax: 8, mouth: 'wry',
+    arx: 244, ary: 188, arb1: -34, arb2: -26, arr: -30, gr: 'point', alx: 156, aly: 350, alb1: 48, alb2: 44, alr: -28, gl: 'fist', prop: '' },
+  think: {},
+  whistle: { lean: 2, htilt: -4, turn: 0.4, uL: 0.12, lowL: 0.8, bLy: 10, bLr: 6, lookx: 0.2, looky: 0, mouth: 'whistle',
+    arx: 232, ary: 214, arb1: -34, arb2: -20, arr: -10, gr: 'pinch', alx: 104, aly: 206, alb1: 26, alb2: -14, alr: 20, gl: 'fist', prop: 'L', accRot: 170 },
+  impatient: { lean: -2, htilt: 7, turn: 0.5, hipTilt: 3, uL: 0.4, uR: 0.4, lookx: 0.9, looky: -0.4, bRy: -3, bLy: 6, mouth: 'wry', rax: 8, ray: -6, rsr: 22, prop: '',
+    alx: 232, aly: 302, alb1: 34, alb2: 40, alr: 80, gl: 'fist', arx: 168, ary: 300, arb1: -34, arb2: -36, arr: -80, gr: 'fist', layL: 'front', layR: 'front' },
+  laugh: { lean: 3, htilt: -9, hy: 2, turn: 0.35, joyL: 1, joyR: 1, uL: 0.1, uR: 0.1, lowL: 0.6, lowR: 0.6, bLy: -2, bRy: -6, bLa: 9, bRa: 9, mouth: 'laugh', lax: -6, rax: 6,
+    alx: 214, aly: 352, alb1: 28, alb2: 22, alr: 70, gl: 'flat', arx: 190, ary: 346, arb1: -26, arb2: -22, arr: -70, gr: 'fist', prop: '' },
+  salute: { lean: -1, htilt: -3, turn: 0.45, uL: 0, lowL: 0.7, joyR: 0.5, bLy: 10, mouth: 'grin', lax: 0, rax: 0, lsr: -4, rsr: 4,
+    arx: 214, ary: 148, arb1: -48, arb2: -30, arr: 30, gr: 'flat', alx: 154, aly: 352, alb1: 48, alb2: 44, alr: -26, gl: 'fist', prop: '' },
+  curtsy: { lean: 14, hx: 6, hy: 4, htilt: -6, turn: 0.7, uy: 18, hipTilt: -6, hipX: 6, lookx: -0.2, looky: -0.7, uL: 0.5, uR: 0.5, bRy: -12, rax: -30, rsr: -10, lax: -14, mouth: 'smirk',
+    arx: 330, ary: 330, arb1: -26, arb2: 18, arr: -70, gr: 'open', alx: 192, aly: 150, alb1: 36, alb2: 40, alr: 20, gl: 'flat', prop: '' },
+};
+POSES.think = { ...POSES.anticipation, mouth: 'smirk', lookx: 0.9, looky: -0.5, hx: 3, lean: 4 };
+
+// ---------------------------------------------------------------------- moods (face baseline; poses override explicit channels)
+export const MOODS = {
+  sly:     { uL: 0.55, uR: 0.55, bLy: 3, bLr: -4, bLa: 5, bRy: -7, bRr: -10, bRa: 10, mouth: 'smirk' },
+  happy:   { uL: 0.7, uR: 0.7, joyL: 0.25, joyR: 0.25, bLy: -2, bRy: -6, bLa: 8, bRa: 9, mouth: 'grin' },
+  worried: { uL: 0.8, uR: 0.8, bLy: -1, bLr: 14, bRy: -3, bRr: -16, bLa: 6, bRa: 6, mouth: 'wry' },
+  bored:   { uL: 0.32, uR: 0.32, bLy: 6, bLr: -2, bRy: 2, bRr: -2, bLa: 2, bRa: 3, mouth: 'wry' },
+  alert:   { uL: 0.95, uR: 0.95, bLy: -4, bRy: -10, bLa: 8, bRa: 12, mouth: 'smirk' },
+  smug:    { uL: 0.42, uR: 0.42, bLy: 4, bRy: -8, bRr: -14, mouth: 'smirk' },
+};
+
+// ====================================================================== markup assembly
+let UID = 0;
+function buildMarkup(outfitKey, pre, o) {
+  const W = OUTFIT_DEFS[outfitKey] || OUTFIT_DEFS.inspectrice;
+  const c = makeCtx({ idPrefix: pre, misreg: o.misreg, halftone: o.halftone });
+  const sleeve = W.sleeve || {};
+  // ---- head
+  const H = buildHead(c, W);
+  const headInner = H.hairMass + H.curlL + H.curlR + H.face + H.features + G(pre + 'face-gear', W.gear ? W.gear(c) : '') + H.bangs + G(pre + 'cap', W.head ? W.head(c) : '');
+  const head = G(pre + 'head', `<g id="${pre}head-t">${headInner}</g>`);
+  // ---- arms
+  const arm = (side) => {
+    const s = side.toLowerCase(), kinds = gloveKinds(c, W);
+    let t = tubeEls(c, `arm-${s}`, 14, sleeve.fill || PAL.navy);
+    if (sleeve.gloveFrom != null) t += `<path id="${pre}arm-${s}-lgi" d="" fill="none" stroke="${INK}" stroke-width="${14 + 2 * OL}" stroke-linecap="butt"/><path id="${pre}arm-${s}-lgf" d="" fill="none" stroke="${W.glove || PAL.white}" stroke-width="14" stroke-linecap="butt"/>`;
+    if (sleeve.trim) t += `<path id="${pre}arm-${s}-tri" d="" fill="none" stroke="${INK}" stroke-width="${14 + 2 * OL}" stroke-linecap="butt"/><path id="${pre}arm-${s}-trf" d="" fill="none" stroke="${sleeve.trim}" stroke-width="14" stroke-linecap="butt"/>`;
+    const hand = G(`${pre}hand-${s}`, `<g id="${pre}hand-${s}-t"><g id="${pre}prop-slot-${s}"></g>` + Object.keys(kinds).map((k) => `<g id="${pre}g-${s}-${k}" display="${k === 'fist' ? 'inline' : 'none'}">${kinds[k]}</g>`).join('') + `</g>`);
+    return G(`${pre}arm-${s}`, t + hand);
+  };
+  const armL = arm('L'), armR = arm('R');
+  // ---- legs + shoes
+  const leg = (side) => G(`${pre}leg-${side.toLowerCase()}`, tubeEls(c, `leg-${side.toLowerCase()}`, W.legs.w || 15, W.legs.fill) + (W.legs.shine ? `<path id="${pre}leg-${side.toLowerCase()}-sh" d="" fill="none" stroke="${W.legs.shine}" stroke-width="3.2" stroke-linecap="round" opacity=".5"/>` : ''));
+  const shoe = (side) => G(`${pre}shoe-${side.toLowerCase()}`, `<g id="${pre}shoe-${side.toLowerCase()}-t">${shoeArt(c, W)}</g>`);
+  const prop = G(`${pre}prop`, W.prop ? W.prop(c) : '');
+  const neck = part(c, 'M191 230L209 230L211 264L189 264Z', PAL.skin, { sw: OL * 0.9, mis: [1.4, 1.2], shade: 'M200 226L220 226L220 270L204 270Z' }) + `<path d="M190 246Q200 256 210 246" fill="${PAL.skinShade}" opacity=".0"/>`;
+  const skirt = G(`${pre}skirt`, `<g id="${pre}skirt-t">${W.skirt(c)}</g>`);
+  const shoes = G(`${pre}shoes`, shoe('L') + shoe('R'));
+  const legs = G(`${pre}legs`, leg('L') + leg('R'));
+  const lowerBlock = W.shoesUnder ? legs + shoes + skirt : legs + skirt + shoes;
+  const torso = G(`${pre}torso`, `<g id="${pre}torso-t">${W.torso(c)}</g>`);
+  const body =
+    `<ellipse id="${pre}shadow" cx="200" cy="${GROUND + 3}" rx="92" ry="11" fill="${INK}" opacity=".26"/>` +
+    G(`${pre}lower`, lowerBlock) +
+    G(`${pre}upper`, G(`${pre}upper-t`, G(`${pre}arms-back`, '') + neck + torso + head + G(`${pre}arms-front`, armL + armR))) +
+    G(`${pre}prop-store`, prop, ' display="none"');
+  return { defs: defsCommon(pre) + c.defs.join(''), body: G(`${pre}root`, G(`${pre}root-t`, body)) + G(`${pre}fx`, ''), W };
+}
+
+// ====================================================================== deterministic PRNG
+function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+// ====================================================================== the heroine
+export function createHeroine(container, opts = {}) {
+  const O = { outfit: 'inspectrice', seed: 7, limited: 12, autoplay: true, raf: true, rim: false, lookTargets: {}, onCue: null, idle: true, size: null, ...opts };
+  const pre = O.idPrefix || `mambo${++UID}-`;
+  const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+  let reduced = O.reduced ?? !!(mq && mq.matches);
+  const rnd = mulberry32(O.seed);
+  const rr = (a, b) => a + (b - a) * rnd();
+
+  // ---- state
+  const X = new Float64Array(NP), V = new Float64Array(NP), T = new Float64Array(NP), D = new Float64Array(NP);
+  REST_VALUES.forEach((v, i) => { X[i] = T[i] = D[i] = v; });
+  const KK = new Float64Array(NP), CC = new Float64Array(NP), PRIM = new Uint8Array(NP);
+  NAMES.forEach((n, i) => { const [, g, p] = DEF[n]; KK[i] = GROUPS[g][0]; CC[i] = GROUPS[g][1]; PRIM[i] = p; });
+  const dis = { ...DISCRETE_DEF };
+  let outfitKey = OUTFIT_KEYS.includes(O.outfit) ? O.outfit : 'inspectrice';
+  let mood = 'sly', poseName = 'idle', overrides = {}, W = null, E = {}, svg = null, markup = null;
+  let ry = 0, vy = 0, ryTarget = 0, grounded = true;            // ballistic height (negative = up)
+  const sec = {};                                                // secondary springs
+  const SEC = { hair: [60, 5.2, 0.0022, 0.0014, 0.0, 0.9], curlL: [90, 6, 0.0034, 0.002, 0.0, 1.1], curlR: [100, 6.5, 0.0030, 0.0018, 0.0, 1.0], bangs: [140, 8, 0.0016, 0.001, 0, 0.5], cap: [170, 7, 0.0026, 0.0016, 0, 0.5],
+    skirt: [90, 6, 0.0022, 0.0, 0, 0.6], whistle: [55, 3.6, 0.004, 0.003, 0, 1.2], scarf1: [48, 3.2, 0.004, 0.003, 0, 1.6], scarf2: [60, 3.8, 0.0045, 0.0035, 0, 1.3] };
+  Object.keys(SEC).forEach((k) => { sec[k] = { x: 0, v: 0 }; });
+  const look = { tx: 0.5, ty: 0.1, sx: 0, sy: 0, nextSac: 1, target: null };
+  const blinkS = { t: -1, kind: 'normal', next: rr(2, 5), amount: 0 };
+  const mouthS = { from: VISEMES.smirk.slice(), to: VISEMES.smirk, cur: VISEMES.smirk.slice(), t: 1, dur: 0.08, name: 'smirk' };
+  const clipS = { cur: null, queue: [], lastEnd: 0 };
+  const dir = { next: rr(5, 11), idle: 0, shiftNext: rr(5, 9), shiftSide: 1 };
+  const fxP = [];
+  let time = 0, acc = 0, lastSample = 0, raf = 0, last = 0, paused = false, destroyed = false, rendered = false;
+  const prevHead = { x: 0, y: 0, a: 0, vx: 0, vy: 0, w: 0, ax: 0, ay: 0, al: 0, init: false };
+  const cache = Object.create(null);
+  const spinS = { angle: 0, active: false };
+
+  // ---- DOM
+  function mount() {
+    const { defs, body, W: w } = buildMarkup(outfitKey, pre, O);
+    W = w;
+    const rimCss = O.rim ? ' style="filter:drop-shadow(0 0 0 #FFFBF0)"' : '';
+    container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" preserveAspectRatio="xMidYMax meet" style="width:100%;height:100%;display:block;overflow:visible"${O.size ? ` height="${O.size}"` : ''} role="img" aria-label="Agent Mambo heroine"><defs>${defs}</defs>${body}</svg>`;
+    svg = container.firstElementChild;
+    E = {}; for (const k of Object.keys(cache)) delete cache[k];
+    svg.querySelectorAll('[id]').forEach((el) => { E[el.id.slice(pre.length)] = el; });
+    // initial layers
+    E['arms-front'].appendChild(E['arm-l']); E['arms-front'].appendChild(E['arm-r']);
+    const propEl = E['prop'];
+    if (propEl) { const slot = E[`prop-slot-${dis.prop.toLowerCase()}`]; if (slot) slot.appendChild(propEl); }
+    applyDiscrete(true);
+    markup = true;
+  }
+  const set = (el, a, v) => { const k = el.id + '|' + a; if (cache[k] !== v) { cache[k] = v; el.setAttribute(a, v); } };
+  const setE = (n, a, v) => { const el = E[n]; if (el) { const k = n + '|' + a; if (cache[k] !== v) { cache[k] = v; el.setAttribute(a, v); } } };
+
+  function applyDiscrete(force) {
+    for (const s of ['l', 'r']) {
+      const kind = dis[s === 'l' ? 'gl' : 'gr'];
+      for (const k of Object.keys(GLOVE_GRIP)) setE(`g-${s}-${k}`, 'display', k === kind ? 'inline' : 'none');
+    }
+    const ph = dis.prop;
+    if (E.prop) { const slot = ph ? E[`prop-slot-${ph.toLowerCase()}`] : E['prop-store']; if (slot && E.prop.parentNode !== slot) slot.appendChild(E.prop); }
+    const lay = (side, which) => { const parent = which === 'back' ? E['arms-back'] : E['arms-front']; const el = E[`arm-${side}`]; if (parent && el.parentNode !== parent) parent.appendChild(el); };
+    lay('l', dis.layL); lay('r', dis.layR);
+  }
+
+  // ---- targets
+  function composeTargets() {
+    const base = {};
+    NAMES.forEach((n) => { base[n] = DEF[n][0]; });
+    const m = MOODS[mood] || MOODS.sly, p = POSES[poseName] || POSES.idle;
+    const disc = { ...DISCRETE_DEF, mouth: m.mouth || 'smirk' };
+    for (const k of Object.keys(m)) { if (k in base) base[k] = m[k]; }
+    for (const k of Object.keys(p)) { if (k in base) base[k] = p[k]; else if (k in disc) disc[k] = p[k]; }
+    for (const k of Object.keys(overrides)) { if (k in base) base[k] = overrides[k]; else if (k in disc) disc[k] = overrides[k]; }
+    return { base, disc };
+  }
+  function applyTargets(snap) {
+    const { base, disc } = composeTargets();
+    NAMES.forEach((n, i) => { if (n === 'lookx' || n === 'looky') return; T[i] = base[n]; if (snap || reduced) { X[i] = T[i]; V[i] = 0; D[i] = T[i]; } });
+    if (!look.target) { look.tx = base.lookx; look.ty = base.looky; }
+    Object.assign(dis, { gl: disc.gl, gr: disc.gr, prop: disc.prop, layL: disc.layL, layR: disc.layR });
+    setMouth(disc.mouth, snap || reduced ? 0 : undefined);
+    applyDiscrete();
+  }
+  function setMouth(name, dur) {
+    if (!VISEMES[name] || mouthS.name === name) return;
+    mouthS.from = mouthS.cur.slice(); mouthS.to = VISEMES[name]; mouthS.t = dur === 0 ? 1 : 0; mouthS.dur = dur ?? 0.09; mouthS.name = name;
+    if (dur === 0) mixVisemes(mouthS.from, mouthS.to, 1, mouthS.cur);
+  }
+
+  // ---- look
+  function resolveLook(t) {
+    if (t == null) return null;
+    if (typeof t === 'string') {
+      const lt = O.lookTargets[t];
+      if (lt) return typeof lt === 'function' ? lt() : lt;
+      const named = { grid: [1, 0.12, 0.75], player: [-0.25, 0.05, 0.08], meter: [0.1, -0.7, 0.4], spin: [0.8, 0.5, 0.7], up: [0.2, -0.9, 0.4], down: [0, 0.8, 0.5], left: [-1, 0, 0.3], right: [1, 0, 0.8], hand: [-0.3, 0.8, 0.3] }[t];
+      return named ? { nx: named[0], ny: named[1], turn: named[2] } : null;
+    }
+    if ('nx' in t) return t;
+    if ('x' in t && svg) { // container-relative pixel target
+      const r = svg.getBoundingClientRect(), cr = container.getBoundingClientRect();
+      const ex = r.left + r.width * (200 + 8) / 400 - cr.left, ey = r.top + r.height * 164 / 600 - cr.top, sz = Math.max(60, r.width);
+      const dx = t.x - ex, dy = t.y - ey;
+      return { nx: clamp(dx / (sz * 0.9), -1, 1), ny: clamp(dy / (sz * 1.2), -1, 1), turn: clamp(0.55 + dx / (sz * 2.4), 0.1, 0.95) };
+    }
+    return null;
+  }
+  function setLook(t) {
+    look.target = resolveLook(t);
+    if (!look.target) { const { base } = composeTargets(); look.tx = base.lookx; look.ty = base.looky; } else { look.tx = look.target.nx; look.ty = look.target.ny; }
+  }
+
+  // ---- blink / wink
+  function blink(kind = 'normal') { if (blinkS.t < 0 && !reduced) { blinkS.t = 0; blinkS.kind = kind; } }
+  const BLINK = { normal: [0.07, 0.04, 0.12, 1], half: [0.06, 0.02, 0.1, 0.5], slow: [0.22, 0.14, 0.3, 1] };
+  function updateBlink(dt) {
+    if (blinkS.t >= 0) {
+      const [a, h, b, peak] = BLINK[blinkS.kind]; blinkS.t += dt; const t = blinkS.t;
+      blinkS.amount = t < a ? Ease.out(t / a) * peak : t < a + h ? peak : t < a + h + b ? (1 - Ease.inOut((t - a - h) / b)) * peak : 0;
+      if (t >= a + h + b) { blinkS.t = -1; blinkS.amount = 0; }
+    } else if (!reduced && O.idle) {
+      blinkS.next -= dt;
+      if (blinkS.next <= 0) { const r = rnd(); blink(r < 0.12 ? 'slow' : r < 0.3 ? 'half' : 'normal'); blinkS.next = rr(2, 6); if (rnd() < 0.15) blinkS.next = 0.25; }
+    }
+  }
+  function wink(side = 'L', dur = 0.6) { overrideTimed(side === 'L' ? { uL: 0, lowL: 0.7, bLy: 10, bLr: 6 } : { uR: 0, lowR: 0.7, bRy: 8 }, dur); }
+  const timedOver = [];
+  function overrideTimed(set, dur) { timedOver.push({ set, left: dur, prev: {} }); for (const k of Object.keys(set)) { timedOver[timedOver.length - 1].prev[k] = overrides[k]; overrides[k] = set[k]; } applyTargets(); }
+  function updateTimed(dt) {
+    for (let i = timedOver.length - 1; i >= 0; i--) {
+      const o = timedOver[i]; o.left -= dt;
+      if (o.left <= 0) { for (const k of Object.keys(o.set)) { if (o.prev[k] === undefined) delete overrides[k]; else overrides[k] = o.prev[k]; } timedOver.splice(i, 1); applyTargets(); }
+    }
+  }
+
+  // ---- impulses & jumps
+  function impulse(d) {
+    if ('jump' in d) { vy = -d.jump; grounded = false; }
+    if ('sq' in d) V[IX.sq] += d.sq;
+    if ('cap' in d) { V[IX.cy] += d.cap; }
+    if ('capSpin' in d) V[IX.cr] += d.capSpin;
+    if ('shake' in d) V[IX.rx] += d.shake;
+    if ('hair' in d) for (const k of ['hair', 'curlL', 'curlR', 'bangs']) sec[k].v += d.hair;
+    if ('lean' in d) V[IX.lean] += d.lean;
+    if ('head' in d) V[IX.htilt] += d.head;
+  }
+
+  // ---- particles
+  function fxLayer() { return E.fx; }
+  function spawn(type, o = {}) {
+    if (reduced && type !== 'sparkle') return;
+    const L = fxLayer(); if (!L) return;
+    const p = { type, t: 0, life: o.life ?? 0.6, x: o.x ?? 200, y: o.y ?? 120, vx: o.vx ?? 0, vy: o.vy ?? 0, g: o.g ?? 0, r: o.r ?? 1, rot: o.rot ?? 0, vr: o.vr ?? 0, s: o.s ?? 1, col: o.col, el: null, delay: o.delay ?? 0 };
+    const mk = (inner) => { const gg = document.createElementNS('http://www.w3.org/2000/svg', 'g'); gg.innerHTML = inner; gg.setAttribute('visibility', 'hidden'); L.appendChild(gg); return gg; };
+    if (type === 'sparkle') p.el = mk(star(0, 0, 11, o.col || PAL.white, 2.6));
+    else if (type === 'dash') p.el = mk(`<path d="M0 0L${o.len ?? 22} 0" stroke="${INK}" stroke-width="4.4" stroke-linecap="round"/>`);
+    else if (type === 'drop') p.el = mk(`<path d="M0 -9C6 -1 7 4 0 7C-7 4 -6 -1 0 -9Z" fill="${PAL.glass}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`);
+    else if (type === 'puff') p.el = mk(`<path d="${ellD(0, 0, 14, 11)}" fill="${PAL.white}" stroke="${INK}" stroke-width="3.4"/><path d="${ellD(-12, 4, 9, 8)}" fill="${PAL.white}" stroke="${INK}" stroke-width="3.2"/><path d="${ellD(11, 5, 9, 7)}" fill="${PAL.white}" stroke="${INK}" stroke-width="3.2"/><path d="${ellD(0, 3, 14, 8)}" fill="${PAL.white}"/>`);
+    else if (type === 'conf') p.el = mk(`<rect x="-4" y="-2.6" width="8" height="5.2" fill="${o.col || PAL.gold}" stroke="${INK}" stroke-width="1.6"/>`);
+    else if (type === 'note') p.el = mk(`<path d="M-4 8a4.5 3.6 -20 1 0 0.1 0M0 8L0 -10Q8 -8 9 0" fill="none" stroke="${INK}" stroke-width="3.6" stroke-linecap="round"/><ellipse cx="-3" cy="8" rx="4.6" ry="3.6" fill="${INK}"/>`);
+    else if (type === 'chip') p.el = mk(`<circle r="9" fill="${o.col || PAL.brick}" stroke="${INK}" stroke-width="2.8"/><circle r="5.2" fill="none" stroke="${PAL.white}" stroke-width="2.4" stroke-dasharray="3.2 3.2"/>`);
+    else if (type === 'bubble') p.el = mk(`<circle r="7" fill="#B9F06A" stroke="${INK}" stroke-width="2.8"/><circle cx="-2" cy="-2" r="1.8" fill="${PAL.white}"/>`);
+    else if (type === 'ring') p.el = mk(`<circle r="14" fill="none" stroke="${o.col || PAL.gold}" stroke-width="4"/>`);
+    else if (type === 'q') p.el = mk(`<text x="0" y="0" font-family="Arial Black,Helvetica,sans-serif" font-weight="900" font-size="30" text-anchor="middle" fill="${PAL.gold}" stroke="${INK}" stroke-width="2.4" paint-order="stroke">?</text>`);
+    fxP.push(p); return p;
+  }
+  function updateFx(dt) {
+    for (let i = fxP.length - 1; i >= 0; i--) {
+      const p = fxP[i];
+      if (p.delay > 0) { p.delay -= dt; continue; }
+      p.t += dt; const u = p.t / p.life;
+      if (u >= 1) { p.el.remove(); fxP.splice(i, 1); continue; }
+      p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      let sc = p.s, op = 1;
+      if (p.type === 'sparkle') sc = p.s * Math.sin(Math.PI * Math.min(1, u * 1.1)) * 1.2;
+      else if (p.type === 'puff') { sc = p.s * (0.5 + u); op = 1 - u * u; }
+      else if (p.type === 'dash') { sc = p.s * (1 - u * 0.6); op = u > 0.7 ? 1 - (u - 0.7) / 0.3 : 1; }
+      else if (p.type === 'ring') sc = p.s * (0.4 + u * 2.2), op = 1 - u;
+      else if (p.type === 'drop') op = 1 - u * u;
+      else if (p.type === 'note' || p.type === 'q') op = u > 0.7 ? 1 - (u - 0.7) / 0.3 : 1;
+      else if (p.type === 'bubble') sc = p.s * (0.6 + u * 0.6), op = 1 - u * u;
+      p.el.setAttribute('visibility', 'visible');
+      p.el.setAttribute('transform', `translate(${f(p.x)} ${f(p.y)}) rotate(${f(p.rot)}) scale(${f(sc)})`);
+      p.el.setAttribute('opacity', f2(op));
+    }
+  }
+  const headWorld = () => { const a = rad2(X[IX.htilt] + X[IX.lean]); return [200 + X[IX.rx] + X[IX.ux] + X[IX.hipX] * 0.55 + 190 * Math.sin(a) + X[IX.hx], 164 + ry + X[IX.uy] + X[IX.hy]]; };
+  const rad2 = (d) => (d * Math.PI) / 180;
+const f2 = (n) => Math.round(n * 100) / 100;
+  function fxPreset(name, o = {}) {
+    const [hx, hy] = headWorld();
+    if (name === 'sparkles') for (let i = 0; i < (o.n ?? 5); i++) spawn('sparkle', { x: hx + rr(-90, 90), y: hy + rr(-100, 60), life: rr(0.4, 0.8), s: rr(0.7, 1.4), delay: rr(0, 0.35), col: rnd() < 0.5 ? PAL.white : PAL.gold });
+    else if (name === 'burstLines') for (let i = 0; i < (o.n ?? 6); i++) { const a = -Math.PI / 2 + (i - (o.n ?? 6) / 2 + 0.5) * 0.36, r0 = 120 + rr(0, 14); spawn('dash', { x: hx + Math.cos(a) * r0, y: hy - 60 + Math.sin(a) * r0 * 0.9, rot: (a * 180) / Math.PI, life: 0.45, len: 20 + rr(0, 12) }); }
+    else if (name === 'sweat') { spawn('drop', { x: hx + 62, y: hy - 70, vx: 40, vy: -70, g: 520, life: 0.8 }); spawn('drop', { x: hx - 58, y: hy - 56, vx: -50, vy: -60, g: 520, life: 0.8, s: 0.8 }); }
+    else if (name === 'puff') spawn('puff', { x: hx + 54, y: hy - 4, vx: 30, vy: -26, life: 1.1, s: 0.9 });
+    else if (name === 'confetti') for (let i = 0; i < (o.n ?? 26); i++) spawn('conf', { x: hx + rr(-20, 20), y: hy - 70, vx: rr(-170, 170), vy: rr(-330, -120), g: 520, life: rr(0.9, 1.5), rot: rr(0, 360), vr: rr(-500, 500), col: [PAL.gold, PAL.brick, PAL.turq, PAL.white, PAL.orange][i % 5] });
+    else if (name === 'notes') for (let i = 0; i < 3; i++) spawn('note', { x: hx + 70, y: hy - 10, vx: 40 + i * 12, vy: -50 - i * 14, life: 1, delay: i * 0.18, rot: rr(-20, 20) });
+    else if (name === 'ring') spawn('ring', { x: hx, y: hy - 20, life: 0.5 });
+    else if (name === 'chips') for (let i = 0; i < (o.n ?? 8); i++) spawn('chip', { x: hx + rr(-20, 20), y: hy - 60, vx: rr(-180, 180), vy: rr(-300, -120), g: 560, life: rr(1, 1.5), vr: rr(-500, 500), col: [PAL.brick, INK, PAL.cream][i % 3] });
+    else if (name === 'bubbles') for (let i = 0; i < (o.n ?? 8); i++) spawn('bubble', { x: hx + rr(-70, 90), y: hy + rr(-60, 40), vx: rr(-20, 20), vy: rr(-90, -40), life: rr(0.7, 1.2), delay: rr(0, 0.4), s: rr(0.7, 1.3) });
+    else if (name === 'question') spawn('q', { x: hx + 60, y: hy - 130, vy: -22, life: 1.1 });
+  }
+
+  // ---- clips
+  const clipDefs = { ...CLIPS, ...(O.clips || {}) };
+  function play(clip, o = {}) {
+    const def = typeof clip === 'string' ? clipDefs[clip] : clip;
+    if (!def) return null;
+    if (o.queue && clipS.cur) { clipS.queue.push([def, o]); return def; }
+    const events = (def.events || []).slice().sort((a, b) => a.at - b.at);
+    clipS.cur = { def, events, i: 0, t: 0, speed: o.speed || 1, hold: o.hold ?? def.hold ?? false, name: def.name || (typeof clip === 'string' ? clip : 'custom'), onEnd: o.onEnd };
+    dir.idle = 0; dir.next = rr(5, 11);
+    return def;
+  }
+  function stopClip(toRest = true) { const c = clipS.cur; clipS.cur = null; if (toRest) { overrides = {}; poseName = 'idle'; applyTargets(); } if (c && c.onEnd) c.onEnd(); }
+  function runEvent(ev) {
+    if (ev.pose) { poseName = ev.pose; overrides = ev.keep ? overrides : {}; }
+    if (ev.mood) mood = ev.mood;
+    if (ev.set) Object.assign(overrides, ev.set);
+    if (ev.pose || ev.mood || ev.set) applyTargets();
+    if (ev.mouth) { overrides.mouth = ev.mouth; setMouth(ev.mouth, ev.mouthDur); }
+    if ('look' in ev) setLook(ev.look);
+    if (ev.impulse && !reduced) impulse(ev.impulse);
+    if (ev.fx) fxPreset(ev.fx, ev.fxOpts);
+    if (ev.blink) blink(ev.blink);
+    if (ev.wink) wink(ev.wink, ev.winkDur || 0.6);
+    if (ev.spin && !reduced) { spinS.active = true; spinS.angle = 0; spinS.turns = ev.spin; spinS.dur = ev.spinDur || 0.8; spinS.t = 0; }
+    if (ev.outfit) setOutfit(ev.outfit);
+    if (ev.cue && O.onCue) O.onCue(ev.cue, clipS.cur && clipS.cur.name);
+    if (ev.call) ev.call(api);
+  }
+  function updateClip(dt) {
+    const c = clipS.cur;
+    if (!c) { dir.idle += dt; return; }
+    c.t += dt * c.speed;
+    while (c.i < c.events.length && c.events[c.i].at <= c.t) runEvent(c.events[c.i++]);
+    if (c.t >= (c.def.dur || 1) && c.i >= c.events.length) {
+      if (c.hold) return;
+      clipS.cur = null; if (c.onEnd) c.onEnd();
+      overrides = {}; poseName = c.def.endPose || 'idle'; applyTargets();
+      if (clipS.queue.length) { const [d, o] = clipS.queue.shift(); play(d, o); }
+    }
+  }
+
+  // ---- idle director (micro behaviours, weight shifts)
+  const MICRO = ['checkFlashlight', 'blowWhistle', 'examineNails', 'glancePlayer', 'hairFlip', 'shiftWeight', 'shiftWeight'];
+  function updateDirector(dt) {
+    if (reduced || !O.idle || clipS.cur) return;
+    dir.next -= dt;
+    if (dir.next <= 0) {
+      dir.next = rr(5, 12);
+      const pool = MICRO.filter((m) => !(m === 'blowWhistle' && !W.whistle));
+      const pick = pool[Math.floor(rnd() * pool.length)];
+      play(pick);
+    }
+  }
+
+  // ---- outfit
+  function setOutfit(key, o2 = {}) {
+    if (!OUTFIT_DEFS[key] || key === outfitKey) return;
+    if (o2.animated && !reduced) { play('outfitChange', {}); clipS.cur.pendingOutfit = key; _pendingOutfit = key; return; }
+    outfitKey = key; mount(); applyTargets(true); rendered = false; render(true);
+  }
+  let _pendingOutfit = null;
+
+  // ====================================================================== simulation
+  const FIX = 1 / 120;
+  function stepFixed(dt) {
+    // springs
+    for (let i = 0; i < NP; i++) {
+      const tgt = T[i]; let x = X[i], v = V[i];
+      const a = KK[i] * (tgt - x) - CC[i] * v;
+      v += a * dt; x += v * dt; X[i] = x; V[i] = v;
+    }
+    // look springs live in params: drive tx/ty + saccade
+    // ballistic height
+    if (!grounded) {
+      vy += 2400 * dt; ry += vy * dt;
+      if (ry >= 0) { ry = 0; if (vy > 160) { V[IX.sq] -= Math.min(5.5, vy / 260); fxLanding(vy); } vy = 0; grounded = true; }
+    } else { ry = ry * 0.0; }
+    // head kinematics -> secondary springs
+    const hx = X[IX.rx] + X[IX.ux] + X[IX.hipX] * 0.55 + 190 * Math.sin(rad2(X[IX.lean])) + X[IX.hx];
+    const hy = ry + X[IX.uy] + X[IX.hy] + X[IX.sq] * -120;
+    const ha = X[IX.htilt] + X[IX.lean] + X[IX.rrot];
+    const P = prevHead;
+    if (!P.init) { P.x = hx; P.y = hy; P.a = ha; P.init = true; }
+    const vx = (hx - P.x) / dt, vyy = (hy - P.y) / dt, w = (ha - P.a) / dt;
+    const k = 0.35;
+    P.ax += (((vx - P.vx) / dt) - P.ax) * k; P.ay += (((vyy - P.vy) / dt) - P.ay) * k; P.al += (((w - P.w) / dt) - P.al) * k;
+    P.x = hx; P.y = hy; P.a = ha; P.vx = vx; P.vy = vyy; P.w = w;
+    const wind = time;
+    for (const key in SEC) {
+      const [kk, cc, gx, gy, gr, windAmp] = SEC[key]; const s = sec[key];
+      const drive = -(gx * P.ax + gy * P.ay) * (key === 'cap' ? 1 : 1) - gr * P.al;
+      const rest = reduced ? 0 : Math.sin(wind * (0.9 + (key.length % 3) * 0.23) + key.length) * windAmp;
+      const a = -kk * (s.x - rest) - cc * s.v + drive * 60;
+      s.v += a * dt; s.x += s.v * dt; s.x = clamp(s.x, -38, 38);
+    }
+    // spin
+    if (spinS.active) {
+      spinS.t += dt; const u = clamp(spinS.t / spinS.dur, 0, 1); spinS.angle = Ease.inOut(u) * spinS.turns * 360;
+      if (u >= 1) { spinS.active = false; spinS.angle = 0; }
+    }
+  }
+  function fxLanding() { if (!reduced) { const [hx] = headWorld(); spawn('puff', { x: 200, y: GROUND - 6, life: 0.5, s: 0.5, vy: -8 }); spawn('puff', { x: 150, y: GROUND - 4, vx: -40, life: 0.45, s: 0.4 }); spawn('puff', { x: 250, y: GROUND - 4, vx: 40, life: 0.45, s: 0.4 }); } }
+
+  function sampleDisplay() {
+    for (let i = 0; i < NP; i++) D[i] = reduced ? T[i] : X[i];
+  }
+  const Dv = (n) => D[IX[n]];
+
+  // ====================================================================== render
+  let primSnap = null;
+  function render(force) {
+    if (!svg) return;
+    const lim = !reduced && O.limited > 0;
+    if (!primSnap) primSnap = new Float64Array(X);
+    if (lim) { if (time - lastSample >= 1 / O.limited || force) { lastSample = time; for (let i = 0; i < NP; i++) if (PRIM[i]) primSnap[i] = X[i]; } }
+    for (let i = 0; i < NP; i++) D[i] = reduced ? T[i] : (PRIM[i] && lim ? primSnap[i] : X[i]);
+    const d = (n) => D[IX[n]];
+    const breath = reduced ? 0 : Math.sin(time * (Math.PI * 2) / 3.7);
+    const sway = reduced ? 0 : Math.sin(time * 0.9 + 1.2);
+    // ---- root
+    const sq = d('sq'), sy = 1 + sq, sx = 1 / Math.pow(Math.max(0.2, sy), 0.75);
+    const spinSx = spinS.active ? Math.cos(rad2(spinS.angle)) : 1;
+    setE('root-t', 'transform', `translate(${f(d('rx'))} ${f(ry)}) translate(200 ${GROUND}) rotate(${f(d('rrot'))}) scale(${f2(sx * spinSx)} ${f2(sy)}) translate(-200 -${GROUND})`);
+    const lift = clamp(-ry / 260, 0, 1);
+    setE('shadow', 'transform', `translate(${f(d('hipX') * 0.5)} 0) scale(${f2(1 - lift * 0.45)} 1)`);
+    setE('shadow', 'opacity', f2(0.26 * (1 - lift * 0.6)));
+    // ---- lower body
+    const hipX = d('hipX') + sway * 1.2, tilt = d('hipTilt') + sway * 0.5;
+    setE('skirt', 'transform', `translate(${f(hipX)} 0) rotate(${f(tilt)} 200 366)`);
+    setE('skirt-t', 'transform', `rotate(${f(sec.skirt.x)} 200 330)`);
+    const rootL = rotp(REST.hipJointL, tilt, REST.hip), rootR = rotp(REST.hipJointR, tilt, REST.hip);
+    rootL[0] += hipX; rootR[0] += hipX;
+    for (const [s, root, A] of [['l', rootL, REST.ankleL], ['r', rootR, REST.ankleR]]) {
+      const p = s;
+      const ax = A[0] + d(p + 'ax'), ay = A[1] + d(p + 'ay');
+      const cv = limb(root, [ax, ay], d(p + 'b1'), d(p + 'b2')), dd = cubicD(cv);
+      setE(`leg-${s}-ink`, 'd', dd); setE(`leg-${s}-fill`, 'd', dd);
+      if (E[`leg-${s}-sh`]) setE(`leg-${s}-sh`, 'd', cubicD(limb([root[0] - 3, root[1] + 6], [ax - 3, ay - 6], d(p + 'b1') * 0.8, d(p + 'b2') * 0.8)));
+      const flip = d(p + 'sf');
+      setE(`shoe-${s}-t`, 'transform', `translate(${f(ax)} ${f(ay)}) rotate(${f(d(p + 'sr'))}) scale(${f2(flip)} 1)`);
+    }
+    // ---- upper body
+    const ux = d('ux') + hipX * 0.55, uy = d('uy') + breath * 1.1;
+    const waist = REST.waist;
+    setE('upper-t', 'transform', `translate(${f(ux)} ${f(uy)}) rotate(${f(d('lean') + breath * 0.25)} ${waist[0]} ${waist[1]})`);
+    const shr = d('shr') + breath * 1.6;
+    // chest breath: tiny vertical scale of the torso about the waist
+    setE('torso-t', 'transform', `translate(200 ${waist[1]}) scale(${f2(1 + breath * 0.006)} ${f2(1 + breath * 0.012)}) translate(-200 -${waist[1]})`);
+    // ---- head & face
+    const turn = d('turn') + look.sx * 0 + (look.target ? 0 : 0);
+    const lx = clamp(X[IX.lookx] + look.sx, -1.2, 1.2), ly = clamp(X[IX.looky] + look.sy, -1.2, 1.2);
+    const ht = d('htilt') + lx * 1.6 * (reduced ? 0 : 1) + sway * 0.5;
+    setE('head-t', 'transform', `translate(${f(REST.neck[0] + d('hx'))} ${f(REST.neck[1] + d('hy'))}) rotate(${f(ht)})`);
+    // secondary parts
+    setE('hair-mass', 'transform', `rotate(${f(sec.hair.x)} 0 -120)`);
+    setE('hair-curl-l', 'transform', `rotate(${f(sec.curlL.x)} -60 -58)`);
+    setE('hair-curl-r', 'transform', `rotate(${f(sec.curlR.x)} 52 -60)`);
+    setE('hair-front', 'transform', `rotate(${f(sec.bangs.x)} 0 -128)`);
+    setE('cap', 'transform', `translate(0 ${f(d('cy'))}) rotate(${f(d('cr') + sec.cap.x)} 0 -130)`);
+    // face turn shifts the features
+    const sh = turn * 10, farS = 1 - 0.22 * clamp(turn, 0, 1), nearS = 1 + 0.05 * clamp(turn, 0, 1);
+    setE('features', 'transform', `translate(0 0)`);
+    setE('nose', 'transform', `translate(${f(sh * 1.5)} 0)`);
+    setE('cheeks', 'transform', `translate(${f(sh * 1.0)} 0)`);
+    setE('cheeks', 'opacity', f2(d('blush')));
+    const winkL = 0, bl = blinkS.amount;
+    const eyeArgs = (s) => {
+      const p = s < 0 ? 'L' : 'R';
+      const u = clamp(d('u' + p), 0, 1.2) * (1 - bl), joy = d('joy' + p), low = d('low' + p);
+      return { u: Math.min(1, u), joy, low };
+    };
+    for (const s of [-1, 1]) {
+      const id = s < 0 ? 'eye-l' : 'eye-r', p = s < 0 ? 'L' : 'R', a = eyeArgs(s);
+      const cx = (s < 0 ? -23 : 23) + sh + (s < 0 ? 0 : 0), cy = -86 + (s < 0 ? 0 : -0.5);
+      const wide = 1 + d('wide') * 0.3, sxk = (s < 0 ? nearS : farS) * wide;
+      setE(`${id}-s`, 'transform', `translate(${f(cx)} ${f(cy)}) scale(${f2(sxk)} ${f2(wide)})`);
+      const g = eyeGeom(s, a);
+      setE(`${id}-lashline`, 'd', g.lidLine); setE(`${id}-lashes`, 'd', g.lashes); setE(`${id}-lidfill`, 'd', g.upperFill); setE(`${id}-lower`, 'd', g.lowerFill);
+      const ox = clamp(lx, -1.2, 1.2) * 7.2 * (s > 0 ? 0.9 : 1), oy = clamp(ly, -1.2, 1.2) * 4.4;
+      const pr = d('pup');
+      setE(`${id}-iris`, 'transform', `translate(${f(ox)} ${f(oy)}) translate(0 2) scale(${f2(0.55 + pr * 0.45)} ${f2(0.55 + pr * 0.45)}) translate(0 -2)`);
+      const st = d('stars'); setE(`${id}-stars`, 'opacity', f2(clamp(st, 0, 1))); setE(`${id}-iris`, 'opacity', st > 0.5 ? 0 : 1);
+      // brows
+      const b = (s < 0 ? 'L' : 'R');
+      const bx = cx + (s < 0 ? -1 : 1) * 1, by = -86 - 27 + d('b' + b + 'y');
+      setE(s < 0 ? 'brow-l' : 'brow-r', 'd', browPath(s, 0, d('b' + b + 'r'), d('b' + b + 'a'), 1));
+      setE(s < 0 ? 'brow-l' : 'brow-r', 'transform', `translate(${f(bx)} ${f(by)}) scale(${f2(sxk)} 1)`);
+    }
+    // ---- mouth
+    renderMouth(sh);
+    // ---- arms
+    for (const s of ['l', 'r']) {
+      const S = s === 'l' ? REST.shoulderL : REST.shoulderR;
+      const Sx = S[0], Sy = S[1] - shr;
+      const p = s === 'l' ? 'al' : 'ar';
+      let wx = d(p + 'x'), wy = d(p + 'y');
+      // chain / whistle special-case: whistle pose uses pinch glove at the mouth (handled by pose targets)
+      const cv = limb([Sx, Sy], [wx, wy], d(p + 'b1'), d(p + 'b2')), dd = cubicD(cv);
+      setE(`arm-${s}-ink`, 'd', dd); setE(`arm-${s}-fill`, 'd', dd);
+      const sl = W.sleeve || {};
+      if (sl.trim) { const tr = cubicD(cubicSub(cv, sl.trimAt[0], sl.trimAt[1])); setE(`arm-${s}-tri`, 'd', tr); setE(`arm-${s}-trf`, 'd', tr); }
+      if (sl.gloveFrom != null) { const lg = cubicD(cubicSub(cv, sl.gloveFrom, 1)); setE(`arm-${s}-lgi`, 'd', lg); setE(`arm-${s}-lgf`, 'd', lg); }
+      const tan = cubicTan(cv, 1), ang = (Math.atan2(tan[1], tan[0]) * 180) / Math.PI - 90 + d(p + 'r');
+      setE(`hand-${s}-t`, 'transform', `translate(${f(wx)} ${f(wy)}) rotate(${f(ang)}) scale(${f2(d(p + 'sx'))} ${f2(d(p + 'sy'))})`);
+      if (s === dis.prop.toLowerCase() && E.prop) {
+        const kind = dis[s === 'l' ? 'gl' : 'gr'], gp = GLOVE_GRIP[kind] || [0, 26];
+        setE('prop', 'transform', `translate(${gp[0]} ${gp[1]}) rotate(${f(d('accRot'))})`);
+      }
+    }
+    if (E.beam) setE('beam', 'opacity', f2(clamp(d('beam'), 0, 1)));
+    // ---- whistle chain (inspectrice)
+    if (E.chain) renderChain(d, shr);
+    // ---- scarf (vault)
+    if (E['scarf-1']) { setE('scarf-1', 'transform', `rotate(${f(sec.scarf1.x)} 186 270)`); if (E['scarf-2']) setE('scarf-2', 'transform', `rotate(${f(sec.scarf2.x)} 186 272)`); }
+    rendered = true;
+  }
+  function renderMouth(sh) {
+    const m = mouthS;
+    if (m.t < 1 || !rendered) { mixVisemes(m.from, m.to, m.t >= 1 ? 1 : Ease.out(m.t), m.cur); }
+    const v = m.cur, mp = mouthPaths(v);
+    setE('mouth-s', 'transform', `translate(${f(sh * 1.35 + 4)} -41)`);
+    setE('m-lips', 'd', mp.lips); setE('m-clipd', 'd', mp.cav); setE('m-cav', 'd', mp.cav);
+    setE('m-cav', 'opacity', mp.ops[0] > 0.5 ? 1 : 0); setE('m-seam', 'opacity', mp.ops[3] > 0.5 ? 1 : 0);
+    setE('m-seam', 'd', mp.seam);
+    setE('m-teeth', 'y', f(mp.teeth[0])); setE('m-teeth', 'height', f(Math.max(0.01, mp.teeth[1] - mp.teeth[0])));
+    setE('m-tongue', 'cx', f(mp.tongue[0])); setE('m-tongue', 'cy', f(mp.tongue[1])); setE('m-tongue', 'rx', f(mp.tongue[2])); setE('m-tongue', 'ry', f(Math.max(0.01, mp.tongue[3])));
+    setE('m-tongue', 'opacity', mp.ops[2] > 0.5 ? 1 : 0);
+    setE('m-gloss', 'cx', f(mp.gloss[0])); setE('m-gloss', 'cy', f(mp.gloss[1])); setE('m-gloss', 'rx', f(mp.gloss[2])); setE('m-gloss', 'ry', f(mp.gloss[3]));
+    setE('m-dimple', 'transform', `translate(${f(mp.dimple[0])} ${f(mp.dimple[1])})`); setE('m-dimple', 'opacity', f2(mp.dimple[2]));
+  }
+  function renderChain(d, shr) {
+    // collar anchor -> whistle (hanging at the hip, swinging) or at the mouth for the whistle pose
+    const A = [189, 262 - shr * 0.4];
+    let end;
+    const inMouth = dis.gr === 'pinch';
+    if (inMouth) { const a = rad2(d('htilt')), mx = 200 + d('hx') + (d('turn') * 13.5 + 4) , my = 250 + d('hy') - 41; end = [mx + 6, my + 1]; }
+    else end = [232 + sec.whistle.x * 0.9, 346 - Math.abs(sec.whistle.x) * 0.1];
+    const mid = [(A[0] + end[0]) / 2 + (inMouth ? -10 : -8), (A[1] + end[1]) / 2 + (inMouth ? 26 : 30)];
+    setE('chain', 'd', `M${f(A[0])} ${f(A[1])}Q${f(mid[0])} ${f(mid[1])} ${f(end[0])} ${f(end[1])}`);
+    setE('whistle', 'transform', `translate(${f(end[0])} ${f(end[1])}) rotate(${f(inMouth ? -8 : sec.whistle.x * 0.6)})`);
+  }
+
+  // ====================================================================== frame loop
+  function update(dt) {
+    time += dt;
+    // look target & saccades
+    if (!reduced && O.idle) {
+      look.nextSac -= dt;
+      if (look.nextSac <= 0) { look.nextSac = rr(0.6, 2.0); look.sx = rr(-0.1, 0.1); look.sy = rr(-0.07, 0.07); if (rnd() < 0.12) { look.sx *= 2.2; } }
+    } else { look.sx = 0; look.sy = 0; }
+    T[IX.lookx] = look.tx; T[IX.looky] = look.ty;
+    if (look.target) { T[IX.turn] = clamp(look.target.turn ?? T[IX.turn], 0, 1); }
+    updateTimed(dt); updateBlink(dt); updateClip(dt); updateDirector(dt);
+    if (mouthS.t < 1) mouthS.t = Math.min(1, mouthS.t + dt / Math.max(0.001, mouthS.dur));
+    if (reduced) { for (let i = 0; i < NP; i++) { X[i] = T[i]; V[i] = 0; } }
+    else { acc += dt; let n = 0; while (acc >= FIX && n < 10) { stepFixed(FIX); acc -= FIX; n++; } if (n === 10) acc = 0; }
+    // mouth mixing uses the eased `t`
+    updateFx(dt);
+    if (_pendingOutfit) { /* handled by clip event */ }
+  }
+  function frame(now) {
+    raf = 0; if (destroyed) return;
+    if (!paused) {
+      const dt = Math.min(0.05, last ? (now - last) / 1000 : 1 / 60); last = now;
+      update(dt); render();
+    } else last = 0;
+    if (O.raf) raf = requestAnimationFrame(frame);
+  }
+  const onVis = () => { if (document.hidden) { paused = true; } else { paused = false; last = 0; } };
+
+  // ====================================================================== public API
+  const api = {
+    get svg() { return svg; }, get outfit() { return outfitKey; }, get pose() { return poseName; }, get mood() { return mood; }, get reduced() { return reduced; },
+    setLook, setMood(name) { if (MOODS[name]) { mood = name; applyTargets(); } },
+    setPose(name, o2 = {}) { if (!POSES[name]) return; clipS.cur = null; poseName = name; overrides = o2.keep ? overrides : {}; applyTargets(!!o2.snap); },
+    setOutfit, play, stop: stopClip, wink, blink, impulse, fx: fxPreset, setMouth(n, d2) { overrides.mouth = n; setMouth(n, d2); },
+    set(over, snap) { Object.assign(overrides, over); applyTargets(snap); },
+    clear() { overrides = {}; applyTargets(); },
+    step(dt) { const n = Math.max(1, Math.round(dt / (1 / 60))); for (let i = 0; i < n; i++) update(dt / n); render(true); },
+    render() { render(true); },
+    snap() { applyTargets(true); render(true); },
+    setReduced(v) { reduced = !!v; applyTargets(true); },
+    pause() { paused = true; }, resume() { paused = false; last = 0; },
+    setLimited(hz) { O.limited = hz; },
+    clips: () => Object.keys(clipDefs), poses: () => Object.keys(POSES), outfits: () => OUTFIT_KEYS.slice(), moods: () => Object.keys(MOODS), visemes: () => VISEME_NAMES.slice(),
+    destroy() { destroyed = true; if (raf) cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', onVis); if (mq && mq.removeEventListener) mq.removeEventListener('change', onMq); container.innerHTML = ''; svg = null; },
+  };
+  const onMq = (e) => { reduced = O.reduced ?? e.matches; applyTargets(true); };
+  if (mq && mq.addEventListener) mq.addEventListener('change', onMq);
+  document.addEventListener('visibilitychange', onVis);
+
+  mount();
+  if (O.pose) poseName = O.pose;
+  applyTargets(true);
+  mixVisemes(mouthS.cur, VISEMES[mouthS.name], 1, mouthS.cur);
+  render(true);
+  if (O.autoplay && O.raf) raf = requestAnimationFrame(frame);
+  return api;
+}
+
+// ====================================================================== clips (procedural, named tracks flattened to events)
+// event fields: pose, mood, set{channel:value}, mouth, look, impulse{jump,sq,cap,shake,hair...}, fx, wink, blink, spin, cue, outfit
+const rep = (arr, f2) => arr.map(f2);
+export const CLIPS = {
+  spinStart: { dur: 0.5, hold: true, events: [
+    { at: 0, pose: 'anticipation', look: 'grid', impulse: { sq: -1.6, head: -4 }, cue: 'spinStart' }, { at: 0.18, mouth: 'wry' } ] },
+  scatterTease: { dur: 2.4, hold: true, events: [
+    { at: 0, pose: 'anticipation', set: { lean: 10, hx: 12 }, look: { nx: 1, ny: -0.5, turn: 0.8 }, mouth: 'wry', cue: 'scatterTease' },
+    { at: 0.35, look: { nx: 1, ny: 0.5, turn: 0.85 } }, { at: 0.7, look: { nx: 0.9, ny: -0.1, turn: 0.8 }, set: { lean: 12, hx: 15 } },
+    { at: 1.05, look: { nx: 1, ny: 0.6, turn: 0.9 } }, { at: 1.4, look: { nx: 1, ny: -0.6, turn: 0.85 }, fx: 'sparkles', fxOpts: { n: 3 } },
+    { at: 1.8, look: { nx: 0.8, ny: 0.1, turn: 0.8 }, set: { lean: 14, hx: 18, bRy: -15 }, mouth: 'oh' } ] },
+  winSmall: { dur: 1.6, events: [
+    { at: 0, pose: 'smallwin', impulse: { sq: -1.2 }, wink: 'L', winkDur: 0.7, cue: 'winSmall' }, { at: 0.12, impulse: { jump: 520, sq: 1.2 }, fx: 'sparkles', fxOpts: { n: 3 } },
+    { at: 0.3, set: { arx: 266, ary: 164 } }, { at: 0.52, set: { arx: 262, ary: 190 } }, { at: 0.8, mouth: 'smirk' }, { at: 1.25, look: 'player' } ] },
+  winBig: { dur: 2.8, endPose: 'idle', events: [
+    { at: 0, pose: 'anticipation', set: { sq: -0.2, uy: 14, arx: 250, ary: 360, alx: 150, aly: 360, hipTilt: 0, lean: 0 }, mouth: 'grin', cue: 'winBig' },
+    { at: 0.14, pose: 'bigwin', impulse: { jump: 820, sq: 1.8, hair: 18, cap: -520 }, fx: 'burstLines' },
+    { at: 0.32, fx: 'sparkles', fxOpts: { n: 6 } }, { at: 0.9, impulse: { jump: 430, sq: 0.8, hair: 8 }, fx: 'sparkles' },
+    { at: 1.4, impulse: { jump: 300, sq: 0.5 } }, { at: 1.9, set: { stars: 0 }, mouth: 'teeth', mood: 'happy' }, { at: 2.4, mood: 'sly' } ] },
+  megaWin: { dur: 3.6, endPose: 'idle', events: [
+    { at: 0, pose: 'anticipation', set: { sq: -0.25, uy: 16 }, cue: 'megaWin' },
+    { at: 0.14, pose: 'bigwin', impulse: { jump: 980, sq: 2, hair: 24, cap: -620, capSpin: 600 }, spin: 2, spinDur: 0.9, fx: 'confetti', fxOpts: { n: 36 } },
+    { at: 0.6, fx: 'sparkles', fxOpts: { n: 8 } }, { at: 1.1, impulse: { jump: 520, sq: 1 }, fx: 'confetti', fxOpts: { n: 18 } }, { at: 1.7, impulse: { jump: 380, sq: 0.7 } },
+    { at: 2.2, impulse: { jump: 260, sq: 0.5 }, fx: 'sparkles' }, { at: 2.9, mood: 'sly', set: { stars: 0 } } ] },
+  shock: { dur: 1.8, endPose: 'idle', events: [
+    { at: 0, pose: 'shock', impulse: { jump: 260, sq: 1.4, cap: -1500, capSpin: 380, shake: 40, hair: -14 }, fx: 'burstLines', cue: 'shock' },
+    { at: 0.12, fx: 'sweat' }, { at: 0.35, impulse: { shake: -50 } }, { at: 0.6, impulse: { shake: 30 } }, { at: 1.3, mood: 'worried', set: { cy: 0 } } ] },
+  lose: { dur: 2.2, endPose: 'idle', events: [
+    { at: 0, pose: 'shrug', impulse: { sq: -0.5 }, cue: 'lose' }, { at: 0.3, look: { nx: 0.6, ny: -0.8, turn: 0.4 } }, { at: 0.7, look: { nx: -0.6, ny: -0.8, turn: 0.4 }, fx: 'puff' },
+    { at: 1.2, look: { nx: 0.9, ny: 0.2, turn: 0.5 }, set: { shr: 2 } }, { at: 1.8, look: 'grid' } ] },
+  freeSpinStart: { dur: 2.2, endPose: 'idle', events: [
+    { at: 0, pose: 'salute', impulse: { sq: -0.8 }, wink: 'L', cue: 'freeSpinStart' }, { at: 0.2, fx: 'ring' }, { at: 0.3, set: { beam: 0 } }, { at: 1.0, look: 'grid', mouth: 'smirk' } ] },
+  freeSpinEnd: { dur: 2.6, endPose: 'idle', events: [ { at: 0, pose: 'curtsy', cue: 'freeSpinEnd' }, { at: 0.5, fx: 'sparkles', fxOpts: { n: 5 } }, { at: 1.4, set: { lean: 6, uy: 0 } }, { at: 2.0, look: 'player' } ] },
+  curtsy: { dur: 2.4, endPose: 'idle', events: [ { at: 0, pose: 'curtsy' }, { at: 0.5, fx: 'sparkles', fxOpts: { n: 4 } }, { at: 1.3, set: { lean: 4, uy: 4 } } ] },
+  meterMilestone: { dur: 1.8, endPose: 'idle', events: [
+    { at: 0, pose: 'point', look: 'meter', set: { arx: 318, ary: 168, arr: -60, arb1: -26, arb2: 14, prop: '', beam: 0, turn: 0.6 }, cue: 'meterMilestone' }, { at: 0.2, fx: 'ring' }, { at: 1.2, look: 'player' } ] },
+  checkFlashlight: { dur: 2.6, events: [
+    { at: 0, set: { alx: 190, aly: 252, alb1: 40, alb2: 30, accRot: 150, lookx: -0.2, looky: 0.6, turn: 0.35, htilt: -4 }, look: 'hand' },
+    { at: 0.5, set: { beam: 1 } }, { at: 0.7, set: { beam: 0 } }, { at: 0.95, set: { beam: 1 } }, { at: 1.25, set: { beam: 0 }, mouth: 'smirk' }, { at: 1.6, look: 'player' } ] },
+  blowWhistle: { dur: 2.4, events: [
+    { at: 0, pose: 'whistle', cue: 'whistle' }, { at: 0.35, fx: 'notes', impulse: { sq: 0.3 } }, { at: 0.9, fx: 'notes' }, { at: 1.5, set: { lowL: 0.1, uL: 0.55 }, mouth: 'smirk' } ] },
+  examineNails: { dur: 3, events: [
+    { at: 0, set: { arx: 236, ary: 214, arb1: -34, arb2: -20, arr: 150, turn: 0.4 }, look: 'hand' }, { at: 0.2, mood: 'bored' }, { at: 1.6, look: { nx: 0.8, ny: -0.2, turn: 0.6 }, mouth: 'wry' }, { at: 2.2, mood: 'sly', look: 'player' } ] },
+  glancePlayer: { dur: 1.8, events: [ { at: 0, look: 'player', set: { turn: 0.15, htilt: -6 }, wink: 'L', winkDur: 0.5, mouth: 'grin' }, { at: 1.2, look: 'grid', mouth: 'smirk' } ] },
+  hairFlip: { dur: 2, events: [
+    { at: 0, set: { arx: 150, ary: 122, arb1: -34, arb2: -26, arr: 40, gr: 'open', htilt: 6, turn: 0.3 }, impulse: { hair: 22 } }, { at: 0.5, impulse: { hair: -18 }, set: { htilt: -4 } }, { at: 1.3, look: 'grid' } ] },
+  shiftWeight: { dur: 1.2, events: [ { at: 0, set: { hipX: -3, hipTilt: 3, lean: -2, htilt: 2, lax: 4, rax: -6 } }, { at: 0.6, set: { hipX: 6, hipTilt: -4, lean: 3, htilt: -3, lax: -12, rax: 5 } } ] },
+  impatient: { dur: 3, endPose: 'idle', events: [ { at: 0, pose: 'impatient' }, { at: 0.35, set: { ray: -6 } }, { at: 0.55, set: { ray: 0 } }, { at: 0.9, set: { ray: -6 } }, { at: 1.1, set: { ray: 0 } }, { at: 1.6, look: { nx: -0.8, ny: -0.5, turn: 0.4 }, mood: 'bored' } ] },
+  laugh: { dur: 2, endPose: 'idle', events: [ { at: 0, pose: 'laugh' }, { at: 0.2, set: { sq: 0.12 } }, { at: 0.4, set: { sq: -0.1 } }, { at: 0.6, set: { sq: 0.12 } }, { at: 0.8, set: { sq: -0.1 } }, { at: 1.0, set: { sq: 0.1 } } ] },
+  outfitChange: { dur: 1.6, endPose: 'idle', events: [ { at: 0, pose: 'idle' } ] },
+};
+export { OUTFIT_KEYS };

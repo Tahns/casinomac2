@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><title>rig dev</title>
+<style>body{margin:0;background:#2a2150;font:12px Arial;color:#fff}#g{display:flex;flex-wrap:wrap;gap:6px;padding:6px}.c{background:#d9a72a;position:relative}.c b{position:absolute;left:4px;top:2px;color:#2B1A12}</style></head><body><div id="g"></div>
+<script type="module">
+import { createHeroine } from './mambo_rig.mjs';
+const q = new URLSearchParams(location.search);
+const outfit = q.get('outfit') || 'inspectrice', size = +(q.get('size') || 420), bg = q.get('bg') || '#d9a72a';
+const poses = (q.get('poses') || 'idle').split(',');
+const g = document.getElementById('g'); window.H = [];
+for (const p of poses) {
+  const d = document.createElement('div'); d.className = 'c'; d.style.cssText = `width:${size*2/3}px;height:${size}px;background:${bg}`; d.innerHTML = `<b>${p}</b>`;
+  const inner = document.createElement('div'); inner.style.cssText = 'position:absolute;inset:0'; d.appendChild(inner); g.appendChild(d);
+  const h = createHeroine(inner, { outfit, raf: false, idle: false, limited: 0 }); h.setPose(p, { snap: true }); h.snap(); if (q.get('vb')) inner.firstElementChild.setAttribute('viewBox', q.get('vb').replace(/,/g,' ')); window.H.push(h);
+}
+</script></body></html>

@@ -14,8 +14,13 @@ export async function renderToPng(input, output, width, height, scale = 1) {
   const b = await chromium.launch({ executablePath: exe, args: ['--no-sandbox'] });
   try {
     const page = await b.newPage({ viewport: { width, height }, deviceScaleFactor: scale });
-    await page.goto(pathToFileURL(path.resolve(input)).href);
-    await page.waitForTimeout(250);
+    const url = /^https?:/.test(input) ? input : pathToFileURL(path.resolve(input)).href;
+    const errs = [];
+    page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errs.push(m.type() + ': ' + m.text()); });
+    page.on('pageerror', (e) => errs.push('pageerror: ' + e.message));
+    await page.goto(url);
+    await page.waitForTimeout(Number(process.env.WAIT_MS || 400));
+    if (errs.length) console.log('CONSOLE:', errs.join('\n'));
     await page.screenshot({ path: output, clip: { x: 0, y: 0, width, height } });
   } finally { await b.close(); }
 }
