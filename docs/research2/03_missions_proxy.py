@@ -10,6 +10,9 @@ parameter tuned so that its mean bonus win equals the Briefing baseline mean (eq
 
 usage: python3 03_missions_proxy.py [bonuses_per_variant]      (about 3.5 min on 4 cores for 32000)
        python3 03_missions_proxy.py dial                       (volatility dial of the plain ratchet bonus)
+       python3 03_missions_proxy.py cover                      (Cover Blown: meter step x unmask spacing, about 3 min)
+Internal variant ids: 'timebomb' = Locked Case, 'lineup' = Cover Blown, 'searchlight', 'cold' (rejected), 'briefing'
+(Demolition Run is 'briefing' with a long pre-burnt wire).
 """
 import csv, random, sys, math, os
 from multiprocessing import Pool
@@ -291,9 +294,34 @@ def dial():
             print(f"| {sp} | {P['step']} | {s['cmean']:.1f} | {s['ccv']:.2f} | {s['med']:.1f} | {s['p90']:.1f} | {100-s['ge30']:.1f}% | {s['ge100']:.1f}% | {s['ge300']:.2f}% | {s['ge1000']:.2f}% | {s['spins']:.1f} |", flush=True)
 
 
+def _cover_job(args):
+    st, un, n, seed = args
+    rng = random.Random(seed)
+    P = dict(spins=10, m0=1, step=st, cap=100, unmask=un)
+    return [play(rng, 'lineup', P) for _ in range(n)]
+
+
+def cover():
+    """Cover Blown: how often does the first unmask happen at a given post-floor mean? (20 000 bonuses per setting)"""
+    with Pool(4) as pool:
+        print("| meter step | unmask every | post-floor mean | cv | median | below 30x | 300x+ | 1000x+ | reach 1 unmask | 2 | 3 | 4 |")
+        print("|---|---|---|---|---|---|---|---|---|---|---|---|")
+        for st in (1, 2, 3, 4):
+            for un in (4, 6, 8, 12, 16, 24, 32):
+                parts = pool.map(_cover_job, [(st, un, 2500, 100 + k) for k in range(8)])
+                res = [x for q in parts for x in q]
+                s = stats(res)
+                n = len(res)
+                r = [100.0 * sum(1 for x in res if x[4] >= k) / n for k in (1, 2, 3, 4)]
+                print(f"| {st} | {un} | {s['cmean']:.1f} | {s['ccv']:.2f} | {s['med']:.1f} | {100-s['ge30']:.1f}% | {s['ge300']:.2f}% | {s['ge1000']:.2f}% | {r[0]:.1f}% | {r[1]:.1f}% | {r[2]:.1f}% | {r[3]:.1f}% |", flush=True)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "dial":
         dial()
+        sys.exit(0)
+    if len(sys.argv) > 1 and sys.argv[1] == "cover":
+        cover()
         sys.exit(0)
     N = int(sys.argv[1]) if len(sys.argv) > 1 else 24000
     NT = max(4000, N // 4)
@@ -317,7 +345,7 @@ if __name__ == "__main__":
             s = run(pool, 'timebomb', P, NT, seed=6)
             if best is None or abs(s['cmean'] - tgt) < abs(best[1]['cmean'] - tgt):
                 best = (P, s)
-        rows.append(('Time Bomb (bank, pay x meter at spin end)', best[0], run(pool, 'timebomb', best[0], N, seed=13)))
+        rows.append(('Locked Case (bank, pay x meter at spin end)', best[0], run(pool, 'timebomb', best[0], N, seed=13)))
         # Searchlight: x f on clusters touching a lit 2x2 window; the window bounces diagonally on a telegraphed route
         best = None
         for f in (2, 3, 4):
@@ -328,7 +356,7 @@ if __name__ == "__main__":
         rows.append(('Searchlight (x f if cluster touches the lit 2x2 window)', best[0], run(pool, 'searchlight', best[0], N, seed=14)))
         # Line-Up: one low payer unmasked every `unmask` meter points
         P = tune(pool, 'lineup', dict(spins=10, m0=1, step=4, cap=100, unmask=8), 'unmask', [28, 32, 36, 40, 44, 48], tgt, NT)
-        rows.append(('Line-Up (low symbols leave the pool as meter rises)', P, run(pool, 'lineup', P, N, seed=15)))
+        rows.append(('Cover Blown (low symbols leave the pool as meter rises)', P, run(pool, 'lineup', P, N, seed=15)))
     print()
     print("| Mission (proxy) | tuned params | raw mean | post-floor mean | post-floor cv | median | p90 | p99 | <30x | >=100x | >=300x | >=1000x | spins played | win steps | mean peak meter |")
     print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")

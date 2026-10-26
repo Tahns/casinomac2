@@ -1,0 +1,87 @@
+# Raw output of 03_missions_proxy.py (proxy, NOT the SDK). Run date 2026-10-26.
+# Section 1: python3 03_missions_proxy.py 32000   (labels renamed after the run: Time Bomb = Locked Case, Line-Up = Cover Blown)
+BRIEFING baseline P={'spins': 10, 'm0': 1, 'step': 8, 'cap': 100}: raw mean 37.1, post-floor(>=30x) mean 101.4
+    tune cold step=14: post-floor mean 71.2 (target 101.4); raw mean 19.6
+    tune cold step=20: post-floor mean 84.9 (target 101.4); raw mean 27.7
+    tune cold step=28: post-floor mean 100.0 (target 101.4); raw mean 37.8
+    tune cold step=36: post-floor mean 112.4 (target 101.4); raw mean 46.9
+    tune cold step=48: post-floor mean 127.3 (target 101.4); raw mean 58.4
+    tune briefing step=1: post-floor mean 72.6 (target 101.4); raw mean 18.9
+    tune briefing step=2: post-floor mean 95.9 (target 101.4); raw mean 34.3
+    tune briefing step=3: post-floor mean 117.0 (target 101.4); raw mean 49.5
+    tune briefing step=4: post-floor mean 136.2 (target 101.4); raw mean 64.4
+    tune lockedcase step=6: post-floor mean 90.1 (target 101.4); raw mean 42.4
+    tune lockedcase step=7: post-floor mean 97.8 (target 101.4); raw mean 49.0
+    tune lockedcase step=8: post-floor mean 105.8 (target 101.4); raw mean 55.6
+    tune lockedcase step=9: post-floor mean 113.7 (target 101.4); raw mean 62.1
+    tune searchlight step=2: post-floor mean 66.3 (target 101.4); raw mean 15.8
+    tune searchlight step=3: post-floor mean 76.3 (target 101.4); raw mean 22.2
+    tune searchlight step=4: post-floor mean 87.2 (target 101.4); raw mean 28.5
+    tune searchlight step=5: post-floor mean 96.1 (target 101.4); raw mean 34.9
+    tune searchlight step=6: post-floor mean 106.1 (target 101.4); raw mean 41.2
+    tune searchlight step=2: post-floor mean 74.7 (target 101.4); raw mean 21.2
+    tune searchlight step=3: post-floor mean 88.7 (target 101.4); raw mean 29.7
+    tune searchlight step=4: post-floor mean 102.3 (target 101.4); raw mean 38.2
+    tune searchlight step=5: post-floor mean 116.5 (target 101.4); raw mean 46.7
+    tune searchlight step=6: post-floor mean 126.3 (target 101.4); raw mean 55.2
+    tune searchlight step=2: post-floor mean 83.1 (target 101.4); raw mean 26.6
+    tune searchlight step=3: post-floor mean 101.2 (target 101.4); raw mean 37.2
+    tune searchlight step=4: post-floor mean 116.8 (target 101.4); raw mean 47.9
+    tune searchlight step=5: post-floor mean 132.2 (target 101.4); raw mean 58.5
+    tune searchlight step=6: post-floor mean 148.3 (target 101.4); raw mean 69.2
+    tune coverblown unmask=28: post-floor mean 119.5 (target 101.4); raw mean 27.9
+    tune coverblown unmask=32: post-floor mean 107.9 (target 101.4); raw mean 25.9
+    tune coverblown unmask=36: post-floor mean 94.8 (target 101.4); raw mean 23.1
+    tune coverblown unmask=40: post-floor mean 87.8 (target 101.4); raw mean 22.1
+    tune coverblown unmask=44: post-floor mean 82.2 (target 101.4); raw mean 21.2
+    tune coverblown unmask=48: post-floor mean 81.3 (target 101.4); raw mean 20.7
+
+| Mission (proxy) | tuned params | raw mean | post-floor mean | post-floor cv | median | p90 | p99 | <30x | >=100x | >=300x | >=1000x | spins played | win steps | mean peak meter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Briefing (ratchet) | {'spins': 10, 'step': 8} | 37.1 | 101.4 | 1.05 | 13.1 | 94.6 | 362 | 69.0% | 9.3% | 1.47% | 0.04% | 13.4 | 3.5 | 29 |
+| Cold Trail (meter halves on a dead spin) | {'spins': 10, 'step': 28} | 38.1 | 101.2 | 0.93 | 12.2 | 104.6 | 337 | 67.0% | 10.6% | 1.30% | 0.02% | 13.3 | 3.5 | 53 |
+| Demolition Run (long pre-burnt wire, blast on most dead boards) | {'spins': 10, 'step': 2, 'wire': '12/5/2/3'} | 33.8 | 96.1 | 1.16 | 12.7 | 81.3 | 318 | 72.0% | 7.6% | 1.13% | 0.05% | 16.0 | 6.1 | 13 |
+| Locked Case (bank, pay x meter at spin end) | {'spins': 10, 'step': 7} | 49.1 | 100.1 | 1.05 | 23.1 | 120.9 | 382 | 57.1% | 13.1% | 1.70% | 0.06% | 13.3 | 3.5 | 25 |
+| Searchlight (x f if cluster touches the lit 2x2 window) | {'spins': 10, 'step': 3, 'f': 4} | 37.9 | 104.0 | 1.09 | 12.5 | 94.9 | 359 | 69.1% | 9.4% | 1.59% | 0.07% | 13.2 | 3.5 | 11 |
+| Cover Blown (low symbols leave the pool as meter rises) | {'spins': 10, 'step': 4, 'unmask': 32} | 24.7 | 105.0 | 2.13 | 7.1 | 49.9 | 283 | 82.3% | 4.2% | 0.90% | 0.13% | 13.3 | 3.5 | 15 |
+
+# Section 2: python3 03_missions_proxy.py dial
+| Briefing dial: start spins | tuned meter step | post-floor mean | cv | median | p90 | <30x | >=100x | >=300x | >=1000x | spins played |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 5 | 12 | 99.6 | 1.18 | 1.2 | 39.1 | 87.2% | 3.6% | 0.56% | 0.04% | 6.7 |
+| 7 | 10 | 98.5 | 1.09 | 5.6 | 63.1 | 80.0% | 5.7% | 0.88% | 0.04% | 9.4 |
+| 10 | 8 | 102.6 | 1.07 | 12.9 | 93.4 | 69.4% | 9.1% | 1.40% | 0.05% | 13.4 |
+| 15 | 5 | 99.4 | 0.98 | 24.4 | 124.9 | 56.0% | 13.5% | 1.71% | 0.05% | 20.0 |
+| 20 | 4 | 105.4 | 0.92 | 40.2 | 159.2 | 40.2% | 20.6% | 2.74% | 0.04% | 26.7 |
+
+# Section 3: python3 03_missions_proxy.py cover
+| meter step | unmask every | post-floor mean | cv | median | below 30x | 300x+ | 1000x+ | reach 1 unmask | 2 | 3 | 4 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 4 | 465.0 | 2.52 | 3.0 | 90.6% | 1.58% | 0.97% | 40.9% | 8.4% | 2.9% | 1.7% |
+| 1 | 6 | 155.6 | 3.55 | 3.0 | 94.1% | 0.28% | 0.13% | 15.9% | 1.7% | 0.4% | 0.2% |
+| 1 | 8 | 99.8 | 3.50 | 3.0 | 95.9% | 0.11% | 0.04% | 6.4% | 0.3% | 0.1% | 0.0% |
+| 1 | 12 | 58.7 | 1.29 | 3.0 | 96.5% | 0.03% | 0.01% | 1.1% | 0.0% | 0.0% | 0.0% |
+| 1 | 16 | 51.0 | 0.67 | 3.0 | 96.7% | 0.01% | 0.00% | 0.2% | 0.0% | 0.0% | 0.0% |
+| 1 | 24 | 50.0 | 0.53 | 3.0 | 96.7% | 0.00% | 0.00% | 0.0% | 0.0% | 0.0% | 0.0% |
+| 1 | 32 | 49.7 | 0.51 | 3.0 | 96.6% | 0.00% | 0.00% | 0.0% | 0.0% | 0.0% | 0.0% |
+| 2 | 4 | 1324.7 | 1.41 | 8.3 | 70.2% | 13.83% | 9.66% | 80.7% | 46.0% | 26.3% | 18.7% |
+| 2 | 6 | 706.6 | 2.05 | 5.1 | 80.2% | 4.91% | 3.31% | 60.9% | 19.8% | 8.3% | 5.3% |
+| 2 | 8 | 395.2 | 2.74 | 4.5 | 84.4% | 2.10% | 1.31% | 41.1% | 8.5% | 2.8% | 1.7% |
+| 2 | 12 | 150.8 | 3.18 | 4.5 | 89.6% | 0.68% | 0.18% | 15.9% | 1.7% | 0.4% | 0.2% |
+| 2 | 16 | 96.6 | 2.78 | 4.5 | 91.2% | 0.27% | 0.05% | 6.5% | 0.3% | 0.1% | 0.0% |
+| 2 | 24 | 68.1 | 1.49 | 4.5 | 91.6% | 0.13% | 0.01% | 1.1% | 0.0% | 0.0% | 0.0% |
+| 2 | 32 | 60.8 | 0.82 | 4.5 | 91.6% | 0.06% | 0.00% | 0.2% | 0.0% | 0.0% | 0.0% |
+| 3 | 4 | 1749.1 | 1.15 | 16.9 | 55.7% | 26.44% | 18.95% | 81.2% | 63.6% | 49.9% | 36.3% |
+| 3 | 6 | 1324.3 | 1.43 | 11.3 | 65.3% | 15.11% | 11.02% | 80.9% | 46.3% | 26.1% | 18.6% |
+| 3 | 8 | 806.0 | 1.93 | 6.7 | 74.8% | 6.81% | 4.67% | 60.9% | 19.8% | 10.8% | 6.9% |
+| 3 | 12 | 377.0 | 2.72 | 6.0 | 79.6% | 2.90% | 1.51% | 40.9% | 8.5% | 3.0% | 1.8% |
+| 3 | 16 | 187.9 | 3.13 | 5.9 | 85.3% | 1.26% | 0.39% | 16.0% | 2.4% | 0.7% | 0.3% |
+| 3 | 24 | 101.4 | 2.57 | 5.9 | 86.5% | 0.57% | 0.07% | 6.4% | 0.3% | 0.1% | 0.0% |
+| 3 | 32 | 76.9 | 1.69 | 6.0 | 86.7% | 0.33% | 0.03% | 1.6% | 0.0% | 0.0% | 0.0% |
+| 4 | 4 | 2233.0 | 0.93 | 206.4 | 35.9% | 47.17% | 34.93% | 95.1% | 83.9% | 71.7% | 63.7% |
+| 4 | 6 | 1676.6 | 1.21 | 19.0 | 56.2% | 24.05% | 17.70% | 80.9% | 63.3% | 38.1% | 31.6% |
+| 4 | 8 | 1305.1 | 1.45 | 14.4 | 61.6% | 16.12% | 11.91% | 81.0% | 46.2% | 26.1% | 18.7% |
+| 4 | 12 | 666.2 | 2.15 | 8.3 | 70.5% | 6.72% | 4.20% | 61.0% | 20.0% | 8.3% | 5.5% |
+| 4 | 16 | 373.5 | 2.71 | 7.5 | 76.0% | 3.52% | 1.65% | 41.0% | 8.3% | 2.9% | 1.8% |
+| 4 | 24 | 163.9 | 2.85 | 7.3 | 81.7% | 1.58% | 0.36% | 15.8% | 1.7% | 0.4% | 0.2% |
+| 4 | 32 | 104.1 | 2.25 | 7.3 | 82.1% | 0.86% | 0.10% | 6.5% | 0.3% | 0.1% | 0.0% |
