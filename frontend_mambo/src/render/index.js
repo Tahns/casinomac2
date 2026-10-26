@@ -86,13 +86,15 @@ export function createRenderer(rootEl) {
     fmt: (x) => `${(Math.round(x * 100) / 100).toFixed(2)}x`,
     grid: Array.from({ length: COLS }, () => Array(ROWS).fill(null)),
     pads: Array(COLS).fill('L1'), gm: 1, cap: 0, meterOn: false, lastCluster: null,
-    skip: false, traceOn: false, traceLog: [], t0: 0,
+    skipK: 0.04, traceOn: false, traceLog: [], t0: 0,
   };
   // S.skip: fast-forward the rest of the current book (replay SKIP); cleared when the book ends
   // Rule P: turbo scales time only where the jurisdiction offers turbo and sets no minimum round duration (read at the point of use)
   const caps = () => settings.capabilities;
   const turboNow = () => !!(S.turbo && caps().turbo && !caps().minRound);
-  const T = (ms) => ms * (S.skip ? 0.04 : turboNow() ? 0.42 : 1);
+  const T = (ms) => ms * (S.skip ? S.skipK : turboNow() ? 0.42 : 1);
+  // time factor of the current speed (1 = normal): handed to the heroine as `speed` (WP3: 0.5..2.5)
+  const speedNow = () => clamp(1 / (S.skip ? S.skipK : turboNow() ? 0.42 : 1), 0.5, 2.5);
   const sleep = (ms) => new Promise((r) => setTimeout(r, T(ms)));
   const hook = (n, ...a) => { try { const f = S.hooks && S.hooks[n]; if (f) f(...a); } catch (e) { console.error('hook', n, e); } };
 
@@ -100,7 +102,13 @@ export function createRenderer(rootEl) {
   const round = cel.createRound(1);
   const G = { step: 0 }; // level of the winning step that is being staged / was staged last (the tumble that follows uses it)
   const trace = (name, d) => { if (S.traceOn) S.traceLog.push({ t: Math.round(performance.now() - S.t0), name, level: round.level, ...(d || {}) }); };
-  const cue = (id, o) => { trace('audio:' + id, { quiet: !!(o && o.quiet) }); return audio.play(id, o); };
+  // EVERY sound of the player goes through here. While the round is at or below its cost (level 0) the call is marked quiet, so the
+  // audio layer refuses any win-like cue (audio.js CUE_INFO.winLike): no win sound can ever play at R <= C, whoever asks for it.
+  const cue = (id, o) => {
+    const quiet = round.level < 1 || !!(o && o.quiet);
+    trace('audio:' + id, { quiet });
+    return audio.play(id, quiet ? { ...(o || {}), quiet: true } : o);
+  };
 
   // ---------- motion store consumers: camera (trauma shake + hit-stop), particles, flash ----------
   const camera = createCamera({
@@ -161,7 +169,7 @@ export function createRenderer(rootEl) {
     if (!ok && typeof legacy === 'function') legacy();
     return ok;
   }
-  const rinfo = (extra) => ({ level: round.level, ratio: round.cost > 0 ? round.R / round.cost : 0, R: round.R, C: round.cost, combo: S.combo, ...(extra || {}) });
+  const rinfo = (extra) => ({ level: round.level, ratio: round.cost > 0 ? round.R / round.cost : 0, R: round.R, C: round.cost, combo: S.combo, speed: speedNow(), ...(extra || {}) });
   // Speech bubbles: i18n key (+ optional ".1".. ".5" variants); a missing key is skipped, never shown raw.
   const hasKey = (k) => Object.prototype.hasOwnProperty.call(EN, k);
   function say(key, ms = 2200, force = false, vars) {
@@ -307,6 +315,7 @@ export function createRenderer(rootEl) {
     S.meterOn = false; S.gm = 1; meterShow(false); meterReset();
     try { if (typeof audio.setMeter === 'function') audio.setMeter(1); } catch (e) { /* ignore */ }
   }
+  const METER_MILESTONES = [5, 10, 20, 50];
   async function onGlobalMult(ev) {
     const v = Math.max(1, Math.round(Number(ev && ev.globalMult) || 1));
     const prev = S.gm || 1;
@@ -319,8 +328,11 @@ export function createRenderer(rootEl) {
     meter.set(v, { animate: true, from });
     try { if (typeof audio.setMeter === 'function') audio.setMeter(v); } catch (e) { /* ignore */ }
     if (S.cap && v >= S.cap) { meter.max(); }
-    // the dial is a readout, not a win: the heroine only reacts to it once the round is above its cost
-    if (v > prev && round.level >= 1) { pose('happy', 900); say('mascot.meter', 1800, false, { n: v }); }
+    // the dial is a readout, not a win: she points at it on the milestones (any level); the v1 happy pose is kept for rounds above the cost
+    const milestone = METER_MILESTONES.some((m) => prev < m && v >= m) || (S.cap && v >= S.cap && prev < S.cap);
+    if (v > prev && milestone) react('meter', rinfo({ meter: v }), round.level >= 1 ? () => pose('happy', 900) : null);
+    else if (v > prev && round.level >= 1) { pose('happy', 900); }
+    if (v > prev && round.level >= 1) say('mascot.meter', 1800, false, { n: v });
     return sleep(260);
   }
 
@@ -427,7 +439,7 @@ export function createRenderer(rootEl) {
     if (!items.length) return;
     clearWins();
     cue('whoosh');
-    await Promise.all(items.map((cell) => anim(cell.el, [{ transform: 'translateY(0)' }, { transform: `translateY(${(ROWS - cell.r + 1.5) * 100}%)` }],
+    await Promise.all(items.map((cell) => anim(cell.el, motion.reduced ? [{ opacity: 1 }, { opacity: 0 }] : [{ transform: 'translateY(0)' }, { transform: `translateY(${(ROWS - cell.r + 1.5) * 100}%)` }],
       { duration: 360, delay: cell.c * 35 + (ROWS - cell.r) * 8, easing: 'cubic-bezier(.5,0,.9,.6)', fill: 'forwards' })));
     clearCells();
   }
@@ -437,18 +449,19 @@ export function createRenderer(rootEl) {
     S.combo = 0; S.lastWin = 0; G.step = 0; chip(chipCombo, '', false); chip(chipTw, '', false);
     await dropOut();
     cue('spin');
-    const antic = Array.isArray(ev.anticipation) ? ev.anticipation : [];
+    // honest slow-roll (lever 3): only the columns the book flags, at most two, and never when the jurisdiction switch is off
+    const antic = caps().anticipation !== false && Array.isArray(ev.anticipation) ? ev.anticipation : [];
     let at = 0; const lands = [];
     const anticCols = [];
     for (let c = 0; c < COLS; c++) {
       const col = colNames(nb[c]); if (col.padded) S.pad = 1; S.pads[c] = col.pad;
-      if (antic[c]) { at += 520; anticCols.push([c, at]); }
+      if (antic[c] && anticCols.length < 2) { at += 520; anticCols.push([c, at]); }
       at += c === 0 ? 0 : 120;
       for (let r = 0; r < ROWS; r++) {
         const cell = makeCell(c, r, col.vis[r] || 'L1'); S.grid[c][r] = cell;
         const dist = (r + 1.3) * 100;
         const delay = at + (ROWS - 1 - r) * 38;
-        anim(cell.el, [
+        anim(cell.el, motion.reduced ? [{ opacity: 0 }, { opacity: 0, offset: .3 }, { opacity: 1, offset: .64 }, { opacity: 1 }] : [
           { transform: `translateY(${-dist}%)`, easing: 'cubic-bezier(.45,0,.85,.5)' },
           { transform: 'translateY(0)', offset: .64, easing: 'cubic-bezier(.2,.7,.4,1)' },
           { transform: 'translateY(-9%)', offset: .79, easing: 'ease-in' },
@@ -459,7 +472,7 @@ export function createRenderer(rootEl) {
       lands.push(at + 620 * .64);
     }
     if (anticCols.length) {
-      cue('antic'); wrap.classList.add('antic'); react('anticipate', rinfo(), () => pose('shock')); say('mascot.shock', 2400, true);
+      cue('antic'); wrap.classList.add('antic'); react('anticipate', rinfo(), () => pose(S.inFs ? 'dance' : 'think'));
       const t0 = Math.max(0, anticCols[0][1] - 560), t1 = at + 620;
       for (let k = 0; t0 + k * 860 < t1; k++) setTimeout(() => { if (!S.destroyed) cue('heart', { i: k }); }, T(t0 + k * 860));
       anticCols.forEach(([c, tm]) => {
@@ -478,7 +491,7 @@ export function createRenderer(rootEl) {
     // scatter tease
     const sc = [];
     for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) if (S.grid[c][r] && S.grid[c][r].name === 'S') sc.push(S.grid[c][r]);
-    if (sc.length >= 3) {
+    if (sc.length >= (S.inFs ? 3 : 4)) {
       cue('scatter', { n: sc.length - 2 }); react('anticipate', rinfo(), () => pose('shock', 1400)); say('mascot.shock');
       sc.forEach((cell) => { cell.el.classList.add('win'); const p = cellCenter(cell.c, cell.r); fxm.sparks(p.x, p.y, FX_COLORS.coral, p.size * .35, 10, 5); fxm.glow(p.x, p.y, p.size * 1.1, '240,71,47', .7); });
       shake(.6, 400);
@@ -553,11 +566,9 @@ export function createRenderer(rootEl) {
       }),
       trauma: (a) => { trace('trauma', { a }); camera.add(a); },
       ripple: (amp) => ripple(flat, amp),
-      mascot: (kind, info) => mascotWin(kind, { ...rinfo(), ...info, level: lvl }),
+      mascot: (kind, info) => mascotWin(kind, { ...rinfo(), ...info, level: lvl, at: S.lastCluster ? { x: Math.round(S.lastCluster.x), y: Math.round(S.lastCluster.y) } : undefined }),
     };
-    const staged = cel.stageWin(sinks, { level: lvl, crossed: !!(tr && tr.crossed), combo: S.combo, total, R: tr ? tr.next : round.R, C: round.cost });
-    cellsEl.querySelectorAll('.cell:not(.win):not(.qw)').forEach((e) => e.classList.add('dim'));
-    // the +1 chip of the Mission Meter flies from the middle of the winning cluster (client px)
+    // the middle of the winning cluster in client px: the +1 chip of the Mission Meter flies from it and the heroine looks at it
     try {
       if (flat.length) {
         const mx = flat.reduce((a, p) => a + p[0], 0) / flat.length, my = flat.reduce((a, p) => a + p[1], 0) / flat.length;
@@ -565,6 +576,8 @@ export function createRenderer(rootEl) {
         S.lastCluster = { x: ar.left + p.x, y: ar.top + p.y };
       }
     } catch (e) { /* ignore */ }
+    const staged = cel.stageWin(sinks, { level: lvl, crossed: !!(tr && tr.crossed), combo: S.combo, total, R: tr ? tr.next : round.R, C: round.cost });
+    cellsEl.querySelectorAll('.cell:not(.win):not(.qw)').forEach((e) => e.classList.add('dim'));
     S.lastWin = total;
     await sleep(staged.holdMs);
   }
@@ -629,7 +642,7 @@ export function createRenderer(rootEl) {
   function drop(el, distPct, c, extraDelay, k) {
     const rows = distPct / 100;
     const dur = 360 + rows * 70;
-    return anim(el, [
+    return anim(el, motion.reduced ? [{ opacity: .15 }, { opacity: 1 }] : [
       { transform: `translateY(${-distPct}%)`, easing: 'cubic-bezier(.4,0,.9,.55)' },
       { transform: 'translateY(0)', offset: .72, easing: 'cubic-bezier(.2,.7,.4,1)' },
       { transform: 'translateY(-5%)', offset: .86, easing: 'ease-in' },
@@ -762,14 +775,14 @@ export function createRenderer(rootEl) {
           await sleep(debrief ? 250 : 450);
           for (const st of plan.steps) {
             if (S.destroyed || tapped) break;
-            if (st.type === 'count') await segment(st); else await beat(st);
+            if (st.type === 'count') { trace('segment', { from: st.from, to: st.to, ms: st.ms }); await segment(st); } else await beat(st);
           }
           // the final value and title (a tap lands here too, straight from wherever the staircase was)
-          tick(target);
+          tick(target); trace('final', { target, tapped });
           const finalKey = plan.finalKey;
           if (finalKey && el.dataset.tier !== finalKey) { setTier(finalKey, !tapped); if (tapped && plan.tiers >= 3) rays.classList.add('hi'); }
           countDone = true;
-          if (!debrief || o.stamp) {
+          if (!debrief) { // the neutral Debrief number just lands: no pop
             if (!motion.reduced) anim(amt, [{ transform: 'scale(1.18) rotate(1.5deg)' }, { transform: 'scale(1) rotate(1.5deg)' }], { duration: 300, easing: 'cubic-bezier(.2,1.6,.4,1)' });
           }
           if (o.stamp) {
@@ -847,7 +860,7 @@ export function createRenderer(rootEl) {
       anim(cell.el, motion.reduced ? [{ opacity: 1 }, { opacity: 0 }] : [{ transform: 'translate(0,0) rotate(0) scale(1)', opacity: 1 }, { transform: `translate(${(dx / d) * 260}%,${(dy / d) * 260 + 40}%) rotate(${dx * 70 + 30}deg) scale(.5)`, opacity: 0 }],
         { duration: 750, delay: motion.reduced ? 0 : d * 40, easing: 'cubic-bezier(.2,.7,.5,1)', fill: 'forwards' });
     });
-    try { fxm.confetti(rect.width / 2, rect.height * .55, Math.min(rect.width, rect.height), 30, { spread: 6.28 }); } catch (e) { /* ignore */ }
+    try { if (round.level >= 1) fxm.confetti(rect.width / 2, rect.height * .55, Math.min(rect.width, rect.height), 30, { spread: 6.28 }); } catch (e) { /* ignore */ }
     await sleep(1100);
     clearCells(); meterEnd();
     S.fsTotal = total; S.fsCur = 0;
@@ -867,8 +880,8 @@ export function createRenderer(rootEl) {
     await sleep(900);
     clearWins();
     if (tot > S.fsTotal) S.fsTotal = tot;
-    cue('retrigger'); cue('stinger', { level: 2 }); react('retrigger', rinfo(), () => pose('happy', 1400)); flash(.5, 600, FX_COLORS.cream);
-    { const r = app.getBoundingClientRect(); fxm.coins(r.width / 2, r.height * .6, Math.min(r.width, r.height), 24, 1.1); }
+    cue('retrigger'); cue('stinger', { level: 2 }); react('retrigger', rinfo(), () => poseGuarded('happy', 1400)); flash(.5, 600, FX_COLORS.cream);
+    if (round.level >= 1) { const r = app.getBoundingClientRect(); fxm.coins(r.width / 2, r.height * .6, Math.min(r.width, r.height), 24, 1.1); }
     await banner({ title: t('fs.retrigger', { n: add }), kind: 'fs', hold: 1300, dimAmt: .6, rays: true, hi: true });
   }
   // End of the feature. R = the total of the round: at or below its cost the neutral Debrief (card, count, FILED stamp, no rays, coins or
@@ -880,7 +893,7 @@ export function createRenderer(rootEl) {
     // subtitle: the Mission Meter level reached
     const meterSub = (S.gm || 1) > 1 ? `${t('label.meter')} x${S.gm}` : '';
     if (e.kind === 'filed') {
-      react('quiet', rinfo({ level: 0 }));
+      react('end', rinfo({ level: 0 }));
       await countBanner({ kind: 'debrief', plan: e.plan, amount: R, title: tx('fs.report', 'MISSION REPORT'), stamp: e.stamp, hold: 300, dimAmt: .55, sub: meterSub, rays: false });
     } else {
       M.celebrated = true; M.hadResult = true;
@@ -971,12 +984,21 @@ export function createRenderer(rootEl) {
       default: return null;
     }
   }
+  // The floor plan of the book (geo.js): a book without a `layout` event is Mezzanine; free spins are always Mezzanine (WP7_to_FRONT
+  // item 1: reset on the first freegame reveal, not earlier, because the trigger positions still refer to the base plan).
+  // The board itself is still drawn 6x5 in this milestone: the shape-driven board is the next one.
+  function geoSync(ev) {
+    if (!ev) return;
+    if (ev.type === 'layout') geo.setLayout(ev);
+    else if (ev.type === 'reveal' && ev.gameType === 'freegame') geo.setLayout(null);
+  }
   let queue = Promise.resolve();
   function playBook(events, hooks) {
     const run = async () => {
       S.hooks = hooks || {};
       S.t0 = performance.now(); S.traceLog.length = 0;
       resetLayers();
+      geo.setLayout(null);
       round.reset(S.cost); G.step = 0;
       chipTw.classList.add('q'); chipTw.classList.remove('black');
       M.hadResult = false; M.celebrated = false; M.intro = false; M.base = 'think';
@@ -987,14 +1009,16 @@ export function createRenderer(rootEl) {
         if (capped && ev && ev.type !== 'freeSpinEnd' && ev.type !== 'finalWin') continue;
         try {
           const tr = round.apply(ev);
+          geoSync(ev);
           const lw = dispatchLayers(ev, layerCtx); // v2: null while LAYERS is empty
           await handle(ev, tr);
           if (lw) await lw;
         } catch (e) { console.error('render event', ev && ev.type, e); }
         if (ev && ev.type === 'wincap') capped = true;
       }
-      S.skip = false;
+      S.skip = false; S.skipK = 0.04;
       resetLayers();
+      geo.setLayout(null);
       camera.reset();
       if (wire && wire.active) wire.clear();
       fillHoles();
@@ -1036,7 +1060,8 @@ export function createRenderer(rootEl) {
     playBook,
     setMultipliers() { /* legacy no-op: the Mission Meter is driven by updateGlobalMult events */ },
     setTurbo(b) { S.turbo = !!b; },
-    setSkip(b) { S.skip = !!b; },
+    // true = the replay fast-forward (x0.04); a number 0.04..1 = a gentler time factor (WP1_to_WP4 item 4)
+    setSkip(b) { S.skip = !!b; S.skipK = typeof b === 'number' && b > 0 ? clamp(b, 0.04, 1) : 0.04; },
     setCost(c) { S.cost = Number(c) > 0 ? Number(c) : 1; round.setCost(S.cost); },
     setFormat(fn, tick) { if (typeof fn === 'function') { S.fmt = fn; S.fmtTick = typeof tick === 'function' ? tick : fn; } },
     resize() { fx.resize(); },

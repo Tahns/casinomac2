@@ -25,6 +25,10 @@ const doc = new DOMParser().parseFromString(html, 'text/html');
 document.getElementById('devmount').replaceWith(doc.getElementById('app'));
 const { createRenderer } = await import('../../src/render/index.js');
 const { audio } = await import('../../src/audio.js');
+const { LAYERS } = await import('../../src/render/layers/index.js');
+// the audio engine only exists after a user gesture: unlock it (the autoplay switch of the test browser lets the context run), so that
+// audio.play() returns true for a cue that really started and the test can tell "refused by the quiet gate" from "played"
+try { audio.unlock(); } catch (e) { /* ignore */ }
 let settings = null;
 try { settings = (await import('../../src/settings.js')).settings; } catch (e) { settings = null; }
 if (q.get('social')) { const i = await import('../../src/i18n/index.js'); i.setSocial(true); }
@@ -44,6 +48,10 @@ audio.play = (id, opt) => {
   return ret;
 };
 const renderer = createRenderer($('game'));
+// probe layer: the dispatcher calls it for every book event in book order, right before the player handles the event, so everything
+// that follows in the log until the next 'event' entry belongs to that event (the browser test checks it against its own oracle)
+let evCount = 0;
+LAYERS.push({ id: 'probe', onEvent(ev) { log.push({ t: now(), kind: 'event', type: ev && ev.type, i: evCount++ }); }, reset() { evCount = 0; } });
 let bet = 1000000;
 renderer.setFormat((x) => `$${(x * bet / 1e6).toFixed(2)}`);
 const hooks = {
@@ -64,6 +72,20 @@ function spyMascot() {
   }
 }
 setInterval(spyMascot, 50);
+// fx spy (particles), camera spy (trauma) and flash spy: everything that "celebrates" is logged with the time it was asked for
+try {
+  const fx = renderer._fx;
+  for (const name of ['sparks', 'shards', 'coins', 'coinRain', 'confetti', 'ring', 'glow', 'burstBubble', 'smoke', 'breakCell']) {
+    const f = fx[name]; if (typeof f !== 'function') continue;
+    fx[name] = (...a) => { log.push({ t: now(), kind: 'fx', name }); return f.apply(fx, a); };
+  }
+  const cam = renderer.camera;
+  const ca = cam.add; cam.add = (amount, o) => { const ok = ca.call(cam, amount, o); log.push({ t: now(), kind: 'trauma', amount, tier: !!(o && o.tier), accepted: ok }); return ok; };
+  const cf = cam.freeze; cam.freeze = async (ms) => { const t1 = now(); const ok = await cf.call(cam, ms); log.push({ t: t1, kind: 'hitstop', ms, ok, took: now() - t1 }); return ok; };
+  cam.onFreeze((on) => log.push({ t: now(), kind: 'freeze', on, paused: document.getAnimations().filter((a) => a.playState === 'paused').length }));
+  const fl = document.getElementById('flash');
+  if (fl) { const fa = fl.animate.bind(fl); fl.animate = (kf, o) => { log.push({ t: now(), kind: 'flash', peak: Array.isArray(kf) ? kf[0].opacity : null, ms: o && o.duration }); return fa(kf, o); }; }
+} catch (e) { console.error('spy', e); }
 // DOM watcher: records when a banner, a popup, a win class, sparks (fx) appear
 const watch = new MutationObserver((muts) => {
   for (const m of muts) {
@@ -73,6 +95,7 @@ const watch = new MutationObserver((muts) => {
       if (n.classList.contains('banner')) log.push({ t: now(), kind: 'dom', what: 'banner', cls: n.className });
       if (n.classList.contains('pop')) log.push({ t: now(), kind: 'dom', what: 'pop', cls: n.className, text: n.textContent });
       if (n.classList.contains('rays')) log.push({ t: now(), kind: 'dom', what: 'rays' });
+      if (n.classList.contains('bn-stamp')) log.push({ t: now(), kind: 'dom', what: 'stamp', cls: n.className, text: n.textContent });
     });
     if (m.type === 'attributes' && m.target.classList && m.attributeName === 'class') {
       const c = m.target.classList;
@@ -90,6 +113,7 @@ window.H = {
     log.length = 0; t0 = performance.now();
     if (o.cost != null) renderer.setCost(o.cost);
     if (o.turbo != null) renderer.setTurbo(!!o.turbo);
+    if (o.skip != null) renderer.setSkip(o.skip);
     if (o.bet) bet = o.bet;
     document.body.className = document.body.className.replace(/state-\w+/, 'state-playing');
     try { await renderer.playBook(events, hooks); } finally { document.body.className = document.body.className.replace(/state-\w+/, 'state-idle'); }

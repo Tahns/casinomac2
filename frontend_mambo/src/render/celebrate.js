@@ -17,7 +17,7 @@
 //   stageWin / STAGE       what a winning cluster step may do at a level, expressed as calls on injected sinks
 //   tumbleRecipe(level)    what the pop + refill of a winning step may do
 //   endPlan(...)           what setWin / wincap / freeSpinEnd show: nothing, a staircase, the neutral Debrief or DECLASSIFIED
-//   tierPlan(x, C)         the staircase: segments 0.85 s (first 0.9 s) + 0.55 s beats, last segment 0.9 + 0.5 log10(x / theta)
+//   tierPlan(x, C)         the staircase: segments 0.85 s (first 0.9 s) + 0.55 s beats, last segment 0.9 + 0.45 log10(x / theta)
 //   guardPose(name, level) a happy / celebrating heroine pose never plays at level 0
 
 export const THRESHOLDS = Object.freeze({ l1: 1, l2: 5, l3: 15 }); // multiples of C
@@ -72,8 +72,8 @@ export function tierOf(x, C) {
  *   steps: { type:'count', from, to, ms, tier } | { type:'beat', tier, key, ms, hitStop, trauma }   (ms in normal time; the player scales it with T())
  *   Below the first tier there is one plain count (700-1500 ms) and no beat.
  *   A count segment k runs from theta(k-1) to theta(k) in 0.85 s (the first one in 0.9 s); then comes a 0.55 s beat for the tier reached.
- *   The last segment (theta_last -> x) lasts 0.9 + 0.5 log10(x / theta_last) s, capped at 2 s; it is skipped when x is exactly on the threshold.
- *   totalMs counts segments and beats only (no hold, no MAX stamp): 2.4 s at 20x, 3.8 s at 45x, 5.2 s at 75x, 6.9 s at 500x, 7.4 s at 5000x.
+ *   The last segment (theta_last -> x) lasts 0.9 + 0.45 log10(x / theta_last) s, capped at 2 s; it is skipped when x is exactly on the threshold.
+ *   totalMs counts segments and beats only (no hold, no MAX stamp): 2.4 s at 20x, 3.8 s at 45x, 5.2 s at 75x, 6.9 s at 500x, 7.3 s at 5000x (the acceptance limit is 7.5 s: room for the frame quantisation of the rAF loop).
  */
 export function tierPlan(x, C) {
   const target = Number(x), c = Number(C) > 0 ? Number(C) : 1;
@@ -93,7 +93,7 @@ export function tierPlan(x, C) {
     });
     if (target - from > target * 1e-9) {
       const last = reached[reached.length - 1] * c;
-      steps.push({ type: 'count', from, to: target, ms: Math.round(clamp(SEGMENT_FIRST_MS + 500 * Math.log10(target / last), SEGMENT_FIRST_MS, 2000)), tier: reached.length - 1 });
+      steps.push({ type: 'count', from, to: target, ms: Math.round(clamp(SEGMENT_FIRST_MS + 450 * Math.log10(target / last), SEGMENT_FIRST_MS, 2000)), tier: reached.length - 1 });
     }
   }
   const totalMs = steps.reduce((a, s) => a + s.ms, 0);

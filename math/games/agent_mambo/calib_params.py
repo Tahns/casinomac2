@@ -16,6 +16,10 @@ Calibration log (what each value was decided on; numbers in PROGRESS.md and MATH
   * DIAL_STEP orders 7 / blackout 3 / lens x4 / route 6: the SYNTHESIS values; natural door pools (30x floor, SDK criteria) had mean
     113.9x / 121.5x against the gate window 70-140x, and reweight to 96.000 % RTP with a mild tilt (lam 0.0003 / 0.0012).
   * The P(R > price) >= 30 % target is reached by the two-parameter door reweight (tools/reweight_doors.py), not by the dial.
+  * WP9 samples (2000 books each, tools/calib_scan.py; 21:02-21:04 UTC 2026-10-26, 8 variants, 0 reconcile errors): Orders step 5 / 7 / 9 and
+    Blackout step 2 / 3 / 4, lens x3 / x4 / x5. Pinned estimates (P(R > price) = 31 %) all land at median 64-68x and 300x+ share 3.1-4.2 %;
+    plain tilt P(R > price) 26.3-30.7 %. No variant beat the SYNTHESIS values by more than sample noise (about 1 point), so NOTHING was
+    changed: DIAL_STEP, LENS_MULT and ROUTE_LEN above are the shipped values.
 """
 
 # ---- mission rules ---------------------------------------------------------------------------------------------------------------
