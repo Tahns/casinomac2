@@ -31,3 +31,4 @@ idle rest; think spin/tumble; happy small win; bigwin big/epic win; shock scatte
 - Celebrate spin is a scaleX flip (faces mirror through the turn, cut-paper style), the case is mirrored too.
 - At 90 px the face is only a few pixels: silhouette (beehive + red dress) carries the read; at 120 px eyes and lips are readable.
 - Elbow joints are simple round caps (open outline), arms are tubes; no individual fingers except open-palm tick marks.
+- Pose celebrate: le verre vert tenu ressemble a un cocktail (meme point de vigilance alcool que le symbole Atomic Fizz): a remplacer par un soda/verre a bulles ou un objet neutre.

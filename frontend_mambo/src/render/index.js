@@ -1,12 +1,14 @@
-// Renderer: createRenderer(rootEl) -> { showBoard, playBook, setMultipliers, setTurbo, setFormat, resize, destroy }
+// Renderer: createRenderer(rootEl) -> { showBoard, playBook, setTurbo, setSkip, setCost, setFormat, resize, mascot, destroy }
 // Board = 6 reels x 5 rows (events carry 7 rows per reel: padding row on top and bottom). All art is drawn in code.
 import { ensureSprite, symbolMarkup, SYM_COLOR, SYMBOLS } from './symbols.js';
 import { createScene } from './scene.js';
-import { createFx } from './fx.js';
-import { createFuse } from './fuse.js';
+import { createFx, FX_COLORS } from './fx.js';
+import { createWire } from './wire.js';
+import { createMeter } from './meter.js';
 import { buildLogo } from './logo.js';
 import { audio } from '../audio.js';
 import { applyI18n, t } from '../i18n/index.js';
+import { en as EN } from '../i18n/en.js';
 
 const COLS = 6, ROWS = 5;
 const WINCAP = 5000;
@@ -25,17 +27,6 @@ export function prepareStatic(app) {
 }
 
 const REDUCE = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-// jagged glowing crack for a vein slot (deterministic per slot)
-function crackSvg(c, r) {
-  let a = (c * 7919 + r * 104729 + 17) >>> 0;
-  const rn = () => { a = (Math.imul(a, 1664525) + 1013904223) >>> 0; return a / 4294967296; };
-  const line = (x, y, ang, n, step) => { let d = `M${x.toFixed(1)} ${y.toFixed(1)}`; for (let i = 0; i < n; i++) { ang += (rn() - .5) * 1.1; x += Math.cos(ang) * step * (.6 + rn() * .8); y += Math.sin(ang) * step * (.6 + rn() * .8); d += `L${x.toFixed(1)} ${y.toFixed(1)}`; } return d; };
-  let d = line(8 + rn() * 20, 4 + rn() * 10, .5 + rn() * .6, 7, 13);
-  d += line(70 + rn() * 22, 92 - rn() * 8, Math.PI + .3 + rn() * .5, 6, 12);
-  d += line(50 + rn() * 14, 50 + rn() * 14, rn() * 6.28, 3, 10);
-  return `<svg class="crack" viewBox="0 0 100 100" aria-hidden="true"><path class="cg" d="${d}"/><path class="cc" d="${d}"/></svg>`;
-}
-
 const nameOf = (s) => (s == null ? 'L1' : typeof s === 'string' ? s : s.name || 'L1');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const raf = () => new Promise((r) => requestAnimationFrame(() => r()));
@@ -52,7 +43,6 @@ export function createRenderer(rootEl) {
     fmt: (x) => `${(Math.round(x * 100) / 100).toFixed(2)}x`,
     grid: Array.from({ length: COLS }, () => Array(ROWS).fill(null)),
     pads: Array(COLS).fill('L1'),
-    mults: Array.from({ length: COLS }, () => Array(ROWS).fill(0)),
     skip: false,
   };
   // S.skip: fast-forward the rest of the current book (replay SKIP); cleared when the book ends
