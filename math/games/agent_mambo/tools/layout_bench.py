@@ -51,6 +51,7 @@ def new_state(mode="base", weights=UNSET, layout_event=None):
         cfg.layout_weights = weights
     cfg.layout_event = layout_event
     cfg.mission_weights = {"briefing": 1}  # WP8: these tools are about floor plans; one mission draws no random number, so v1 books replay
+    cfg.set_base_profile("v1")  # WP8: the v1 books carry the v1 criteria names (wincap / freegame / 0 / basegame)
     gs = GameState(cfg)
     gs.betmode = mode
     gs.win_manager = WinManager(cfg.basegame_type, cfg.freegame_type, 5000)

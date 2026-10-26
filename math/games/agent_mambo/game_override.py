@@ -1,7 +1,7 @@
 import random
 from game_executables import GameExecutables
 from game_events import mission_assigned_event
-from missions import SEED_OFFSETS, announce_mission, draw_mission, mission_params, resolve_mission_weights
+from missions import SEED_OFFSETS, announce_mission, base_bucket, draw_mission, mission_params, resolve_mission_weights
 from src.events.events import fs_trigger_event
 
 
@@ -35,13 +35,25 @@ class GameStateOverride(GameExecutables):
 
     def start_mission(self):
         """The mission of the feature, drawn once at the base trigger with `mission_weights` (get_random_outcome recipe, SDK-seeded
-        `random`; a single weight draws nothing) and recorded as the force key {"mission": id} so the reweighter can pin the shares."""
-        weights = resolve_mission_weights(self.config, getattr(self, "betmode", None), self.get_current_distribution_conditions())
+        `random`; a single weight draws nothing) and recorded as the force key {"mission": id} so the reweighter can pin the shares.
+        The draw weights may be narrowed per criterion (conditions['mission_weights']: the stratified criteria of the v2 base profile);
+        whether `missionAssigned` is announced depends on the MODE's mission weights only (a v1 `bonus` book has none)."""
+        mode = getattr(self, "betmode", None)
+        cond = self.get_current_distribution_conditions()
+        cond = cond if isinstance(cond, dict) else {}
+        weights = resolve_mission_weights(self.config, mode, cond)
         self.mission = draw_mission(weights)
         self.mission_cfg = mission_params(self.mission, self.config)
-        self.mission_announced = announce_mission(weights, getattr(self.config, "mission_event", None))
+        self.mission_announced = announce_mission(resolve_mission_weights(self.config, mode, None), getattr(self.config, "mission_event", None))
         if self.mission_announced:
             self.record({"mission": self.mission})
+
+    def record_base_bucket(self):
+        """Force key {"bw": sub|mid|big} on the non-trigger winners of the base game (criteria `basegame`): lets the base optimizer pin the
+        share of sub-stake wins (R <= stake), small wins above the stake and bigger wins (SYNTHESIS 4, lever L14). Records only the
+        accepted book (temp_wins is reset with every attempt)."""
+        if (self.criteria == "basegame" or self.criteria.startswith("bg_")) and self.win_manager.spin_win > 0:
+            self.record({"bw": base_bucket(self.win_manager.spin_win)})
 
     def assign_special_sym_function(self):
         pass
@@ -106,6 +118,10 @@ class GameStateOverride(GameExecutables):
 
             if self.get_current_distribution_conditions()["force_freegame"] and not (self.triggered_freegame):
                 self.repeat = True
+
+            bucket = self.get_current_distribution_conditions().get("base_bucket")
+            if bucket and base_bucket(self.final_win) != bucket:
+                self.repeat = True  # v2 base profile: this criterion holds the winners of one bucket only
 
             if self.win_manager.running_bet_win == 0 and self.criteria != "0":
                 self.repeat = True

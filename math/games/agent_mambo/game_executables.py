@@ -20,7 +20,7 @@ class GameExecutables(GameCalculations):
 
     # ------------------------------------------------------------------ mission state (set at the base trigger, see game_override)
     def active_mission(self):
-        """Parameters of the running free-spin mission, None in the base game (and for old/v1 behaviour: the Briefing from config)."""
+        """Resolved parameters of the running free-spin mission (missions.mission_params), None in the base game."""
         if self.gametype == self.config.freegame_type:
             return self.mission_cfg
         return None

@@ -31,13 +31,23 @@ FLOOR = 30.0
 
 
 # --------------------------------------------------------------------------------------------------------------- state
-def new_state(mode, mission_weights=None, layout_weights=None):
-    """GameState on the singleton config. mission_weights / layout_weights: None = leave the game config as it is."""
-    from gamestate import GameState
+def make_config(base_profile=None):
+    """GameConfig() with the base criteria set pinned ('v1' / 'v2'; None = the shipped default)."""
     from game_config import GameConfig
-    from src.wins.win_manager import WinManager
 
     cfg = GameConfig()  # NB: every GameConfig() call re-runs __init__ on the singleton
+    if base_profile:
+        cfg.set_base_profile(base_profile)
+    return cfg
+
+
+def new_state(mode, mission_weights=None, layout_weights=None, base_profile=None):
+    """GameState on the singleton config. mission_weights / layout_weights: None = leave the game config as it is. base_profile 'v1' / 'v2'
+    pins the base criteria set (v1 books carry the v1 criteria names)."""
+    from gamestate import GameState
+    from src.wins.win_manager import WinManager
+
+    cfg = make_config(base_profile)
     cap = [b for b in cfg.bet_modes if b.get_name() == mode][0].get_wincap()
     cfg.wincap = cap
     if mission_weights is not None:
@@ -85,7 +95,7 @@ def reconcile_book(book, wincap_x100=500000, expect_mission=None):
     if book["payoutMultiplier"] % 10 or book["payoutMultiplier"] > wincap_x100:
         _fail(book, f"payout {book['payoutMultiplier']} is not a multiple of 0.1x or exceeds the cap")
 
-    facts = {"mission": None, "spins": 0, "caseOpen": 0, "banked_steps": 0, "lit_steps": 0, "steps": 0, "capped": False,
+    facts = {"fs0": None, "mission": None, "spins": 0, "caseOpen": 0, "banked_steps": 0, "lit_steps": 0, "steps": 0, "capped": False,
              "route_len": None, "max_dial": 1}
     mission, assigned = None, None
     in_free = False
@@ -106,6 +116,8 @@ def reconcile_book(book, wincap_x100=500000, expect_mission=None):
         t = e["type"]
         if t == "freeSpinTrigger":
             got_trigger = True
+            if facts["fs0"] is None:
+                facts["fs0"] = e["totalFs"]
             nxt = ev[i + 1] if i + 1 < len(ev) else {}
             if nxt.get("type") == "missionAssigned":
                 assigned = nxt
@@ -388,6 +400,84 @@ def cmd_v1equiv(a):
     return 1 if bad else 0
 
 
+def cmd_pipeline(a):
+    """Real multi-process create_books for ALL modes in a SCRATCH game_id (math/games/wp8_smoke, removed afterwards; the real library is
+    never touched): books + lookup tables + force files + configs + index.json. Checks: index.json mode names / costs / flags, every book
+    reconciles, event_config_<mode>.json lists exactly the event types present in the books, lookup tables are integer multiples of 10
+    with ids 0..n-1, force keys (`mission`, `layout`, `bonusTier`), config numRows == [5]*6, doors carry no `layout` event."""
+    import shutil
+    import zstandard
+    from game_config import GameConfig
+    from gamestate import GameState
+    from src.state.run_sims import create_books
+    from src.write_data.write_configs import generate_configs
+
+    threads = max(1, min(a.threads, 3))
+    cfg = GameConfig()
+    cfg.game_id = "wp8_smoke"
+    gs = GameState(cfg)
+    root = os.path.join(MATH, "games", "wp8_smoke")
+    modes = [b.get_name() for b in cfg.bet_modes]
+    batch = a.n // threads
+    t0 = time.time()
+    try:
+        create_books(gs, cfg, {m: a.n for m in modes}, batch, threads, True, False)
+        generate_configs(gs)
+        lib = os.path.join(root, "library")
+        pub = os.path.join(lib, "publish_files")
+        index = json.load(open(os.path.join(pub, "index.json")))
+        names = [m["name"] for m in index["modes"]]
+        assert names == modes and len(names) <= 20, names
+        assert not any(w in n for n in names for w in ("buy", "bet", "super")), names
+        costs = {m["name"]: m["cost"] for m in index["modes"]}
+        assert costs == {m: (1.0 if m == "base" else 100.0) for m in modes}, costs
+        be = json.load(open(os.path.join(lib, "configs", "config.json")))
+        flags = {m["name"]: (m["feature"], m["buyBonus"]) for m in be["bookShelfConfig"]}
+        assert flags == {m: ((True, False) if m == "base" else (False, True)) for m in modes}, flags
+        fe = json.load(open(os.path.join(lib, "configs", "config_fe_wp8_smoke.json")))
+        assert fe["numRows"] == [5] * 6 and cfg.num_rows == [5] * 6
+        report = {}
+        for mode in modes:
+            books = []
+            with open(os.path.join(pub, f"books_{mode}.jsonl.zst"), "rb") as fh:
+                for line in io.TextIOWrapper(zstandard.ZstdDecompressor().stream_reader(fh), encoding="utf-8"):
+                    books.append(json.loads(line))
+            assert len(books) == a.n, (mode, len(books))
+            lk = [l.split(",") for l in open(os.path.join(pub, f"lookUpTable_{mode}_0.csv")).read().split()]
+            assert [int(r[0]) for r in lk] == list(range(a.n)) and all(int(r[2]) % 10 == 0 for r in lk)
+            assert [int(r[2]) for r in lk] == [b["payoutMultiplier"] for b in books]
+            cap = int(round(cfg.wincap * 100))
+            seen, missions = set(), collections.Counter()
+            for b in books:
+                facts = reconcile_book(b, cap)
+                seen.update(e["type"] for e in b["events"])
+                if facts["mission"]:
+                    missions[facts["mission"]] += 1
+                if mode != "base":
+                    assert "layout" not in [e["type"] for e in b["events"]], "doors play Mezzanine without a layout event"
+                    if facts["mission"]:
+                        assert facts["mission"] == {"bonus": "briefing", "entrance_orders": "orders", "entrance_blackout": "blackout"}[mode]
+            ec = json.load(open(os.path.join(lib, "configs", f"event_config_{mode}.json")))
+            assert set(ec) == seen, (mode, sorted(set(ec) ^ seen))
+            force = json.load(open(os.path.join(lib, "forces", f"force_record_{mode}.json")))
+            fkeys = collections.defaultdict(set)
+            for rec in force:
+                for kv in rec["search"]:
+                    fkeys[kv["name"]].add(kv["value"])
+            if mode == "base":
+                assert fkeys["layout"] == {"mezzanine", "atrium", "lobby", "annex"} and fkeys["mission"] == {"briefing", "orders", "blackout"}, dict(fkeys)
+            elif mode != "bonus":
+                assert len(fkeys["mission"]) == 1, dict(fkeys)
+            else:
+                assert "mission" not in fkeys  # the Briefing door stays a v1 book
+            report[mode] = {"books": len(books), "event_types": len(seen), "missions": dict(missions), "force_keys": sorted(fkeys),
+                            "size_mb": round(os.path.getsize(os.path.join(pub, f"books_{mode}.jsonl.zst")) / 1e6, 2)}
+        print("PIPELINE OK", json.dumps(report), f"sec={time.time() - t0:.1f}")
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -401,11 +491,14 @@ def main():
     g.add_argument("--mission", required=True, choices=["briefing", "orders", "blackout", "fuse"])
     g.add_argument("--n", type=int, default=300)
     g.add_argument("--procs", type=int, default=1)
+    pl = sub.add_parser("pipeline")
+    pl.add_argument("--n", type=int, default=6000)
+    pl.add_argument("--threads", type=int, default=3)
     v = sub.add_parser("v1equiv")
     v.add_argument("--mode", default="bonus")
     v.add_argument("--n", type=int, default=300)
     a = ap.parse_args()
-    sys.exit({"smoke": cmd_smoke, "gate": cmd_gate, "v1equiv": cmd_v1equiv}[a.cmd](a))
+    sys.exit({"smoke": cmd_smoke, "gate": cmd_gate, "v1equiv": cmd_v1equiv, "pipeline": cmd_pipeline}[a.cmd](a))
 
 
 if __name__ == "__main__":

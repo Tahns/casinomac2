@@ -9,7 +9,10 @@ from optimization_program.optimization_config import (
 )
 
 
+import json
 import os
+
+from missions import calib
 
 # Experiment knobs (env), defaults = shipped values
 BONUS_M2M = tuple(float(x) for x in os.environ.get("BM2M", "4,8").split(","))
@@ -77,6 +80,72 @@ def door_opt_params(wincap):
     }
 
 
+# ---------------------------------------------------------------------------------------------------------- base profile v2
+# Per-spin targets of the pinned fences of the `base` mode (SYNTHESIS 4, levers L14): share of ALL spins and RTP contribution. The
+# shares of the missions come from the mission weights (config.mission_weights['base'], 40/30/30), the trigger rate stays 1 in 200 and its
+# RTP .37, the wincap fence .001. Design (S1 of SYNTHESIS 4 measured on the published v1 table: sub-stake wins 20.2 % of spins carrying 11.2
+# RTP points, 1x < R < 5x 4.3 % / 12.9 points, R >= 5x 4.1 % / 35.3 points): keep roughly half of the sub-stake wins, pay the freed RTP as
+# wins just above the stake. Result: hit rate 23.8 %, P(R > 1x) 12.5 % (targets >= 23 % and >= 11.5 %, stretch 13 %).
+BASE_TRIGGER_HR, BASE_TRIGGER_RTP, BASE_WINCAP_RTP = 200.0, 0.37, 0.001
+BASE_BUCKET_TARGETS = {  # bucket: (share of spins, rtp)
+    "sub": (0.108, 0.049),
+    "mid": (0.079, 0.169),
+    "big": (0.0412, 0.371),
+}
+
+
+def base_bucket_targets():
+    t = dict(BASE_BUCKET_TARGETS)
+    env = os.environ.get("BASE_TARGETS")
+    if env:
+        t.update({k: tuple(v) for k, v in json.loads(env).items()})
+    return t
+
+
+def base_opt_params_v2(game_config, wincap):
+    mix = game_config.mission_weights["base"]
+    total = float(sum(mix.values()))
+    cond = {"wincap": ConstructConditions(rtp=BASE_WINCAP_RTP, av_win=wincap, search_conditions=wincap).return_dict()}
+    cond["0"] = ConstructConditions(rtp=0, av_win=0, search_conditions=0).return_dict()
+    for mission, w in mix.items():  # mission shares pinned: a fence per mission, hr = 200 / share, rtp = .37 x share (same mean per mission)
+        share = w / total
+        cond[f"fg_{mission}"] = ConstructConditions(
+            rtp=round(BASE_TRIGGER_RTP * share, 6), hr=BASE_TRIGGER_HR / share, search_conditions={"mission": mission}
+        ).return_dict()
+    buckets = base_bucket_targets()
+    for bucket, (share, rtp) in buckets.items():
+        cond[f"bg_{bucket}"] = ConstructConditions(rtp=rtp, hr=1.0 / share, search_conditions={"bw": bucket}).return_dict()
+    # the 'rtp' of the fences must add up to the mode RTP (verify_optimization_input); the dead spins carry none
+    dresses = []
+    for mission in mix:
+        dresses += [
+            {"criteria": f"fg_{mission}", "scale_factor": 0.8, "win_range": (1000, 2000), "probability": 1.0},
+            {"criteria": f"fg_{mission}", "scale_factor": 1.2, "win_range": (3000, 4000), "probability": 1.0},
+        ]
+    for extra in json.loads(os.environ.get("BASE_DRESSES", "[]")):  # experiments: [[fence, scale, lo, hi], ...]
+        dresses.append({"criteria": extra[0], "scale_factor": extra[1], "win_range": (extra[2], extra[3]), "probability": 1.0})
+    return {
+        "conditions": cond,
+        "scaling": ConstructScaling(dresses).return_dict(),
+        "parameters": ConstructParameters(
+            num_show=5000,
+            num_per_fence=10000,
+            min_m2m=float(os.environ.get("BASE_M2M_MIN", "1.0")),
+            max_m2m=float(os.environ.get("BASE_M2M_MAX", "8.0")),
+            pmb_rtp=1.0,
+            sim_trials=5000,
+            test_spins=[50, 100, 200],
+            test_weights=[0.3, 0.4, 0.3],
+            score_type="rtp",
+        ).return_dict(),
+        "distribution_bias": ConstructFenceBias(
+            applied_criteria=["bg_sub", "bg_mid", "bg_big"],
+            bias_ranges=[(0.2, 0.9), (1.1, 3.0), (5.0, 14.0)],
+            bias_weights=[0.4, 0.4, 0.4],
+        ).return_dict(),
+    }
+
+
 class OptimizationSetup:
     """"""
 
@@ -86,7 +155,7 @@ class OptimizationSetup:
         for bm in game_config.bet_modes:
             wincaps[bm.get_name()] = bm.get_wincap()
         self.game_config.opt_params = {
-            "base": {
+            "base": base_opt_params_v2(game_config, wincaps["base"]) if game_config.base_profile == "v2" else {
                 "conditions": {
                     "wincap": ConstructConditions(
                         rtp=0.001, av_win=wincaps["base"], search_conditions=wincaps["base"]

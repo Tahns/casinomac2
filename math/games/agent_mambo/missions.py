@@ -65,6 +65,16 @@ DEFAULT_FUSE = {"fuse": {"len": 12, "b0": 5, "adv": 2, "detmin": 3}}
 DEFAULT_MISSION_WEIGHTS = {"briefing": 40, "orders": 30, "blackout": 30}
 DEFAULT_LENS = {"w": 2, "h": 2, "mult": 4}
 DEFAULT_ROUTE_LEN = 6
+# Base-game win buckets, a force key of the non-trigger base winners ({"bw": bucket}) that the base optimizer fences pin (SYNTHESIS 4,
+# lever L14): "sub" = R <= stake (quiet ledger tick, never celebrated), "mid" = stake < R < 5x, "big" = R >= 5x (non-trigger wins).
+BASE_BUCKET_EDGES = (1.0, 5.0)
+BASE_BUCKETS = ("sub", "mid", "big")
+# Base criteria / fences: 'v1' = the shipped v1 shares (wincap, freegame, 0, basegame), 'v2' = one criterion per pinned fence (mission, win
+# bucket). 'v2' is the default since the base optimizer experiment met the SYNTHESIS 4 targets (PROGRESS.md, WP8); tools and tests that
+# replay v1 books call GameConfig.set_base_profile('v1').
+DEFAULT_BASE_PROFILE = "v2"
+# v2 base profile: quota of the criterion of each bucket ('big' wins are 1 % of the winners and cost ~500 attempts per book: keep its quota small)
+BASE_BUCKET_QUOTAS = {"sub": 0.24, "mid": 0.24, "big": 0.019}
 # Door modes (index.json names carry no 'buy' / 'bet' / 'super' words): mode -> (mission, books)
 DOOR_MODES = {
     "bonus": ("briefing", 100000),
@@ -306,3 +316,12 @@ def make_light_route(layout, w, h, length, rng=random):
 def window_at(route, step):
     """Window used at evaluation step `step`: route[step], and the last entry once the route is exhausted."""
     return route[min(step, len(route) - 1)]
+
+
+# ------------------------------------------------------------------------------------------------------------ base buckets
+def base_bucket(win):
+    """Bucket of a non-trigger base win (x the stake): 'sub' (0 < win <= 1), 'mid' (1 < win < 5), 'big' (win >= 5)."""
+    lo, hi = calib("BASE_BUCKET_EDGES", BASE_BUCKET_EDGES)
+    if win <= lo:
+        return BASE_BUCKETS[0]
+    return BASE_BUCKETS[1] if win < hi else BASE_BUCKETS[2]

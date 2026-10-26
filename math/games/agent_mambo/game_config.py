@@ -6,6 +6,8 @@ from src.config.distributions import Distribution
 from src.config.betmode import BetMode
 from layouts import NOMINAL_WEIGHTS
 from missions import (
+    BASE_BUCKET_QUOTAS,
+    DEFAULT_BASE_PROFILE,
     DEFAULT_MISSION_WEIGHTS,
     DOOR_MODES,
     SEED_OFFSETS,
@@ -16,6 +18,13 @@ from missions import (
 
 class GameConfig(Config):
     """Singleton cluster game configuration class."""
+
+    def set_base_profile(self, profile):
+        """Switch the criteria set of the `base` mode ('v1' = the shipped v1 criteria wincap / freegame / 0 / basegame, 'v2' = one criterion per
+        optimizer fence) on an existing config. Tools and tests that replay v1 books call set_base_profile('v1')."""
+        assert profile in ("v1", "v2"), profile
+        self.base_profile = profile
+        self.bet_modes[0] = self._make_base_mode()
 
     _instance = None
 
@@ -106,6 +115,10 @@ class GameConfig(Config):
         # `missionAssigned` is announced when a mode can draw several missions or its single mission is not the Briefing
         # (None = that rule); `bonus` therefore stays a v1 book. True / False forces it.
         self.mission_event = None
+        # 'v2' = one criterion per optimizer fence in `base` (mission and win bucket pinned); 'v1' = the shipped v1 criteria / fences
+        # (the stop-loss of SYNTHESIS 4: if the base optimizer cannot reach the P(R > stake) target, switch back).
+        self.base_profile = calib("BASE_PROFILE", DEFAULT_BASE_PROFILE)
+        assert self.base_profile in ("v1", "v2"), self.base_profile
         self.seed_offsets = dict(SEED_OFFSETS)  # per-mode random stream (random.seed(sim + 1 + offset))
         self.door_modes = [m for m, (mission, _) in DOOR_MODES.items() if mission != ("fuse" if third == "blackout" else "blackout")]
 
@@ -183,61 +196,89 @@ class GameConfig(Config):
                 distributions=door_distributions(),
             )
 
-        base_mode = BetMode(
-            name="base",
-            cost=1.0,
-            rtp=self.rtp,
-            max_win=mode_maxwins["base"],
-            auto_close_disabled=False,
-            is_feature=True,
-            is_buybonus=False,
-            distributions=[
-                Distribution(
-                    criteria="wincap",
-                    quota=0.001,
-                    win_criteria=mode_maxwins["base"],
-                    conditions={
-                        "reel_weights": {
-                            self.basegame_type: {"BR0": 1},
-                            self.freegame_type: {"WCAP": 1},
+        def base_distributions():
+            """Criteria of the `base` mode. Profile 'v1' (the shipped v1 shares): wincap / freegame / 0 / basegame, mission and win
+            bucket are outputs of the optimizer. Profile 'v2' (stop-loss switch BASE_PROFILE in calib_params / AM_CALIB): one criterion
+            per optimizer fence so the Rust program can PIN them: a trigger criterion per mission (quota = 10 % x mission weight), the
+            dead spins, and the non-trigger winners in three buckets (sub-stake R <= 1x, 1x < R < 5x, R >= 5x; SYNTHESIS 4 lever L14)."""
+            reels_free = {self.basegame_type: {"BR0": 1}, self.freegame_type: {"FR0": 1}}
+            reels_base = {self.basegame_type: {"BR0": 1}}
+            wincap = Distribution(
+                criteria="wincap",
+                quota=0.001,
+                win_criteria=mode_maxwins["base"],
+                conditions={
+                    "reel_weights": {self.basegame_type: {"BR0": 1}, self.freegame_type: {"WCAP": 1}},
+                    "scatter_triggers": {4: 1, 5: 2},
+                    "force_wincap": True,
+                    "force_freegame": True,
+                },
+            )
+            dead = Distribution(
+                criteria="0",
+                quota=0.4,
+                win_criteria=0.0,
+                conditions={"reel_weights": reels_base, "force_wincap": False, "force_freegame": False},
+            )
+            if self.base_profile == "v1":
+                return [
+                    wincap,
+                    Distribution(
+                        criteria="freegame",
+                        quota=0.1,
+                        conditions={
+                            "reel_weights": reels_free,
+                            "scatter_triggers": {4: 5, 5: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
                         },
-                        "scatter_triggers": {4: 1, 5: 2},
-                        "force_wincap": True,
-                        "force_freegame": True,
-                    },
-                ),
-                Distribution(
-                    criteria="freegame",
-                    quota=0.1,
-                    conditions={
-                        "reel_weights": {
-                            self.basegame_type: {"BR0": 1},
-                            self.freegame_type: {"FR0": 1},
+                    ),
+                    dead,
+                    Distribution(
+                        criteria="basegame",
+                        quota=0.5,
+                        conditions={"reel_weights": reels_base, "force_wincap": False, "force_freegame": False},
+                    ),
+                ]
+            mix = self.mission_weights["base"]
+            total = float(sum(mix.values()))
+            out = [wincap]
+            for mission, w in mix.items():
+                out.append(
+                    Distribution(
+                        criteria=f"fg_{mission}",
+                        quota=round(0.1 * w / total, 6),
+                        conditions={
+                            "reel_weights": reels_free,
+                            "scatter_triggers": {4: 5, 5: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
+                            "mission_weights": {mission: 1},  # stratified: the mission of this criterion (the 40/30/30 mix = the quotas)
                         },
-                        "scatter_triggers": {4: 5, 5: 1},
-                        "force_wincap": False,
-                        "force_freegame": True,
-                    },
-                ),
-                Distribution(
-                    criteria="0",
-                    quota=0.4,
-                    win_criteria=0.0,
-                    conditions={
-                        "reel_weights": {self.basegame_type: {"BR0": 1}},
-                        "force_wincap": False,
-                        "force_freegame": False,
-                    },
-                ),
-                Distribution(
-                    criteria="basegame",
-                    quota=0.5,
-                    conditions={
-                        "reel_weights": {self.basegame_type: {"BR0": 1}},
-                        "force_wincap": False,
-                        "force_freegame": False,
-                    },
-                ),
-            ],
-        )
-        self.bet_modes = [base_mode] + [door(name) for name in self.door_modes]
+                    )
+                )
+            out.append(dead)
+            for bucket, quota in BASE_BUCKET_QUOTAS.items():
+                out.append(
+                    Distribution(
+                        criteria=f"bg_{bucket}",
+                        quota=quota,
+                        conditions={"reel_weights": reels_base, "force_wincap": False, "force_freegame": False, "base_bucket": bucket},
+                    )
+                )
+            return out
+
+        def make_base_mode():
+            return BetMode(
+                name="base",
+                cost=1.0,
+                rtp=self.rtp,
+                max_win=mode_maxwins["base"],
+                auto_close_disabled=False,
+                is_feature=True,
+                is_buybonus=False,
+                distributions=base_distributions(),
+            )
+
+        self._make_base_mode = make_base_mode
+        self.bet_modes = [make_base_mode()] + [door(name) for name in self.door_modes]

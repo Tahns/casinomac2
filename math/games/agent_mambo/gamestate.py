@@ -41,6 +41,7 @@ class GameState(GameStateOverride):
 
             self.set_end_tumble_event()
             self.win_manager.update_gametype_wins(self.gametype)
+            self.record_base_bucket()
 
             if self.check_fs_condition() and self.check_freespin_entry():
                 self.run_freespin_from_base()

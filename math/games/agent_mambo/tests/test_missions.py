@@ -46,9 +46,14 @@ def clean_env(monkeypatch):
     yield
 
 
+def v1_state(mode, mission_weights=None, layout_weights=None):
+    """GameState with the v1 base criteria (wincap / freegame / 0 / basegame): the tests below replay v1 books or use those names."""
+    return smoke.new_state(mode, mission_weights, layout_weights, base_profile="v1")
+
+
 def play(mode, criteria, sims, mission_weights=None, layout_weights=None):
     """Books of `sims` (iterable of sim indexes) with the real GameState; returns the list of books."""
-    cfg, gs = smoke.new_state(mode, mission_weights, layout_weights)
+    cfg, gs = v1_state(mode, mission_weights, layout_weights)
     out = []
     for sim in sims:
         gs.criteria = criteria
@@ -82,7 +87,7 @@ def test_missions_table_defaults():
 
 
 def test_orders_dial_ladder_is_1_8_15_to_100():
-    cfg = smoke.new_state("entrance_orders")[0]
+    cfg = v1_state("entrance_orders")[0]
     p = M.mission_params("orders", cfg)
     d, seen = p["dial_start"], [1]
     while d < p["dial_cap"]:
@@ -249,7 +254,7 @@ def test_seed_offsets_are_per_mode_and_bonus_is_v1():
     assert cfg.seed_offsets["bonus"] == 0 and cfg.seed_offsets["base"] == 0  # the published books are defined by it
     assert len(set(cfg.seed_offsets[m] for m in ("bonus", "entrance_orders", "entrance_blackout", "entrance_fuse"))) == 4
     a, _ = play("entrance_orders", "fgfloor4", range(3))
-    cfg2, gs = smoke.new_state("entrance_orders")
+    cfg2, gs = v1_state("entrance_orders")
     gs.betmode = "entrance_blackout"
     gs.criteria = "fgfloor4"
     gs.run_spin(0, 0)
@@ -280,7 +285,7 @@ def test_published_bonus_books_replay_bit_for_bit_with_the_default_config():
     fh = open(os.path.join(V1_BOOKS, "books_bonus.jsonl.zst"), "rb")
     rd = io.TextIOWrapper(zstandard.ZstdDecompressor().stream_reader(fh), encoding="utf-8")
     books = [json.loads(next(rd)) for _ in range(120)]
-    cfg, gs = smoke.new_state("bonus")  # nothing forced: the shipped config of the `bonus` door
+    cfg, gs = v1_state("bonus")  # nothing forced: the shipped config of the `bonus` door
     for b in books:
         gs.criteria = b["criteria"]
         gs.run_spin(b["id"])
@@ -297,7 +302,7 @@ def test_published_base_books_replay_with_the_v1_switches():
     fh = open(os.path.join(V1_BOOKS, "books_base.jsonl.zst"), "rb")
     rd = io.TextIOWrapper(zstandard.ZstdDecompressor().stream_reader(fh), encoding="utf-8")
     books = [json.loads(next(rd)) for _ in range(500)]
-    cfg, gs = smoke.new_state("base", {"briefing": 1}, {"mezzanine": 1})
+    cfg, gs = v1_state("base", {"briefing": 1}, {"mezzanine": 1})
     assert any(b["criteria"] in ("freegame", "wincap") for b in books)
     for b in books:
         gs.criteria = b["criteria"]
@@ -505,7 +510,7 @@ def test_blackout_wincap_books():
 
 # --------------------------------------------------------------------------------------------------- the base mix
 def test_base_trigger_draws_the_mix_and_records_it():
-    cfg, gs = smoke.new_state("base", layout_weights={"mezzanine": 1})
+    cfg, gs = v1_state("base", layout_weights={"mezzanine": 1})
     got = collections.Counter()
     for sim in range(240):
         gs.criteria = "freegame"
@@ -535,7 +540,7 @@ def test_base_books_with_layouts_and_missions_reconcile():
 
 # --------------------------------------------------------------------------------------------------- the reconciliation has teeth
 def _book(mode, crit, want, sims=range(300)):
-    cfg, gs = smoke.new_state(mode)
+    cfg, gs = v1_state(mode)
     for sim in sims:
         gs.criteria = crit
         gs.run_spin(sim, sim)
@@ -571,3 +576,68 @@ def test_reconcile_catches_corruption(mode, want, mutate):
         e["index"] = i
     with pytest.raises(smoke.ReconcileError):
         smoke.reconcile_book(b, CAP)
+
+
+# --------------------------------------------------------------------------------------------------- base profiles (stop-loss switch)
+def test_base_profile_v1_is_the_shipped_criteria_and_v2_one_criterion_per_fence():
+    cfg = smoke.make_config("v1")
+    base = cfg.bet_modes[0]
+    assert [d.get_criteria() for d in base.get_distributions()] == ["wincap", "freegame", "0", "basegame"]
+    assert [d.get_quota() for d in base.get_distributions()] == [0.001, 0.1, 0.4, 0.5]
+    cfg = smoke.make_config("v2")
+    assert [b.get_name() for b in cfg.bet_modes][0] == "base" and cfg.base_profile == "v2"
+    names = [d.get_criteria() for d in cfg.bet_modes[0].get_distributions()]
+    assert names == ["wincap", "fg_briefing", "fg_orders", "fg_blackout", "0", "bg_sub", "bg_mid", "bg_big"]
+    quotas = [d.get_quota() for d in cfg.bet_modes[0].get_distributions()]
+    assert abs(sum(quotas) - 1.0) < 1e-9 and quotas[1:4] == [0.04, 0.03, 0.03]  # the 40/30/30 mix as quotas of the 10 % trigger books
+    # the doors do not change with the base profile
+    assert [d.get_criteria() for d in cfg.bet_modes[1].get_distributions()][0] == "wincap"
+
+
+@pytest.mark.parametrize("profile", ["v1", "v2"])
+def test_opt_params_cover_the_criteria_of_each_profile(profile):
+    from game_optimization import OptimizationSetup
+
+    cfg = smoke.make_config(profile)
+    OptimizationSetup(cfg)  # verify_optimization_input: every criterion has a fence, rtp adds up to 96 %
+    fences = list(cfg.opt_params["base"]["conditions"])
+    assert fences[0] == "wincap"
+    assert set(d.get_criteria() for d in cfg.bet_modes[0].get_distributions()) <= set(fences)
+    if profile == "v2":
+        assert fences == ["wincap", "0", "fg_briefing", "fg_orders", "fg_blackout", "bg_sub", "bg_mid", "bg_big"]
+        c = cfg.opt_params["base"]["conditions"]
+        assert c["fg_orders"]["force_search"] == {"mission": "orders"} and c["bg_mid"]["force_search"] == {"bw": "mid"}
+        hr = {k: v["hr"] for k, v in c.items() if "hr" in v}
+        assert abs(1 / hr["fg_briefing"] + 1 / hr["fg_orders"] + 1 / hr["fg_blackout"] - 1 / 200) < 1e-12  # trigger rate stays 1 in 200
+
+
+def test_base_bucket_function():
+    assert [M.base_bucket(x) for x in (0.1, 0.5, 1.0, 1.1, 4.9, 5.0, 19.9)] == ["sub", "sub", "sub", "mid", "mid", "big", "big"]
+
+
+def test_v2_base_criteria_hold_what_their_fences_expect():
+    cfg, gs = smoke.new_state("base", base_profile="v2")
+    gs.betmode = "base"
+    seen = collections.defaultdict(set)
+    for crit, n in (("bg_sub", 40), ("bg_mid", 40), ("bg_big", 3), ("fg_orders", 25), ("fg_blackout", 25), ("fg_briefing", 25), ("0", 30)):
+        for sim in range(n):
+            gs.criteria = crit
+            gs.run_spin(sim, sim)
+            b = gs.library.pop(sim + 1)
+            smoke.reconcile_book(b, CAP)
+            win = b["payoutMultiplier"] / 100
+            if crit.startswith("bg_"):
+                assert M.base_bucket(win) == crit[3:], (crit, win)
+                assert not any(e["type"] == "freeSpinTrigger" for e in b["events"])
+            elif crit.startswith("fg_"):
+                ma = [e for e in b["events"] if e["type"] == "missionAssigned"]
+                assert len(ma) == 1 and ma[0]["mission"] == crit[3:]  # stratified AND announced although the criterion has one weight
+            else:
+                assert win == 0
+            seen[crit].add(b["events"][0]["type"])
+    for rec in gs.recorded_events:
+        d = dict(rec)
+        if "bw" in d:
+            assert d["bw"] in ("sub", "mid", "big") and len(d) == 1
+    assert {k for rec in gs.recorded_events for k in dict(rec) if k in ("bw", "mission", "layout")} == {"bw", "mission", "layout"}
+    assert all(t == {"layout"} for t in seen.values())  # every base book starts with the layout event (4 plans in the base)
