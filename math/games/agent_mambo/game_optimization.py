@@ -23,6 +23,60 @@ TIER_SHARE = {4: 0.880, 5: 0.100, 6: 0.0178}
 TIER_RTP = {4: 0.8360, 5: 0.1000, 6: 0.0200, 7: 0.0030}
 
 
+def door_opt_params(wincap):
+    """Optimizer entry of a 100x door (`bonus`, `entrance_orders`, `entrance_blackout`, `entrance_fuse`). EVERY mode needs an entry:
+    `make_temp_math_config` never resets the previous mode's fences, so a mode without one is written with the wrong fences and the
+    Rust program panics on the missing name. The doors are weighted by tools/reweight_bonus.py (one lambda per mode, exactly 96.000 %),
+    the Rust pass is formal here (see MATH_REPORT.md: it cannot give a flat buy shape).
+    Fences: wincap first (exclusive id pool), then one fence per scatter tier so the share of purchases per tier is pinned by hr
+    (1 / share): 4 scatters (10 spins) 88 %, 5 (12) 10 %, 6 (15) 1.78 %, 7-8 (18/20) the remainder ~0.2 %; rtp = share x mean win of
+    the tier. The wincap criterion is tested per mission with the WCAP strip (tests/test_missions.py, tools/mission_smoke.py)."""
+    return {
+        "conditions": {
+            "wincap": ConstructConditions(rtp=0.001, av_win=wincap, search_conditions=wincap).return_dict(),
+            "fgfloor4": ConstructConditions(
+                rtp=TIER_RTP[4], hr=1 / TIER_SHARE[4], search_conditions={"bonusTier": "4"}
+            ).return_dict(),
+            "fgfloor5": ConstructConditions(
+                rtp=TIER_RTP[5], hr=1 / TIER_SHARE[5], search_conditions={"bonusTier": "5"}
+            ).return_dict(),
+            "fgfloor6": ConstructConditions(
+                rtp=TIER_RTP[6], hr=1 / TIER_SHARE[6], search_conditions={"bonusTier": "6"}
+            ).return_dict(),
+            "fgfloor7": ConstructConditions(rtp=TIER_RTP[7], hr="x", search_conditions={"bonusTier": "7"}).return_dict(),
+        },
+        "scaling": ConstructScaling(
+            [
+                {"criteria": c, "scale_factor": f, "win_range": r, "probability": 1.0}
+                for c in ("fgfloor4", "fgfloor5", "fgfloor6", "fgfloor7")
+                for f, r in ((f_, (lo_, hi_)) for f_, lo_, hi_ in BONUS_SCALES)
+            ]
+        ).return_dict(),
+        "parameters": ConstructParameters(
+            num_show=5000,
+            num_per_fence=10000,
+            min_m2m=BONUS_M2M[0],
+            max_m2m=BONUS_M2M[1],
+            pmb_rtp=BONUS_PMB,
+            sim_trials=5000,
+            test_spins=BONUS_SPINS,
+            test_weights=[0.3, 0.4, 0.3],
+            score_type="rtp",
+        ).return_dict(),
+        **(
+            {
+                "distribution_bias": ConstructFenceBias(
+                    applied_criteria=["fgfloor4", "fgfloor5", "fgfloor6", "fgfloor7"],
+                    bias_ranges=[(BONUS_BIAS[0], BONUS_BIAS[1])] * 4,
+                    bias_weights=[BONUS_BIAS[2]] * 4,
+                ).return_dict()
+            }
+            if BONUS_BIAS
+            else {}
+        ),
+    }
+
+
 class OptimizationSetup:
     """"""
 
@@ -79,57 +133,9 @@ class OptimizationSetup:
                     bias_weights=[0.4],
                 ).return_dict(),
             },
-            "bonus": {
-                "conditions": {
-                    "wincap": ConstructConditions(
-                        rtp=0.001, av_win=wincaps["bonus"], search_conditions=wincaps["bonus"]
-                    ).return_dict(),
-                    # One fence per scatter tier: shares of purchases are pinned by hr (1 / share).
-                    # 4 scatters (10 spins) 88 %, 5 (12) 10 %, 6 (15) 1.78 %, 7-8 (18/20) remainder ~0.2 %.
-                    # rtp = share x mean win of the tier (mean 10-spin tier ~93x).
-                    "fgfloor4": ConstructConditions(
-                        rtp=TIER_RTP[4], hr=1 / TIER_SHARE[4], search_conditions={"bonusTier": "4"}
-                    ).return_dict(),
-                    "fgfloor5": ConstructConditions(
-                        rtp=TIER_RTP[5], hr=1 / TIER_SHARE[5], search_conditions={"bonusTier": "5"}
-                    ).return_dict(),
-                    "fgfloor6": ConstructConditions(
-                        rtp=TIER_RTP[6], hr=1 / TIER_SHARE[6], search_conditions={"bonusTier": "6"}
-                    ).return_dict(),
-                    "fgfloor7": ConstructConditions(
-                        rtp=TIER_RTP[7], hr="x", search_conditions={"bonusTier": "7"}
-                    ).return_dict(),
-                },
-                "scaling": ConstructScaling(
-                    [
-                        {"criteria": c, "scale_factor": f, "win_range": r, "probability": 1.0}
-                        for c in ("fgfloor4", "fgfloor5", "fgfloor6", "fgfloor7")
-                        for f, r in ((f_, (lo_, hi_)) for f_, lo_, hi_ in BONUS_SCALES)
-                    ]
-                ).return_dict(),
-                "parameters": ConstructParameters(
-                    num_show=5000,
-                    num_per_fence=10000,
-                    min_m2m=BONUS_M2M[0],
-                    max_m2m=BONUS_M2M[1],
-                    pmb_rtp=BONUS_PMB,
-                    sim_trials=5000,
-                    test_spins=BONUS_SPINS,
-                    test_weights=[0.3, 0.4, 0.3],
-                    score_type="rtp",
-                ).return_dict(),
-                **(
-                    {
-                        "distribution_bias": ConstructFenceBias(
-                            applied_criteria=["fgfloor4", "fgfloor5", "fgfloor6", "fgfloor7"],
-                            bias_ranges=[(BONUS_BIAS[0], BONUS_BIAS[1])] * 4,
-                            bias_weights=[BONUS_BIAS[2]] * 4,
-                        ).return_dict()
-                    }
-                    if BONUS_BIAS
-                    else {}
-                ),
-            },
         }
+        for name, cap in wincaps.items():
+            if name != "base":
+                self.game_config.opt_params[name] = door_opt_params(cap)
 
         verify_optimization_input(self.game_config, self.game_config.opt_params)

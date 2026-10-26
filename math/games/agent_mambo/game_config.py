@@ -4,6 +4,14 @@ import os
 from src.config.config import Config
 from src.config.distributions import Distribution
 from src.config.betmode import BetMode
+from layouts import NOMINAL_WEIGHTS
+from missions import (
+    DEFAULT_MISSION_WEIGHTS,
+    DOOR_MODES,
+    SEED_OFFSETS,
+    calib,
+    scale_paytable,
+)
 
 
 class GameConfig(Config):
@@ -66,7 +74,7 @@ class GameConfig(Config):
             (t3, "L4"): 1.5,
             (t4, "L4"): 4.0,
         }
-        self.paytable = self.convert_range_table(pay_group)
+        self.paytable = scale_paytable(self.convert_range_table(pay_group))  # PAYTABLE_SCALE (calib_params.py, default 1.0 = v1)
 
         self.include_padding = True
         self.special_symbols = {"wild": ["W"], "scatter": ["S"]}
@@ -79,6 +87,27 @@ class GameConfig(Config):
             self.basegame_type: min(self.freespin_triggers[self.basegame_type].keys()) - 1,
             self.freegame_type: min(self.freespin_triggers[self.freegame_type].keys()) - 1,
         }
+
+        # ---- v2 (WP7 / WP8) ------------------------------------------------------------------------------------------------
+        # Floor plans: PER BET MODE (a flat dict would apply to the doors too and break the reused `bonus` books). The doors play
+        # Mezzanine only; free spins are always Mezzanine. `{"mezzanine": 1}` (or nothing) = v1 books bit for bit.
+        self.layout_weights = {"base": dict(calib("LAYOUT_WEIGHTS", NOMINAL_WEIGHTS))}
+        # Mission mix, per bet mode: the base trigger draws one mission (40/30/30), every door plays one mission. A single weight
+        # draws no random number, so the `bonus` door ({'briefing': 1}) replays the published 100k books bit for bit.
+        third = calib("THIRD_MISSION", "blackout")  # 'blackout' | 'fuse' (The Long Fuse, fallback of the Blackout gate)
+        assert third in ("blackout", "fuse"), third
+        self.third_mission = third
+        base_mix = dict(calib("MISSION_WEIGHTS", DEFAULT_MISSION_WEIGHTS))
+        if third == "fuse" and "fuse" not in base_mix:
+            base_mix["fuse"] = base_mix.pop("blackout", 0) or 30
+        self.mission_weights = {"base": base_mix}
+        for _mode, (_mission, _books) in DOOR_MODES.items():
+            self.mission_weights[_mode] = {_mission: 1}
+        # `missionAssigned` is announced when a mode can draw several missions or its single mission is not the Briefing
+        # (None = that rule); `bonus` therefore stays a v1 book. True / False forces it.
+        self.mission_event = None
+        self.seed_offsets = dict(SEED_OFFSETS)  # per-mode random stream (random.seed(sim + 1 + offset))
+        self.door_modes = [m for m, (mission, _) in DOOR_MODES.items() if mission != ("fuse" if third == "blackout" else "blackout")]
 
         self.bonus_floor = 30.0
         # Global multiplier meter (free spins only): starts at gm_start when the feature starts, every winning
@@ -100,142 +129,115 @@ class GameConfig(Config):
             self.reels[r] = self.read_reels_csv(os.path.join(self.reels_path, f))
         mode_maxwins = {"base": 5000, "bonus": 5000}
 
-        self.bet_modes = [
-            BetMode(
-                name="base",
-                cost=1.0,
-                rtp=self.rtp,
-                max_win=mode_maxwins["base"],
-                auto_close_disabled=False,
-                is_feature=True,
-                is_buybonus=False,
-                distributions=[
-                    Distribution(
-                        criteria="wincap",
-                        quota=0.001,
-                        win_criteria=mode_maxwins["base"],
-                        conditions={
-                            "reel_weights": {
-                                self.basegame_type: {"BR0": 1},
-                                self.freegame_type: {"WCAP": 1},
-                            },
-                            "scatter_triggers": {4: 1, 5: 2},
-                            "force_wincap": True,
-                            "force_freegame": True,
+        def door_distributions():
+            """Criteria of a 100x door (the same set as the published `bonus` mode): wincap + one criterion per scatter tier so the
+            reweighter can pin the share of purchases per tier (10 / 12 / 15 / 18-20 starting free spins)."""
+
+            def fg(criteria, quota, scatter_triggers):
+                return Distribution(
+                    criteria=criteria,
+                    quota=quota,
+                    conditions={
+                        "reel_weights": {
+                            self.basegame_type: {"BR0": 1},
+                            self.freegame_type: {"FR0": 1},
                         },
-                    ),
-                    Distribution(
-                        criteria="freegame",
-                        quota=0.1,
-                        conditions={
-                            "reel_weights": {
-                                self.basegame_type: {"BR0": 1},
-                                self.freegame_type: {"FR0": 1},
-                            },
-                            "scatter_triggers": {4: 5, 5: 1},
-                            "force_wincap": False,
-                            "force_freegame": True,
+                        "scatter_triggers": scatter_triggers,
+                        "force_wincap": False,
+                        "force_freegame": True,
+                    },
+                )
+
+            return [
+                Distribution(
+                    criteria="wincap",
+                    quota=0.001,
+                    win_criteria=mode_maxwins["bonus"],
+                    conditions={
+                        "reel_weights": {
+                            self.basegame_type: {"BR0": 1},
+                            self.freegame_type: {"WCAP": 1},
                         },
-                    ),
-                    Distribution(
-                        criteria="0",
-                        quota=0.4,
-                        win_criteria=0.0,
-                        conditions={
-                            "reel_weights": {self.basegame_type: {"BR0": 1}},
-                            "force_wincap": False,
-                            "force_freegame": False,
-                        },
-                    ),
-                    Distribution(
-                        criteria="basegame",
-                        quota=0.5,
-                        conditions={
-                            "reel_weights": {self.basegame_type: {"BR0": 1}},
-                            "force_wincap": False,
-                            "force_freegame": False,
-                        },
-                    ),
-                ],
-            ),
-            BetMode(
-                name="bonus",
+                        "scatter_triggers": {4: 1, 5: 2},
+                        "force_wincap": True,
+                        "force_freegame": True,
+                    },
+                ),
+                # Natural free games with at least bonus_floor x (rejection filter in check_repeat).
+                fg("fgfloor4", 0.55, {4: 1}),
+                fg("fgfloor5", 0.25, {5: 1}),
+                fg("fgfloor6", 0.12, {6: 1}),
+                fg("fgfloor7", 0.079, {7: 3, 8: 1}),
+            ]
+
+        def door(name):
+            # SYNTHESIS 7: doors are is_feature False / is_buybonus True (SDK docs sample; to be confirmed with Stake).
+            return BetMode(
+                name=name,
                 cost=100,
                 rtp=self.rtp,
                 max_win=mode_maxwins["bonus"],
                 auto_close_disabled=False,
-                is_feature=True,
-                is_buybonus=False,
-                distributions=[
-                    Distribution(
-                        criteria="wincap",
-                        quota=0.001,
-                        win_criteria=mode_maxwins["bonus"],
-                        conditions={
-                            "reel_weights": {
-                                self.basegame_type: {"BR0": 1},
-                                self.freegame_type: {"WCAP": 1},
-                            },
-                            "scatter_triggers": {4: 1, 5: 2},
-                            "force_wincap": True,
-                            "force_freegame": True,
+                is_feature=False,
+                is_buybonus=True,
+                distributions=door_distributions(),
+            )
+
+        base_mode = BetMode(
+            name="base",
+            cost=1.0,
+            rtp=self.rtp,
+            max_win=mode_maxwins["base"],
+            auto_close_disabled=False,
+            is_feature=True,
+            is_buybonus=False,
+            distributions=[
+                Distribution(
+                    criteria="wincap",
+                    quota=0.001,
+                    win_criteria=mode_maxwins["base"],
+                    conditions={
+                        "reel_weights": {
+                            self.basegame_type: {"BR0": 1},
+                            self.freegame_type: {"WCAP": 1},
                         },
-                    ),
-                    # Bonus-only criteria: one criterion per scatter tier so the optimizer can pin
-                    # the share of purchases per tier (10 / 12 / 15 / 18-20 starting free spins).
-                    # Natural free games with at least bonus_floor x (rejection filter in check_repeat).
-                    Distribution(
-                        criteria="fgfloor4",
-                        quota=0.55,
-                        conditions={
-                            "reel_weights": {
-                                self.basegame_type: {"BR0": 1},
-                                self.freegame_type: {"FR0": 1},
-                            },
-                            "scatter_triggers": {4: 1},
-                            "force_wincap": False,
-                            "force_freegame": True,
+                        "scatter_triggers": {4: 1, 5: 2},
+                        "force_wincap": True,
+                        "force_freegame": True,
+                    },
+                ),
+                Distribution(
+                    criteria="freegame",
+                    quota=0.1,
+                    conditions={
+                        "reel_weights": {
+                            self.basegame_type: {"BR0": 1},
+                            self.freegame_type: {"FR0": 1},
                         },
-                    ),
-                    Distribution(
-                        criteria="fgfloor5",
-                        quota=0.25,
-                        conditions={
-                            "reel_weights": {
-                                self.basegame_type: {"BR0": 1},
-                                self.freegame_type: {"FR0": 1},
-                            },
-                            "scatter_triggers": {5: 1},
-                            "force_wincap": False,
-                            "force_freegame": True,
-                        },
-                    ),
-                    Distribution(
-                        criteria="fgfloor6",
-                        quota=0.12,
-                        conditions={
-                            "reel_weights": {
-                                self.basegame_type: {"BR0": 1},
-                                self.freegame_type: {"FR0": 1},
-                            },
-                            "scatter_triggers": {6: 1},
-                            "force_wincap": False,
-                            "force_freegame": True,
-                        },
-                    ),
-                    Distribution(
-                        criteria="fgfloor7",
-                        quota=0.079,
-                        conditions={
-                            "reel_weights": {
-                                self.basegame_type: {"BR0": 1},
-                                self.freegame_type: {"FR0": 1},
-                            },
-                            "scatter_triggers": {7: 3, 8: 1},
-                            "force_wincap": False,
-                            "force_freegame": True,
-                        },
-                    ),
-                ],
-            ),
-        ]
+                        "scatter_triggers": {4: 5, 5: 1},
+                        "force_wincap": False,
+                        "force_freegame": True,
+                    },
+                ),
+                Distribution(
+                    criteria="0",
+                    quota=0.4,
+                    win_criteria=0.0,
+                    conditions={
+                        "reel_weights": {self.basegame_type: {"BR0": 1}},
+                        "force_wincap": False,
+                        "force_freegame": False,
+                    },
+                ),
+                Distribution(
+                    criteria="basegame",
+                    quota=0.5,
+                    conditions={
+                        "reel_weights": {self.basegame_type: {"BR0": 1}},
+                        "force_wincap": False,
+                        "force_freegame": False,
+                    },
+                ),
+            ],
+        )
+        self.bet_modes = [base_mode] + [door(name) for name in self.door_modes]

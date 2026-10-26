@@ -67,3 +67,62 @@ def fuse_fizzle_event(gamestate):
     gamestate.book.add_event(
         {"index": len(gamestate.book.events), "type": FUSE_FIZZLE, "burned": gamestate.fuse["burn"]}
     )
+
+
+# ---------------------------------------------------------------------------------------------------------- v2 missions
+MISSION_ASSIGNED = "missionAssigned"
+LIGHT_ROUTE = "lightRoute"
+CASE_OPEN = "caseOpen"
+
+
+def mission_assigned_event(gamestate):
+    """SYNTHESIS section 8 item 4, emitted after `freeSpinTrigger` and before the first `updateGlobalMult`.
+    `lens` only for the Blackout; `layout` is the plan of the free spins (always the home plan in v2.0); `fuseLen` is the length
+    of every `fusePath.cells` of the feature."""
+    m = gamestate.mission_cfg
+    event = {
+        "index": len(gamestate.book.events),
+        "type": MISSION_ASSIGNED,
+        "mission": m["id"],
+        "totalFs": int(gamestate.tot_fs),
+        "dialStart": m["dial_start"],
+        "dialStep": m["dial_step"],
+        "dialCap": m["dial_cap"],
+        "payTiming": m["pay"],
+    }
+    if m["lens"]:
+        event["lens"] = {"w": m["lens"]["w"], "h": m["lens"]["h"], "mult": m["lens"]["mult"]}
+    event["layout"] = gamestate.free_layout_id()
+    event["fuseLen"] = gamestate.free_fuse_len()
+    gamestate.book.add_event(event)
+
+
+def light_route_event(gamestate, route):
+    """SYNTHESIS section 8 item 6: right after the free-spin `reveal`, before `fusePath`. `route[k]` = top-left GEOMETRIC cell of the
+    window at evaluation step k."""
+    lens = gamestate.mission_cfg["lens"]
+    gamestate.book.add_event(
+        {
+            "index": len(gamestate.book.events),
+            "type": LIGHT_ROUTE,
+            "w": lens["w"],
+            "h": lens["h"],
+            "lensMult": lens["mult"],
+            "route": [{"reel": r, "row": g} for r, g in route],
+        }
+    )
+
+
+def case_open_event(gamestate, bank_x100, mult, win_x100, capped):
+    """SYNTHESIS section 8 item 7 (Sealed Orders): the envelope opens after the last tumble / blast of a spin with bank > 0, before
+    `setWin`. win == bank x mult (clipped to the win cap, then `capped` is true and `wincap` follows)."""
+    gamestate.book.add_event(
+        {
+            "index": len(gamestate.book.events),
+            "type": CASE_OPEN,
+            "bank": int(bank_x100),
+            "mult": int(mult),
+            "win": int(win_x100),
+            "capped": bool(capped),
+        }
+    )

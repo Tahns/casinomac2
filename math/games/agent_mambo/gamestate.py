@@ -25,14 +25,17 @@ class GameState(GameStateOverride):
             self.emit_tumble_win_events()
             if freegame:
                 self.bump_global_mult()
+        if freegame:
+            self.open_case()  # Sealed Orders: the board is dead and the wire has resolved -> the envelope opens (no-op for other missions)
 
     def run_spin(self, sim, simulation_seed=None):
-        self.reset_seed(sim)
+        self.reset_seed(sim, sim + self.seed_offset())  # per-mode stream (offset 0 for base / bonus: v1 books reproduce)
         self.repeat = True
         while self.repeat:
             # Reset simulation variables and draw a new board based on the betmode criteria.
             self.reset_book()
             self.draw_board()
+            self.begin_spin()
             self.make_fuse_path()
             self.cascade(freegame=False)
 
@@ -52,6 +55,7 @@ class GameState(GameStateOverride):
         while self.fs < self.tot_fs:
             self.update_freespin()
             self.draw_board()
+            self.begin_spin()
             self.make_fuse_path()
             self.cascade(freegame=True)
 

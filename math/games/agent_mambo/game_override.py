@@ -1,5 +1,7 @@
 import random
 from game_executables import GameExecutables
+from game_events import mission_assigned_event
+from missions import SEED_OFFSETS, announce_mission, draw_mission, mission_params, resolve_mission_weights
 from src.events.events import fs_trigger_event
 
 
@@ -16,10 +18,30 @@ class GameStateOverride(GameExecutables):
         self.tumble_win = 0
         self.trigger_scatters = None
         self.fuse = None
+        self.mission = None  # mission id of the feature (set at the base trigger)
+        self.mission_cfg = None  # resolved parameters (missions.mission_params); None in the base game
+        self.mission_announced = False
+        self.eval_step = 0  # evaluation counter of the current spin (Blackout window index)
+        self.lens_route = None
 
     def reset_fs_spin(self):
         super().reset_fs_spin()
         self.start_global_mult()
+
+    def seed_offset(self):
+        """Offset of the random stream of the current bet mode (config.seed_offsets, default missions.SEED_OFFSETS)."""
+        offsets = getattr(self.config, "seed_offsets", None) or SEED_OFFSETS
+        return int(offsets.get(getattr(self, "betmode", None), 0))
+
+    def start_mission(self):
+        """The mission of the feature, drawn once at the base trigger with `mission_weights` (get_random_outcome recipe, SDK-seeded
+        `random`; a single weight draws nothing) and recorded as the force key {"mission": id} so the reweighter can pin the shares."""
+        weights = resolve_mission_weights(self.config, getattr(self, "betmode", None), self.get_current_distribution_conditions())
+        self.mission = draw_mission(weights)
+        self.mission_cfg = mission_params(self.mission, self.config)
+        self.mission_announced = announce_mission(weights, getattr(self.config, "mission_event", None))
+        if self.mission_announced:
+            self.record({"mission": self.mission})
 
     def assign_special_sym_function(self):
         pass
@@ -50,6 +72,8 @@ class GameStateOverride(GameExecutables):
         self.tot_fs = self._fs_award(scatter_key)
         base = self.gametype == self.config.basegame_type
         fs_trigger_event(self, basegame_trigger=base, freegame_trigger=not base)
+        if base and self.mission_announced:
+            mission_assigned_event(self)  # after freeSpinTrigger, before the first updateGlobalMult
 
     def update_fs_retrigger_amt(self, scatter_key="scatter"):
         self.tot_fs += self._fs_award(scatter_key)
@@ -58,6 +82,7 @@ class GameStateOverride(GameExecutables):
     def run_freespin_from_base(self, scatter_key="scatter"):
         # remember the scatter count that started the feature (free-spin boards overwrite it)
         self.trigger_scatters = self.count_special_symbols(scatter_key)
+        self.start_mission()
         if self.criteria.startswith("fgfloor"):
             # force-record key the optimizer uses to pin the share of each scatter tier
             self.record({"bonusTier": min(self.trigger_scatters, 7)})
