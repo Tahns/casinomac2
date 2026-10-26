@@ -1,119 +1,97 @@
-# The Unleashed Mine — rapport maths
+# Agent Mambo: math report
 
-Mesuré sur les fichiers publiés `library/publish_files` (100 000 livres par mode, optimiseur Rust du SDK). Tests : `../../env/bin/python -m pytest tests -q` (13 passent).
+Measured on the published files `library/publish_files` (100 000 books per mode, weighted by the lookup tables). Tests: `../../env/bin/python -m pytest tests -q` (18 pass), SDK `tools/final_checks.py` (execute_all_tests) passes. Game id `agent_mambo`, re-theme of `the_unleashed_mine` (left untouched as the fallback).
 
-## Grille et règles
-- 6 rouleaux x 5 rangées, gains par amas (5 symboles identiques adjacents ou plus), cascades.
-- Wild W (Pépite d'or) remplace les symboles payants, pas le scatter S (Dynamite).
-- 4+ scatters : free spins « Unleashed Mine » : 4 → 10, 5 → 12, 6 → 15, 7 → 18, 8 → 20 (9 et plus paient comme 8). Relance avec 3+ scatters : 3 → 5, 4 → 8, 5 → 10, 6 → 12, 7 → 15, 8 → 18.
-- Veines à multiplicateurs (free spins seulement) : chaque case démarre à x3 ; chaque case d'un amas gagnant gagne +3 ; plafond x512 par case. Gain d'un amas = valeur de table x somme des multiplicateurs de ses cases.
-- Gain max 5 000x la mise.
+## Rules
+- 6 reels x 5 rows, cluster pays (5+ adjacent), tumble, wild W substitutes (not scatter S). Wilds only come from the reel strips (BR0 3 per reel, FR0 4 per reel); no mechanic creates a wild.
+- Scatters: 4+ trigger free spins 4 -> 10, 5 -> 12, 6 -> 15, 7 -> 18, 8 -> 20 (9+ pay as 8). Retrigger with 3+: 3 -> 5, 4 -> 8, 5 -> 10, 6 -> 12, 7 -> 15, 8 -> 18.
+- **Global multiplier meter** (free spins only, `gm_start=1`, `gm_step=8`, `gm_cap=100` in `game_config.py`): starts at x1 when the feature starts; each winning tumble step (also the one after a wire blast) is paid with the CURRENT value, then the value rises by 8 (capped at 100) and `updateGlobalMult` is emitted. It persists over all spins and retriggers of the feature. Base game: always x1. No per-cell multiplier any more.
+- **Bomb-timer wire** (`fuse_params`: 8 cells, 1 lit at reveal, +1 per winning step, blast if >= 3 burnt, base and free spins): a self-avoiding path from reel 0. On a dead board with >= 3 burnt cells the burnt non-scatter cells VANISH, new symbols drop in (`fuseBlast`, `tumbleBoard`) and the board is evaluated again; otherwise `fuseFizzle`. Scatters are untouched, no wild is created.
+- Two modes: base (cost 1) and bonus (cost 100, direct entry). Wincap 5000x both. Payouts are multiples of 0.1x.
 
-## Modes
-| Mode | Coût | RTP | Gain max | Taux de gain | Médiane |
+## Results
+| Mode | Cost | RTP | Max win (odds) | Hit rate | Median |
 |---|---|---|---|---|---|
-| base | 1x | 96,000 % | 5 000x (environ 1 / 5 000 000) | 29,07 % | 0x |
-| bonus (UNLEASH) | 100x | 96,000 % | 5 000x (1 / 50 000) | 100 % (plancher 30x) | 42,6x |
+| base | 1x | 96.000 % | 5000x (1 / 5 000 002) | 29.07 % | 0x |
+| bonus | 100x | 96.000 % | 5000x (1 / 50 000) | 100 % (floor 30x) | 64.1x |
 
-Tous les paiements sont des multiples de 0,1x. Deux modes (limite : 20). Mesuré sur 100 000 livres par mode.
+Free-spin trigger from the base game: 1 spin in 200 (0.500 %). Mean free spins played per purchase: 17.2 (retriggers are frequent: a 10-spin start plays 17 on average).
 
-## UNLEASH : nombre de scatters (changement v4)
-Exigence : à l'achat, le minimum de scatters (4 → 10 free spins) est la règle, plus de scatters est rare.
-Part pondérée des achats par nombre de free spins de départ (livres x table de poids, outil `trig.py`) :
-
-| Free spins | 10 (4 scat.) | 12 (5) | 15 (6) | 18 (7) | 20 (8) |
+### Starting free spins in UNLEASH (buy), weighted
+| Spins | 10 | 12 | 15 | 18 | 20 |
 |---|---|---|---|---|---|
-| Part des achats | 88,00 % | 10,00 % | 1,78 % | 0,17 % | 0,05 % |
+| Share | 87.999 % | 10.001 % | 1.780 % | 0.161 % | 0.059 % |
 
-Comment : (1) un critère par palier (`fgfloor4`..`fgfloor7`, quotas de simulation 0,55 / 0,25 / 0,12 / 0,079, plancher 30x) ; (2) chaque livre enregistre une clé de force `bonusTier` (nombre de scatters, 7 pour 7 et plus) et l'optimiseur définit une clôture par palier (`game_optimization.py`, `TIER_SHARE` fixe la part par `hr`, `TIER_RTP` le RTP du palier) ; (3) `check_repeat` ne garde que les livres dont le nombre réel de scatters au déclenchement (après cascades) est celui du palier ; (4) le SDK ne sait forcer qu'un scatter par rouleau (6 max) et bouclait sans fin pour 7-8 : `force_special_board` est surchargé (6 forcés, les autres Dynamite posés sur des cases au hasard).
-
-Compensation : le RTP cible est obtenu avec des veines plus douces (x3 / +3 au lieu de x4 / +6). Moyenne naturelle d'un palier 10 spins (plancher 30x) : 101x (médiane 69x), contre 139x (médiane 89x) avec x4 / +6 ; l'optimiseur n'a donc qu'à raboter environ 8 % au lieu d'environ 30 %. Moyenne visée par palier : 93,6x / 109x / 135x / 138x.
-
-## Répartition des gains — base, VERSION v4 (sans fuse ; voir la section Fuse Line pour v5)
-| Gain | Spins | Part du RTP |
+### Base distribution (tools/buckets.py)
+| Win | Spins | RTP points |
 |---|---|---|
-| 0x | 70,9 % | 0 |
-| 0 à 1x | 10,4 % | 5,6 % |
-| 1 à 2x | 5,7 % | 7,7 % |
-| 2 à 5x | 10,4 % | 33,8 % |
-| 5 à 10x | 2,1 % | 11,9 % |
-| 10 à 40x | 0,09 % | 2,5 % |
-| 40 à 100x | 0,32 % | 22,0 % |
-| 100 à 500x | 0,08 % | 11,8 % |
-| 500x et plus | 0,001 % | 0,8 % |
+| 0x | 70.93 % | 0 |
+| 0-1x | 18.3 % | 9.3 |
+| 1-2x | 2.7 % | 3.1 |
+| 2-5x | 3.5 % | 11.6 |
+| 5-10x | 3.15 % | 22.4 |
+| 10-20x | 0.96 % | 12.9 |
+| 20-40x | 0.060 % | 1.9 |
+| 40-60x | 0.104 % | 5.2 |
+| 60-100x | 0.213 % | 16.5 |
+| 100-200x | 0.066 % | 8.7 |
+| 200-500x | 0.014 % | 3.9 |
+| 500x+ | 0.001 % | 0.5 |
+(the 40-200x part is the free-spin triggers; non-trigger base wins stay under about 20x.)
 
-## Répartition des gains — UNLEASH, VERSION v4 (sans fuse)
-| Gain | Achats | Part du RTP |
+### Buy distribution (UNLEASH, cost 100x)
+| Win | Buys | RTP points |
 |---|---|---|
-| 30 à 40x | 31,9 % | 11,2 pts |
-| 40 à 60x | 38,1 % | 16,8 pts |
-| 60 à 100x | 7,6 % | 6,1 pts |
-| 100 à 200x | 10,2 % | 14,2 pts |
-| 200 à 500x | 9,8 % | 31,1 pts |
-| 500 à 1 000x | 2,4 % | 15,4 pts |
-| 1 000x et plus | 0,10 % | 1,2 pts |
-(la tranche 20-40 de `buckets.py` ne contient que 30-40x : plancher 30x.)
+| 30-40x | 20.0 % | 6.9 |
+| 40-60x | 26.1 % | 12.8 |
+| 60-100x | 25.1 % | 19.3 |
+| 100-200x | 19.6 % | 27.0 |
+| 200-500x | 8.25 % | 23.7 |
+| 500-1000x | 0.86 % | 5.5 |
+| 1000-2000x | 0.057 % | 0.7 |
+| 5000x | 0.002 % | 0.1 |
+30-60x: 46.1 % of buys (target <= 60 %; mining math: 76 %); 60-300x: 50 %; 300x+: 3.8 %. Median 64.1x (>= 40x). Mean 96x.
 
-## Points faibles connus
-- UNLEASH : 70 % des achats rendent 30 à 60x pour 100x payés (avant : 82 % à 20-60x, 50 % à 20-40x). La médiane monte de 39,9x à 43,6x, mais l'optimiseur donne toujours une forme bimodale (amas 40-50x et queue 200-1 000x) quel que soit le réglage essayé (moyenne naturelle plus basse x2/+3, échelle de fenêtre 30-45 x0,5, test_spins 10/20/50 ou 50/100/200) ; seul le nombre de scatters est maintenant maîtrisé.
-- Jeu de base : 70,9 % de spins à zéro ; un bonus déclenché environ 1 spin sur 200.
-- Gain max en base : environ 1 sur 5 millions.
-- L'optimiseur n'est pas reproductible : régénérer les maths change légèrement les poids (médiane 43,3 à 44,5x sur les essais). Toujours relancer les tests.
-- Fichier books_bonus.jsonl.zst : 262 Mo (100 000 livres).
+### Multiplier meter statistics (bonus, weighted)
+- Share of buys whose meter reaches x25 / x50 / x100 (cap): 99.2 % / 31.8 % / 1.8 %.
+- Mean highest meter by payout class: under 100x: x41.7; 100-500x: x64.6; 500x and more: x95.0. 78.7 % of the RTP of the mode is paid at a meter of x20 or more, so the tail comes from the meter.
+- Free spins have a win in 30.5 % of the cases; winning steps in one spin: 1 step 26.8 %, 2 steps 3.2 %, 3 steps 0.45 %, 4+ 0.04 % (longest 11). Long chains are rare, the high meter comes from many winning spins, not from one chain.
+- Highest meter reached (share of buys): x17 0.8 %, x25 7.1 %, x33 18 %, x41 23 %, x49 19 %, x57 12 %, x65 7.7 %, x73 4.6 %, x81 2.7 %, x89 1.7 %, x97 1.1 %, x100 1.8 %.
 
-## Régénérer
+### Wire statistics
+- Base spins: wire burns (>= 1 `fuseBurn`, i.e. what the front end draws) 28.6 %; reaches >= 3 burnt and blasts 5.9 %; fizzle on all others.
+- Free spins (weighted by buys): burns 30.5 %, blasts 3.7 %.
+- A blast removes 3 cells in 81 % of cases (4: 12 %, 5+: 2 %), and only 4.1 % of base blasts (5.0 % in free spins) are followed by a paying re-evaluation.
+
+### Sessions from the base table (100 000 sessions, bet 1, no bonus buy)
+| Spins | Ends above start | Median net | Mean net | 10th / 90th percentile | Lost over half |
+|---|---|---|---|---|---|
+| 100 | 32.9 % | -26.8 | -4.4 | -59 / +75 | 21.0 % |
+| 300 | 37.1 % | -35.5 | -12.1 | -133 / +136 | 5.0 % |
+
+## What changed versus the mining math, and why
+1. Veins (per cell, x3 / +3, cap 512) -> one global meter. Wins no longer depend on cell memory (patent screen: per-position persistence was a risk zone). Step 8 was chosen because it makes the natural mean of a 10-spin buy (about 100x) match the 96x target: step 5 gave 82x, step 1 only 50x (needs a heavy upward re-weighting, i.e. a fatter tail). Cap 100 is reached by 1.8 % of buys.
+2. Fuse Line (burnt cells become wild) -> bomb-timer wire (burnt cells vanish). Same path rules. No wild creation. The blast is a weak source of wins (see above), so the wire is mostly a spectacle: in the mining math the wild blast fed the tail, here the meter does.
+3. Base strip BR0 got 3 wilds per reel (0 before). Without the wild-creating blast the base game had no 5-20x wins (natural mean 0.47x, p99 2.3x, max 5.4x in 23 000 spins); with 3 wilds: mean 0.79x, p99 5.0x, 10-20x wins 0.96 % of spins.
+4. Buy weights are NOT produced by the Rust optimizer any more (`tools/reweight_bonus.py`, run automatically by `run.py`). Reason: the optimizer builds gaussian mixtures with a forced low bump (x150 on [floor, mean/2]) and puts about 70-75 % of the buys at 30-60x whatever we tried: mean-to-median bounds 1.6-3 instead of 4-8, distribution bias towards 60-300x, pmb_rtp 1.3, window scales (30,40) x0.7, test_spins up to 20 000 (too slow, aborted after 22 min). The natural pool of books has only about 40 % at 30-60x. The reweighting keeps the natural shape: a pinned share per scatter tier, one exponential tilt exp(-lambda * win) (lambda = 0.00058, mild), P(5000x) pinned to 1/50 000, lambda solved so that RTP = 96.000 %. Weights are integers (scale 1e15). The shape is then set by the game parameters (step, cap, floor, strips), which is what a designer can reason about. The base mode still uses the Rust optimizer.
+5. Result for the buy shape: 46 % at 30-60x instead of 76 %; median 64x instead of 42.6x.
+
+## Weak points (honest)
+- 69.5 % of free spins pay nothing (strips unchanged), so the meter climbs slowly and a buy of 10 spins is decided by how many winning spins happen. About 70 % of the 100x buys return less than 100x; the minimum is 30x.
+- Meter steps of 8 (x1, x9, x17...) look odd and the first winning step of the feature is always paid at x1; a smaller step needs a heavier tail (or more free-spin hits) to keep 96 %.
+- The blast pays rarely (4-5 %): it is mostly a cosmetic event. Larger blasts (burn 2 cells per step) would pay more but change the agreed path rules.
+- Base: 10-40x wins are rare (1 % of spins), the 40-200x band is the free-spin triggers; non-trigger base wins stay small.
+- Retriggers are frequent (17.2 spins played from 10), which makes the "10 / 12 / 15 spins" tiers less distinguishable than their shares suggest.
+- The Rust optimizer (base) is not reproducible: regenerating can move the base shape slightly. The bonus weights are deterministic given the books.
+- Books are 316 MB (bonus, zst).
+
+## Regenerate
 ```
-cd math/games/the_unleashed_mine
-python3 tools/make_reels.py            # bandes de rouleaux
-../../env/bin/python run.py            # voir PROGRESS.md pour les variables (SIMS_BASE, OPT, batching_size)
+cd math/games/agent_mambo
+python3 tools/make_reels.py                        # strips (BR0 W count via BRW, default 3)
+OPT=1 ../../env/bin/python run.py                  # sims + Rust optimizer (base) + reweight_bonus + SDK checks (about 35 min)
 ../../env/bin/python -m pytest tests -q
+../../env/bin/python tools/analyze.py              # meter / wire / session statistics
+../../env/bin/python tools/make_fixtures.py        # frontend_mambo/fixtures
 ```
-Mémoire : un lot de 1e5 simulations bonus a été tué par manque de mémoire ; `batching_size` est à 6250.
-
-
-## Fuse Line (v5)
-Règles implémentées (docs/ORIGINAL_FEATURES.md, front : frontend/NOTES_fuse.md). Paramètres dans `game_config.fuse_params` (par type de partie, base et free spins identiques) : N = 8 cases, b0 = 1 case brûlée au reveal, adv = 1 case par pas gagnant, detmin = 3.
-- À chaque spin (base et chaque free spin), juste après `reveal`, un chemin auto-évitant de 8 cases est tiré avec le `random` du SDK (reproductible par graine) : départ sur une case au hasard du rouleau 0, puis droite (poids 2), haut (1), bas (1), sans repasser par une case (reprise du tirage si impasse). Il est annoncé par `fusePath`.
-- Chaque `tumbleBoard` d'un pas gagnant est suivi d'un `fuseBurn` (burned + 1, plafonné à 8 ; rien n'est émis si le plafond est atteint).
-- Quand l'évaluation ne paie plus (et sans plafond de gain atteint) : si burned >= 3, les cases brûlées (indices < burned) qui ne sont ni S ni W deviennent W, `fuseBlast` est émis, le plateau est réévalué et les cascades reprennent s'il paie ; sinon `fuseFizzle`. Le fusible est ensuite consommé. Une mèche sans aucune case convertible (cases brûlées toutes S/W) donne un `fuseFizzle` même avec burned >= 3 (cas très rare).
-- Spin sans gain : `fuseFizzle {burned: 1}` (le fusible est toujours refermé). Si le plafond de gain tombe en cours de spin, aucun événement de fin n'est émis (les free spins restants du livre sont révélés sans évaluation, comme avant).
-- Dans les free spins les W posés sur des veines profitent de leurs multiplicateurs (somme des cases du groupe), c'est la source de la queue.
-
-### Événements émis (champ par champ, identiques au front)
-Convention de lignes : **lignes visibles 0..4** (haut = 0), PAS les lignes avec marge (1..5) qu'utilisent `winInfo`, `tumbleBoard` et `freeSpinTrigger` du SDK (`include_padding`). Le front traite un événement comme paddé seulement si une ligne vaut 5 ou plus, ce qui n'arrive jamais ici.
-- `{index, type:"fusePath", cells:[{reel,row} x8], burned:1}` (index 1 : juste après `reveal`, avant `updateGrid` en free spins)
-- `{index, type:"fuseBurn", burned:int, newCells:[{reel,row}]}` (après `tumbleBoard`)
-- `{index, type:"fuseBlast", cells:[{reel,row,replaced:"H1"...}]}` (jamais S ni W ; avant le `winInfo` de la réévaluation)
-- `{index, type:"fuseFizzle", burned:int}`
-Aucune divergence avec NOTES_fuse.md.
-
-### Résultats mesurés (publish_files, 100 000 livres par mode, pondérés par la table)
-| Mesure | Valeur |
-|---|---|
-| Blast, spin de base (modes base) | 8,7 % des spins de base (cascades réelles plus longues que le proxy du doc : 2 %) |
-| Blast, free spin | 2,2 % des free spins (doc : 4 %) ; fizzle 97,8 % |
-| Moyenne naturelle UNLEASH palier 10 spins (diag, 400 spins, plancher 30x) | 100x sans fuse, 153x avec (médiane 70x, 86x) ; l'optimiseur ramène à 96x |
-| Moyenne naturelle spin de base (critère basegame) | 0,47x sans, 0,64x avec |
-| RTP base / bonus | 96,000 % / 96,000 % |
-| Taux de gain base | 29,07 % |
-| Gain max | 5 000x les deux modes (1 / 5 000 002 en base, 1 / 50 000 en bonus) |
-| UNLEASH médiane | 42,6x |
-| Parts des achats 10 / 12 / 15 / 18 / 20 free spins | 88,00 / 10,00 / 1,78 / 0,17 / 0,05 % |
-
-Choix : le fusible agit en base et en free spins. Le doc le donne comme levier de volatilité surtout en free spins ; en base il ajoute surtout des gains 10-60x (cascade longue puis blast), sans changer le taux de gain. Les valeurs fuse_c du doc n'ont pas été modifiées (le test d'ajustement n'était pas nécessaire : l'optimiseur absorbe le surplus de 50 %).
-
-Réglage optimiseur (base uniquement) : les échelles de fenêtre du jeu de base passent de {(1,2) x1,2 ; (10,20) x1,5} à {(1,2) x1,2 ; (2,5) x1,5 ; (10,20) x0,5} ; sinon la première optimisation donnait 2,1 % de spins à 10-20x (29 % du RTP) et seulement 0,6 % à 2-5x.
-
-### Répartition des gains avec fuse (tools/buckets.py)
-Base : 0x 70,9 % ; 0-1x 19,9 % (9,2 pts de RTP) ; 1-2x 3,1 % ; 2-5x 1,8 % ; 5-10x 2,4 % (18,0 pts) ; 10-20x 1,1 % (15,4 pts) ; 20-40x 0,37 % (9,5 pts) ; 40-100x 0,29 % (20,6 pts) ; 100-200x 0,11 % (13,6 pts) ; 200x et plus environ 0,001 % (1 pt).
-UNLEASH (tranche 20-40 = 30-40x, plancher 30x) : 30-40x 36,4 % (12,8 pts) ; 40-60x 40,1 % (17,6) ; 60-100x 6,0 % (4,8) ; 100-200x 7,7 % (10,5) ; 200-500x 5,9 % (19,1) ; 500-1000x 3,4 % (23,1) ; 1000x et plus 0,61 % (7,9). Environ 76 % des achats rendent 30 à 60x (v4 : 70 %), la forme reste bimodale.
-
-### Tests ajoutés (tests/test_math.py, 13 passent)
-Événements fuse bien formés (chemin de 8 cases adjacentes, sans doublon, départ rouleau 0, lignes 0..4, burned monotone et conforme à newCells, blast seulement si burned >= 3 et cases dans les cases brûlées, jamais S ni W, fusible toujours refermé sauf plafond), fenêtre du taux de blast en free spins (1,2 à 6 %), blast suivi d'une réévaluation, gain final = payoutMultiplier.
-
-### Sauvegarde
-Les maths v4 (index, CSV et livres) sont dans `library/publish_files_v4_backup`.
-
-### Points faibles (v5)
-- Le fizzle apparaît sur plus de 90 % des spins (tout spin sans cascade longue) : à l'écran, le fusible est tiré à chaque spin et s'éteint le plus souvent sans effet.
-- Base : la queue 10-40x vient surtout de blasts ; le jeu de base a plus de petits gains (0-1x : 19,9 % contre 10,4 %).
+Memory: batching_size 6250 (1e5 bonus books were OOM-killed with larger batches). `SIMS=0 FORCE_REWEIGHT=1 python run.py` re-applies only the bonus reweighting.

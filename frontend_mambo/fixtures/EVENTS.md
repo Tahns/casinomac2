@@ -18,7 +18,7 @@ Grid: 6 reels x 5 visible rows. Two row conventions coexist (same as the mining 
 | `updateFreeSpin` | `amount` (spin number), `total` |
 | `freeSpinRetrigger` | `totalFs` (new total), `positions` |
 | `freeSpinEnd` | `amount` (free-spin total), `winLevel` |
-| `wincap` | `amount` = 500000 (5000x). After it the remaining free spins are still listed (each with reveal, fusePath, capped winInfo, no tumbles): the front end skips from `wincap` to `freeSpinEnd` |
+| `wincap` | `amount` = 500000 (5000x). The capping step is `winInfo, updateTumbleWin, wincap, setTotalWin` (no `updateGlobalMult`, no `tumbleBoard`, no fuse end event). The remaining free spins are still listed as `updateFreeSpin, reveal, fusePath, winInfo, updateTumbleWin, setTotalWin` (capped amounts, no tumbles, no meter events): the front end skips from `wincap` to `freeSpinEnd` |
 | `finalWin` | `amount` = payout |
 
 ## NEW: global multiplier meter (free spins only)

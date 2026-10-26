@@ -1,18 +1,5 @@
-# Cluster-based win game
-
-Clusters of 5 or more like-symbols are removed from the board, and symbols above on the reelstrip
-fall to fill their place.
-
-#### Basegame:
-Standard tumbling game with Scatter and Wild symbols.
-Minimum of 4 Scatter symbols are required for freeSpin triggers
-
-#### Freegame:
-Same basegame rule, except grid positions have multipliers. Grid positions start in a 'deactivated' state. Once one win occurs,
-the position is 'activated' starting with a 1x multiplier - for every winning cluster, the multiplier value at that position is increased by +1 for every winning position.
-A minimum of 3 scatters are required for re-triggers
-
-
-#### Notes:
-Because of the separation between basegame and freegame types - there is an additional freespin entry check to check of the criteria requires a forced 
-freespin condition. Otherwise, occurences of Scatter symbols tumbling onto the board during basegame criteria may appear.
+# Agent Mambo (math)
+6x5 cluster pays with tumbles (min cluster 5), wild W, scatter S.
+Free spins (4+ scatters, 3+ retrigger): global multiplier meter x1 -> +8 per winning step (cap x100), persists through the feature.
+Bomb-timer wire (8-cell path, burns 1 cell per winning step): on a dead board with >= 3 burnt cells the burnt non-scatter cells vanish, new symbols drop in and the board is evaluated again.
+Bonus (cost 100) weights come from tools/reweight_bonus.py, base weights from the Rust optimizer. See MATH_REPORT.md.

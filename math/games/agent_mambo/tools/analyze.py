@@ -78,7 +78,14 @@ def bonus_stats():
                 chain[min(nwin, 30)] += wt
         c["fs_spins"] += wt * n_spins
         c["fs_blast"] += wt * blasts
-        c["wins>=1000x"] += wt * (b["payoutMultiplier"] >= 100000)
+        pm = b["payoutMultiplier"] / 100
+        for name, ok in (("<100x", pm < 100), ("100-500x", 100 <= pm < 500), (">=500x", pm >= 500)):
+            if ok:
+                c["n" + name] += wt; c["mx" + name] += wt * mx
+        for s_ in spins(ev):
+            if s_[0]["gameType"] == "freegame":
+                nb = sum(e["type"] == "fuseBurn" for e in s_)
+                c["fs_burn2"] += wt * (nb > 0)
         # which part of payout is paid with mult>=20
         hi = 0.0
         for e in ev:
@@ -86,9 +93,11 @@ def bonus_stats():
                 for x in e["wins"]:
                     if x["meta"]["globalMult"] >= 20:
                         hi += x["win"]
-        c["rtp_mult>=20"] += wt * hi
+        c["rtp_mult>=20"] += wt * hi / 100.0
         c["rtp_all"] += wt * b["payoutMultiplier"] / 100
     print("BONUS mean free spins played per purchase: %.2f; wire blast share of free spins: %.4f" % (c["fs_spins"] / W, c["fs_blast"] / c["fs_spins"]))
+    print("  mean max meter by payout class:", {k: round(c["mx" + k] / c["n" + k], 1) for k in ("<100x", "100-500x", ">=500x")})
+    print("  share of free spins whose wire burns (>=1 fuseBurn): %.4f" % (c["fs_burn2"] / c["fs_spins"]))
     for k in ("max>=10", "max>=25", "max>=50", "reach_cap"):
         print(f"  share of purchases whose meter reaches {k}: {c[k]/W:.4f}")
     print("  share of the RTP paid at meter >= 20: %.3f" % (c["rtp_mult>=20"] / c["rtp_all"]))
