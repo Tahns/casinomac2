@@ -4,6 +4,7 @@
   math/env/bin/python math/games/agent_mambo/tools/layout_bench.py spins  --n 3000               # full books (wire, events) per plan
   math/env/bin/python math/games/agent_mambo/tools/layout_bench.py v1equiv --mode base --n 1000  # replay v1 library books bit for bit
   math/env/bin/python math/games/agent_mambo/tools/layout_bench.py mix    --n 20000              # nominal 50/22/14/14 draw: shares, hit rate
+  math/env/bin/python math/games/agent_mambo/tools/layout_bench.py smoke --n 12000               # real multi-process create_books, scratch game_id
   math/env/bin/python math/games/agent_mambo/tools/layout_bench.py golden                        # rewrite tests/golden/*.json
 
 `bench` draws real SDK boards (reel strips BR0, the plan's column heights), finds geometric clusters, pays them exactly as the
@@ -36,9 +37,10 @@ V1_BOOKS = os.path.join(GAME, "library", "publish_files_v1")
 UNSET = object()
 
 
-def new_state(mode="base", weights=UNSET, layout_event=UNSET):
+def new_state(mode="base", weights=UNSET, layout_event=None):
     """GameState on the singleton config. weights: dict = config.layout_weights; None = nothing configured (v1 behaviour);
-    UNSET = leave the game config as it is. layout_event: None/True/False as config.layout_event, UNSET = untouched."""
+    UNSET = leave the game config as it is. layout_event: config.layout_event, None = default rule (always reset here, so
+    nothing leaks from an earlier call)."""
     from gamestate import GameState
     from game_config import GameConfig
     from src.wins.win_manager import WinManager
@@ -47,8 +49,7 @@ def new_state(mode="base", weights=UNSET, layout_event=UNSET):
     cfg.wincap = 5000
     if weights is not UNSET:
         cfg.layout_weights = weights
-    if layout_event is not UNSET:
-        cfg.layout_event = layout_event
+    cfg.layout_event = layout_event
     gs = GameState(cfg)
     gs.betmode = mode
     gs.win_manager = WinManager(cfg.basegame_type, cfg.freegame_type, 5000)
@@ -256,6 +257,55 @@ def cmd_mix(a):
           f"= {100 * (mix_mean / base - 1):+.1f}% vs all-Mezzanine ({base:.4f}x)")
 
 
+# --------------------------------------------------------------------------------------------------------------- smoke
+def cmd_smoke(a):
+    """Real multi-process create_books for `base` with the nominal 4-plan mix, in a SCRATCH game_id (math/games/wp7_smoke, removed
+    afterwards) so the real library is never touched. Checks: layout events in the written books, `layout` force-record keys,
+    lookup table ids, config numRows == [5]*6 in the written fe config, forks restore config.num_rows."""
+    import shutil
+    import zstandard
+    from game_config import GameConfig
+    from gamestate import GameState
+    from src.state.run_sims import create_books
+    from src.write_data.write_configs import generate_configs
+
+    threads = max(1, min(a.threads, 3))
+    cfg = GameConfig()
+    cfg.game_id = "wp7_smoke"
+    cfg.layout_weights = {"base": dict(NOMINAL_WEIGHTS)}  # per bet mode
+    cfg.layout_event = None
+    cfg.bet_modes = [bm for bm in cfg.bet_modes if bm.get_name() == "base"]  # generate_configs needs the files of every mode
+    gs = GameState(cfg)
+    root = os.path.join(MATH, "games", "wp7_smoke")
+    t0 = time.time()
+    try:
+        create_books(gs, cfg, {"base": a.n}, a.n // threads, threads, True, False)
+        generate_configs(gs)
+        pub = os.path.join(root, "library", "publish_files")
+        books = []
+        with open(os.path.join(pub, "books_base.jsonl.zst"), "rb") as fh:
+            for line in io.TextIOWrapper(zstandard.ZstdDecompressor().stream_reader(fh), encoding="utf-8"):
+                books.append(json.loads(line))
+        assert len(books) == a.n, len(books)
+        cnt = collections.Counter()
+        for b in books:
+            ev = b["events"]
+            assert ev[0]["type"] == "layout" and ev[1]["type"] == "reveal"
+            cnt[ev[0]["id"]] += 1
+            check_book(b, ev[0]["id"])
+        force = json.load(open(os.path.join(root, "library", "forces", "force_record_base.json")))
+        keys = sorted({k["search"][0]["value"] for k in force if any(x["name"] == "layout" for x in k["search"])})
+        fe = json.load(open(os.path.join(root, "library", "configs", "config_fe_wp7_smoke.json")))
+        assert fe["numRows"] == [5] * 6, fe["numRows"]
+        assert cfg.num_rows == [5] * 6
+        lk = [l.split(",") for l in open(os.path.join(pub, "lookUpTable_base_0.csv")).read().split()]
+        assert len(lk) == a.n and all(int(r[2]) % 10 == 0 for r in lk)
+        print(f"SMOKE OK books={len(books)} threads={threads} shares={ {k: round(v / len(books), 4) for k, v in sorted(cnt.items())} } "
+              f"layout force keys={keys} fe.numRows={fe['numRows']} sec={time.time() - t0:.1f}")
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 # --------------------------------------------------------------------------------------------------------------- golden
 def first_spin_with(lid, want_blast=False):
     """Deterministic search for a base book on `lid` whose events contain a winInfo followed by a tumbleBoard (and a fuse path)."""
@@ -346,9 +396,12 @@ def main():
     m = sub.add_parser("mix")
     m.add_argument("--n", type=int, default=20000)
     m.add_argument("--seed", type=int, default=0)
+    sm = sub.add_parser("smoke")
+    sm.add_argument("--n", type=int, default=12000)
+    sm.add_argument("--threads", type=int, default=3)
     sub.add_parser("golden")
     a = ap.parse_args()
-    {"bench": cmd_bench, "spins": cmd_spins, "v1equiv": cmd_v1equiv, "mix": cmd_mix, "golden": cmd_golden}[a.cmd](a)
+    {"bench": cmd_bench, "spins": cmd_spins, "v1equiv": cmd_v1equiv, "mix": cmd_mix, "smoke": cmd_smoke, "golden": cmd_golden}[a.cmd](a)
 
 
 if __name__ == "__main__":

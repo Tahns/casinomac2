@@ -131,6 +131,15 @@ class Layout:
     def geo_row(self, reel, compact_row):
         return self.cells[reel][compact_row]
 
+    def window_fits(self, reel, geo_row, w, h):
+        """True when the w x h window whose TOP-LEFT cell is (reel, geo_row) lies entirely on cells of this plan
+        (for lightRoute: 'the window always fits the board')."""
+        return all(self.neighbour_compact(reel + i, geo_row + j) is not None for i in range(w) for j in range(h))
+
+    def windows(self, w, h):
+        """All top-left cells (reel, geo_row) where a w x h window fits, in reading order (reel, then row)."""
+        return [(r, g) for r in range(self.cols) for g in self.cells[r] if self.window_fits(r, g, w, h)]
+
     def row_counts(self):
         """Fresh list for config.num_rows."""
         return list(self.heights)

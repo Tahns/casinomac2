@@ -23,6 +23,7 @@ draw, the tumble length check and `force_special_board`). It is set in `draw_boa
 attempt and after `imprint_wins`, so the singleton config that `generate_configs` writes (`numRows`, NOT authoritative) stays [5]*6.
 
 Selecting a layout (first match wins)
+  0. env `AM_LAYOUT_WEIGHTS` (JSON, flat or per bet mode like 2.): run-level switch, e.g. `AM_LAYOUT_WEIGHTS='{"mezzanine":1}'` = v1;
   1. distribution conditions: `conditions["layout_weights"] = {"basegame": {"atrium": 22, ...}}` (per game type) or a flat dict;
   2. `config.layout_weights`: flat `{"mezzanine": 50, "atrium": 22, "lobby": 14, "annex": 14}` for every mode, or a per bet mode
      `{"base": {...}, "bonus": {...}}` (a mode that is not listed plays Mezzanine);
@@ -31,17 +32,32 @@ Free spins are always Mezzanine in v2.0. `config.layout_event` (None/True/False)
 only when the weights have more than one plan or a plan other than Mezzanine.
 """
 
+import json
+import os
 import random
 from collections import defaultdict
+from functools import lru_cache
 
 from layouts import HOME, HOME_ONLY, LAYOUTS, LayoutError, normalise_weights, pick_layout
 
 WIRE_STEPS = ((1, 0, 2), (0, -1, 1), (0, 1, 1))  # (d reel, d geo row, weight): right 2, up 1, down 1; the wire never goes left
 WIRE_MAX_TRIES = 100000
+ENV_WEIGHTS = "AM_LAYOUT_WEIGHTS"  # run-level override of layout_weights (JSON)
 
 
 class GeometryError(RuntimeError):
     """Board and floor plan disagree (a bug, never a normal outcome)."""
+
+
+@lru_cache(maxsize=8)
+def _parse_env_weights(raw):
+    try:
+        val = json.loads(raw)
+    except ValueError as e:
+        raise LayoutError(f"{ENV_WEIGHTS} is not valid JSON: {e}") from None
+    if not isinstance(val, dict):
+        raise LayoutError(f"{ENV_WEIGHTS} must be a JSON object")
+    return val
 
 
 # ------------------------------------------------------------------------------------------------------------ clusters
@@ -144,18 +160,25 @@ class GeometryMixin:
                         return d._conditions.get("layout_weights")
         return None
 
+    @staticmethod
+    def _flat_or_per_mode(cfg, betmode):
+        """`{id: weight}` applies to every mode; `{bet mode: {id: weight}}` only to the listed modes (others: Mezzanine)."""
+        if not cfg:
+            return HOME_ONLY
+        if all(isinstance(v, dict) for v in cfg.values()):
+            return cfg.get(betmode) or HOME_ONLY
+        return cfg
+
     def current_layout_weights(self):
         """Weights of the base spin being drawn (see the module docstring for the precedence)."""
         betmode = getattr(self, "betmode", None)
+        env = os.environ.get(ENV_WEIGHTS)
+        if env:
+            return self._flat_or_per_mode(_parse_env_weights(env), betmode)
         lw = self._condition_layout_weights(betmode)
         if lw is not None:
             return self._weights_for_game_type(lw)
-        cfg = getattr(self.config, "layout_weights", None)
-        if not cfg:
-            return HOME_ONLY
-        if all(isinstance(v, dict) for v in cfg.values()):  # {bet mode: weights}
-            return cfg.get(betmode) or HOME_ONLY
-        return cfg
+        return self._flat_or_per_mode(getattr(self.config, "layout_weights", None), betmode)
 
     def select_layout(self):
         """Seeded draw of the spin's plan (uses the SDK-seeded `random`). Free spins: Mezzanine. A single positive weight

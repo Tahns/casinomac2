@@ -458,6 +458,27 @@ def test_layout_weights_precedence(make_state):
         dist._conditions.pop("layout_weights", None)
 
 
+def test_env_switch_beats_every_other_source(make_state, monkeypatch):
+    gs = make_state(dict(NOMINAL_WEIGHTS))
+    gs.criteria, gs.betmode = "basegame", "base"
+    monkeypatch.setenv("AM_LAYOUT_WEIGHTS", '{"mezzanine": 1}')  # one switch away from v1
+    assert gs.current_layout_weights() == {"mezzanine": 1}
+    book = spin(gs, 3)
+    assert all(e["type"] != "layout" for e in book["events"])
+    monkeypatch.setenv("AM_LAYOUT_WEIGHTS", '{"base": {"annex": 1}, "bonus": {"mezzanine": 1}}')
+    assert gs.current_layout_weights() == {"annex": 1}
+    assert spin(gs, 3)["events"][0]["id"] == "annex"
+    monkeypatch.setenv("AM_LAYOUT_WEIGHTS", "{nope")
+    with pytest.raises(LayoutError):
+        gs.current_layout_weights()
+    monkeypatch.setenv("AM_LAYOUT_WEIGHTS", "[1]")
+    with pytest.raises(LayoutError):
+        gs.current_layout_weights()
+    monkeypatch.delenv("AM_LAYOUT_WEIGHTS")
+    assert gs.current_layout_weights() == dict(NOMINAL_WEIGHTS)
+    gs.config.num_rows = [5] * 6
+
+
 def test_bad_weights_fail_loudly(make_state):
     gs = make_state({"penthouse": 1})
     with pytest.raises(LayoutError):
@@ -565,6 +586,22 @@ def test_win_positions_are_compact_padded_and_match_the_revealed_symbols(make_st
             assert 1 <= o["row"] <= lay.heights[o["reel"]]
             checked += 1
     assert checked > 50
+
+
+def test_window_helpers_for_the_spotlight():
+    """lightRoute (Blackout, free spins = Mezzanine): the 2x2 window always fits; the helper also works on the other plans."""
+    mezz = LAYOUTS["mezzanine"]
+    assert len(mezz.windows(2, 2)) == 5 * 4 and (4, 3) in mezz.windows(2, 2) and (5, 0) not in mezz.windows(2, 2)
+    atrium = LAYOUTS["atrium"]
+    assert not atrium.window_fits(0, 0, 2, 2)  # reel 0 has no row 0 (cut corner)
+    assert atrium.window_fits(0, 1, 2, 2) and atrium.window_fits(0, 2, 2, 2) and not atrium.window_fits(0, 3, 2, 2)
+    assert atrium.window_fits(4, 1, 2, 2) and atrium.window_fits(4, 2, 2, 2)  # reel 5 offers rows 1..3
+    assert not atrium.window_fits(4, 0, 2, 2) and not atrium.window_fits(4, 3, 2, 2)
+    assert [len(LAYOUTS[k].windows(2, 2)) for k in LAYOUT_ORDER] == [20, 16, 15, 25]
+    for lay in LAYOUTS.values():
+        present = {(a, b) for a in range(6) for b in lay.cells[a]}
+        for r, g in lay.windows(2, 2):
+            assert all((r + i, g + j) in present for i in range(2) for j in range(2))
 
 
 def test_atrium_padded_to_geometric_example_of_the_contract():
