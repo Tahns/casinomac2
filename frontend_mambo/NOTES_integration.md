@@ -1,17 +1,18 @@
-# NOTES_integration (INTEGRATION agent)
+# NOTES_integration (INTEGRATION agent) - Agent Mambo
 
-## Done
-- main.js: static imports of i18n/audio/render; `renderer.setFormat(x => formatMoney(x*bet))` re-applied on every bet change/boot; initial mute from `audio.muted`; click sound on buttons; missing sessionID/rgs_url -> err.noParams; fatal errors keep the dialog open with a RELOAD button (never continue as connected); WIN shows running total (per-spin win ignored in free spins).
-- params.js: rgs_url without scheme -> `http://` for localhost/127.x/::1, `https://` otherwise.
-- money.js: thousands separators in formatMoney ($1,000.00); formatAmount (inputs) stays ungrouped.
-- i18n: added `label.combo`.
-- Mock RGS now serves real SDK-format books (payoutMultiplier and event amounts x100); `round.payoutMultiplier`/replay `payoutMultiplier` are served divided by 100 like the real RGS. Hand-made fallback books converted to x100.
-- frontend/fixtures/: books_base_sample.jsonl (275), books_bonus_sample.jsonl (300), index.json (dumped from math/library/publish_files, stratified: zero/low/mid/high/trigger/wincap).
-- tests/text/index.js so `node --test frontend/tests/core frontend/tests/text` works.
-- styles.css: appended portrait rule giving the bet panel more width (no "$1..." ellipsis at 425px). replay.js: badge hidden under 300px height.
+## Done (files: render/index.js, main.js, input.js, bet.js, rgs.js, params.js, render/devbooks.js, index.html except title/loading/logo)
+- Veins removed. Mission Meter: `createMeter(#meter-slot)`; `updateGlobalMult {globalMult}` -> hidden in the base game (x1 ignored outside free spins), appears at x1 with a MISSION START stamp (fx.burstBubble + audio 'stamp'), growth = `meter.set(v,{animate,from})` (+1 chip flies from the centre of the last winInfo cluster), `meter.pulse()` at every later free spin (KEPT), `meter.max()` when v >= `gmCap` (read from data/rules_data.json, optional), `audio.setMeter(level)`, hidden + reset at free-spin end (also if a book ends early). `updateGrid` is ignored. winInfo `meta.globalMult` shows as a small `x{n}` in the win popup. Free-spin end banner subtitle: tier word + "MISSION METER x{n}".
+- Wire: `createWire` (ctx as in NOTES_wire) with `emptyCell(c,r)` = remove the DOM cell and null `S.grid[c][r]` (hole). Wire events use visible rows 0..4. The `tumbleBoard` after `fuseBlast` finds those cells already null: it skips the pop phase (no shake/sleep) and only drops survivors + new symbols (padded rows 1..5 -> `vis()`), verified: holes timeline 0 -> removed count -> 0 (tests: synthetic `fuseBlastScatter`, scatter on the path stays). Safety net `fillHoles()` at the end of a book. fx.breakCell is wrapped with `bubble:false` (the wire draws its own POW!/BAM! star).
+- Mascot poses (DESIGN 2.4): think while spinning, happy small win / meter growth, shock near-miss + 3-4 scatters (wire adds shock+plunger at blast), plunger at free-spin entry and blast, shrug on every dead round + fizzle, dance in free spins, bigwin big..epic, celebrate free-spin end and MAX WIN. Bubbles: `mascot.win/big/shock/fs/fsEnd/lose/wire/meter`, random `.1-.5` variant when present, a missing key is skipped (never a raw key); `mascot.meter` gets `{n}`.
+- Win banner tiers still vs round cost (`setCost`). Colours moved to FX_COLORS / palette.
+- Game id: `params.replayGame` defaults to `agent_mambo`; mock RGS reads `frontend_mambo/fixtures` (relative to the script, OK) and mode costs base=1, bonus=100; package name renamed. Mute key is `am_muted` (AUDIO). No other localStorage in my files.
+- devbooks.js: books `bonus` (meter + retrigger + wire in spin 3), `meterChain(step=1)` (x1..x26 + KEPT second spin), `fuseBlast`, `fuseBlastDry`, `fuseBlastAdv2`, `fuseBlastScatter`, `fuseFizzle`, `fuseFizzleNoWin`, `fuseFree`, plus the old ones. Blast = `fuseBlast` then a normal `tumbleBoard` (padded rows); free-spin steps are paid at the current meter value, then `updateGlobalMult`.
+- tests: `node --test frontend_mambo/tests/core frontend_mambo/tests/text` (core: new test for game id + mode costs).
 
-## Verified (Playwright, own mock on port 5190 to avoid clashing with other agents on 5180)
-base play (win/loss), end-round only when payout>0, UNLEASH confirm (cost shown, cancel = no call, confirm = play + end-round), insufficient balance (button/space/unleash: message, no /wallet/play), resume of active round (bet = round.amount, end-round), autoplay panel (no start without confirm, stop), bad rgs_url error dialog, no-params error, replay mode (base + bonus, 1024/400/800/425).
-
-## Todo / known
-- Mock force by `id` collides between base and bonus sample ids.
+## Needs from others (not done by me)
+- STYLES: `.cell.fuse` class (scatter hold, set by index.js) is still named `fuse`; an alias such as `.cell.hold` would let me drop the word (technical class, not player-visible). styles.css still has `.slot.pop`/`slotpop` leftovers (harmless).
+- TEXT: i18n lacks `meter.title` (meter aria-label shows "Title" via humanise; I use `label.meter` myself) and `fx.bam` (wire shows "Bam" instead of BAM!). Please add `meter.title: 'Mission Meter'`, `fx.bam: 'BAM!'`. rules text: steps are paid at the CURRENT meter value, then it rises by gm_step (math: 1 -> +8 per winning step in free spins, cap 100, subject to the math agent's tuning).
+- WIRE/METER: none blocking. FX: `fx.breakCell` bubble default word is "WOW!" (suppressed by me for the wire).
+- MASCOT: speech bubble text is very small at 1024x576 (bubble font).
+- dev.html (SYMBOLS) buttons only list old books: use `__dev.run('meterChain')`, `__dev.run('fuseBlastScatter')` etc.
+- Mock RGS fixtures are still the old mine books (fuse events with `replaced`, `updateGrid`): the renderer plays them (holes are filled by the safety net) until the math agent's books land.

@@ -136,7 +136,7 @@ def _spins(book):
 def _walk_meter(book):
     """Replay the meter: returns number of winning steps checked. Asserts the multiplier rules."""
     ev = book["events"]
-    capped = any(e["type"] == "wincap" for e in ev)
+    capped = False
     gm = 1
     in_free = False
     last_win_mult = None
@@ -145,6 +145,9 @@ def _walk_meter(book):
     pending_bump = False
     for e in ev:
         t = e["type"]
+        if t == "wincap":
+            capped = True  # after the cap the meter is frozen; remaining spins are shown capped
+            pending_bump = False
         if t == "reveal":
             in_free = e["gameType"] == "freegame"
         if t == "updateGlobalMult":

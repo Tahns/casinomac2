@@ -565,12 +565,12 @@ export function createRenderer(rootEl) {
     audio.play('stamp'); flash(.95, 900, FX_COLORS.cream); shake(2.6, 1100);
     M.intro = true; pose('plunger');
     setBonusMode(true); // palette swap hides under the flash
-    { const r0 = app.getBoundingClientRect(); fx.ring(r0.width / 2, r0.height / 2, Math.max(r0.width, r0.height) * .7, '255,210,63', 1.0, 18); fx.smoke(r0.width / 2, r0.height / 2, Math.min(r0.width, r0.height) * .6, 10, '43,42,107'); }
+    { const r0 = app.getBoundingClientRect(); fx.ring(r0.width / 2, r0.height / 2, Math.max(r0.width, r0.height) * .7, '255,210,63', 1.0, 18); fx.smoke(r0.width / 2, r0.height / 2, Math.min(r0.width, r0.height) * .3, 3, '251,241,217'); }
     const rect = app.getBoundingClientRect();
     sc.forEach((cell) => {
       const p = cellCenter(cell.c, cell.r);
       fx.ring(p.x, p.y, p.size * 3.5, '251,241,217', .8, 10); fx.ring(p.x, p.y, p.size * 2.2, '240,71,47', .6, 6);
-      fx.smoke(p.x, p.y, p.size * 1.4, 7); fx.sparks(p.x, p.y, FX_COLORS.lemon, p.size * .5, 26, 9); fx.sparks(p.x, p.y, FX_COLORS.coral, p.size * .5, 20, 8);
+      fx.smoke(p.x, p.y, p.size * .6, 2, '251,241,217'); fx.sparks(p.x, p.y, FX_COLORS.lemon, p.size * .5, 26, 9); fx.sparks(p.x, p.y, FX_COLORS.coral, p.size * .5, 20, 8);
       fx.shards(p.x, p.y, FX_COLORS.coral, p.size * .5, 8);
     });
     // all cells get blown away from the centre of the blast
@@ -664,7 +664,7 @@ export function createRenderer(rootEl) {
       case 'setTumbleWin': case 'updateTumbleWin': {
         const x = (Number(ev.amount) || 0) / 100; hook('onWin', x); chip(chipTw, S.fmt(x), x > 0); return null;
       }
-      case 'updateGrid': return null; // legacy vein grid: the Mission Meter replaces it, ignored
+      case 'updateGrid': return null; // legacy per-cell grid event: the Mission Meter replaces it, ignored
       case 'tumbleBoard': return tumble(ev);
       case 'freeSpinTrigger': return fsTrigger(ev);
       case 'freeSpinRetrigger': return fsRetrigger(ev);

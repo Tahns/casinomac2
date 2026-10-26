@@ -9,6 +9,13 @@ from optimization_program.optimization_config import (
 )
 
 
+import os
+
+# Experiment knobs (env), defaults = shipped values
+BONUS_M2M = tuple(float(x) for x in os.environ.get("BM2M", "4,8").split(","))
+BONUS_SCALES = [tuple(float(y) for y in x.split(":")) for x in os.environ.get("BSCALE", "0.7:30:40,0.8:1000:2000,1.2:3000:4000").split(",")]
+BONUS_SPINS = [int(x) for x in os.environ.get("BSPINS", "50,100,200").split(",")]
+
 # Bonus (UNLEASH) scatter-tier design: share of purchases and RTP contribution per tier.
 TIER_SHARE = {4: 0.880, 5: 0.100, 6: 0.0178}
 TIER_RTP = {4: 0.8360, 5: 0.1000, 6: 0.0200, 7: 0.0030}
@@ -95,17 +102,17 @@ class OptimizationSetup:
                     [
                         {"criteria": c, "scale_factor": f, "win_range": r, "probability": 1.0}
                         for c in ("fgfloor4", "fgfloor5", "fgfloor6", "fgfloor7")
-                        for f, r in ((0.7, (30, 40)), (0.8, (1000, 2000)), (1.2, (3000, 4000)))
+                        for f, r in ((f_, (lo_, hi_)) for f_, lo_, hi_ in BONUS_SCALES)
                     ]
                 ).return_dict(),
                 "parameters": ConstructParameters(
                     num_show=5000,
                     num_per_fence=10000,
-                    min_m2m=4,
-                    max_m2m=8,
+                    min_m2m=BONUS_M2M[0],
+                    max_m2m=BONUS_M2M[1],
                     pmb_rtp=1.0,
                     sim_trials=5000,
-                    test_spins=[50, 100, 200],
+                    test_spins=BONUS_SPINS,
                     test_weights=[0.3, 0.4, 0.3],
                     score_type="rtp",
                 ).return_dict(),
