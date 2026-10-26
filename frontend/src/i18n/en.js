@@ -12,6 +12,7 @@ export const en = {
   'btn.betPlus': 'Increase bet',
   'btn.autoplay': 'AUTOPLAY',
   'btn.turbo': 'TURBO',
+  'btn.skip': 'SKIP',
   'btn.unleash': 'UNLEASH',
   'btn.sound': 'SOUND',
   'btn.mute': 'Mute',

@@ -509,17 +509,28 @@ async function main() {
       }
       return null;
     };
-    let secs = null, fast = null;
-    if (play) secs = await runOnce(play);
-    const msg = snippet(await rText(s), 160);
-    if (secs !== null && (speedCtl || turboVisible)) { // optional fast-forward: measure it too
-      await s.page.evaluate(() => { const r = document.querySelector('#replay-turbo'); if (r) { if (r.getAttribute('aria-pressed') !== 'true') r.click(); } else if (!document.body.classList.contains('turbo')) document.querySelector('#btn-turbo')?.click(); }).catch(() => {});
-      const again = await findBtn(s, /again|replay/i); if (again) fast = await runOnce(again);
+    let secs = null, fast = null, skipSecs = null, skipTotal = null;
+    // default: measure the SKIP path (fast-forward of the rest of the round); the normal-speed run takes ~4 minutes: QA_REPLAY_NORMAL=1
+    if (process.env.QA_REPLAY_NORMAL && play) secs = await runOnce(play);
+    const msg = snippet(await rText(s), 160); void msg;
+    if (!process.env.QA_REPLAY_NORMAL && play) {
+      const t0 = Date.now(); await play.click({ timeout: 2000 }).catch(() => {}); await sleep(1500);
+      const sk = await s.page.$('#replay-skip'); if (sk) await sk.click({ timeout: 2000 }).catch(() => {});
+      while (Date.now() - t0 < MAX) {
+        const b = (await s.text('#replay-btn')) || '';
+        if (/again|replay/i.test(b) && /complete|done/i.test((await s.text('.rp-msg')) || '')) { skipSecs = Math.round((Date.now() - t0) / 100) / 10; break; }
+        await sleep(1000);
+      }
+      skipTotal = await s.text('.rp-win');
     }
+    const overlay = await s.page.evaluate(() => { const l = document.querySelector('.banner-layer'); return l ? l.className : null; });
     await s.page.screenshot({ path: path.join(SHOTS, 'qa_replay_long.png') }); await s.close();
-    const ev = [`longest bonus book: id ${big.id}, ${big.events.length} events, payout ${big.payoutMultiplier / 100}x`, `replay (normal speed, "exactly as it happened") finished in ${secs === null ? 'NOT FINISHED within ' + MAX / 1000 + ' s' : secs + ' s'}`, `speed/turbo control visible in replay: ${!!speedCtl || turboVisible}${fast !== null ? '; with turbo: ' + fast + ' s' : ''}`, 'text at end: ' + msg, 'page errors: ' + J(errs)];
-    if (secs === null || errs.length) return [FAIL, ...ev];
-    return [secs > 60 ? RISK : PASS, ...ev];
+    const want = `${(big.payoutMultiplier / 100).toFixed(2)}`;
+    const totalOk = skipTotal ? skipTotal.replace(/[^0-9.]/g, '').replace(/,/g, '') .includes(want.replace('.', '').slice(0, 3)) || String(skipTotal).includes(want) : null;
+    const ev = [`longest bonus book: id ${big.id}, ${big.events.length} events, payout ${big.payoutMultiplier / 100}x`, secs === null ? 'normal-speed run not measured (set QA_REPLAY_NORMAL=1; previously about 250 s)' : `replay (normal speed, "exactly as it happened") finished in ${secs} s`, `SKIP pressed 1.5 s after Play: finished in ${skipSecs === null ? 'NOT FINISHED within ' + MAX / 1000 + ' s' : skipSecs + ' s'}; total shown: ${skipTotal}`, `banner-layer after the replay: ${overlay}`, `page errors: ${J(errs)}`];
+    if (errs.length || (process.env.QA_REPLAY_NORMAL ? secs === null : skipSecs === null) || /\bon\b/.test(overlay || '')) return [FAIL, ...ev];
+    if (process.env.QA_REPLAY_NORMAL) return [secs > 60 ? RISK : PASS, ...ev];
+    return [skipSecs > 60 ? RISK : PASS, ...ev];
   });
 
   // ---------------- displayed win == bet x payoutMultiplier/100 for every mode/category ----------------

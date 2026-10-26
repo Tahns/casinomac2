@@ -48,14 +48,15 @@ export function createRenderer(rootEl) {
   const fx = createFx(app);
 
   const S = {
-    cost: 1, turbo: false, destroyed: false, combo: 0, pad: 1, fsTotal: 0, fsCur: 0, inFs: false, hooks: {},
+    cost: 1, skip: false, turbo: false, destroyed: false, combo: 0, pad: 1, fsTotal: 0, fsCur: 0, inFs: false, hooks: {},
     fmt: (x) => `${(Math.round(x * 100) / 100).toFixed(2)}x`,
     grid: Array.from({ length: COLS }, () => Array(ROWS).fill(null)),
     pads: Array(COLS).fill('L1'),
     mults: Array.from({ length: COLS }, () => Array(ROWS).fill(0)),
     skip: false,
   };
-  const T = (ms) => ms * (S.turbo ? 0.42 : 1);
+  // S.skip: fast-forward the rest of the current book (replay SKIP); cleared when the book ends
+  const T = (ms) => ms * (S.skip ? 0.04 : S.turbo ? 0.42 : 1);
   const sleep = (ms) => new Promise((r) => setTimeout(r, T(ms)));
   const hook = (n, ...a) => { try { const f = S.hooks && S.hooks[n]; if (f) f(...a); } catch (e) { console.error('hook', n, e); } };
   // ---------- mascot (optional: the game works unchanged when the module is missing) ----------
@@ -604,7 +605,7 @@ export function createRenderer(rootEl) {
     fuse = createFuse({
       board, fx, audio, t, reduced: REDUCE,
       cellCenter, pose, shake, flash, sleep,
-      turbo: () => S.turbo, destroyed: () => S.destroyed,
+      turbo: () => S.turbo || S.skip, destroyed: () => S.destroyed,
       cellEl: (c, r) => (S.grid[c] && S.grid[c][r] ? S.grid[c][r].el : null),
       swapCell: (c, r, name) => {
         const cell = S.grid[c] && S.grid[c][r]; if (!cell) return false;
@@ -667,6 +668,7 @@ export function createRenderer(rootEl) {
         try { await handle(ev); } catch (e) { console.error('render event', ev && ev.type, e); }
         if (ev && ev.type === 'wincap') capped = true;
       }
+      S.skip = false;
       if (fuse && fuse.active) fuse.clear();
       M.intro = false; M.base = 'idle';
       if (S.inFs) pose('dance');
@@ -704,6 +706,7 @@ export function createRenderer(rootEl) {
     playBook,
     setMultipliers: (g) => setMultipliers(g, false),
     setTurbo(b) { S.turbo = !!b; },
+    setSkip(b) { S.skip = !!b; },
     setCost(c) { S.cost = Number(c) > 0 ? Number(c) : 1; },
     setFormat(fn, tick) { if (typeof fn === 'function') { S.fmt = fn; S.fmtTick = typeof tick === 'function' ? tick : fn; } },
     resize() { fx.resize(); },

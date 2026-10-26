@@ -20,7 +20,7 @@ Status key: READY = file exists and passed; HUMAN = a click in Studio is still n
 
 ### 3. Front-end version published - zip READY, upload HUMAN
 - Build: `node frontend/tools/build/build_front.mjs` (reads `frontend/VERSION` = 1.0.0)
-- Output: `dist/the_unleashed_mine_front_v1.0.0.zip` (92,861 bytes at last build, 2026-10-23; sha256 printed by the build and listed per file in `dist/front_MANIFEST.txt`), and the same files unzipped in `dist/front/`.
+- Output: `dist/the_unleashed_mine_front_v1.0.0.zip` (94,9xx bytes at the last build; rebuild before upload; sha256 printed by the build and listed per file in `dist/front_MANIFEST.txt`), and the same files unzipped in `dist/front/`.
 - Contents (22 files incl. the mascot module and its CSS): `index.html` at the zip root, `styles.css`, `src/**` (runtime modules only; `src/render/devbooks.js` is excluded because nothing imports it), `data/rules_data.json`. No tests, tools, fixtures, notes, dev pages, screenshots or store art.
 - Static checks done by the build: no absolute `/path` URLs, no `http(s)://` literals other than SVG namespace URLs (none found), no missing references. The build exits 1 if any appears.
 - Sub-path test: `PW_DIR=<dir with node_modules/playwright-core> node frontend/tools/build/verify_build.mjs` serves `dist/front` at `http://localhost:5230/game/v1/` with the mock RGS on 5231 (URL `?sessionID=t&rgs_url=http://localhost:5231&lang=en&currency=USD&device=desktop&social=false&demo=false`), places a bet at 1280x720 and 412x800 and screenshots to `dist/verify_*.png`. Last run: 0 console errors or warnings, 0 HTTP 404s, 0 failed requests; RGS calls `/wallet/authenticate` 200 and `/wallet/play` 200; balance 1,000.00 -> 999.00 after the bet.

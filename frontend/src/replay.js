@@ -17,6 +17,8 @@ body.replay #replay-btn{font:700 13px system-ui,sans-serif;border:2px solid #ffd
 body.replay #replay-btn[disabled]{opacity:.5;cursor:default}
 body.replay #replay-turbo{font:700 13px system-ui,sans-serif;border:2px solid #ffd700;background:#1e2f4a;color:#fff;border-radius:8px;padding:5px 12px;cursor:pointer;min-height:30px}
 body.replay #replay-turbo[aria-pressed="true"]{background:#e8a92b;color:#2b1a12}
+body.replay #replay-skip{font:700 13px system-ui,sans-serif;border:2px solid #ffd700;background:#1e2f4a;color:#fff;border-radius:8px;padding:5px 12px;cursor:pointer;min-height:30px}
+body.replay #replay-skip[disabled]{opacity:.45;cursor:default}
 body.replay .rp-badge{position:absolute;top:4px;left:6px;z-index:50;font:700 11px system-ui,sans-serif;color:#ffd700;background:rgba(10,8,5,.7);padding:2px 6px;border-radius:4px}
 @media (max-height:300px){body.replay .rp-badge{display:none}}
 `;
@@ -73,12 +75,18 @@ export async function startReplay(opts = {}) {
   // Optional fast-forward for long bonus replays. Off by default: the replay plays exactly as it happened.
   const turboBtn = mk('button', '', t('btn.turbo'));
   turboBtn.id = 'replay-turbo';
+  // SKIP: fast-forward the rest of the round (only while it plays); the result is the same, only the animation is shortened
+  const skipBtn = mk('button', '', t('btn.skip'));
+  skipBtn.id = 'replay-skip';
+  skipBtn.type = 'button';
+  skipBtn.disabled = true;
   turboBtn.type = 'button';
   turboBtn.setAttribute('aria-pressed', 'false');
   let turbo = false;
   (infoHost || ui).appendChild(lineEl);
   ui.appendChild(btn);
   ui.appendChild(turboBtn);
+  ui.appendChild(skipBtn);
   ui.appendChild(winEl);
   ui.appendChild(msgEl);
   if (!doc.querySelector('.rp-badge')) doc.body.appendChild(mk('div', 'rp-badge', t('replay.badge')));
@@ -134,6 +142,7 @@ export async function startReplay(opts = {}) {
     if (playing || !replay) return;
     playing = true;
     btn.disabled = true;
+    skipBtn.disabled = false;
     winEl.textContent = '';
     setMsg(t('replay.playing'));
     try {
@@ -146,6 +155,7 @@ export async function startReplay(opts = {}) {
     } catch (e) {
       setMsg(t('replay.error'));
       playing = false;
+      skipBtn.disabled = true;
       btn.textContent = t('replay.again');
       btn.disabled = false;
       btn.dataset.mode = 'again';
@@ -158,6 +168,7 @@ export async function startReplay(opts = {}) {
     winEl.textContent = `${t('replay.totalWin')}: ${totalStr}`;
     setMsg(t('replay.done'));
     playing = false;
+    skipBtn.disabled = true;
     btn.textContent = t('replay.again');
     btn.dataset.mode = 'again';
     btn.disabled = false;
@@ -168,6 +179,7 @@ export async function startReplay(opts = {}) {
     turboBtn.setAttribute('aria-pressed', String(turbo));
     if (renderer && renderer.setTurbo) renderer.setTurbo(turbo);
   });
+  skipBtn.addEventListener('click', () => { if (renderer && renderer.setSkip && playing) renderer.setSkip(true); });
   btn.addEventListener('click', () => {
     if (btn.dataset.mode === 'retry') load();
     else play();
