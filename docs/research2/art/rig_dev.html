@@ -1,14 +1,25 @@
 <!doctype html><html><head><meta charset="utf-8"><title>rig dev</title>
-<style>body{margin:0;background:#2a2150;font:12px Arial;color:#fff}#g{display:flex;flex-wrap:wrap;gap:6px;padding:6px}.c{background:#d9a72a;position:relative}.c b{position:absolute;left:4px;top:2px;color:#2B1A12}</style></head><body><div id="g"></div>
+<style>body{margin:0;background:var(--bg,#2a2150);font:12px Arial;color:#fff}#g{display:flex;flex-wrap:wrap;gap:6px;padding:6px}.c{position:relative}.c b{position:absolute;left:4px;top:2px;color:#2B1A12}</style></head><body><div id="g"></div>
+<link rel="icon" href="data:,">
 <script type="module">
 import { createHeroine } from './mambo_rig.mjs';
 const q = new URLSearchParams(location.search);
-const outfit = q.get('outfit') || 'inspectrice', size = +(q.get('size') || 420), bg = q.get('bg') || '#d9a72a';
+const outfit = q.get('outfit') || 'inspectrice', size = +(q.get('size') || 420), bg = q.get('bg') || '#d9a72a', cw = +(q.get('w') || size * 2 / 3);
 const poses = (q.get('poses') || 'idle').split(',');
-const g = document.getElementById('g'); window.H = [];
+const set = q.get('set') ? JSON.parse(q.get('set')) : null;
+const g = document.getElementById('g'); window.H = []; document.body.style.setProperty('--bg', bg);
+if (q.get('plain')) { document.body.style.padding = '0'; g.style.cssText = 'padding:0;gap:0'; }
 for (const p of poses) {
-  const d = document.createElement('div'); d.className = 'c'; d.style.cssText = `width:${size*2/3}px;height:${size}px;background:${bg}`; d.innerHTML = `<b>${p}</b>`;
+  const d = document.createElement('div'); d.className = 'c'; d.style.cssText = `width:${cw}px;height:${size}px`; if (!q.get('plain')) d.innerHTML = `<b>${p}</b>`;
   const inner = document.createElement('div'); inner.style.cssText = 'position:absolute;inset:0'; d.appendChild(inner); g.appendChild(d);
-  const h = createHeroine(inner, { outfit, raf: false, idle: false, limited: 0 }); h.setPose(p, { snap: true }); h.snap(); if (q.get('vb')) inner.firstElementChild.setAttribute('viewBox', q.get('vb').replace(/,/g,' ')); window.H.push(h);
+  const h = createHeroine(inner, { outfit, raf: false, idle: false, limited: 0 });
+  h.setPose(p, { snap: true }); if (set) h.set(set, true); h.snap();
+  const svg = inner.firstElementChild;
+  if (q.get('vb')) svg.setAttribute('viewBox', q.get('vb').replace(/,/g, ' '));
+  if (q.get('grid')) { const [ox, oy] = q.get('grid').split(',').map(Number); let s = ''; const vb = (q.get('vb') || '0 0 400 600').split(/[ ,]+/).map(Number);
+    for (let u = Math.ceil((vb[0] - ox) / 10) * 10; u <= vb[0] + vb[2] - ox; u += 10) s += `<path d="M${ox + u} ${vb[1]}v${vb[3]}" stroke="${u === 0 ? '#f00' : '#fff'}" stroke-width="${u % 20 ? 0.2 : 0.4}"/>`;
+    for (let u = Math.ceil((vb[1] - oy) / 10) * 10; u <= vb[1] + vb[3] - oy; u += 10) s += `<path d="M${vb[0]} ${oy + u}h${vb[2]}" stroke="${u === 0 ? '#f00' : '#fff'}" stroke-width="${u % 20 ? 0.2 : 0.4}"/>`;
+    svg.insertAdjacentHTML('beforeend', s); }
+  window.H.push(h);
 }
 </script></body></html>

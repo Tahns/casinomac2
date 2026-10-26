@@ -14,7 +14,7 @@
 
 import {
   PAL, INK, OL, REST, GROUND, f, clamp, lerp, rotp, cubicD, cubicSub, cubicTan, limb, tf, ellD, line, circ, part, G, star,
-  makeCtx, defsCommon, buildHead, gloveKinds, GLOVE_GRIP, shoeArt, tubeEls, eyeGeom, browPath,
+  makeCtx, defsCommon, buildHead, faceLayout, HEAD_PIVOT, gloveKinds, GLOVE_GRIP, shoeArt, tubeEls, eyeGeom, browPath,
   VISEMES, VISEME_NAMES, MOUTH_LEN, mouthPaths, mixVisemes,
 } from './mambo_art.mjs';
 import { OUTFIT_DEFS, OUTFIT_KEYS } from './mambo_outfits.mjs';
@@ -39,55 +39,55 @@ const DEF = {
   lax: [0, 'leg', 1], lay: [0, 'leg', 1], lb1: [6, 'leg', 1], lb2: [-5, 'leg', 1], lsr: [-6, 'leg', 1], lsf: [-1, 'leg', 1],
   rax: [0, 'leg', 1], ray: [0, 'leg', 1], rb1: [-6, 'leg', 1], rb2: [5, 'leg', 1], rsr: [6, 'leg', 1], rsf: [1, 'leg', 1],
   ux: [0, 'body', 1], uy: [0, 'body', 1], lean: [0, 'body', 1], shr: [0, 'body', 1],
-  hx: [0, 'head', 1], hy: [0, 'head', 1], htilt: [0, 'head', 1], turn: [0.55, 'head', 1],
-  uL: [0.55, 'lid', 0], uR: [0.55, 'lid', 0], joyL: [0, 'lid', 0], joyR: [0, 'lid', 0], lowL: [0.1, 'lid', 0], lowR: [0.1, 'lid', 0],
-  stars: [0, 'fx', 0], wide: [0, 'lid', 0], pup: [1, 'lid', 0], lookx: [0.5, 'look', 0], looky: [0.1, 'look', 0],
-  bLy: [3, 'brow', 0], bLr: [-4, 'brow', 0], bLa: [5, 'brow', 0], bRy: [-7, 'brow', 0], bRr: [-10, 'brow', 0], bRa: [10, 'brow', 0],
+  hx: [0, 'head', 1], hy: [0, 'head', 1], htilt: [0, 'head', 1], turn: [1.0, 'head', 1],
+  uL: [0.45, 'lid', 0], uR: [0.85, 'lid', 0], slL: [6, 'lid', 0], slR: [2, 'lid', 0], joyL: [0, 'lid', 0], joyR: [0, 'lid', 0], lowL: [0.1, 'lid', 0], lowR: [0.1, 'lid', 0],
+  stars: [0, 'fx', 0], wide: [0, 'lid', 0], pup: [1, 'lid', 0], lookx: [-0.75, 'look', 0], looky: [0.05, 'look', 0],
+  bLy: [0, 'brow', 0], bLr: [-4, 'brow', 0], bLa: [11, 'brow', 0], bRy: [-3, 'brow', 0], bRr: [-6, 'brow', 0], bRa: [11, 'brow', 0],
   cy: [0, 'cap', 1], cr: [0, 'cap', 1],
-  alx: [146, 'arm', 1], aly: [394, 'arm', 1], alb1: [14, 'arm', 1], alb2: [6, 'arm', 1], alr: [0, 'arm', 1], alsx: [1, 'arm', 1], alsy: [1, 'arm', 1],
-  arx: [254, 'arm', 1], ary: [394, 'arm', 1], arb1: [-14, 'arm', 1], arb2: [-6, 'arm', 1], arr: [0, 'arm', 1], arsx: [1, 'arm', 1], arsy: [1, 'arm', 1],
-  beam: [0, 'fx', 0], accRot: [10, 'arm', 1], blush: [0.4, 'fx', 0],
+  alx: [148, 'arm', 1], aly: [350, 'arm', 1], alb1: [14, 'arm', 1], alb2: [6, 'arm', 1], alr: [0, 'arm', 1], alsx: [1, 'arm', 1], alsy: [1, 'arm', 1],
+  arx: [252, 'arm', 1], ary: [350, 'arm', 1], arb1: [-14, 'arm', 1], arb2: [-6, 'arm', 1], arr: [0, 'arm', 1], arsx: [1, 'arm', 1], arsy: [1, 'arm', 1],
+  beam: [0, 'fx', 0], acc: [65, 'arm', 1], blush: [0.4, 'fx', 0],
 };
 const NAMES = Object.keys(DEF), NP = NAMES.length, IX = {}; NAMES.forEach((n, i) => { IX[n] = i; });
 const REST_VALUES = NAMES.map((n) => DEF[n][0]);
 
 // discrete channels (swapped, not sprung)
-const DISCRETE_DEF = { gl: 'fist', gr: 'fist', prop: 'L', layL: 'front', layR: 'front', mouth: 'smirk' };
+const DISCRETE_DEF = { gl: 'fist', gr: 'fist', prop: 'L', prop2: '', layL: 'front', layR: 'front', mouth: 'smirk' };
 
 // ---------------------------------------------------------------------- poses (only the channels that differ from rest)
 export const POSES = {
-  idle: { hipX: 5, hipTilt: -3, lean: 3, htilt: -3, lax: -10, lsr: -12, rax: 3,
-    arx: 247, ary: 354, arb1: -48, arb2: -42, arr: 28, gr: 'fist', alx: 150, aly: 396, alb1: 12, alb2: 8, gl: 'fist', prop: 'L', accRot: 24 },
-  point: { hipX: -6, hipTilt: 3, lean: 5, turn: 0.75, htilt: 2, lookx: 1, looky: 0, lax: -26, rax: 30, lsr: -4, rsr: 8,
-    alx: 150, aly: 352, alb1: 48, alb2: 42, alr: -28, gl: 'fist',
-    arx: 372, ary: 262, arb1: -4, arb2: 4, arr: -90, gr: 'fist', prop: 'R', accRot: -90, beam: 1, uL: 0.62, uR: 0.62, mouth: 'smirk' },
-  smallwin: { hipX: -6, hipTilt: 4, lean: -4, htilt: 5, turn: 0.35, lax: -8, rax: 14, ray: -30, rsr: 40, rb1: -12, rb2: 16, uL: 0, lowL: 0.7, joyR: 0.7, uR: 0.6, bLy: 10, bLr: 6, bRy: -10,
-    arx: 262, ary: 186, arb1: -40, arb2: -30, arr: 10, gr: 'fist', alx: 142, aly: 392, alb1: 16, alb2: 8, gl: 'fist', prop: 'L', accRot: 20, mouth: 'grin' },
-  bigwin: { ry: 0, lean: 0, htilt: 6, turn: 0.4, uL: 1, uR: 1, stars: 1, wide: 0.15, lax: -20, lay: -34, lsr: -30, rax: 22, ray: -40, rsr: 34, lb1: 14, rb1: -14, cy: -34, cr: 14, hipTilt: 5, shr: 2,
-    alx: 98, aly: 118, alb1: 30, alb2: -20, alr: 20, gl: 'fist', prop: 'L', accRot: 160, arx: 302, ary: 112, arb1: -30, arb2: 22, arr: -20, gr: 'open', mouth: 'laugh', bLy: -4, bRy: -14, bLa: 8, bRa: 12, bLr: -8, bRr: -10 },
-  shock: { lean: -3, uy: -3, shr: 8, hy: -4, htilt: 3, turn: 0.15, uL: 1.1, uR: 1.1, wide: 0.55, pup: 0.45, lookx: 0, looky: 0, cy: -58, cr: 10, lax: 10, rax: -10, lsr: -2, rsr: 2,
-    alx: 168, aly: 192, alb1: 26, alb2: -18, alr: 70, gl: 'open', arx: 232, ary: 190, arb1: -26, arb2: 18, arr: -70, gr: 'open', mouth: 'oh', prop: '', bLy: -9, bRy: -12, bLr: 4, bRr: -4, bLa: 10, bRa: 12 },
-  shrug: { shr: 9, htilt: 8, lean: -2, turn: 0.4, lookx: 0.8, looky: -0.6, uL: 0.5, uR: 0.5, bLy: -2, bLr: 12, bRy: -4, bRr: -14, lax: -6, rax: 6,
-    alx: 82, aly: 330, alb1: 22, alb2: -18, alr: 70, gl: 'fist', prop: 'L', accRot: 70, arx: 322, ary: 322, arb1: -24, arb2: 20, arr: -70, gr: 'open', mouth: 'wry' },
-  anticipation: { lean: 8, hx: 8, hy: 2, htilt: 5, turn: 0.8, hipTilt: -4, hipX: 4, lookx: 1, looky: 0.15, uL: 0.5, uR: 0.5, bRy: -12, bRr: -16, bRa: 14, bLy: 6, lax: -8, rax: 8, mouth: 'wry',
-    arx: 244, ary: 188, arb1: -34, arb2: -26, arr: -30, gr: 'point', alx: 156, aly: 350, alb1: 48, alb2: 44, alr: -28, gl: 'fist', prop: '' },
-  think: {},
-  whistle: { lean: 2, htilt: -4, turn: 0.4, uL: 0.12, lowL: 0.8, bLy: 10, bLr: 6, lookx: 0.2, looky: 0, mouth: 'whistle',
-    arx: 232, ary: 214, arb1: -34, arb2: -20, arr: -10, gr: 'pinch', alx: 104, aly: 206, alb1: 26, alb2: -14, alr: 20, gl: 'fist', prop: 'L', accRot: 170 },
-  impatient: { lean: -2, htilt: 7, turn: 0.5, hipTilt: 3, uL: 0.4, uR: 0.4, lookx: 0.9, looky: -0.4, bRy: -3, bLy: 6, mouth: 'wry', rax: 8, ray: -6, rsr: 22, prop: '',
-    alx: 232, aly: 302, alb1: 34, alb2: 40, alr: 80, gl: 'fist', arx: 168, ary: 300, arb1: -34, arb2: -36, arr: -80, gr: 'fist', layL: 'front', layR: 'front' },
-  laugh: { lean: 3, htilt: -9, hy: 2, turn: 0.35, joyL: 1, joyR: 1, uL: 0.1, uR: 0.1, lowL: 0.6, lowR: 0.6, bLy: -2, bRy: -6, bLa: 9, bRa: 9, mouth: 'laugh', lax: -6, rax: 6,
-    alx: 214, aly: 352, alb1: 28, alb2: 22, alr: 70, gl: 'flat', arx: 190, ary: 346, arb1: -26, arb2: -22, arr: -70, gr: 'fist', prop: '' },
-  salute: { lean: -1, htilt: -3, turn: 0.45, uL: 0, lowL: 0.7, joyR: 0.5, bLy: 10, mouth: 'grin', lax: 0, rax: 0, lsr: -4, rsr: 4,
-    arx: 214, ary: 148, arb1: -48, arb2: -30, arr: 30, gr: 'flat', alx: 154, aly: 352, alb1: 48, alb2: 44, alr: -26, gl: 'fist', prop: '' },
-  curtsy: { lean: 14, hx: 6, hy: 4, htilt: -6, turn: 0.7, uy: 18, hipTilt: -6, hipX: 6, lookx: -0.2, looky: -0.7, uL: 0.5, uR: 0.5, bRy: -12, rax: -30, rsr: -10, lax: -14, mouth: 'smirk',
-    arx: 330, ary: 330, arb1: -26, arb2: 18, arr: -70, gr: 'open', alx: 192, aly: 150, alb1: 36, alb2: 40, alr: 20, gl: 'flat', prop: '' },
+  rest: {},
+  idle: { hipX: 4, hipTilt: -3, lean: 2.5, htilt: -2, lax: -8, lsr: -10, rax: 2,
+    arx: 254, ary: 322, arb1: -40, arb2: -34, arr: 25, gr: 'fist', alx: 146, aly: 356, alb1: 10, alb2: 6, gl: 'fist', prop: 'L', acc: 65 },
+  point: { hipX: -4, hipTilt: 3, lean: 4, turn: 1.1, htilt: 2, lookx: 1, looky: 0, lax: -22, rax: 24, lsr: -4, rsr: 8, uL: 0.62, uR: 0.9,
+    alx: 148, aly: 322, alb1: 38, alb2: 34, alr: 25, gl: 'fist',
+    arx: 352, ary: 246, arb1: -4, arb2: 4, arr: 0, gr: 'fist', prop: 'R', acc: 270, beam: 1, mouth: 'smirk' },
+  smallwin: { hipX: -5, hipTilt: 4, lean: -3, htilt: 5, turn: 0.9, lax: -6, rax: 16, ray: -34, rsr: 40, rb1: -12, rb2: 16, uL: 0, lowL: 0.7, uR: 0.8, bLy: 8, bLr: 6, bRy: -5,
+    arx: 284, ary: 222, arb1: -34, arb2: -26, arr: 0, gr: 'fist', alx: 142, aly: 354, alb1: 12, alb2: 6, gl: 'fist', prop: 'L', acc: 62, mouth: 'grin', lookx: 0.2, looky: 0 },
+  bigwin: { lean: 0, htilt: 6, turn: 0.9, uL: 1, uR: 1, stars: 1, wide: 0.12, lax: -20, lay: -36, lsr: -30, rax: 22, ray: -44, rsr: 34, lb1: 14, rb1: -14, cy: -34, cr: 14, hipTilt: 5, shr: 2,
+    alx: 112, aly: 138, alb1: 26, alb2: -16, alr: 0, gl: 'fist', prop: 'L', acc: 180, beam: 1, arx: 296, ary: 140, arb1: -26, arb2: 16, arr: 0, gr: 'fist', mouth: 'laugh', bLy: -6, bRy: -12, bLa: 13, bRa: 13, bLr: -8, bRr: -10, lookx: 0, looky: 0 },
+  shock: { lean: -3, uy: -3, shr: 8, hy: -4, htilt: 3, turn: 0.6, uL: 1.1, uR: 1.1, wide: 0.5, pup: 0.4, lookx: 0, looky: 0, cy: -58, cr: 10, lax: 10, rax: -10, lsr: -2, rsr: 2,
+    alx: 152, aly: 240, alb1: 30, alb2: -22, alr: 0, gl: 'open', arx: 266, ary: 240, arb1: -26, arb2: 18, arr: 0, gr: 'open', mouth: 'oh', prop: '', bLy: -9, bRy: -12, bLr: 4, bRr: -4, bLa: 13, bRa: 14 },
+  shrug: { shr: 9, htilt: 8, lean: -2, turn: 0.8, lookx: -0.8, looky: -0.7, uL: 0.5, uR: 0.6, bLy: -4, bLr: 14, bRy: -6, bRr: -16, lax: -6, rax: 6,
+    alx: 82, aly: 318, alb1: 22, alb2: -18, alr: 0, gl: 'fist', prop: 'L', acc: 62, arx: 322, ary: 314, arb1: -24, arb2: 20, arr: 0, gr: 'open', mouth: 'wry' },
+  anticipation: { lean: 7, hx: 8, hy: 2, htilt: 5, turn: 1.1, hipTilt: -4, hipX: 4, lookx: 1, looky: 0.15, uL: 0.5, uR: 0.8, bRy: -8, bRr: -12, bRa: 14, bLy: 4, lax: -8, rax: 8, mouth: 'wry',
+    arx: 246, ary: 208, arb1: -34, arb2: -26, arr: 0, gr: 'point', alx: 148, aly: 322, alb1: 38, alb2: 34, alr: 25, gl: 'fist', prop: '' },
+  whistle: { lean: 2, htilt: -4, turn: 0.8, uL: 0.12, lowL: 0.8, bLy: 8, bLr: 6, lookx: 0.2, looky: 0, mouth: 'whistle',
+    arx: 240, ary: 214, arb1: -34, arb2: -20, arr: 0, gr: 'pinch', alx: 118, aly: 240, alb1: 26, alb2: -14, alr: 0, gl: 'fist', prop: 'L', acc: 150 },
+  impatient: { lean: -2, htilt: 7, turn: 0.9, hipTilt: 3, uL: 0.4, uR: 0.6, lookx: -0.9, looky: -0.4, bRy: -3, bLy: 6, mouth: 'wry', rax: 8, ray: -6, rsr: 22, prop: '',
+    alx: 226, aly: 296, alb1: 30, alb2: 38, alr: 0, gl: 'fist', arx: 176, ary: 296, arb1: -30, arb2: -38, arr: 0, gr: 'fist' },
+  laugh: { lean: 3, htilt: -9, hy: 2, turn: 0.8, joyL: 1, joyR: 1, uL: 0.1, uR: 0.1, lowL: 0.6, lowR: 0.6, bLy: -2, bRy: -6, bLa: 14, bRa: 14, mouth: 'laugh', lax: -6, rax: 6,
+    alx: 214, aly: 312, alb1: 28, alb2: 22, alr: 0, gl: 'flat', arx: 190, ary: 306, arb1: -26, arb2: -22, arr: 0, gr: 'fist', prop: '' },
+  salute: { lean: -1, htilt: -3, turn: 0.9, uL: 0, lowL: 0.7, uR: 0.9, bLy: 8, mouth: 'grin', lax: 0, rax: 0, lsr: -4, rsr: 4,
+    alx: 140, aly: 128, alb1: 40, alb2: 20, alr: 0, gl: 'flat', arx: 252, ary: 322, arb1: -40, arb2: -34, arr: 25, gr: 'fist', prop: '', lookx: 0.1 },
+  curtsy: { lean: 12, hx: 6, hy: 4, htilt: -6, turn: 1.1, uy: 14, hipTilt: -6, hipX: 6, lookx: -0.2, looky: -0.7, uL: 0.5, uR: 0.8, bRy: -8, rax: -30, rsr: -10, lax: -14, mouth: 'smirk',
+    arx: 338, ary: 336, arb1: -26, arb2: 18, arr: 0, gr: 'open', alx: 140, aly: 132, alb1: 40, alb2: 20, alr: 0, gl: 'flat', prop: '' },
 };
 POSES.think = { ...POSES.anticipation, mouth: 'smirk', lookx: 0.9, looky: -0.5, hx: 3, lean: 4 };
 
 // ---------------------------------------------------------------------- moods (face baseline; poses override explicit channels)
 export const MOODS = {
-  sly:     { uL: 0.55, uR: 0.55, bLy: 3, bLr: -4, bLa: 5, bRy: -7, bRr: -10, bRa: 10, mouth: 'smirk' },
+  sly:     { uL: 0.5, uR: 0.88, lowL: 0.1, slL: 5, slR: 3, bLy: 0, bLr: -4, bLa: 11, bRy: -3, bRr: -6, bRa: 11, lookx: -0.75, looky: 0.05, mouth: 'smirk' },
   happy:   { uL: 0.7, uR: 0.7, joyL: 0.25, joyR: 0.25, bLy: -2, bRy: -6, bLa: 8, bRa: 9, mouth: 'grin' },
   worried: { uL: 0.8, uR: 0.8, bLy: -1, bLr: 14, bRy: -3, bRr: -16, bLa: 6, bRa: 6, mouth: 'wry' },
   bored:   { uL: 0.32, uR: 0.32, bLy: 6, bLr: -2, bRy: 2, bRr: -2, bLa: 2, bRa: 3, mouth: 'wry' },
@@ -103,23 +103,24 @@ function buildMarkup(outfitKey, pre, o) {
   const sleeve = W.sleeve || {};
   // ---- head
   const H = buildHead(c, W);
-  const headInner = H.hairMass + H.curlL + H.curlR + H.face + H.features + G(pre + 'face-gear', W.gear ? W.gear(c) : '') + H.bangs + G(pre + 'cap', W.head ? W.head(c) : '');
+  const capG = G(pre + 'cap', W.head ? W.head(c) : '');
+  const headInner = H.hairMass + H.curlL + H.curlR + H.face + H.maskUnder + H.features + G(pre + 'face-gear', W.gear ? W.gear(c) : '') + (W.capOver ? H.bangs + capG : capG + H.bangs);
   const head = G(pre + 'head', `<g id="${pre}head-t">${headInner}</g>`);
   // ---- arms
   const arm = (side) => {
     const s = side.toLowerCase(), kinds = gloveKinds(c, W);
-    let t = tubeEls(c, `arm-${s}`, 14, sleeve.fill || PAL.navy);
-    if (sleeve.gloveFrom != null) t += `<path id="${pre}arm-${s}-lgi" d="" fill="none" stroke="${INK}" stroke-width="${14 + 2 * OL}" stroke-linecap="butt"/><path id="${pre}arm-${s}-lgf" d="" fill="none" stroke="${W.glove || PAL.white}" stroke-width="14" stroke-linecap="butt"/>`;
-    if (sleeve.trim) t += `<path id="${pre}arm-${s}-tri" d="" fill="none" stroke="${INK}" stroke-width="${14 + 2 * OL}" stroke-linecap="butt"/><path id="${pre}arm-${s}-trf" d="" fill="none" stroke="${sleeve.trim}" stroke-width="14" stroke-linecap="butt"/>`;
+    let t = tubeEls(c, `arm-${s}`, 12, sleeve.fill || PAL.navy);
+    if (sleeve.gloveFrom != null) t += `<path id="${pre}arm-${s}-lgi" d="" fill="none" stroke="${INK}" stroke-width="${12 + 2 * OL}" stroke-linecap="butt"/><path id="${pre}arm-${s}-lgf" d="" fill="none" stroke="${W.glove || PAL.white}" stroke-width="12" stroke-linecap="butt"/>`;
+    if (sleeve.trim) t += `<path id="${pre}arm-${s}-tri" d="" fill="none" stroke="${INK}" stroke-width="${12 + 2 * OL}" stroke-linecap="butt"/><path id="${pre}arm-${s}-trf" d="" fill="none" stroke="${sleeve.trim}" stroke-width="12" stroke-linecap="butt"/>`;
     const hand = G(`${pre}hand-${s}`, `<g id="${pre}hand-${s}-t"><g id="${pre}prop-slot-${s}"></g>` + Object.keys(kinds).map((k) => `<g id="${pre}g-${s}-${k}" display="${k === 'fist' ? 'inline' : 'none'}">${kinds[k]}</g>`).join('') + `</g>`);
     return G(`${pre}arm-${s}`, t + hand);
   };
   const armL = arm('L'), armR = arm('R');
   // ---- legs + shoes
-  const leg = (side) => G(`${pre}leg-${side.toLowerCase()}`, tubeEls(c, `leg-${side.toLowerCase()}`, W.legs.w || 15, W.legs.fill) + (W.legs.shine ? `<path id="${pre}leg-${side.toLowerCase()}-sh" d="" fill="none" stroke="${W.legs.shine}" stroke-width="3.2" stroke-linecap="round" opacity=".5"/>` : ''));
+  const leg = (side) => G(`${pre}leg-${side.toLowerCase()}`, tubeEls(c, `leg-${side.toLowerCase()}`, W.legs.w || 13, W.legs.fill) + (W.legs.shine ? `<path id="${pre}leg-${side.toLowerCase()}-sh" d="" fill="none" stroke="${W.legs.shine}" stroke-width="3.2" stroke-linecap="round" opacity=".5"/>` : ''));
   const shoe = (side) => G(`${pre}shoe-${side.toLowerCase()}`, `<g id="${pre}shoe-${side.toLowerCase()}-t">${shoeArt(c, W)}</g>`);
-  const prop = G(`${pre}prop`, W.prop ? W.prop(c) : '');
-  const neck = part(c, 'M191 230L209 230L211 264L189 264Z', PAL.skin, { sw: OL * 0.9, mis: [1.4, 1.2], shade: 'M200 226L220 226L220 270L204 270Z' }) + `<path d="M190 246Q200 256 210 246" fill="${PAL.skinShade}" opacity=".0"/>`;
+  const prop = G(`${pre}prop`, W.prop ? W.prop(c) : '') + G(`${pre}prop2`, W.prop2 ? W.prop2(c) : '');
+  const neck = part(c, 'M191 218L209 218L211 252L189 252Z', PAL.skin, { sw: OL * 0.9, mis: [1.4, 1.2], shade: 'M200 214L220 214L220 258L204 258Z' });
   const skirt = G(`${pre}skirt`, `<g id="${pre}skirt-t">${W.skirt(c)}</g>`);
   const shoes = G(`${pre}shoes`, shoe('L') + shoe('R'));
   const legs = G(`${pre}legs`, leg('L') + leg('R'));
@@ -164,13 +165,16 @@ export function createHeroine(container, opts = {}) {
   const clipS = { cur: null, queue: [], lastEnd: 0 };
   const dir = { next: rr(5, 11), idle: 0, shiftNext: rr(5, 9), shiftSide: 1 };
   const fxP = [];
+  let speed = 1; const stat = { frames: 0, avg: 0, max: 0 };
   let time = 0, acc = 0, lastSample = 0, raf = 0, last = 0, paused = false, destroyed = false, rendered = false;
   const prevHead = { x: 0, y: 0, a: 0, vx: 0, vy: 0, w: 0, ax: 0, ay: 0, al: 0, init: false };
   const cache = Object.create(null);
   const spinS = { angle: 0, active: false };
+  const gsign = { l: 1, r: 1 };
 
   // ---- DOM
   function mount() {
+    const keepFx = E.fx ? Array.from(E.fx.childNodes) : [];
     const { defs, body, W: w } = buildMarkup(outfitKey, pre, O);
     W = w;
     const rimCss = O.rim ? ' style="filter:drop-shadow(0 0 0 #FFFBF0)"' : '';
@@ -178,6 +182,7 @@ export function createHeroine(container, opts = {}) {
     svg = container.firstElementChild;
     E = {}; for (const k of Object.keys(cache)) delete cache[k];
     svg.querySelectorAll('[id]').forEach((el) => { E[el.id.slice(pre.length)] = el; });
+    keepFx.forEach((n) => E.fx.appendChild(n));
     // initial layers
     E['arms-front'].appendChild(E['arm-l']); E['arms-front'].appendChild(E['arm-r']);
     const propEl = E['prop'];
@@ -195,6 +200,9 @@ export function createHeroine(container, opts = {}) {
     }
     const ph = dis.prop;
     if (E.prop) { const slot = ph ? E[`prop-slot-${ph.toLowerCase()}`] : E['prop-store']; if (slot && E.prop.parentNode !== slot) slot.appendChild(E.prop); }
+    const p2 = (W.prop2On && W.prop2On[poseName]) || dis.prop2 || '';
+    const ph2 = p2 && p2 !== ph ? p2 : '';
+    if (E.prop2) { const slot = ph2 ? E[`prop-slot-${ph2.toLowerCase()}`] : E['prop-store']; if (slot && E.prop2.parentNode !== slot) slot.appendChild(E.prop2); dis._p2 = ph2; }
     const lay = (side, which) => { const parent = which === 'back' ? E['arms-back'] : E['arms-front']; const el = E[`arm-${side}`]; if (parent && el.parentNode !== parent) parent.appendChild(el); };
     lay('l', dis.layL); lay('r', dis.layR);
   }
@@ -214,7 +222,7 @@ export function createHeroine(container, opts = {}) {
     const { base, disc } = composeTargets();
     NAMES.forEach((n, i) => { if (n === 'lookx' || n === 'looky') return; T[i] = base[n]; if (snap || reduced) { X[i] = T[i]; V[i] = 0; D[i] = T[i]; } });
     if (!look.target) { look.tx = base.lookx; look.ty = base.looky; }
-    Object.assign(dis, { gl: disc.gl, gr: disc.gr, prop: disc.prop, layL: disc.layL, layR: disc.layR });
+    Object.assign(dis, { gl: disc.gl, gr: disc.gr, prop: disc.prop, prop2: disc.prop2, layL: disc.layL, layR: disc.layR });
     setMouth(disc.mouth, snap || reduced ? 0 : undefined);
     applyDiscrete();
   }
@@ -229,16 +237,18 @@ export function createHeroine(container, opts = {}) {
     if (t == null) return null;
     if (typeof t === 'string') {
       const lt = O.lookTargets[t];
-      if (lt) return typeof lt === 'function' ? lt() : lt;
-      const named = { grid: [1, 0.12, 0.75], player: [-0.25, 0.05, 0.08], meter: [0.1, -0.7, 0.4], spin: [0.8, 0.5, 0.7], up: [0.2, -0.9, 0.4], down: [0, 0.8, 0.5], left: [-1, 0, 0.3], right: [1, 0, 0.8], hand: [-0.3, 0.8, 0.3] }[t];
-      return named ? { nx: named[0], ny: named[1], turn: named[2] } : null;
+      if (lt) t = typeof lt === 'function' ? lt() : lt;
+      else {
+        const named = { grid: [1, 0.12, 0.75], player: [-0.25, 0.05, 0.08], meter: [0.1, -0.7, 0.4], spin: [0.8, 0.5, 0.7], up: [0.2, -0.9, 0.4], down: [0, 0.8, 0.5], left: [-1, 0, 0.3], right: [1, 0, 0.8], hand: [-0.3, 0.8, 0.3] }[t];
+        return named ? { nx: named[0], ny: named[1], turn: named[2] } : null;
+      }
     }
-    if ('nx' in t) return t;
-    if ('x' in t && svg) { // container-relative pixel target
+    if (t && 'nx' in t) return t;
+    if (t && 'x' in t && svg) { // container-relative pixel target
       const r = svg.getBoundingClientRect(), cr = container.getBoundingClientRect();
-      const ex = r.left + r.width * (200 + 8) / 400 - cr.left, ey = r.top + r.height * 164 / 600 - cr.top, sz = Math.max(60, r.width);
+      const ex = r.left + r.width * 209 / 400 - cr.left, ey = r.top + r.height * 160 / 600 - cr.top, sz = Math.max(60, r.width);
       const dx = t.x - ex, dy = t.y - ey;
-      return { nx: clamp(dx / (sz * 0.9), -1, 1), ny: clamp(dy / (sz * 1.2), -1, 1), turn: clamp(0.55 + dx / (sz * 2.4), 0.1, 0.95) };
+      return { nx: clamp(dx / (sz * 0.7), -1, 1), ny: clamp(dy / (sz * 1.0), -1, 1), turn: clamp(1 + dx / (sz * 2.4), 0.05, 1.15) };
     }
     return null;
   }
@@ -321,6 +331,36 @@ export function createHeroine(container, opts = {}) {
       p.el.setAttribute('opacity', f2(op));
     }
   }
+  const tweens = [];
+  const tween = (el, fn, from, to, dur, ease = Ease.out, delay = 0, done) => { tweens.push({ el, fn, from, to, dur, t: -delay, ease, done }); };
+  function updateTweens(dt) {
+    for (let i = tweens.length - 1; i >= 0; i--) {
+      const w = tweens[i]; w.t += dt; if (w.t < 0) continue;
+      const u = clamp(w.t / w.dur, 0, 1); w.fn(w.el, lerp(w.from, w.to, w.ease(u)));
+      if (u >= 1) { tweens.splice(i, 1); if (w.done) w.done(); }
+    }
+  }
+  let screenEl = null;
+  function paraventIn() {
+    if (screenEl) screenEl.remove();
+    const L = fxLayer(); if (!L) return;
+    const g2 = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    let inner = '';
+    for (let i = 0; i < 3; i++) {
+      const x = i * 84, top = 150 + (i % 2 ? 8 : -2), fill = i % 2 ? '#7A4A7E' : PAL.plum;
+      inner += `<path d="M${x} ${top}L${x + 84} ${top + (i % 2 ? -10 : 10)}L${x + 84} 566L${x} 566Z" fill="${fill}" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/>`
+        + `<path d="M${x + 8} ${top + 14}L${x + 76} ${top + 14 + (i % 2 ? -8 : 8)}" stroke="${PAL.gold}" stroke-width="5" stroke-linecap="round"/>`
+        + `<g transform="translate(${x + 42} ${top + 120})">${star(0, 0, 20, PAL.gold, 3.4, 0, 4)}</g>`
+        + `<path d="M${x + 12} 540L${x + 72} 540" stroke="${PAL.gold}" stroke-width="4" stroke-linecap="round"/>`;
+    }
+    g2.innerHTML = inner; L.appendChild(g2); screenEl = g2;
+    g2.setAttribute('transform', 'translate(-300 0)');
+    tween(g2, (el, v) => el.setAttribute('transform', `translate(${f(v)} 0)`), -300, 74, 0.32, Ease.outBack);
+  }
+  function paraventOut() {
+    if (!screenEl) return; const el = screenEl;
+    tween(el, (e2, v) => e2.setAttribute('transform', `translate(${f(v)} 0)`), 74, 460, 0.34, Ease.in, 0, () => { el.remove(); if (screenEl === el) screenEl = null; });
+  }
   const headWorld = () => { const a = rad2(X[IX.htilt] + X[IX.lean]); return [200 + X[IX.rx] + X[IX.ux] + X[IX.hipX] * 0.55 + 190 * Math.sin(a) + X[IX.hx], 164 + ry + X[IX.uy] + X[IX.hy]]; };
   const rad2 = (d) => (d * Math.PI) / 180;
 const f2 = (n) => Math.round(n * 100) / 100;
@@ -335,12 +375,16 @@ const f2 = (n) => Math.round(n * 100) / 100;
     else if (name === 'ring') spawn('ring', { x: hx, y: hy - 20, life: 0.5 });
     else if (name === 'chips') for (let i = 0; i < (o.n ?? 8); i++) spawn('chip', { x: hx + rr(-20, 20), y: hy - 60, vx: rr(-180, 180), vy: rr(-300, -120), g: 560, life: rr(1, 1.5), vr: rr(-500, 500), col: [PAL.brick, INK, PAL.cream][i % 3] });
     else if (name === 'bubbles') for (let i = 0; i < (o.n ?? 8); i++) spawn('bubble', { x: hx + rr(-70, 90), y: hy + rr(-60, 40), vx: rr(-20, 20), vy: rr(-90, -40), life: rr(0.7, 1.2), delay: rr(0, 0.4), s: rr(0.7, 1.3) });
+    else if (name === 'paraventIn') paraventIn();
+    else if (name === 'paraventOut') paraventOut();
+    else if (name === 'garments') for (let i = 0; i < 10; i++) spawn('conf', { x: 200 + rr(-60, 60), y: 200, vx: rr(-200, 200), vy: rr(-380, -160), g: 600, life: rr(0.7, 1.1), rot: rr(0, 360), vr: rr(-600, 600), col: [PAL.navy, PAL.brick, PAL.turq, PAL.mustard, PAL.camel][i % 5], s: 1.8 });
     else if (name === 'question') spawn('q', { x: hx + 60, y: hy - 130, vy: -22, life: 1.1 });
   }
 
   // ---- clips
   const clipDefs = { ...CLIPS, ...(O.clips || {}) };
   function play(clip, o = {}) {
+    if (clip === 'outfitChange') { const ks = OUTFIT_KEYS, k = o.outfit || ks[(ks.indexOf(outfitKey) + 1) % ks.length]; setOutfit(k, { animated: true }); return clipS.cur && clipS.cur.def; }
     const def = typeof clip === 'string' ? clipDefs[clip] : clip;
     if (!def) return null;
     if (o.queue && clipS.cur) { clipS.queue.push([def, o]); return def; }
@@ -395,10 +439,12 @@ const f2 = (n) => Math.round(n * 100) / 100;
   // ---- outfit
   function setOutfit(key, o2 = {}) {
     if (!OUTFIT_DEFS[key] || key === outfitKey) return;
-    if (o2.animated && !reduced) { play('outfitChange', {}); clipS.cur.pendingOutfit = key; _pendingOutfit = key; return; }
+    if (o2.animated && !reduced) { play({ name: 'outfitChange', dur: 1.9, endPose: 'idle', events: [
+      { at: 0, pose: 'idle', look: 'player', cue: 'outfitChange' }, { at: 0.02, fx: 'paraventIn' },
+      { at: 0.55, outfit: key, spin: 2, spinDur: 0.5, impulse: { hair: 22, sq: 0.6 }, fx: 'garments' }, { at: 0.7, fx: 'sparkles', fxOpts: { n: 7 } },
+      { at: 1.15, fx: 'paraventOut' }, { at: 1.3, pose: 'salute' }, { at: 1.7, look: 'grid' } ] }); return; }
     outfitKey = key; mount(); applyTargets(true); rendered = false; render(true);
   }
-  let _pendingOutfit = null;
 
   // ====================================================================== simulation
   const FIX = 1 / 120;
@@ -466,8 +512,8 @@ const f2 = (n) => Math.round(n * 100) / 100;
     setE('shadow', 'opacity', f2(0.26 * (1 - lift * 0.6)));
     // ---- lower body
     const hipX = d('hipX') + sway * 1.2, tilt = d('hipTilt') + sway * 0.5;
-    setE('skirt', 'transform', `translate(${f(hipX)} 0) rotate(${f(tilt)} 200 366)`);
-    setE('skirt-t', 'transform', `rotate(${f(sec.skirt.x)} 200 330)`);
+    setE('skirt', 'transform', `translate(${f(hipX)} 0) rotate(${f(tilt)} 200 346)`);
+    setE('skirt-t', 'transform', `rotate(${f(sec.skirt.x)} 200 304)`);
     const rootL = rotp(REST.hipJointL, tilt, REST.hip), rootR = rotp(REST.hipJointR, tilt, REST.hip);
     rootL[0] += hipX; rootR[0] += hipX;
     for (const [s, root, A] of [['l', rootL, REST.ankleL], ['r', rootR, REST.ankleR]]) {
@@ -477,7 +523,7 @@ const f2 = (n) => Math.round(n * 100) / 100;
       setE(`leg-${s}-ink`, 'd', dd); setE(`leg-${s}-fill`, 'd', dd);
       if (E[`leg-${s}-sh`]) setE(`leg-${s}-sh`, 'd', cubicD(limb([root[0] - 3, root[1] + 6], [ax - 3, ay - 6], d(p + 'b1') * 0.8, d(p + 'b2') * 0.8)));
       const flip = d(p + 'sf');
-      setE(`shoe-${s}-t`, 'transform', `translate(${f(ax)} ${f(ay)}) rotate(${f(d(p + 'sr'))}) scale(${f2(flip)} 1)`);
+      setE(`shoe-${s}-t`, 'transform', `translate(${f(ax)} ${f(ay)}) rotate(${f(d(p + 'sr'))}) scale(${f2(flip * 0.95)} 0.95)`);
     }
     // ---- upper body
     const ux = d('ux') + hipX * 0.55, uy = d('uy') + breath * 1.1;
@@ -487,47 +533,37 @@ const f2 = (n) => Math.round(n * 100) / 100;
     // chest breath: tiny vertical scale of the torso about the waist
     setE('torso-t', 'transform', `translate(200 ${waist[1]}) scale(${f2(1 + breath * 0.006)} ${f2(1 + breath * 0.012)}) translate(-200 -${waist[1]})`);
     // ---- head & face
-    const turn = d('turn') + look.sx * 0 + (look.target ? 0 : 0);
+    const turn = clamp(d('turn'), 0, 1.2);
     const lx = clamp(X[IX.lookx] + look.sx, -1.2, 1.2), ly = clamp(X[IX.looky] + look.sy, -1.2, 1.2);
     const ht = d('htilt') + lx * 1.6 * (reduced ? 0 : 1) + sway * 0.5;
-    setE('head-t', 'transform', `translate(${f(REST.neck[0] + d('hx'))} ${f(REST.neck[1] + d('hy'))}) rotate(${f(ht)})`);
-    // secondary parts
-    setE('hair-mass', 'transform', `rotate(${f(sec.hair.x)} 0 -120)`);
-    setE('hair-curl-l', 'transform', `rotate(${f(sec.curlL.x)} -60 -58)`);
-    setE('hair-curl-r', 'transform', `rotate(${f(sec.curlR.x)} 52 -60)`);
-    setE('hair-front', 'transform', `rotate(${f(sec.bangs.x)} 0 -128)`);
-    setE('cap', 'transform', `translate(0 ${f(d('cy'))}) rotate(${f(d('cr') + sec.cap.x)} 0 -130)`);
-    // face turn shifts the features
-    const sh = turn * 10, farS = 1 - 0.22 * clamp(turn, 0, 1), nearS = 1 + 0.05 * clamp(turn, 0, 1);
-    setE('features', 'transform', `translate(0 0)`);
-    setE('nose', 'transform', `translate(${f(sh * 1.5)} 0)`);
-    setE('cheeks', 'transform', `translate(${f(sh * 1.0)} 0)`);
+    setE('head-t', 'transform', `translate(${f(REST.neck[0] + d('hx'))} ${f(REST.neck[1] + d('hy'))}) rotate(${f(ht)}) translate(${-HEAD_PIVOT[0]} ${-HEAD_PIVOT[1]})`);
+    setE('hair-mass', 'transform', `rotate(${f(sec.hair.x)} -20 -130)`);
+    setE('hair-curl-l', 'transform', `rotate(${f(sec.curlL.x)} -80 -48)`);
+    setE('hair-curl-r', 'transform', `rotate(${f(sec.curlR.x)} 30 -30)`);
+    setE('hair-front', 'transform', `rotate(${f(sec.bangs.x)} 10 -110)`);
+    if (E['hair-tuft']) setE('hair-tuft', 'opacity', f2(clamp(-d('cy') / 24, 0, 1)));
+    setE('cap', 'transform', `translate(0 ${f(d('cy'))}) rotate(${f(d('cr') + sec.cap.x)} -30 -110)`);
+    const L = faceLayout(turn);
+    setE('nose-s', 'transform', `translate(${f(L.nose[0])} ${f(L.nose[1])})`);
     setE('cheeks', 'opacity', f2(d('blush')));
-    const winkL = 0, bl = blinkS.amount;
-    const eyeArgs = (s) => {
-      const p = s < 0 ? 'L' : 'R';
-      const u = clamp(d('u' + p), 0, 1.2) * (1 - bl), joy = d('joy' + p), low = d('low' + p);
-      return { u: Math.min(1, u), joy, low };
-    };
+    const bl = blinkS.amount;
     for (const s of [-1, 1]) {
-      const id = s < 0 ? 'eye-l' : 'eye-r', p = s < 0 ? 'L' : 'R', a = eyeArgs(s);
-      const cx = (s < 0 ? -23 : 23) + sh + (s < 0 ? 0 : 0), cy = -86 + (s < 0 ? 0 : -0.5);
-      const wide = 1 + d('wide') * 0.3, sxk = (s < 0 ? nearS : farS) * wide;
-      setE(`${id}-s`, 'transform', `translate(${f(cx)} ${f(cy)}) scale(${f2(sxk)} ${f2(wide)})`);
+      const id = s < 0 ? 'eye-l' : 'eye-r', p = s < 0 ? 'L' : 'R';
+      const u = clamp(d('u' + p), 0, 1.2) * (1 - bl), a = { u: Math.min(1, u), joy: d('joy' + p), low: d('low' + p), slant: d('sl' + p) };
+      const C = s < 0 ? L.near : L.far, kx = s < 0 ? L.kxNear : L.kxFar, wide = 1 + d('wide') * 0.3;
+      setE(`${id}-s`, 'transform', `translate(${f(C[0])} ${f(C[1])}) scale(${f2(kx * wide)} ${f2(L.ky * wide)})`);
       const g = eyeGeom(s, a);
-      setE(`${id}-lashline`, 'd', g.lidLine); setE(`${id}-lashes`, 'd', g.lashes); setE(`${id}-lidfill`, 'd', g.upperFill); setE(`${id}-lower`, 'd', g.lowerFill);
-      const ox = clamp(lx, -1.2, 1.2) * 7.2 * (s > 0 ? 0.9 : 1), oy = clamp(ly, -1.2, 1.2) * 4.4;
+      setE(`${id}-upper`, 'opacity', f2(clamp((a.u - 0.12) / 0.25, 0, 1) * (1 - a.joy))); setE(`${id}-lashline`, 'd', g.lidLine); setE(`${id}-lashes`, 'd', g.lashes); setE(`${id}-lidfill`, 'd', g.upperFill); setE(`${id}-lower`, 'd', g.lowerFill);
+      const ox = lx * 8.4, oy = ly * 4.6;
       const pr = d('pup');
-      setE(`${id}-iris`, 'transform', `translate(${f(ox)} ${f(oy)}) translate(0 2) scale(${f2(0.55 + pr * 0.45)} ${f2(0.55 + pr * 0.45)}) translate(0 -2)`);
+      setE(`${id}-iris`, 'transform', `translate(${f(ox)} ${f(oy)}) translate(0 2) scale(${f2(0.5 + pr * 0.5)} ${f2(0.5 + pr * 0.5)}) translate(0 -2)`);
       const st = d('stars'); setE(`${id}-stars`, 'opacity', f2(clamp(st, 0, 1))); setE(`${id}-iris`, 'opacity', st > 0.5 ? 0 : 1);
-      // brows
-      const b = (s < 0 ? 'L' : 'R');
-      const bx = cx + (s < 0 ? -1 : 1) * 1, by = -86 - 27 + d('b' + b + 'y');
-      setE(s < 0 ? 'brow-l' : 'brow-r', 'd', browPath(s, 0, d('b' + b + 'r'), d('b' + b + 'a'), 1));
-      setE(s < 0 ? 'brow-l' : 'brow-r', 'transform', `translate(${f(bx)} ${f(by)}) scale(${f2(sxk)} 1)`);
+      const B = s < 0 ? L.browNear : L.browFar;
+      setE(s < 0 ? 'brow-l' : 'brow-r', 'd', browPath(s, 0, d('b' + p + 'r'), d('b' + p + 'a'), 1.3, kx * 0.8));
+      setE(s < 0 ? 'brow-l' : 'brow-r', 'transform', `translate(${f(B[0])} ${f(B[1] + d('b' + p + 'y'))})`);
     }
     // ---- mouth
-    renderMouth(sh);
+    renderMouth(L);
     // ---- arms
     for (const s of ['l', 'r']) {
       const S = s === 'l' ? REST.shoulderL : REST.shoulderR;
@@ -541,10 +577,17 @@ const f2 = (n) => Math.round(n * 100) / 100;
       if (sl.trim) { const tr = cubicD(cubicSub(cv, sl.trimAt[0], sl.trimAt[1])); setE(`arm-${s}-tri`, 'd', tr); setE(`arm-${s}-trf`, 'd', tr); }
       if (sl.gloveFrom != null) { const lg = cubicD(cubicSub(cv, sl.gloveFrom, 1)); setE(`arm-${s}-lgi`, 'd', lg); setE(`arm-${s}-lgf`, 'd', lg); }
       const tan = cubicTan(cv, 1), ang = (Math.atan2(tan[1], tan[0]) * 180) / Math.PI - 90 + d(p + 'r');
-      setE(`hand-${s}-t`, 'transform', `translate(${f(wx)} ${f(wy)}) rotate(${f(ang)}) scale(${f2(d(p + 'sx'))} ${f2(d(p + 'sy'))})`);
+      const thumbDown = -Math.sin(rad2(ang));
+      if (thumbDown > 0.28) gsign[s] = -1; else if (thumbDown < -0.28) gsign[s] = 1;
+      setE(`hand-${s}-t`, 'transform', `translate(${f(wx)} ${f(wy)}) rotate(${f(ang)}) scale(${f2(d(p + 'sx') * gsign[s])} ${f2(d(p + 'sy'))})`);
       if (s === dis.prop.toLowerCase() && E.prop) {
         const kind = dis[s === 'l' ? 'gl' : 'gr'], gp = GLOVE_GRIP[kind] || [0, 26];
-        setE('prop', 'transform', `translate(${gp[0]} ${gp[1]}) rotate(${f(d('accRot'))})`);
+        const eff = (W.accBase ?? 90) + (d('acc') - 90) * (W.accGain ?? 1), flipSign = gsign[s];
+        setE('prop', 'transform', `translate(${gp[0]} ${gp[1]}) rotate(${f(flipSign * (eff - ang))})`);
+      }
+      if (E.prop2 && dis._p2 === s.toUpperCase()) {
+        const kind = dis[s === 'l' ? 'gl' : 'gr'], gp = GLOVE_GRIP[kind] || [0, 26], flipSign = gsign[s];
+        setE('prop2', 'transform', `translate(${gp[0]} ${gp[1]}) rotate(${f(flipSign * (0 - ang))})`);
       }
     }
     if (E.beam) setE('beam', 'opacity', f2(clamp(d('beam'), 0, 1)));
@@ -554,11 +597,11 @@ const f2 = (n) => Math.round(n * 100) / 100;
     if (E['scarf-1']) { setE('scarf-1', 'transform', `rotate(${f(sec.scarf1.x)} 186 270)`); if (E['scarf-2']) setE('scarf-2', 'transform', `rotate(${f(sec.scarf2.x)} 186 272)`); }
     rendered = true;
   }
-  function renderMouth(sh) {
+  function renderMouth(L) {
     const m = mouthS;
     if (m.t < 1 || !rendered) { mixVisemes(m.from, m.to, m.t >= 1 ? 1 : Ease.out(m.t), m.cur); }
     const v = m.cur, mp = mouthPaths(v);
-    setE('mouth-s', 'transform', `translate(${f(sh * 1.35 + 4)} -41)`);
+    setE('mouth-s', 'transform', `translate(${f(L.mouth[0])} ${f(L.mouth[1])})`);
     setE('m-lips', 'd', mp.lips); setE('m-clipd', 'd', mp.cav); setE('m-cav', 'd', mp.cav);
     setE('m-cav', 'opacity', mp.ops[0] > 0.5 ? 1 : 0); setE('m-seam', 'opacity', mp.ops[3] > 0.5 ? 1 : 0);
     setE('m-seam', 'd', mp.seam);
@@ -570,10 +613,10 @@ const f2 = (n) => Math.round(n * 100) / 100;
   }
   function renderChain(d, shr) {
     // collar anchor -> whistle (hanging at the hip, swinging) or at the mouth for the whistle pose
-    const A = [189, 262 - shr * 0.4];
+    const A = [189, 246 - shr * 0.4];
     let end;
     const inMouth = dis.gr === 'pinch';
-    if (inMouth) { const a = rad2(d('htilt')), mx = 200 + d('hx') + (d('turn') * 13.5 + 4) , my = 250 + d('hy') - 41; end = [mx + 6, my + 1]; }
+    if (inMouth) { const ml = faceLayout(clamp(d('turn'), 0, 1.2)).mouth, ang = rad2(d('htilt')), vx = ml[0] + 9, vy = ml[1] + 6; end = [200 + d('hx') + vx * Math.cos(ang) - vy * Math.sin(ang) + 6, 225 + d('hy') + vx * Math.sin(ang) + vy * Math.cos(ang)]; }
     else end = [232 + sec.whistle.x * 0.9, 346 - Math.abs(sec.whistle.x) * 0.1];
     const mid = [(A[0] + end[0]) / 2 + (inMouth ? -10 : -8), (A[1] + end[1]) / 2 + (inMouth ? 26 : 30)];
     setE('chain', 'd', `M${f(A[0])} ${f(A[1])}Q${f(mid[0])} ${f(mid[1])} ${f(end[0])} ${f(end[1])}`);
@@ -590,19 +633,19 @@ const f2 = (n) => Math.round(n * 100) / 100;
     } else { look.sx = 0; look.sy = 0; }
     T[IX.lookx] = look.tx; T[IX.looky] = look.ty;
     if (look.target) { T[IX.turn] = clamp(look.target.turn ?? T[IX.turn], 0, 1); }
-    updateTimed(dt); updateBlink(dt); updateClip(dt); updateDirector(dt);
+    updateTweens(dt); updateTimed(dt); updateBlink(dt); updateClip(dt); updateDirector(dt);
     if (mouthS.t < 1) mouthS.t = Math.min(1, mouthS.t + dt / Math.max(0.001, mouthS.dur));
     if (reduced) { for (let i = 0; i < NP; i++) { X[i] = T[i]; V[i] = 0; } }
     else { acc += dt; let n = 0; while (acc >= FIX && n < 10) { stepFixed(FIX); acc -= FIX; n++; } if (n === 10) acc = 0; }
     // mouth mixing uses the eased `t`
     updateFx(dt);
-    if (_pendingOutfit) { /* handled by clip event */ }
   }
   function frame(now) {
     raf = 0; if (destroyed) return;
     if (!paused) {
-      const dt = Math.min(0.05, last ? (now - last) / 1000 : 1 / 60); last = now;
-      update(dt); render();
+      const dt = Math.min(0.05, last ? (now - last) / 1000 : 1 / 60) * speed; last = now;
+      const t0 = performance.now(); update(dt); render(); const ms = performance.now() - t0;
+      stat.frames++; stat.avg += (ms - stat.avg) * 0.05; if (stat.frames > 30) stat.max = Math.max(stat.max * 0.995, ms);
     } else last = 0;
     if (O.raf) raf = requestAnimationFrame(frame);
   }
@@ -621,7 +664,9 @@ const f2 = (n) => Math.round(n * 100) / 100;
     snap() { applyTargets(true); render(true); },
     setReduced(v) { reduced = !!v; applyTargets(true); },
     pause() { paused = true; }, resume() { paused = false; last = 0; },
-    setLimited(hz) { O.limited = hz; },
+    setLimited(hz) { O.limited = hz; }, setIdle(b) { O.idle = !!b; }, setSpeed(v) { speed = clamp(v, 0.1, 4); },
+    stats() { return { frames: stat.frames, avgMs: stat.avg, maxMs: stat.max, clip: clipS.cur ? clipS.cur.name : '' }; },
+    state: () => ({ ...Object.fromEntries(NAMES.map((n, i) => [n, X[i]])), ry, sec: Object.fromEntries(Object.keys(sec).map((k) => [k, sec[k].x])) }),
     clips: () => Object.keys(clipDefs), poses: () => Object.keys(POSES), outfits: () => OUTFIT_KEYS.slice(), moods: () => Object.keys(MOODS), visemes: () => VISEME_NAMES.slice(),
     destroy() { destroyed = true; if (raf) cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', onVis); if (mq && mq.removeEventListener) mq.removeEventListener('change', onMq); container.innerHTML = ''; svg = null; },
   };
@@ -675,7 +720,7 @@ export const CLIPS = {
   meterMilestone: { dur: 1.8, endPose: 'idle', events: [
     { at: 0, pose: 'point', look: 'meter', set: { arx: 318, ary: 168, arr: -60, arb1: -26, arb2: 14, prop: '', beam: 0, turn: 0.6 }, cue: 'meterMilestone' }, { at: 0.2, fx: 'ring' }, { at: 1.2, look: 'player' } ] },
   checkFlashlight: { dur: 2.6, events: [
-    { at: 0, set: { alx: 190, aly: 252, alb1: 40, alb2: 30, accRot: 150, lookx: -0.2, looky: 0.6, turn: 0.35, htilt: -4 }, look: 'hand' },
+    { at: 0, set: { alx: 190, aly: 252, alb1: 40, alb2: 30, acc: 150, lookx: -0.2, looky: 0.6, turn: 0.35, htilt: -4 }, look: 'hand' },
     { at: 0.5, set: { beam: 1 } }, { at: 0.7, set: { beam: 0 } }, { at: 0.95, set: { beam: 1 } }, { at: 1.25, set: { beam: 0 }, mouth: 'smirk' }, { at: 1.6, look: 'player' } ] },
   blowWhistle: { dur: 2.4, events: [
     { at: 0, pose: 'whistle', cue: 'whistle' }, { at: 0.35, fx: 'notes', impulse: { sq: 0.3 } }, { at: 0.9, fx: 'notes' }, { at: 1.5, set: { lowL: 0.1, uL: 0.55 }, mouth: 'smirk' } ] },

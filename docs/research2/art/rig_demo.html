@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mambo rig demo</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --ink:#2B1A12; --cream:#F4E8C8; --mustard:#E8A92B; --orange:#D9622B; --brick:#B8352A; --turq:#2E8C8C; --navy:#1E2F4A; --night:#14213A; --plum:#6A3D6E; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--night); color:var(--cream); font:14px/1.35 "Trebuchet MS",Arial,sans-serif; }
+  body { display:grid; grid-template-columns:minmax(380px,1fr) 340px; gap:0; }
+  #stage { position:relative; overflow:hidden; background:var(--navy); min-height:560px; }
+  #sun { position:absolute; left:46%; top:-120px; width:520px; height:520px; border-radius:50%; background:#F4E8C8; opacity:.16; }
+  #floor { position:absolute; left:0; right:0; bottom:0; height:92px; background:var(--orange); border-top:6px solid var(--mustard); }
+  #grid { position:absolute; right:36px; top:70px; width:46%; height:62%; background:#101a2e; border:8px solid var(--mustard); border-radius:14px; display:grid; grid-template-columns:repeat(6,1fr); grid-template-rows:repeat(5,1fr); gap:4px; padding:6px; }
+  #grid i { background:#1d2c4a; border-radius:6px; }
+  #meter { position:absolute; right:36px; top:16px; width:46%; height:34px; border-radius:17px; background:#101a2e; border:4px solid var(--mustard); }
+  #meter b { position:absolute; left:6px; top:3px; bottom:3px; width:30%; border-radius:12px; background:var(--mustard); }
+  #hero { position:absolute; left:2%; bottom:34px; height:min(86%,760px); aspect-ratio:2/3; }
+  #pt { position:absolute; width:26px; height:26px; margin:-13px 0 0 -13px; border-radius:50%; border:3px solid var(--ink); background:var(--mustard); cursor:grab; touch-action:none; z-index:5; }
+  #pt::after { content:"look"; position:absolute; left:30px; top:3px; font-size:11px; color:var(--cream); }
+  #panel { background:#0d1627; padding:12px 14px; overflow:auto; border-left:3px solid var(--ink); }
+  h1 { font-size:16px; margin:0 0 8px; color:var(--mustard); letter-spacing:.04em; }
+  h2 { font-size:12px; margin:12px 0 5px; color:var(--turq); text-transform:uppercase; letter-spacing:.1em; }
+  .row { display:flex; flex-wrap:wrap; gap:5px; }
+  button, select { font:inherit; color:var(--ink); background:var(--cream); border:2px solid var(--ink); border-radius:8px; padding:4px 9px; cursor:pointer; }
+  button:hover { background:var(--mustard); } button.on { background:var(--orange); color:#fff; }
+  label { display:inline-flex; gap:6px; align-items:center; margin-right:10px; }
+  #stat { font:12px/1.4 monospace; color:#b9c7cc; white-space:pre; margin-top:10px; }
+  @media (max-width:760px) { body { grid-template-columns:1fr; grid-template-rows:62vh auto; } #panel { border-left:0; border-top:3px solid var(--ink); } #grid { width:52%; } }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="sun"></div><div id="floor"></div>
+  <div id="meter"><b></b></div>
+  <div id="grid"></div>
+  <div id="hero"></div>
+  <div id="pt" title="drag me: she looks at this"></div>
+</div>
+<div id="panel">
+  <h1>MAMBO · rig demo</h1>
+  <h2>Clips (game events)</h2><div class="row" id="clips"></div>
+  <h2>Poses (hold)</h2><div class="row" id="poses"></div>
+  <h2>Outfit</h2><div class="row" id="outfits"></div>
+  <h2>Mood</h2><div class="row" id="moods"></div>
+  <h2>Mouth</h2><div class="row" id="mouths"></div>
+  <h2>Eyes / look</h2>
+  <div class="row"><button data-act="blink">blink</button><button data-act="slow">slow blink</button><button data-act="winkL">wink L</button><button data-act="winkR">wink R</button>
+    <button data-look="grid">look grid</button><button data-look="player">look player</button><button data-look="meter">look meter</button><button data-look="free">free</button></div>
+  <h2>Options</h2>
+  <div><label><input type="checkbox" id="optIdle" checked> idle director</label><label><input type="checkbox" id="optLim" checked> limited 12 Hz</label><label><input type="checkbox" id="optRed"> reduced motion</label></div>
+  <div><label>speed <input type="range" id="optSpd" min="0.25" max="2" step="0.05" value="1"></label></div>
+  <div id="stat"></div>
+</div>
+<script type="module">
+import { createHeroine, CLIPS, POSES, MOODS } from './mambo_rig.mjs';
+const q = new URLSearchParams(location.search);
+const $ = (id) => document.getElementById(id);
+const stage = $('stage'), hero = $('hero'), pt = $('pt');
+$('grid').innerHTML = '<i></i>'.repeat(30);
+const rel = (el) => { const r = el.getBoundingClientRect(), s = hero.getBoundingClientRect(); return { x: r.left - s.left + r.width / 2, y: r.top - s.top + r.height / 2 }; };
+const h = createHeroine(hero, {
+  outfit: q.get('outfit') || 'inspectrice', seed: +(q.get('seed') || 7), raf: q.get('raf') !== '0', idle: q.get('idle') !== '0', limited: q.get('limited') === '0' ? 0 : 12,
+  reduced: q.get('reduced') === '1' ? true : undefined,
+  lookTargets: { grid: () => { const p = rel($('grid')); return { x: p.x, y: p.y }; }, meter: () => { const p = rel($('meter')); return { x: p.x, y: p.y }; } },
+  onCue: (name, clip) => { window.__cues = (window.__cues || []).concat([name]); },
+});
+window.__h = h;
+const place = (x, y) => { pt.style.left = x + 'px'; pt.style.top = y + 'px'; };
+const sr = stage.getBoundingClientRect(); place(sr.width * 0.62, sr.height * 0.3);
+let follow = false;
+pt.addEventListener('pointerdown', (e) => { follow = true; pt.setPointerCapture(e.pointerId); });
+pt.addEventListener('pointerup', () => { follow = false; });
+pt.addEventListener('pointermove', (e) => { if (!follow) return; const s = stage.getBoundingClientRect(); place(e.clientX - s.left, e.clientY - s.top); h.setLook(rel(pt)); });
+const mk = (id, items, fn, cls) => { const c = $(id); items.forEach((n) => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { fn(n, b); }; c.appendChild(b); }); };
+mk('clips', h.clips().filter((n) => n !== 'shiftWeight' && n !== 'outfitChange'), (n) => h.play(n));
+{ const b = document.createElement('button'); b.textContent = 'stop (idle)'; b.onclick = () => h.stop(); $('clips').appendChild(b); const b2 = document.createElement('button'); b2.textContent = 'outfitChange'; b2.onclick = () => { const o = h.outfits(); h.setOutfit(o[(o.indexOf(h.outfit) + 1) % o.length], { animated: true }); }; $('clips').appendChild(b2); }
+mk('poses', h.poses().filter((n) => n !== 'rest'), (n) => h.setPose(n));
+mk('outfits', h.outfits(), (n, b) => { h.setOutfit(n); document.querySelectorAll('#outfits button').forEach((x) => x.classList.toggle('on', x === b)); });
+mk('moods', h.moods(), (n, b) => { h.setMood(n); document.querySelectorAll('#moods button').forEach((x) => x.classList.toggle('on', x === b)); });
+mk('mouths', h.visemes(), (n) => h.setMouth(n, 0.09));
+document.querySelector('#outfits button').classList.add('on');
+document.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => ({ blink: () => h.blink('normal'), slow: () => h.blink('slow'), winkL: () => h.wink('L'), winkR: () => h.wink('R') }[b.dataset.act])());
+document.querySelectorAll('[data-look]').forEach((b) => b.onclick = () => { const v = b.dataset.look; if (v === 'free') h.setLook(rel(pt)); else h.setLook(v); });
+$('optRed').onchange = (e) => h.setReduced(e.target.checked);
+$('optLim').onchange = (e) => h.setLimited(e.target.checked ? 12 : 0);
+$('optIdle').onchange = (e) => h.setIdle(e.target.checked);
+$('optSpd').oninput = (e) => h.setSpeed(+e.target.value);
+// frame stats (host side)
+let n = 0, acc = 0, mx = 0, t0 = performance.now();
+const tick = () => { const s = h.stats(); if (s) { $('stat').textContent = `frames ${s.frames}\nupdate+render avg ${s.avgMs.toFixed(3)} ms · max ${s.maxMs.toFixed(2)} ms\nclip: ${s.clip || '-'}   pose: ${h.pose}\nmood: ${h.mood}   outfit: ${h.outfit}\nreduced: ${h.reduced}`; } requestAnimationFrame(tick); };
+requestAnimationFrame(tick);
+if (q.get('clip')) h.play(q.get('clip'));
+if (q.get('pose')) h.setPose(q.get('pose'), { snap: true });
+</script>
+</body>
+</html>

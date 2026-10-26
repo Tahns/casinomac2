@@ -16,20 +16,20 @@ export const PAL = {
   navy: '#1E2F4A', ink: '#2B1A12', olive: '#7A8B3A', plum: '#6A3D6E',
   // derived tones (same family, flat)
   white: '#FFFBF0', skin: '#F8EDCB', skinShade: '#E2C08C', blush: '#E98A6A', eyeshadow: '#EDC45A',
-  hair: '#51251A', hairShade: '#2E140D', hairHi: '#9A5530',
+  hair: '#4A2216', hairShade: '#2E140D', hairHi: '#8E5230',
   navyLight: '#2D4A78', navyDeep: '#162338', gold: '#F2C14E', goldDeep: '#C98A1E', leather: '#7A4A2A', leatherLight: '#9A6236',
   steel: '#B9C7CC', lips: '#C4271E', lipsDeep: '#8E1712', mouth: '#5E1410', glass: '#CFEDEA', camel: '#B98A55', burgundy: '#6E2440',
 };
 export const INK = PAL.ink;
-export const OL = 5.2;                 // uniform outline weight (viewBox units)
+export const OL = 4.6;                 // uniform outline weight (viewBox units)
 export const MIS = [2.8, 2.4];         // print misregistration (fill layer shifted against the outline)
 export const MIS_T = [1.4, 1.2];
 export const GROUND = 566;
 
-// rest skeleton (upper-body coordinates at rest)
+// rest skeleton (upper-body coordinates at rest). Proportions measured on the model sheet (cap top 66 -> ground 566).
 export const REST = {
-  neck: [200, 250], shoulderL: [160, 270], shoulderR: [240, 270], waist: [200, 336], hip: [200, 366],
-  hipJointL: [187, 436], hipJointR: [213, 436], ankleL: [166, 528], ankleR: [236, 528], ground: [200, GROUND], skirtHem: 470,
+  neck: [200, 225], shoulderL: [161, 258], shoulderR: [239, 258], waist: [200, 304], hip: [200, 346],
+  hipJointL: [188, 420], hipJointR: [212, 420], ankleL: [164, 524], ankleR: [238, 524], ground: [200, GROUND], skirtHem: 452,
 };
 
 // ------------------------------------------------------------------ helpers
@@ -92,7 +92,7 @@ export function star(x, y, r, fill = PAL.white, sw = 3.2, rot = 0, pts = 4) {
   let d = '';
   const n = pts * 2;
   for (let i = 0; i < n; i++) {
-    const a = (Math.PI * 2 * i) / n - Math.PI / 2 + rad(rot), rr = i % 2 ? r * (pts === 4 ? 0.28 : 0.46) : r;
+    const a = (Math.PI * 2 * i) / n - Math.PI / 2 + rad(rot), rr = i % 2 ? r * (pts === 4 ? 0.28 : pts === 8 ? 0.62 : 0.46) : r;
     d += `${i ? 'L' : 'M'}${f(x + Math.cos(a) * rr)} ${f(y + Math.sin(a) * rr)}`;
   }
   return `<path d="${d}Z" fill="${fill}" stroke="${INK}" stroke-width="${sw}" stroke-linejoin="round"/>`;
@@ -107,51 +107,55 @@ export function tubeEls(c, id, w, fill, o = {}) {
 // ------------------------------------------------------------------ EYES: geometry (pure functions of openness etc.)
 // local to the eye centre; `s` = +1 for the screen-right eye (outer corner at +x), -1 for the screen-left eye.
 const lp = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t)];
-export const EYE = { w: 39 };
+export const EYE = { w: 34, h: 38 };
 export function eyeGeom(s, p) {
   const X = (x) => s * x;
   const u = clamp(p.u ?? 0.55, 0, 1), joy = clamp(p.joy ?? 0, 0, 1), low = clamp(p.low ?? 0, 0, 1);
-  const Pi = [X(-19), 4], Po = [X(20), -1];
-  const UP = [[X(-17), -22], [X(12), -23]];            // upper almond outline controls (also the fully-open lid line)
-  const LO = [[X(15), 18], [X(-12), 20]];              // lower almond outline Po -> Pi
+  const Pi = [X(-17), 1], Po = [X(17), 1];
+  const UP = [[X(-19), -28], [X(19), -28]];            // upper oval outline controls (also the fully-open lid line)
+  const LO = [[X(19), 26], [X(-19), 26]];              // lower oval outline Po -> Pi
   const BOT = [LO[1], LO[0]];                           // same curve, Pi -> Po
-  const CL = [[X(-12), 9], [X(14), 7]], CJ = [[X(-14), -17], [X(12), -19]];
+  const CL = [[X(-12), 9], [X(12), 9]], CJ = [[X(-14), -13], [X(14), -13]];
   const K = [lp(CL[0], CJ[0], joy), lp(CL[1], CJ[1], joy)];
+  const sl = (p.slant ?? 0) * (1 - u);
   const lid = [lp(K[0], UP[0], u), lp(K[1], UP[1], u)];
+  lid[0] = [lid[0][0], lid[0][1] + sl]; lid[1] = [lid[1][0], lid[1][1] - sl * 0.7];
   const w = Math.max(clamp(1 - u / 0.35, 0, 1), low * 0.55, joy);
   const lowB = [lp(BOT[0], K[0], w), lp(BOT[1], K[1], w)];
   const P = (p2) => `${f(p2[0])} ${f(p2[1])}`;
   const lidCurve = [Pi, lid[0], lid[1], Po];
   const flickK = clamp((u - 0.15) / 0.5, 0, 1) * (1 - joy * 0.3) + joy * 0.6;
-  const flick = [Po[0] + X(8.5) * flickK, Po[1] - 6 * flickK - (1 - flickK) * -2];
+  const flick = [Po[0] + X(6) * flickK, Po[1] - 4 * flickK];
   const lidLine = `M${P(Pi)}C${P(lid[0])} ${P(lid[1])} ${P(Po)}L${P(flick)}`;
   const upperFill = `M${P(Pi)}C${P(UP[0])} ${P(UP[1])} ${P(Po)}C${P(lid[1])} ${P(lid[0])} ${P(Pi)}Z`;
   const lowerFill = `M${P(Pi)}C${P(lowB[0])} ${P(lowB[1])} ${P(Po)}C${P(LO[0])} ${P(LO[1])} ${P(Pi)}Z`;
-  // lashes: four, fanned off the outer lid; direction blends from down-out (closed) to up-out (open / joy)
-  const up = [-78, -58, -40, -20], dn = [64, 46, 30, 14], ts = [0.5, 0.68, 0.84, 0.98], len = [11.5, 14, 14.5, 11.5];
+  // lashes: the near eye (s<0) fans five long lashes off its outer corner, the far eye three short ones
+  const near = s < 0;
+  const up = near ? [-78, -54, -30, -8, 16] : [-62, -32, -4], dn = near ? [56, 42, 28, 16, 6] : [46, 28, 10];
+  const ts = near ? [0.46, 0.6, 0.74, 0.88, 0.99] : [0.62, 0.82, 0.99], len = near ? [14, 18, 20.5, 19, 14] : [10.5, 12.5, 10.5];
   const mix = clamp(Math.max(Math.pow(u, 0.8), joy), 0, 1);
   let lashes = '';
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < ts.length; i++) {
     const t = ts[i], a = rad(lerp(dn[i], up[i], mix)), q = cubicAt(lidCurve, t);
     const ex = q[0] + X(Math.cos(a)) * len[i], ey = q[1] + Math.sin(a) * len[i];
-    const mx = (q[0] + ex) / 2 + X(0) , my = (q[1] + ey) / 2 + (mix > 0.5 ? -2.2 : 2.2);
+    const mx = (q[0] + ex) / 2, my = (q[1] + ey) / 2 + (mix > 0.5 ? -2.4 : 2.4);
     lashes += `M${P(q)}Q${f(mx)} ${f(my)} ${f(ex)} ${f(ey)}`;
   }
   return { lidLine, upperFill, lowerFill, lashes, closed: w, flick };
 }
-export const almondPath = (s) => { const X = (x) => s * x; return `M${X(-19)} 4C${X(-17)} -22 ${X(12)} -23 ${X(20)} -1C${X(15)} 18 ${X(-12)} 20 ${X(-19)} 4Z`; };
+export const almondPath = (s) => { const X = (x) => s * x; return `M${X(-17)} 1C${X(-19)} -28 ${X(19)} -28 ${X(17)} 1C${X(19)} 26 ${X(-19)} 26 ${X(-17)} 1Z`; };
 
 // ------------------------------------------------------------------ BROWS
-export function browPath(s, dy, rot, arch, thick = 1) {
+export function browPath(s, dy, rot, arch, thick = 1, len = 1) {
   const X = (x) => s * x, pts = [], n = 9;
   const top = [], bot = [];
   const cr = Math.cos(rad(rot * s)), sr = Math.sin(rad(rot * s));
   for (let i = 0; i < n; i++) {
     const u = i / (n - 1);
-    const x = X(lerp(-19, 22, u)), y = -arch * Math.sin(Math.PI * Math.pow(u, 0.9)) + 3.5 * u * u - 1.5;
-    const du = 1e-3, x2 = X(lerp(-19, 22, u + du)), y2 = -arch * Math.sin(Math.PI * Math.pow(u + du, 0.9)) + 3.5 * (u + du) * (u + du) - 1.5;
+    const x = X(lerp(-19, 22, u) * len), y = -arch * Math.sin(Math.PI * Math.pow(u, 0.9)) + 3.5 * u * u - 1.5;
+    const du = 1e-3, x2 = X(lerp(-19, 22, u + du) * len), y2 = -arch * Math.sin(Math.PI * Math.pow(u + du, 0.9)) + 3.5 * (u + du) * (u + du) - 1.5;
     let tx = x2 - x, ty = y2 - y; const L = Math.hypot(tx, ty) || 1; tx /= L; ty /= L;
-    const t = (3.9 * Math.pow(1 - u, 0.8) + 0.9) * thick * 0.5;
+    const t = (3.4 * (1 - Math.pow(u, 2.6)) + 0.5) * thick * 0.5;
     const nx = -ty, ny = tx;
     const rp = (px, py) => [px * cr - py * sr, px * sr + py * cr + dy];
     top.push(rp(x + nx * t, y + ny * t)); bot.push(rp(x - nx * t, y - ny * t));
@@ -188,14 +192,14 @@ function mouthShape(p) {
   return v;
 }
 export const VISEMES = {
-  smirk:   mouthShape({ hw: 15, cL: 1.5, cR: -7, curve: 2.2, up: 3.0, lo: 4.0, bow: 1.4, dimple: 1 }),
-  grin:    mouthShape({ hw: 19, cL: -4, cR: -8, curve: 4.5, up: 2.8, lo: 4.0, bow: 1.0, dimple: 1 }),
-  laugh:   mouthShape({ hw: 21, cL: -6, cR: -9, curve: 3, up: 3.0, lo: 4.2, open: 19, cw: 0.9, teeth: 1, tongue: 1, bow: 0.6, dimple: 0.6 }),
-  oh:      mouthShape({ hw: 9.5, cL: 0, cR: 0, curve: 0, up: 4.2, lo: 4.6, open: 15, cw: 0.88, bow: 0.4 }),
-  whistle: mouthShape({ hw: 7, cL: 0, cR: -0.5, curve: 0, up: 4.6, lo: 4.8, open: 4.6, cw: 0.8, bow: 0.3 }),
-  pout:    mouthShape({ hw: 9, cL: 1, cR: 1, curve: 0.6, up: 4.6, lo: 5.4, bow: 1.8 }),
-  wry:     mouthShape({ hw: 14, cL: -2.5, cR: 3.5, curve: -1.2, up: 2.8, lo: 3.4, bow: 0.8, dimple: 0.8 }),
-  teeth:   mouthShape({ hw: 20, cL: -6, cR: -9, curve: 4, up: 2.6, lo: 3.6, open: 9.5, cw: 0.9, teeth: 1, tongue: 0, bow: 0.8, dimple: 0.7 }),
+  smirk:   mouthShape({ hw: 10.5, cL: 0.8, cR: -4.6, curve: 1.8, up: 4.6, lo: 6, bow: 1.4, dimple: 1, cw: 0.8 }),
+  grin:    mouthShape({ hw: 13, cL: -2.6, cR: -5.4, curve: 3, up: 4.2, lo: 5.8, bow: 1, dimple: 1 }),
+  laugh:   mouthShape({ hw: 15, cL: -4, cR: -6.4, curve: 2.6, up: 3.4, lo: 4.6, open: 15, cw: 0.9, teeth: 1, tongue: 1, bow: 0.5, dimple: 0.6 }),
+  oh:      mouthShape({ hw: 6.4, cL: 0, cR: 0, curve: 0, up: 3.8, lo: 4.2, open: 11, cw: 0.84, bow: 0.3 }),
+  whistle: mouthShape({ hw: 5, cL: 0, cR: -0.4, curve: 0, up: 3.8, lo: 4, open: 3.8, cw: 0.78, bow: 0.3 }),
+  pout:    mouthShape({ hw: 6.4, cL: 0.6, cR: 0.6, curve: 0.4, up: 3.8, lo: 4.6, bow: 1.4 }),
+  wry:     mouthShape({ hw: 9.4, cL: -1.8, cR: 2.4, curve: -0.9, up: 3.2, lo: 4, bow: 0.8, dimple: 0.8 }),
+  teeth:   mouthShape({ hw: 14, cL: -4, cR: -6.4, curve: 3, up: 3.2, lo: 4.2, open: 8, cw: 0.9, teeth: 1, tongue: 0, bow: 0.6, dimple: 0.7 }),
 };
 export const VISEME_NAMES = Object.keys(VISEMES);
 export const MOUTH_LEN = NV;
@@ -238,7 +242,7 @@ export function gloveKinds(c, W) {
   const cuff = part(c, 'M-16.5 -15Q0 -20 16.5 -15L17.5 4Q0 9 -17.5 4Z', cuffFill, { sw: 4.8, mis: [1.6, 1.4] }) + line('M-11 -7Q0 -3 11 -7', 2.6, INK, ' opacity=".5"');
   const palm = (d, shadeD) => part(c, d, w, sh(shadeD || rectD(3, 8, 30, 46)));
   return {
-    fist: palm('M-19 3C-26 20 -23 36 -16 42Q-11 49 -5 43Q0 50 6 43Q12 49 17 41C24 32 23 14 18 3Z') + line('M-5 43L-4.4 27M6 43L5.4 27', 3.2) + thumb(c, -15, 29, 76, 20, w) + cuff,
+    fist: palm('M-20 3C-28 20 -25 38 -17 45Q-12 52 -5 46Q0 53 6 46Q12 52 18 44C26 34 25 14 19 3Z') + line('M-5 46L-4.4 28M6 46L5.4 28', 3) + thumb(c, -16, 30, 74, 21, w) + cuff,
     open: finger(c, 0, 17, 0, 24, 6.4, w) + finger(c, -14, 15, 34, 22, 6.2, w) + finger(c, 14, 15, -34, 22, 6.2, w)
       + palm('M-19 3C-26 20 -20 38 0 40C20 38 26 20 19 3Z') + thumb(c, -19, 22, 64, 22, w) + cuff,
     point: `<g transform="${tf(3, 13, 0)}">${part(c, 'M-6.2 0L-6.2 42Q-6.2 51 0 51Q6.2 51 6.2 42L6.2 0Z', w, { sw: 4.6, mis: [1.6, 1.4] })}</g>`
@@ -250,91 +254,99 @@ export function gloveKinds(c, W) {
 }
 export const GLOVE_GRIP = { fist: [0, 27], open: [0, 26], point: [0, 24], flat: [0, 30], pinch: [4, 36] };
 
-// ------------------------------------------------------------------ SHOES (local: ankle at 0,0, toe toward +x, ground at y=+38)
+// ------------------------------------------------------------------ SHOES (local: leg entry at 0,0, toe toward +x, ground at y=+38)
 export function shoeArt(c, W) {
   const base = (W.shoe && W.shoe.base) || PAL.white;
-  const d = 'M-26 -2C-32 14 -32 32 -18 37L40 37C66 37 72 24 68 13C64 0 46 -6 28 -6C10 -12 -10 -10 -26 -2Z';
-  let s = part(c, d, base, { shade: 'M-34 22L74 8L74 48L-34 48Z' });
-  s += line('M30 -2Q24 14 36 32', 3.6, INK, ' opacity=".55"');                                   // toe crease
-  s += `<path d="M-28 32Q-6 41 40 38" fill="none" stroke="${INK}" stroke-width="7.5" stroke-linecap="round"/>`; // sole
-  // puffy ankle cuff (leg enters here)
-  s += part(c, 'M-24 -2C-30 -14 -20 -24 -4 -24C14 -24 26 -16 22 -4C12 2 -12 2 -24 -2Z', base, { sw: 4.6, shade: 'M-4 -26L30 -26L30 6L-4 6Z' });
-  s += line('M-16 -10Q-4 -4 10 -9', 2.6, INK, ' opacity=".5"');
-  if (W.shoe && W.shoe.toe) s += `<path d="M40 -4Q32 14 40 36Q60 36 69 22Q72 8 52 -3Z" fill="${W.shoe.toe}" opacity=".95"/>` + line('M40 -4Q32 14 40 36', 3.4);
+  const body = 'M-26 12C-32 32 -18 44 8 44L34 44C56 44 62 28 58 16C54 2 36 -6 18 -6C0 -8 -18 -4 -26 12Z';
+  let s = part(c, body, base, { shade: 'M-34 28L68 12L68 54L-34 54Z' });
+  s += line('M30 -1Q26 16 38 36', 3.2, INK, ' opacity=".45"');
+  s += `<path d="M-27 38Q-4 47 36 44" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>`; // sole
+  // puffy ankle cuff (the leg enters here)
+  s += part(c, 'M-20 -2C-27 -14 -14 -23 0 -22C14 -21 24 -13 19 -2C14 6 10 2 5 6C0 2 -7 7 -12 4C-16 6 -19 4 -20 -2Z', base, { sw: 4.2, shade: 'M2 -26L30 -26L30 8L2 8Z' });
+  s += line('M-12 -10Q-2 -5 11 -9', 2.4, INK, ' opacity=".4"');
+  if (W.legs && W.legs.sock) s += part(c, 'M-10 -40L10 -40L10 -20L-10 -20Z', W.legs.sock, { sw: 3.6, mis: [1.2, 1] });
+  if (W.shoe && W.shoe.toe) s += `<path d="M36 -3Q28 14 38 40Q56 42 62 26Q64 8 48 -2Z" fill="${W.shoe.toe}" opacity=".95"/>` + line('M36 -3Q28 14 38 40', 3.2);
   return s;
 }
 
-// ------------------------------------------------------------------ HEAD (hair, face, features). head-local coords.
-export const FACE_D = 'M3 -14C20 -14 40 -26 46 -52C52 -78 52 -104 41 -121C31 -135 15 -141 0 -141C-15 -141 -31 -135 -41 -121C-52 -104 -52 -78 -46 -52C-40 -26 -17 -14 3 -14Z';
-export const HEAD_REST_TURN = 0.55;      // rest face turn (toward the grid on her right)
+// ------------------------------------------------------------------ HEAD
+// Head-art coordinates (measured on the model sheet): face centre line x=0, chin y=-14, face half-width ~43, she faces RIGHT.
+// The cranium (hair) is wide to the LEFT of the face; the garrison cap sits on the back-left of the head.
+export const FACE_D = 'M7 -14C24 -14 38 -26 42 -44C46 -62 45 -84 38 -98C30 -110 14 -115 0 -114C-18 -114 -36 -104 -43 -86C-48 -70 -46 -50 -38 -34C-30 -20 -12 -14 7 -14Z';
+export const HEAD_PIVOT = [-9, -6];       // art point that sits on the neck pivot (head tilts about the neck)
+export const HEAD_REST_TURN = 1.0;
+// feature layout as a function of the face turn t (0 = frontal, 1 = three-quarter toward the grid)
+export function faceLayout(t) {
+  return {
+    near: [-24 + 11 * t, -54 + 1 * t], far: [24 + 4 * t, -56 + 1 * t], kxNear: 0.95 + 0.05 * t, kxFar: 0.95 - 0.33 * t, ky: 1,
+    nose: [17 * t, -39], mouth: [8 * t, -27], browNear: [-24 + 11 * t - 1.5, -79 + 1 * t], browFar: [24 + 4 * t - 2, -82],
+  };
+}
 
-function hairBack(c, W) {
-  const col = PAL.hair, sh = PAL.hairShade;
-  const mass = part(c, 'M48 -100C56 -138 28 -163 -8 -163C-48 -163 -82 -138 -84 -98C-87 -74 -84 -58 -76 -46C-80 -34 -66 -26 -52 -34C-46 -40 -42 -46 -38 -54L40 -54C42 -46 50 -44 56 -48C66 -52 68 -64 60 -70C56 -80 54 -90 48 -100Z', col, { shade: 'M-30 -170L100 -170L100 -20L-30 -20Z', ht: 'ht' });
-  const hl = line('M-60 -118C-66 -98 -62 -78 -54 -66', 4, PAL.hairHi, ' opacity=".9"') + line('M-30 -150C-44 -146 -56 -136 -62 -124', 3.6, PAL.hairHi, ' opacity=".8"');
-  return { mass: mass + hl,
-    curlL: part(c, 'M-62 -60C-84 -56 -92 -32 -78 -18C-68 -10 -52 -16 -52 -30C-52 -40 -62 -42 -66 -36C-62 -44 -58 -52 -56 -60Z', col, { shade: 'M-60 -30L-40 -30L-40 0L-60 0Z' }) + line('M-76 -34C-72 -26 -64 -26 -62 -32', 3.2, PAL.hairHi),
-    curlR: part(c, 'M52 -60C66 -66 76 -54 70 -40C66 -30 54 -30 50 -38C56 -38 58 -44 54 -48Z', col, { sw: OL * 0.9 }) };
+function hairParts(c, W) {
+  const col = PAL.hair;
+  const mass = part(c, 'M20 -122C16 -140 -2 -148 -30 -146C-60 -142 -88 -122 -93 -90C-95 -66 -92 -46 -84 -30C-78 -18 -66 -6 -50 0L-30 4L-24 -20L0 -20L26 -40C30 -70 26 -100 20 -122Z', col, { shade: 'M-96 -170L-30 -170L-30 10L-96 10Z', ht: 'ht' })
+    + line('M-84 -96C-90 -76 -86 -56 -76 -40', 3.6, PAL.hairHi, ' opacity=".85"') + line('M-70 -128C-82 -118 -88 -104 -88 -94', 3.2, PAL.hairHi, ' opacity=".7"')
+    + `<g id="${c.pre}hair-tuft" opacity="0">` + part(c, 'M-62 -128L-60 -158L-48 -142L-42 -166L-30 -148L-20 -164L-14 -146L-2 -156L2 -134L-2 -120L-58 -120Z', col, { sw: OL * 0.95 }) + line('M-52 -146L-48 -132M-26 -150L-24 -134', 2.8, PAL.hairHi) + `</g>`;
+  const curlL = part(c, 'M-80 -48C-94 -44 -101 -26 -93 -15C-86 -6 -72 -11 -72 -22C-72 -30 -80 -31 -83 -25C-81 -33 -77 -41 -72 -50Z', col, { shade: 'M-100 -30L-80 -30L-80 -5L-100 -5Z' }) + line('M-91 -33C-88 -22 -80 -20 -78 -26', 2.8, PAL.hairHi);
+  const curlR = part(c, 'M28 -34C42 -42 57 -34 56 -22C55 -11 40 -10 36 -19C43 -21 45 -27 39 -28L28 -22Z', col, { sw: OL * 0.9 }) + line('M46 -34C52 -30 53 -25 50 -21', 2.6, PAL.hairHi);
+  return { mass, curlL, curlR };
 }
 function bangsArt(c) {
   const col = PAL.hair;
-  // side-swept fringe: from under the cap across the forehead, ending in a curl at the right temple
-  return part(c, 'M-44 -118C-30 -146 14 -150 44 -128C52 -121 54 -108 50 -98C50 -108 44 -116 34 -114C24 -112 18 -104 8 -108C-6 -112 -22 -106 -34 -100C-40 -104 -44 -112 -44 -118Z', col, { shade: 'M-60 -156L-6 -156L-6 -100L-60 -100Z' })
-    + line('M-18 -132C-4 -139 14 -137 30 -128', 3.6, PAL.hairHi, ' opacity=".9"')
-    + part(c, 'M38 -118C52 -114 56 -96 50 -86C46 -82 40 -86 42 -92C44 -98 40 -104 36 -106Z', col, { sw: OL * 0.9 });
+  // hair that sweeps over the forehead and ends in a round curl above the far eye (drawn OVER the cap's lower edge)
+  return part(c, 'M-50 -82C-48 -104 -28 -110 -8 -105C8 -101 18 -108 22 -124C29 -135 46 -134 51 -121C55 -108 47 -97 36 -94C22 -90 10 -94 0 -96C-14 -98 -30 -93 -40 -80Z', col, { shade: 'M-60 -140L-4 -140L-4 -90L-60 -90Z' })
+    + line('M30 -124C38 -128 46 -126 48 -118', 2.8, PAL.hairHi, ' opacity=".9"');
 }
 
-// face features builder. Dynamic bits carry ids; the runtime fills their attributes.
+// eyes
 function eyeMarkup(c, side, W) {
   const s = side, id = side < 0 ? 'eye-l' : 'eye-r', P = c.pre + id;
   const al = almondPath(s), lid = W.lidFill || PAL.eyeshadow;
   const g0 = eyeGeom(s, { u: 0.55 });
-  let inner = '';
   c.defs.push(`<clipPath id="${P}-clip"><path d="${al}"/></clipPath>`);
-  inner += `<path d="${al}" fill="${PAL.white}"/>`;
+  let inner = `<path d="${al}" fill="${PAL.white}"/>`;
   inner += `<g clip-path="url(#${P}-clip)">`
-    + `<g id="${P}-iris">` + circ(0, 2, 11.5, '#1F3B3E') + `<path d="M-9 8Q0 15 9 8Q5 13 0 13.6Q-5 13 -9 8Z" fill="${PAL.turq}" opacity=".9"/>` + circ(0, 2, 6.4, INK)
-      + `<ellipse cx="-4" cy="-2.6" rx="3.8" ry="3.2" fill="${PAL.white}" transform="rotate(-20 -4 -2.6)"/>` + circ(3.8, 6, 1.6, PAL.white) + `</g>`
-    + `<g id="${P}-stars" opacity="0">` + circ(0, 1, 15.5, INK) + star(0, 1, 12, PAL.white, 2, 0, 5) + `</g>`
+    + `<g id="${P}-iris"><ellipse cx="0" cy="2" rx="7.6" ry="13.8" fill="${INK}"/><ellipse cx="0" cy="11.4" rx="4.6" ry="3" fill="#16484B" opacity=".9"/>`
+      + `<path d="M2.4 -8L7 -5.4L5.2 -2L7.4 1L3.6 2.4L4.8 6.4L1.4 3.6Z" fill="${PAL.white}"/>` + circ(-2.4, 8.6, 1.5, PAL.white) + `</g>`
+    + `<g id="${P}-stars" opacity="0">` + circ(0, 1, 17.5, INK) + star(0, 1, 14, PAL.white, 2, 0, 5) + `</g>`
     + `<path id="${P}-lower" d="${g0.lowerFill}" fill="${PAL.skin}"/>`
     + `<path id="${P}-lidfill" d="${g0.upperFill}" fill="${lid}"/>`
     + `</g>`;
-  inner += `<path d="${al}" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round" opacity=".55"/>`;
+  inner += `<path d="M${s * 17} 1C${s * 19} 26 ${s * -19} 26 ${s * -17} 1" fill="none" stroke="${INK}" stroke-width="3.4" stroke-linecap="round"/>`;
+  inner += `<path id="${P}-upper" d="M${s * -17} 1C${s * -19} -28 ${s * 19} -28 ${s * 17} 1" fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>`;
   inner += `<path id="${P}-lashline" d="${g0.lidLine}" fill="none" stroke="${INK}" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/>`;
-  inner += `<path id="${P}-lashes" d="${g0.lashes}" fill="none" stroke="${INK}" stroke-width="3.1" stroke-linecap="round"/>`;
-  // soft eyeshadow above the almond + two tiny lower lashes
-  const sh = `<path d="M${s * -18} -8C${s * -14} -30 ${s * 12} -31 ${s * 22} -6C${s * 14} -20 ${s * -8} -22 ${s * -18} -8Z" fill="${lid}" opacity="${W.lidShadowOp ?? 0.55}"/>`;
-  const lowL = line(`M${s * 12} 15.5l${s * 4} 4.5M${s * 17} 11l${s * 5} 3`, 2.4);
-  return G(P, `<g id="${P}-s">` + sh + inner + lowL + `</g>`);
+  inner += `<path id="${P}-lashes" d="${g0.lashes}" fill="none" stroke="${INK}" stroke-width="3.3" stroke-linecap="round"/>`;
+  return G(P, `<g id="${P}-s">` + inner + `</g>`);
 }
 
 export function buildHead(c, W) {
-  const hb = hairBack(c, W);
-  const face = part(c, FACE_D, PAL.skin, { shade: 'M14 -150L70 -150L70 -8L-6 -8L12 -40Z' });
-  // chin / jaw soft shade + cheeks
-  const cheeks = `<ellipse cx="-34" cy="-52" rx="10" ry="6.5" fill="${PAL.blush}" opacity=".4"/><ellipse cx="34" cy="-52" rx="9" ry="6" fill="${PAL.blush}" opacity=".4"/>`;
-  const nose = line('M2 -66Q10 -58 3 -52', 3.6) + `<path d="M-1 -53.5q3.5 2 7 0" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linecap="round" opacity=".6"/>`;
+  const hb = hairParts(c, W);
+  const hairTop = W.hairTop ? W.hairTop(c) : '';
+  const maskUnder = W.maskUnder ? W.maskUnder(c) : '';
+  const face = part(c, FACE_D, PAL.skin, {});
+  const cheeks = `<ellipse cx="-27" cy="-27" rx="7" ry="4.4" fill="${PAL.blush}" opacity=".4"/><ellipse cx="33" cy="-29" rx="5.4" ry="4" fill="${PAL.blush}" opacity=".36"/>`;
+  const nose = line('M0 -4Q4.4 1 -0.4 4.6', 2.6) + `<path d="M-2.4 5.4q2.4 1.4 4.8 0" fill="none" stroke="${INK}" stroke-width="1.8" stroke-linecap="round" opacity=".5"/>`;
   const mouth = G(c.pre + 'mouth',
     `<g id="${c.pre}mouth-s">` +
-    `<path id="${c.pre}m-lips" d="" fill="${PAL.lips}" stroke="${INK}" stroke-width="4.2" stroke-linejoin="round"/>` +
+    `<path id="${c.pre}m-lips" d="" fill="${PAL.lips}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>` +
     `<clipPath id="${c.pre}m-clip"><path id="${c.pre}m-clipd" d=""/></clipPath>` +
-    `<path id="${c.pre}m-cav" d="" fill="${PAL.mouth}" stroke="${INK}" stroke-width="2.8" stroke-linejoin="round"/>` +
+    `<path id="${c.pre}m-cav" d="" fill="${PAL.mouth}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>` +
     `<g clip-path="url(#${c.pre}m-clip)"><rect id="${c.pre}m-teeth" x="-30" y="-6" width="60" height="5" fill="${PAL.white}"/><ellipse id="${c.pre}m-tongue" cx="0" cy="6" rx="8" ry="3" fill="${PAL.orange}"/></g>` +
-    `<path id="${c.pre}m-seam" d="" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>` +
-    `<ellipse id="${c.pre}m-gloss" cx="0" cy="0" rx="3" ry="1" fill="${PAL.white}" opacity=".85"/>` +
-    `<path id="${c.pre}m-dimple" d="M0 0q2.6 -1.4 3.4 -5" fill="none" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/>` +
+    `<path id="${c.pre}m-seam" d="" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>` +
+    `<ellipse id="${c.pre}m-gloss" cx="0" cy="0" rx="3" ry="1" fill="${PAL.white}" opacity=".9"/>` +
+    `<path id="${c.pre}m-dimple" d="M0 0q2.4 -1.2 3 -4.4" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>` +
     `</g>`);
   const features = G(c.pre + 'features',
-    G(c.pre + 'cheeks', cheeks) + G(c.pre + 'nose', nose) + eyeMarkup(c, -1, W) + eyeMarkup(c, 1, W)
-    + `<path id="${c.pre}brow-l" d="" fill="${INK}" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/><path id="${c.pre}brow-r" d="" fill="${INK}" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>` + mouth);
+    G(c.pre + 'cheeks', cheeks) + G(c.pre + 'nose', `<g id="${c.pre}nose-s">${nose}</g>`) + eyeMarkup(c, -1, W) + eyeMarkup(c, 1, W)
+    + `<path id="${c.pre}brow-l" d="" fill="${INK}" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/><path id="${c.pre}brow-r" d="" fill="${INK}" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/>` + mouth);
   return {
-    hairMass: G(c.pre + 'hair-mass', hb.mass), curlL: G(c.pre + 'hair-curl-l', hb.curlL), curlR: G(c.pre + 'hair-curl-r', hb.curlR),
+    hairMass: G(c.pre + 'hair-mass', hb.mass + hairTop), maskUnder, curlL: G(c.pre + 'hair-curl-l', hb.curlL), curlR: G(c.pre + 'hair-curl-r', hb.curlR),
     face: G(c.pre + 'face', face), features, bangs: G(c.pre + 'hair-front', bangsArt(c)),
   };
 }
 
 export function defsCommon(pre) {
-  return `<pattern id="${pre}ht" width="6.4" height="6.4" patternUnits="userSpaceOnUse" patternTransform="rotate(32)"><circle cx="3.2" cy="3.2" r="1.55" fill="${INK}" opacity=".30"/></pattern>`
+  return `<pattern id="${pre}ht" width="6.4" height="6.4" patternUnits="userSpaceOnUse" patternTransform="rotate(32)"><circle cx="3.2" cy="3.2" r="1.5" fill="${INK}" opacity=".28"/></pattern>`
     + `<pattern id="${pre}htl" width="6.4" height="6.4" patternUnits="userSpaceOnUse" patternTransform="rotate(32)"><circle cx="3.2" cy="3.2" r="1.45" fill="${PAL.white}" opacity=".32"/></pattern>`;
 }
-
