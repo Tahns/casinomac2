@@ -37,12 +37,13 @@ const errors = [], failed = [], bad = [], rgs = [];
 const browser = await chromium.launch({ executablePath: CHROME, args: ['--no-sandbox'] });
 const results = [];
 for (const [device, vw, vh] of [['desktop', 1280, 720], ['mobile', 412, 800]]) {
-  const page = await (await browser.newContext({ viewport: { width: vw, height: vh } })).newPage();
+  const ctx = await browser.newContext({ viewport: { width: vw, height: vh } });
+  const page = await ctx.newPage();
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`[${device}] ${m.type()}: ${m.text()}`); });
   page.on('pageerror', (e) => errors.push(`[${device}] pageerror: ${e.message}`));
   page.on('requestfailed', (r) => failed.push(`[${device}] ${r.url()} ${r.failure()?.errorText}`));
   page.on('response', (r) => { if (r.status() >= 400) bad.push(`[${device}] ${r.status()} ${r.url()}`); if (r.url().startsWith(`http://localhost:${MOCK}`)) rgs.push(`${r.request().method()} ${new URL(r.url()).pathname} ${r.status()}`); });
-  const url = `http://localhost:${PORT}${PREFIX}?sessionID=t&rgs_url=http://localhost:${MOCK}&lang=en&currency=USD&device=${device}&social=false&demo=false`;
+  const url = `http://localhost:${PORT}${PREFIX}?sessionID=verify-${device}&rgs_url=http://localhost:${MOCK}&lang=en&currency=USD&device=${device}&social=false&demo=false`;
   await page.goto(url); await page.waitForSelector('body:not(.state-booting)', { timeout: 15000 }).catch(() => {});
   await sleep(1500);
   const bal0 = await page.textContent('#balance').catch(() => null);
@@ -52,6 +53,7 @@ for (const [device, vw, vh] of [['desktop', 1280, 720], ['mobile', 412, 800]]) {
   await page.screenshot({ path: path.join(ROOT, `dist/verify_${device}_after_bet.png`) });
   const bal1 = await page.textContent('#balance').catch(() => null), win = await page.textContent('#win').catch(() => null);
   results.push({ device, bal0, bal1, win, loadingGone: await page.evaluate(() => { const l = document.getElementById('loading'); return !l || getComputedStyle(l).display === 'none' || getComputedStyle(l).opacity === '0' || l.hidden; }) });
+  await ctx.close();
 }
 await browser.close(); mock.kill(); srv.close();
 console.log('results', JSON.stringify(results));
