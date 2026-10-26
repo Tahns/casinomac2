@@ -39,7 +39,8 @@ audio.play = (id, opt) => {
   try { win = typeof audio.isWinLike === 'function' ? audio.isWinLike(id) : null; } catch (e) { win = null; }
   let ret = null;
   try { ret = realPlay(id, opt); } catch (e) { ret = 'threw'; }
-  log.push({ t: now(), kind: 'audio', id, winLike: win, quiet: !!(opt && opt.quiet), ret });
+  let lvl = null; try { lvl = renderer._round.level; } catch (e) { lvl = null; }
+  log.push({ t: now(), kind: 'audio', id, winLike: win, quiet: !!(opt && opt.quiet), ret, lvl });
   return ret;
 };
 const renderer = createRenderer($('game'));
@@ -66,6 +67,7 @@ setInterval(spyMascot, 50);
 // DOM watcher: records when a banner, a popup, a win class, sparks (fx) appear
 const watch = new MutationObserver((muts) => {
   for (const m of muts) {
+    m.removedNodes.forEach((n) => { if (n.nodeType === 1 && n.classList.contains('banner')) log.push({ t: now(), kind: 'dom', what: 'banner-gone' }); });
     m.addedNodes.forEach((n) => {
       if (n.nodeType !== 1) return;
       if (n.classList.contains('banner')) log.push({ t: now(), kind: 'dom', what: 'banner', cls: n.className });
@@ -79,8 +81,10 @@ const watch = new MutationObserver((muts) => {
   }
 });
 watch.observe(document.getElementById('app'), { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+let BOOKS = {};
+try { BOOKS = (await import('../../src/render/devbooks.js')).BOOKS; } catch (e) { BOOKS = {}; }
 window.H = {
-  renderer, audio, settings, log, hooks,
+  renderer, audio, settings, log, hooks, BOOKS,
   setBet(b) { bet = b; },
   async play(events, o = {}) {
     log.length = 0; t0 = performance.now();

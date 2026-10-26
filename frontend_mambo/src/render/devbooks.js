@@ -166,8 +166,8 @@ export function bonus(n = 4, big = false, step = 1) {
   }
   const extra = big ? 20000 : 0;
   fsWin += extra;
-  push({ type: 'freeSpinEnd', amount: fsWin, winLevel: 5 });
-  push({ type: 'setWin', amount: fsWin, winLevel: 5 });
+  // like the real books: freeSpinEnd.amount is the total of the round (base spin included), there is no setWin after it
+  push({ type: 'freeSpinEnd', amount: total + fsWin, winLevel: 5 });
   push({ type: 'setTotalWin', amount: total + fsWin });
   push({ type: 'finalWin', amount: total + fsWin });
   return events;
@@ -186,7 +186,7 @@ export function meterChain(step = 1, steps = 22) {
   const sp2 = makeSpin({ seed: 8, free: true, gm, pool: ['H4', 'L1'], cascades: 3 });
   sp2.events.forEach((e) => push(e));
   const tot = sp.win + sp2.win;
-  push({ type: 'freeSpinEnd', amount: tot, winLevel: 3 }, { type: 'setWin', amount: tot, winLevel: 3 }, { type: 'setTotalWin', amount: tot }, { type: 'finalWin', amount: tot });
+  push({ type: 'setTotalWin', amount: tot }, { type: 'freeSpinEnd', amount: tot, winLevel: 3 }, { type: 'finalWin', amount: tot });
   out.forEach((e, i) => { e.index = i; });
   return out;
 }
@@ -251,4 +251,32 @@ export function fuseFree() {
   out.forEach((e, i) => { e.index = i; });
   return out;
 }
-export const BOOKS = { fuseBlast, fuseBlastDry, fuseBlastAdv2, fuseBlastScatter, fuseFizzle, fuseFizzleNoWin, fuseFree, meterChain, baseWin, cascadeWin, noWin, nearMiss, bonus, bigWin, maxWin };
+// A base spin whose winning steps (cascade) pay exactly `amounts` (multiples of the bet, e.g. [0.4, 0.7, 2]): the test book of the
+// celebration gate (R is the running sum of the steps). The refills only draw from three symbols so that every step forms a cluster.
+export function stepsBook(amounts, seedFrom = 1) {
+  const n = amounts.length;
+  for (let seed = seedFrom; seed < seedFrom + 600; seed++) {
+    const r = makeSpin({ seed, plant: PLANTS.simple, cascades: n, pool: ['H4', 'L1', 'L2'] });
+    const infos = r.events.filter((e) => e.type === 'winInfo');
+    // every winning step needs at least 0.1x per cluster (amounts are multiples of 0.1x), so skip seeds with too many clusters
+    if (infos.length !== n || infos.some((e, i) => e.wins.length > Math.round(amounts[i] * 10))) continue;
+    let k = 0, run = 0;
+    const ev = r.events.map((e) => ({ ...e }));
+    for (const e of ev) {
+      if (e.type === 'winInfo') {
+        const want = Math.round(amounts[k++] * 100), len = e.wins.length;
+        const each = Math.floor(want / len / 10) * 10;
+        e.wins = e.wins.map((w, i) => { const v = i === 0 ? want - each * (len - 1) : each; return { ...w, win: v, meta: { ...w.meta, winWithoutMult: v } }; });
+        e.totalWin = want; run += want;
+      } else if (e.type === 'updateTumbleWin') e.amount = run;
+      else if (e.type === 'setWin') e.amount = run;
+    }
+    ev.push({ type: 'setTotalWin', amount: run }, { type: 'finalWin', amount: run });
+    ev.forEach((e, i) => { e.index = i; });
+    return ev;
+  }
+  return baseWin();
+}
+export const winAt = (x) => stepsBook([x]);
+
+export const BOOKS = { fuseBlast, fuseBlastDry, fuseBlastAdv2, fuseBlastScatter, fuseFizzle, fuseFizzleNoWin, fuseFree, meterChain, baseWin, cascadeWin, noWin, nearMiss, bonus, bigWin, maxWin, stepsBook, winAt };

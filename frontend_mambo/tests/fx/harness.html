@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Agent Mambo - WP5 fx harness</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../src/render/mascot.css">
+<link rel="stylesheet" href="../../src/render/wire.css">
+<link rel="stylesheet" href="../../src/render/meter.css">
+<link rel="stylesheet" href="../../src/ui/ui.css">
+<link rel="stylesheet" href="../../src/render/heroine/heroine.css">
+<link rel="stylesheet" href="../../src/render/layers/layers.css">
+</head>
+<body class="state-idle">
+<div id="devmount"></div>
+<script type="module">
+// WP5 harness: mounts the real index.html markup, creates the real renderer, plays any event list.
+// Exposes window.H = { renderer, play(events, opts), marks, frames(), startFrames(), stopFrames(), canvasBytes() }.
+//   marks  : a probe LAYER logs { t, type, i } for every event the player handles (performance.now() clock)
+//   frames : rAF deltas recorded between startFrames() and stopFrames()
+const q = new URLSearchParams(location.search);
+const html = await (await fetch('../../index.html')).text();
+const doc = new DOMParser().parseFromString(html, 'text/html');
+document.getElementById('devmount').replaceWith(doc.getElementById('app'));
+const { createRenderer } = await import('../../src/render/index.js');
+const layers = await import('../../src/render/layers/index.js');
+const marks = [];
+layers.LAYERS.push({ id: 'wp5-probe', onEvent(ev) { marks.push({ t: performance.now(), type: ev && ev.type, i: ev && ev.index }); }, reset() {} });
+const $ = (id) => document.getElementById(id);
+const renderer = createRenderer($('game'));
+let bet = 1000000;
+renderer.setFormat((x) => `$${(x * bet / 1e6).toFixed(2)}`);
+const hooks = {
+  onTotal: (x) => { $('win').textContent = (x * bet / 1e6).toFixed(2); },
+  onWin: (x) => { $('win').textContent = (x * bet / 1e6).toFixed(2); },
+  onFreeSpinCounter: (c, t) => { $('freespin-counter').textContent = t ? `${c}/${t}` : ''; },
+};
+$('balance').textContent = '1000.00'; $('bet').textContent = '1.00'; $('win').textContent = '0.00';
+let rec = null, rafId = 0, lastT = 0;
+function startFrames() {
+  rec = []; lastT = 0;
+  const loop = (t) => { if (lastT) rec.push({ t, dt: t - lastT }); lastT = t; rafId = requestAnimationFrame(loop); };
+  rafId = requestAnimationFrame(loop);
+}
+function stopFrames() { cancelAnimationFrame(rafId); const r = rec || []; rec = null; return r; }
+function canvasBytes() {
+  let total = 0; const list = [];
+  for (const c of document.querySelectorAll('canvas')) { const b = c.width * c.height * 4; total += b; list.push({ cls: c.className || c.id || c.dataset.l || '?', w: c.width, h: c.height, mb: +(b / 1048576).toFixed(2) }); }
+  return { totalMB: +(total / 1048576).toFixed(2), list };
+}
+window.H = {
+  renderer, hooks, marks, startFrames, stopFrames, canvasBytes, layers,
+  async play(events, o = {}) {
+    marks.length = 0;
+    if (o.cost != null) renderer.setCost(o.cost);
+    if (o.turbo != null) renderer.setTurbo(!!o.turbo);
+    document.body.className = document.body.className.replace(/state-\w+/, 'state-playing');
+    const t0 = performance.now();
+    try { await renderer.playBook(events, hooks); } finally { document.body.className = document.body.className.replace(/state-\w+/, 'state-idle'); }
+    return { ms: performance.now() - t0 };
+  },
+};
+window.__ready = true;
+</script>
+</body>
+</html>
