@@ -29,10 +29,10 @@
 .anttop, .fins, .qstar { transform-origin: 100px 13px; }
 .lid, .lid-a { transform-origin: 131px 60px; }
 .armL, .armL-a { transform-origin: 78px 138px; }
-.foreL, .foreL-a { transform-origin: 78px 161px; }
+.foreL, .foreL-a { transform-origin: 78px 166px; }
 .armR, .armR-a { transform-origin: 122px 138px; }
-.foreR, .foreR-a { transform-origin: 122px 161px; }
-.hold { transform-origin: 0px 30px; }
+.foreR, .foreR-a { transform-origin: 122px 166px; }
+.hold { transform-origin: 0px 32px; }
 .legL, .legL-a { transform-origin: 83px 206px; }
 .legR, .legR-a { transform-origin: 117px 206px; }
 .eyeL, .eyeL-a { transform-origin: 91px 106px; }
@@ -52,8 +52,8 @@
 .shaft { transform: scaleY(.5); }
 .pup { transform: translate(calc(var(--lx) * 1px), calc(var(--ly) * 1px)); }
 .lidL, .lidR { transform: translateY(calc(var(--lid) * 1px)); }
-.armL { transform: rotate(40deg); }
-.foreL { transform: rotate(-142deg); }
+.armL { transform: rotate(46deg); }
+.foreL { transform: rotate(-138deg); }
 .armR { transform: rotate(-8deg); }
 .skirt { transform: skewX(-2deg); }
 
@@ -125,10 +125,10 @@
 .p-plunger .head { transform: rotate(-3deg) translateY(1px); }
 .p-plunger .browL { transform: translateY(3px) rotate(10deg); }
 .p-plunger .browR { transform: translateY(3px) rotate(-10deg); }
-.p-plunger .armR { transform: rotate(-24deg) scaleY(1.04); }
-.p-plunger .foreR { transform: rotate(-24deg) scaleY(1.04); }
-.p-plunger .armL { transform: rotate(40deg); }
-.p-plunger .foreL { transform: rotate(-142deg); }
+.p-plunger .armR { transform: rotate(-28deg); }
+.p-plunger .foreR { transform: rotate(-4deg) scaleY(1.04); }
+.p-plunger .armL { transform: rotate(46deg); }
+.p-plunger .foreL { transform: rotate(-138deg); }
 .p-plunger .skirt { transform: skewX(4deg); }
 
 .p-shrug { --lid: -6; --lx: -3; --ly: 3; }
@@ -160,11 +160,11 @@
 .p-celebrate .eyeL, .p-celebrate .eyeR { display: none; }
 .p-celebrate .browL { transform: translateY(-6px) rotate(-8deg); }
 .p-celebrate .browR { transform: translateY(-6px) rotate(8deg); }
-.p-celebrate .armL { transform: rotate(150deg); }
-.p-celebrate .foreL { transform: rotate(14deg); }
-.p-celebrate .armR { transform: rotate(-148deg); }
-.p-celebrate .foreR { transform: rotate(-32deg); }
-.p-celebrate .hold { transform: rotate(-180deg); }
+.p-celebrate .armL { transform: rotate(125deg); }
+.p-celebrate .foreL { transform: rotate(45deg); }
+.p-celebrate .armR { transform: rotate(-125deg); }
+.p-celebrate .foreR { transform: rotate(-45deg); }
+.p-celebrate .hold { transform: rotate(-170deg); }
 .p-celebrate .case { display: none; }
 .p-celebrate .glass, .p-celebrate .fizz { display: inline; }
 .p-celebrate .burst2, .p-celebrate .confetti, .p-celebrate .stars, .p-celebrate .lidconf { display: inline; }

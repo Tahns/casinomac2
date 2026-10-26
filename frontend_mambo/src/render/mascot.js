@@ -70,16 +70,16 @@ function buildSVG(uid) {
 
   // ---------------------------------------------------------------- arms (two-segment, pivots at shoulder + elbow)
   const T = (x, y, s) => `translate(${x} ${y}) scale(${s} 1)`;
-  const upperD = 'M-5.5,0Q-5.5,-5.5 0,-5.5Q5.5,-5.5 5.5,0L5,23L-5,23Z';
-  const upperO = 'M-5,23L-5.5,0Q-5.5,-5.5 0,-5.5Q5.5,-5.5 5.5,0L5,23';
-  const foreD = 'M-5,-1Q-5,-5 0,-5Q5,-5 5,-1L4.6,22L-4.6,22Z';
-  const hand = sh(ell(0, 27, 6.4, 6.8), C.cream) +
-    sh('M3.8,21.5Q10.5,22.5 9.4,29Q5.4,29.4 3.8,26Z', C.cream, '', 'thumb') +
-    `<path class="o thin fing" d="M-3.6,32L-4.4,36.4M0,33.4L0,38M3.6,32L4.4,36.4"/>`;
-  const cuff = `<path d="M-4.9,12L4.9,12" stroke="${C.lemon}" stroke-width="3" stroke-linecap="round" class="fine"/>`;
+  const upperD = 'M-5.5,0Q-5.5,-5.5 0,-5.5Q5.5,-5.5 5.5,0L5,28L-5,28Z';
+  const upperO = 'M-5,28L-5.5,0Q-5.5,-5.5 0,-5.5Q5.5,-5.5 5.5,0L5,28';
+  const foreD = 'M-5,-1Q-5,-5 0,-5Q5,-5 5,-1L4.6,24L-4.6,24Z';
+  const hand = sh(ell(0, 29, 6.4, 6.8), C.cream) +
+    sh('M3.8,23.5Q10.5,24.5 9.4,31Q5.4,31.4 3.8,28Z', C.cream, '', 'thumb') +
+    `<path class="o thin fing" d="M-3.6,34L-4.4,38.4M0,35.4L0,40M3.6,34L4.4,38.4"/>`;
+  const cuff = `<path d="M-4.9,14L4.9,14" stroke="${C.lemon}" stroke-width="3" stroke-linecap="round" class="fine"/>`;
   const caseHold =
     // drum-shaped attache case hanging from the hand (counter-rotated by CSS to hang upright)
-    `<g class="hold"><g class="case">` +
+    `<g class="hold"><g class="case" transform="translate(0 2)">` +
     `<path class="o thick" d="M-6,40Q0,28 6,40"/>` +
     sh('M-13,45L13,45L13,62Q0,67.5 -13,62Z', C.indigo, 'M3,40L18,40L18,70L3,70Z', 'drum',
        `<path d="M-1.6,45L1.6,45L1.6,64L-1.6,64Z" fill="${C.lemon}"/><path d="M-13,51L13,51" stroke="${C.lemon}" stroke-width="2"/>`) +
@@ -87,7 +87,7 @@ function buildSVG(uid) {
     `<rect x="-2.6" y="52" width="5.2" height="4.4" rx="1" fill="${C.lemon}" stroke="${C.ink}" stroke-width="1.6"/>` +
     `</g>` +
     // seltzer glass with lime fizz (raised in celebrate)
-    `<g class="glass">` +
+    `<g class="glass"><g transform="translate(0 -20) scale(1.45)">` +
     sh('M-6.4,30L6.4,30L8.6,2L-8.6,2Z', C.glass, '', 'gl') +
     `<path d="M-5.2,27L5.2,27L6.8,8L-6.8,8Z" fill="${C.lime}"/>` +
     `<path d="M-6.8,8Q0,5 6.8,8" fill="none" stroke="${C.cream}" stroke-width="1.6"/>` +
@@ -95,13 +95,13 @@ function buildSVG(uid) {
     `<path class="o" d="M-6.4,30L6.4,30L8.6,2L-8.6,2Z"/>` +
     `<g class="fizz"><circle cx="-3" cy="-4" r="1.6" fill="${C.cream}"/><circle cx="3" cy="-8" r="1.3" fill="${C.cream}"/><circle cx="0" cy="-12" r="1.1" fill="${C.cream}"/></g>` +
     `<circle cx="8.6" cy="3" r="5.4" fill="${C.lime}" stroke="${C.ink}" stroke-width="2.6"/><path d="M8.6,3L12,1M8.6,3L5,0.5M8.6,3L8.6,8" stroke="${C.ink}" stroke-width="1.2" fill="none"/>` +
-    `</g></g>`;
+    `</g></g></g>`;
 
   const arm = (side, px, withProp) => {
     const s = side === 'L' ? 1 : -1, N = 'arm' + side, F = 'fore' + side;
     return `<g class="${N} mir${side}"><g class="${N}-a">` +
       `<g class="mir${side}" transform="${T(px, 138, s)}">` + sh(upperD, C.cream, 'M2,-6L9,-6L9,26L2,26Z', '', '', upperO) + `</g>` +
-      `<g class="${F}"><g class="${F}-a"><g transform="${T(px, 161, s)}" class="mir${side}">` +
+      `<g class="${F}"><g class="${F}-a"><g transform="${T(px, 166, s)}" class="mir${side}">` +
         sh(foreD, C.cream, 'M2,-6L9,-6L9,24L2,24Z') + cuff + hand + (withProp ? caseHold : '') +
       `</g></g></g>` +
       `</g></g>`;
