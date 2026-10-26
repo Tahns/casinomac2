@@ -27,7 +27,7 @@ that is 18 750 (50k is NOT a multiple: use 56 250 = 3 x 6250 x 3 or 46 875 = 3 x
 | `MISSION_WEIGHTS` | mission mix of `base` (also the v2 criteria quotas and fence shares) | 40 / 30 / 30 |
 | `LAYOUT_WEIGHTS` | base floor-plan draw | 50 / 22 / 14 / 14 |
 | `THIRD_MISSION` | `'blackout'` or `'fuse'` (the Long Fuse fallback: door `entrance_fuse`) | blackout |
-| `BASE_PROFILE` | `'v1'` or `'v2'` | see PROGRESS.md (decided by the optimizer experiment) |
+| `BASE_PROFILE` | `'v1'` (shipped criteria / fences) or `'v2'` (one criterion per pinned fence) | v2 (the optimizer experiment met the targets, PROGRESS.md) |
 | `BASE_BUCKET_EDGES` | edges of the win buckets sub / mid / big | (1.0, 5.0) |
 | `WILD_COUNT` | `{'BR0': n, 'FR0': n}` for tools/make_reels.py only (the game code does not read it) | 3 / 4 |
 Run-level: `AM_MISSION_WEIGHTS` (flat or per mode JSON) and `AM_LAYOUT_WEIGHTS` beat every config. `{"briefing":1}` + `{"mezzanine":1}` = v1 books bit for bit.
@@ -42,4 +42,13 @@ Shares for `shares.json` come from these keys weighted by the final lookup table
 * `tools/base_opt_probe.py run --books 93750 --profile v2 --keep` (scratch game id, restores `setup.toml`), `report`.
 `reweight_bonus.py` is bonus-only (`bonus_tiers.json`, one cache): generalise it to `(mode)` and read tier from the books or from `bonusTier` in `force_record_<mode>.json`.
 
-## 5. Numbers (filled in PROGRESS.md, section WP8)
+## 5. Numbers and open items
+All stamps and numbers are in PROGRESS.md (section WP8). Short version:
+* Base v2 (profile default): 93 750 books simulate in 303 s on 3 threads (v1 profile about 60 s), the Rust optimizer takes 136 s on 3 threads; weighted table: RTP 0.96000, hit 23.32 %, P(R > 1x) 12.52 %, sub-stake wins 10.8 % of spins, missions pinned 40/30/30 (each 74.2x mean book win), layout shares 50.2/21.7/13.3/14.8 % (outputs).  rewrites the tracked file : restore it (M	frontend_mambo/src/i18n/en_hero.js
+M	frontend_mambo/src/render/heroine/heroine.css
+M	frontend_mambo/src/render/mascot.js
+M	math/games/agent_mambo/PROGRESS.md
+Your branch is ahead of 'origin/claude/elegant-bell-5q79k8' by 11 commits.
+  (use "git push" to publish your local commits)) after a run. The optimizer is not reproducible run to run (shares are pinned, the shape inside a fence is not).
+* Doors: with the plain exponential tilt of  the estimated final tables are Orders median 65.4x / P(R > price) 29.6 %, Blackout 65.5x / 28.9 % (published Briefing 64.1x / 28.8 %): the 30 % target is missed by 0.4 / 1.1 points. A reweight that adds a boost on the books above the price ( shows kappa 0.146 / 0.218) reaches 31.0 % with median 66.3x / 66.9x and RTP exactly 96.000 %: please build it into the generalised reweighter (one lambda AND one kappa per mode).
+* Wincap criterion on the WCAP strip works in every door (1.0 attempts per book, 11-12 ms): 300 wincap books per door all reach 5000x and reconcile; for Orders 296 of 300 cap when an envelope opens (), 4 of 300 while banking at x1.
