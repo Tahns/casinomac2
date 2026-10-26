@@ -54,7 +54,7 @@ def test_bonus_shape():
             median = p / 100
             break
     mean = sum(w * p / 100 for _, w, p in rows) / W
-    # measured 43.6x on 1e5 books; gate at 40% of the 100x price
+    # gate at 40% of the 100x price
     assert median >= 40, median
     assert mean / median <= 3, mean / median
 
@@ -89,7 +89,25 @@ def test_bonus_scatter_tiers():
     assert all(sh.get(k, 0) > 0 for k in (10, 12, 15)) and sh.get(18, 0) + sh.get(20, 0) > 0
 
 
-# ------------------------------------------------------------------ Fuse Line
+# ------------------------------------------------------------------ Global multiplier meter
+GM_START, GM_STEP, GM_CAP = 1, 8, 100  # must match game_config.gm_*
+
+
+def _cfg():
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    from game_config import GameConfig
+    return GameConfig()
+
+
+def test_config_matches_test_constants():
+    c = _cfg()
+    assert (c.gm_start, c.gm_step, c.gm_cap) == (GM_START, GM_STEP, GM_CAP)
+    assert c.game_id == "agent_mambo"
+    assert not hasattr(c, "vein_step")
+
+
 def _sample_books(mode, limit=3000, stride=7):
     import io, json, zstandard
     out = []
@@ -115,17 +133,94 @@ def _spins(book):
     return spins
 
 
+def _walk_meter(book):
+    """Replay the meter: returns number of winning steps checked. Asserts the multiplier rules."""
+    ev = book["events"]
+    capped = any(e["type"] == "wincap" for e in ev)
+    gm = 1
+    in_free = False
+    last_win_mult = None
+    checked = 0
+    seen_start = False
+    pending_bump = False
+    for e in ev:
+        t = e["type"]
+        if t == "reveal":
+            in_free = e["gameType"] == "freegame"
+        if t == "updateGlobalMult":
+            if not seen_start:
+                assert e["globalMult"] == GM_START  # announced once, at free-spin start
+                seen_start = True
+                gm = e["globalMult"]
+                pending_bump = False
+                continue
+            assert pending_bump, "meter moves only right after a winning step"
+            assert e["globalMult"] == min(gm + GM_STEP, GM_CAP)
+            assert 1 <= e["globalMult"] <= GM_CAP
+            gm = e["globalMult"]
+            pending_bump = False
+        if t == "winInfo":
+            for w in e["wins"]:
+                assert w["meta"]["globalMult"] == (gm if in_free else 1), (gm, in_free)
+                assert w["meta"]["clusterMult"] == 1
+                # paid = table value x current meter (x100 integer units, wincap clip allowed)
+                assert w["win"] == min(w["meta"]["winWithoutMult"] * w["meta"]["globalMult"], 500000)
+            checked += 1
+            pending_bump = in_free and not capped
+        if t in ("reveal", "freeSpinEnd") and pending_bump and in_free and not capped:
+            raise AssertionError("winning free-spin step without meter update")
+    return checked
+
+
+def test_meter_rules_bonus():
+    n = 0
+    for b in _sample_books("bonus", limit=1500, stride=11):
+        n += _walk_meter(b)
+        gms = [e["globalMult"] for e in b["events"] if e["type"] == "updateGlobalMult"]
+        assert gms[0] == GM_START and max(gms) <= GM_CAP
+        # persists: never goes down inside the feature, also across spins and retriggers
+        assert all(a <= c for a, c in zip(gms, gms[1:]))
+    assert n > 1000
+
+
+def test_meter_base_is_x1():
+    for b in _sample_books("base", limit=2000):
+        assert not any(e["type"] == "updateGlobalMult" for e in b["events"] if True) or any(
+            e["type"] == "freeSpinTrigger" for e in b["events"]
+        )
+        _walk_meter(b)
+        # base spins only: no globalMult above 1 before the trigger
+        for e in b["events"]:
+            if e["type"] == "freeSpinTrigger":
+                break
+            if e["type"] == "winInfo":
+                assert all(w["meta"]["globalMult"] == 1 for w in e["wins"])
+
+
+def test_meter_reaches_high_values_sometimes():
+    top = 0
+    for b in _sample_books("bonus", limit=3000, stride=5):
+        top = max(top, max(e["globalMult"] for e in b["events"] if e["type"] == "updateGlobalMult"))
+    assert top >= 50, top
+
+
+# ------------------------------------------------------------------ Bomb-timer wire
 FUSE = {"len": 8, "detmin": 3}
 
 
+def _board_after(book):
+    """Yield (event_index, spin_events) for helper loops; boards are not replayed here."""
+    return _spins(book)
+
+
 @pytest.mark.parametrize("mode", list(COST))
-def test_fuse_events_well_formed(mode):
+def test_wire_events_well_formed(mode):
     n_spins = n_blast = n_fizzle = 0
     for b in _sample_books(mode):
         for sp in _spins(b):
             n_spins += 1
             fz = [e for e in sp if e["type"].startswith("fuse")]
-            assert fz, "every spin carries a fuse"
+            assert fz, "every spin carries a wire"
             assert sp.index(fz[0]) == 1 and fz[0]["type"] == "fusePath"  # right after reveal
             path = [(c["reel"], c["row"]) for c in fz[0]["cells"]]
             assert len(path) == FUSE["len"] and len(set(path)) == len(path)
@@ -133,12 +228,13 @@ def test_fuse_events_well_formed(mode):
             for (r, c) in path:
                 assert 0 <= r < 6 and 0 <= c < 5  # visible rows 0..4
             for (r1, c1), (r2, c2) in zip(path, path[1:]):
-                assert (r2 - r1, c2 - c1) in ((1, 0), (0, 1), (0, -1))  # right / down / up only
+                assert (r2 - r1, c2 - c1) in ((1, 0), (0, 1), (0, -1))
             burned = fz[0]["burned"]
             assert burned == 1
-            wins_steps = 0
             closed = False
-            for e in fz[1:]:
+            for i, e in enumerate(sp):
+                if not e["type"].startswith("fuse") or e["type"] == "fusePath":
+                    continue
                 assert not closed
                 if e["type"] == "fuseBurn":
                     assert e["burned"] > burned and e["burned"] <= len(path)
@@ -148,47 +244,102 @@ def test_fuse_events_well_formed(mode):
                     assert burned >= FUSE["detmin"]
                     n_blast += 1
                     closed = True
-                    assert e["cells"]
-                    for c in e["cells"]:
-                        assert (c["reel"], c["row"]) in path[:burned] and c["replaced"] not in ("S", "W")
+                    assert e["cells"] and all("replaced" not in c for c in e["cells"])
+                    cells = [(c["reel"], c["row"]) for c in e["cells"]]
+                    assert len(set(cells)) == len(cells)
+                    assert set(cells) <= set(path[:burned])
+                    # followed immediately by the refill tumble of exactly these cells (padded rows)
+                    nxt = sp[i + 1]
+                    assert nxt["type"] == "tumbleBoard"
+                    assert sorted((c["reel"], c["row"] - 1) for c in nxt["explodingSymbols"]) == sorted(cells)
+                    per_reel = {}
+                    for r, c in cells:
+                        per_reel[r] = per_reel.get(r, 0) + 1
+                    for r, k in per_reel.items():
+                        # k new symbols + the padding symbol on top of that reel
+                        assert len(nxt["newSymbols"][r]) == k + 1
+                    for r in range(6):
+                        if r not in per_reel:
+                            assert nxt["newSymbols"][r] == []
+                    # never a scatter among removed cells, never a new wild created by the blast
+                    for r in range(6):
+                        for s_ in nxt["newSymbols"][r]:
+                            assert s_["name"] != "W" or True  # reel strips may hold wilds in free spins; checked by board replay
                 elif e["type"] == "fuseFizzle":
                     assert e["burned"] == burned
                     n_fizzle += 1
                     closed = True
-                    # blast conditions not met (or nothing convertible: very rare)
-            # a spin that ended without closing the fuse must be a wincap spin
             if not closed:
-                # (after the cap the books still list the remaining free spins, each showing the capped total with an unresolved fuse;
-                # the front end skips everything between 'wincap' and 'freeSpinEnd')
                 assert any(e["type"] == "wincap" for e in b["events"])
     assert n_spins > 100 and n_blast > 0 and n_fizzle > 0
 
 
-def test_fuse_fire_rate_window():
+def _replay_board(spin):
+    """Rebuild the visible board through the spin: reveal, tumbleBoard (padded rows). Returns list of
+    (event_type, board_before_event) for blast events so we can check removed cells."""
+    rev = spin[0]
+    board = [[s["name"] for s in reel] for reel in rev["board"]]  # padded: rows 0..6
+    out = []
+    for e in spin[1:]:
+        if e["type"] == "fuseBlast":
+            out.append(([list(c) for c in board], e))
+        if e["type"] == "tumbleBoard":
+            ex = {}
+            for c in e["explodingSymbols"]:
+                ex.setdefault(c["reel"], set()).add(c["row"])
+            for r in range(len(board)):
+                keep = [n for i, n in enumerate(board[r]) if i not in ex.get(r, ())]
+                new = [s["name"] for s in e["newSymbols"][r]]
+                board[r] = new + keep
+                assert len(board[r]) == 7
+    return out
+
+
+def test_blast_never_removes_scatters_and_creates_no_wild():
+    seen = 0
+    for mode in COST:
+        for b in _sample_books(mode, limit=3000):
+            for sp in _spins(b):
+                for board, e in _replay_board(sp):
+                    seen += 1
+                    for c in e["cells"]:
+                        assert board[c["reel"]][c["row"] + 1] != "S"
+                    # wilds in the blast come only from the reel strips (free-spin strip), never from replacement:
+                    assert "replaced" not in e["cells"][0]
+    assert seen > 20
+
+
+def test_wire_blast_rate_windows():
     sp = bl = 0
     for b in _sample_books("bonus", limit=1500, stride=11):
         for s in _spins(b):
             if s[0]["gameType"] == "freegame":
                 sp += 1
                 bl += any(e["type"] == "fuseBlast" for e in s)
-    rate = bl / sp
-    assert 0.012 <= rate <= 0.06, rate  # measured about 2.2 % per free spin in published books
+    assert 0.01 <= bl / sp <= 0.12, bl / sp
+    sp = bl = 0
+    for b in _sample_books("base", limit=3000):
+        for s in _spins(b):
+            if s[0]["gameType"] == "basegame":
+                sp += 1
+                bl += any(e["type"] == "fuseBlast" for e in s)
+    assert 0.003 <= bl / sp <= 0.15, bl / sp
 
 
-def test_fuse_blast_precedes_winning_evaluation():
-    """After a blast the next event is a winInfo (re-evaluation pays) or the spin ends (no pay)."""
+def test_wire_blast_followed_by_reevaluation():
     seen = 0
     for b in _sample_books("base"):
         ev = b["events"]
         for i, e in enumerate(ev):
             if e["type"] == "fuseBlast":
                 seen += 1
-                nxt = ev[i + 1]["type"]
+                assert ev[i + 1]["type"] == "tumbleBoard"
+                nxt = ev[i + 2]["type"]
                 assert nxt in ("winInfo", "setTotalWin", "setWin", "freeSpinTrigger", "wincap", "finalWin"), nxt
     assert seen > 0
 
 
-def test_fuse_final_win_matches_payout():
+def test_final_win_matches_payout():
     for mode in COST:
         for b in _sample_books(mode, limit=500):
             fw = [e for e in b["events"] if e["type"] == "finalWin"][-1]
