@@ -4,6 +4,7 @@ Date 2026-10-26, branch `claude/elegant-bell-5q79k8`. Screening aid, NOT legal a
 
 ## 0. Binding decisions and how conflicts were resolved
 ### 0.1 Orchestrator rules applied (one line each)
+
 | ID | Decision | Consequence |
 |---|---|---|
 | a | ONE grid direction: the 6x5 frame stays; per-spin masks only block cells or set column heights, fixed for the whole spin; no growth, no 7-column, no 42/49-cell board; 4 variants | Section 3. Layouts live in the BASE game; free spins always play on the home 6x5 (bonus layouts = backlog, they would multiply calibration) |
@@ -18,6 +19,7 @@ Date 2026-10-26, branch `claude/elegant-bell-5q79k8`. Screening aid, NOT legal a
 Rule P (pre-result sequences, our reading of UKGC RTS 14E/14G; the clause numbers differ between UKGC pages, so cite the current RTS text; strong text, interpretation for counsel): each pre-result sequence is short (layout draw-on <= 0.5 s, door transition <= 1.2 s), never advertises a result, counts toward the >= 2.5 s cycle, is NOT shortened by turbo where `disabledTurbo` or `minimumRoundDuration` applies, and tap-to-skip exists only for sequences that start after a result is already on screen (dossier cutscene after the scatters landed, costume change, big-win count-up).
 
 ### 0.2 Report conflicts, pick and one-line reason
+
 | Conflict | Pick | Why |
 |---|---|---|
 | Mid-round growth (01 forbids, 02 C2 ranks it 2nd, 03 puts a lens/pool ladder in, 08 proves it) | None in v2; Skyscraper Floors deferred | "Expand" element of US10964173 and LNW growth families (gap_01 3d); books 1.9-4.9x bigger; couples RTP tuning |
@@ -74,6 +76,7 @@ Honest limit: all three share the cluster-tumble-dial core; distinctness comes f
 **Backlog (not built):** Cover Blown (IGT US7749063, active to about 2028-08-29, MEDIUM-HIGH), The Long Fuse as a third door, Skyscraper Floors, Pneumatic Post, Breach, Dumbwaiter Gravity, Honeycomb, Double Agent, Cloakroom Caper, Cipher Salon, Night Beat, 3-spin Wiretap tier, 6x7/7x7 boards, mission-specific bonus layouts, odds-enhancer mode.
 
 ## 3. Variable grid system (4 floor plans, base game)
+
 | id | Name | Frame rows | Present rows per reel (geometric, 0 = top) | Cells | Nominal draw | Natural mean vs 6x5 (02, M) |
 |---|---|---|---|---|---|---|
 | `mezzanine` | Mezzanine (home) | 5 | 0-4 on all six reels | 30 | 50% | 1.00 |
@@ -92,6 +95,7 @@ Honest limit: all three share the cluster-tumble-dial core; distinctness comes f
 
 ## 4. Base-game attractiveness levers (priority order, compliance tag)
 Metric: P(return > stake) = P(R > C), C = bet x mode cost, R = running return of the round. v1 base: 8.88% (hit 29.07%, 18.3% sub-stake wins carrying 9.3 RTP points, 70.9% dead). Ceiling at 0.1x granularity is 0.96/1.1 = 87% (meaningless); with the >= 5x tail pinned (71.9 RTP points) the ceiling is 16.5-24.5% (all remaining RTP as 1.2-2.0x wins, zero sub-stake wins, computed here). Keeping 55% of the sub-stake wins and paying the freed RTP as 1.1-2x wins (mean 1.5x) gives P(R > 1) 11.7% with hit 23.6% (S1); keeping 30% gives 13.2% with hit 20.6% (S2). These are thought experiments on the weighted table: the optimizer can only reweight books already in the pool (natural P(R > 1) is 4.33%). **Targets:** base P(R > 1x) >= 11.5% with hit >= 23% (stretch 13%); each 100x door P(R > price) >= 30% (v1: 28.8%; envelope with the 30x floor 39% at a conditional mean of 200x). Hard floor everywhere: not worse than v1. Go/no-go at T+4:30: base optimizer within 3 loops, else keep v1 shares.
+
 | # | Lever | Tag | Milestone |
 |---|---|---|---|
 | 1 | L1 Celebration gate by level of R/C: L0 R <= C quiet ledger tick; L1 (C,5C) wink; L2 [5C,15C); L3 >= 15C staircase; the first crossing of C plays one "in the black" beat. Strict reading: running round return, per cascade step | RTS 14F strong; reading of "return" for bonus/steps = open question for Stake | M1 |
@@ -107,6 +111,7 @@ Metric: P(return > stake) = P(R > C), C = bet x mode cost, R = running return of
 Deferred: L17 scenery picker, L18 stamp album (statelessness), L21 snapshot, L22 attract mode, mascot lines "Next one's the one." and "Same time tomorrow?" are replaced (09 4.3).
 
 ## 5. Animation spec, top 20 (ids J = 05; levels L0-L3 from lever 1; all honour turbo `T()`, skip and the motion store)
+
 | # | Animation | Trigger event | Key numbers and gates | WP |
 |---|---|---|---|---|
 | 1 | Heroine reaction map (`mascot.react`) | reveal, winInfo, fuseBlast, fuseFizzle, freeSpinTrigger, setWin | wind-up 83 ms, accents layered; clip whitelist (no hairFlip); no shock without a real trigger | 3 |
@@ -133,6 +138,7 @@ Systems (built once, owners in section 9): motion store consumer (Full/Calm/Stil
 
 ## 6. Menu and audio settings
 - **Entry:** new gear `#btn-settings` after `#btn-sound` (inside `#btn-menu` at height <= 360 px); also in replay (fixes the portrait replay with no sound control). Dialog `#modal-settings` (`role=dialog`, `aria-modal`, focus in/out, Escape, internal scroll only), 4 tabs via one APG tabs helper (also used by rules). Space inside a modal toggles the control, not a spin.
+
 | Tab | Control | Default | Storage | Note |
 |---|---|---|---|---|
 | Sound | Mute all (switch, mirrors `#btn-sound`, label "Mute sound") | off | `am_muted` | one source of truth in `audio.js` |
@@ -146,6 +152,7 @@ Systems (built once, owners in section 9): motion store consumer (Full/Calm/Stil
 - **Tests:** U1 taper (0 -> 0, 75 -> 1, strictly increasing, 100 = +3 dB); U2 corrupt/clamped stored values; U3 throwing `localStorage`; U4 each of 12 flags alone changes only its capability; U5 `remainingRoundMs`. A1 music 0 silences the bed only, sfx 0 the inverse; A2 two reverb returns; A3 all sliders 100 post-limiter peak <= 0.97; A4 defaults within 0.1 dB of today's render; A5 voice cap. L1-L7 live Playwright (persist, invalid values, blocked storage, mute vs slider, music 0, master 0 restores last level, preview rate limit). G1-G9 guideline runner (settings in every screen scan, 4 viewports, >= 24 px targets, focus return, no wallet call while open, all flags, replay gear, motion Auto follows `emulateMedia`, keyboard, social scan with XSC, screenshots). Static: no `localStorage` outside try, no external fetch.
 
 ## 7. Mode list for the math (4 of 20)
+
 | # | `index.json` name | Cost | RTP / max | Books | Content | Sim wall (4 thr) | zstd3 -> zstd15 |
 |---|---|---|---|---|---|---|---|
 | 1 | `base` | 1x | 96.000% / 5000x | 100k | 4 floor plans, mission drawn at trigger 40/30/30 | 1-1.5 min + optimizer 1.2-4 min | ~45 -> ~25 MB |
@@ -185,9 +192,11 @@ General: all amounts are integers in 1/100 x of the bet (multiples of 10). Unkno
 ```
 Orders spin order: `reveal, fusePath, winInfo(banked), updateTumbleWin, updateGlobalMult, tumbleBoard, fuseBurn, ..., fuseFizzle|fuseBlast(+tumble cascade), caseOpen, setWin, setTotalWin, updateFreeSpin`. Blackout: `reveal, lightRoute, fusePath, winInfo(lit), ...` (unchanged afterwards).
 **8. UNCHANGED:** `freeSpinTrigger`, `freeSpinRetrigger`, `freeSpinEnd`, `setWin`/`setTotalWin`, `wincap`, `finalWin`. Staging never reads `winLevel`; the front end uses payout / (bet x mode cost).
-**9. Not events:** `library/shares.json` (not uploaded): `{"base":{"layout":{"mezzanine":0.51,...},"mission":{"briefing":0.40,...},"pGtStake":0.117,"hit":0.236},"entrance_orders":{"medianX":..,"pGtPrice":..,"rtp":0.96,"maxWin":5000}}`, copied by `gen_rules_data.mjs` into `data/rules_data.json`; the Info tab and the entrance dialog print only these.
+**9. Replay and mock:** `replay=true&mode=entrance_orders` plays the same events and still shows the play amount and, for cost 100, the multiplier and real cost [174]; the mock RGS (WP10) serves the new modes with `costMultiplier` 100.
+**10. Not events:** `library/shares.json` (not uploaded): `{"base":{"layout":{"mezzanine":0.51,...},"mission":{"briefing":0.40,...},"pGtStake":0.117,"hit":0.236},"entrance_orders":{"medianX":..,"pGtPrice":..,"rtp":0.96,"maxWin":5000}}`, copied by `gen_rules_data.mjs` into `data/rules_data.json`; the Info tab and the entrance dialog print only these.
 
 ## 9. Work packages (11, disjoint file ownership; paths relative to `frontend_mambo/` unless `math/`)
+
 | WP | Scope | Owns (exclusively) | Depends | Acceptance tests |
 |---|---|---|---|---|
 | 1 SHELL | menu, settings store, ledger, entrance picker, flags, replay gear, i18n merge | `index.html`, `styles.css`, `src/main.js`, `src/settings.js`*, `src/ui/**`*, `src/replay.js`, `src/bet.js`, `src/input.js`, `src/i18n/{index,en,social,en_ui}.js` | step 0 | U2-U5, G1-G8; no scroll at 4 viewports; heroine box never overlaps grid or buttons; all 12 flags; Space guard; social scan of dialog |
@@ -201,7 +210,8 @@ Orders spin order: `reveal, fusePath, winInfo(banked), updateTumbleWin, updateGl
 | 9 MATH-PIPELINE | the single CPU queue, calibration, reweight, recompress, shares, report; owns the tunables (`calib_params.py`*: dial steps, lens mult, wild count, paytable scale, mission weights, imported by `game_config.py`) so calibration loops never wait for WP8 | `math/games/agent_mambo/{run.py,calib_params.py*,reels/**,tools/**,tests/test_math.py,MATH_REPORT.md,PROGRESS.md,library/**}` | 7, 8 | each mode RTP 96.000% +-0.0005; P(5000x) = 1/50k per door; `shares.json`; hashes valid (`rgs_verification`); total <= 0.7 GB; `final_checks` pass; P(R > stake) report vs targets |
 | 10 QA | e2e harness, baseline, guideline runner, mock RGS | `tests/e2e/**`*, `tests/guidelines/**`, `tests/core/**`, `tests/text/**`, `tools/mock-rgs/**`, `package.json`, `tests/shots/**` | step 0 | 60 fps capture + flash/luminance script; baseline at 30 and 36 cells, 4 viewports, 4x CPU; G1-G9 plus scripted subset of Engine [181]-[275]; zero console errors incl. replay |
 | 11 CONTENT-RELEASE | rules text and data, fixtures, contract docs, store art, build | `src/rules.js`, `src/i18n/en_rules.js`*, `data/rules_data.json`, `tools/gen_rules_data.mjs`, `fixtures/**`, `CONTRACT.md`, `tools/build/**`, `tools/art/**`, `dist/**`, `VERSION`, `docs/v2/**`* | 9 (shares) | RTP and max win per mode, every layout and mission with final shares, [185] verbatim, word screen pass, sober tile and cover, `verify:build` green |
-(* = new file.) Interfaces frozen in step 0: `settings.get/set/on`, `settings.capabilities`; `audio.setVolume(kind,pct)/getVolume/preview/onChange/setMuted/play(id)`; `mascot.react(kind,info)` (+ legacy `pose/say`); `LAYERS=[{id,onEvent(ev,ctx),reset()}]` in `layers/index.js`; `geo.setLayout/toGeo/toPadded`; `celebrate.level(R,C)`.
+(* = new file; `src/i18n/index.js` merges the partials after `en.js`, so a partial wins.) **Art inventory (all new art drawn in code, owner WP6 unless noted; heroine rig and 5 outfits already exist in `docs/research2/art/`, v2 uses `inspectrice` base + `lab`, `trench`, `casino`; `vault` reserved for The Long Fuse):** orders envelope with flap + SEALED/OPENED stamps; spotlight cone + dim overlay + x4 tag; folding costume screen + poof; blueprint grid + four outlines + name stamp; dossier folder + TOP SECRET stamp; door + keyhole iris; FILED / DECLASSIFIED stamps and Debrief card; per-mission palette tokens (lair, hat-check, ballroom) swapped under the wipe by WP5's scene.js. About 10 props, no new character art.
+Interfaces frozen in step 0: `settings.get/set/on`, `settings.capabilities`; `audio.setVolume(kind,pct)/getVolume/preview/onChange/setMuted/play(id)`; `mascot.react(kind,info)` (+ legacy `pose/say`); `LAYERS=[{id,onEvent(ev,ctx),reset()}]` in `layers/index.js`; `geo.setLayout/toGeo/toPadded`; `celebrate.level(R,C)`.
 **Schedule (T = start, 8 h):** T+0:00-0:25 step 0 (WP1/4/6 create stubs, `<link>` tags, i18n partials, API skeletons; nobody else touches shared files). T+0:25-1:00 baseline (WP10) then Annex gate at 1:00. **M1** T+0:25-3:00, gate G1 at 3:00 (hard stop 3:30): menu + sliders + heroine + gate on v1 books, `npm run qa` green = SHIPPABLE. **M2**: WP7 from 0:25 (done 2:30), renderer shape work 2:00-4:30 against hand-made devbooks, base smoke 3:00, go/no-go L14 at 4:30, 100k base + optimizer, gate G2 at 5:30 (hard stop 6:00) = SHIPPABLE. **M3**: WP8 from 0:25; Blackout SDK gate 2:00; calibration 2:30-6:00; door sims 6:00-6:30; base final + optimizer 6:30-6:45; reweight + recompress + tests to 7:30; G3 at 7:30; final zip 7:30-8:00. CPU queue order (single owner WP9): layout smoke, Orders calib, Blackout calib, base 100k + optimizer (M2), Orders 50k, Blackout 50k, base final + optimizer, reweight, recompress, tests.
 **Cut line (always shippable):** states S1 = v1 books + v2 front end; S2 + floor plans; S3 + Sealed Orders; S4 + Ballroom Blackout. Cut order: Blackout first (not converged at 6:30 -> weight 0 and renormalise, or The Long Fuse if its config calibration converges in 40 min), then Orders, then floor plans (`layout_weights={mezzanine:1}`), never M1. Cut at M1 if late: fx typed-array rewrite, camera push-in, hit-stop, logo stamp, ripple, text size, break reminder, ducking.
 
@@ -217,7 +227,7 @@ Orders spin order: `reveal, fusePath, winInfo(banked), updateTumbleWin, updateGl
 8. Platform unknowns (section 7 list); book size and `is_buybonus` semantics.
 9. Heroine and [217]: glamour only; whitelist of clips; sober tile and cover; the casino gown is the most fitted costume (fallback: trench cut).
 10. Book/SDK pitfalls: jagged `IndexError`, `numRows` leak, missing `opt_params`, `generate_configs` needing every mode's files, silent drop of sims when counts are not multiples, same seeds across modes.
-**For a human:** IP attorney (items 1-2 above, mission proximity notes, section 8 of 01/03 lists, non-US families EP/AU/GB/CA and trademark class 9/28/41 searches in USPTO, EUIPO, WIPO, UKIPO for Agent Mambo, Mambo Star, Clearance Dial, Sealed Orders, Ballroom Blackout, Secret Entrance); listening test of the mix, loudness on speakers and Bluetooth, the new bed against reference tracks; real-device performance and touch drag on sliders (iOS silent switch); screen-reader pass; flash analysis on a recorded run with PEAT or equivalent; Mission X side-by-side screenshots; Stake Studio upload and review ([217], [253]); answers to the Stake questions; native-speaker read of names (French, Spanish); the 10-second test with real viewers.
+**For a human:** IP attorney (items 1-2 above, the mission proximity notes in section 2, the lists in 01 section 6 and 03 section 7, non-US families EP/AU/GB/CA and trademark class 9/28/41 searches in USPTO, EUIPO, WIPO, UKIPO for Agent Mambo, Mambo Star, Clearance Dial, Sealed Orders, Ballroom Blackout, Secret Entrance); listening test of the mix, loudness on speakers and Bluetooth, the new bed against reference tracks; real-device performance and touch drag on sliders (iOS silent switch); screen-reader pass; flash analysis on a recorded run with PEAT or equivalent; Mission X side-by-side screenshots; Stake Studio upload and review ([217], [253]); answers to the Stake questions; native-speaker read of names (French, Spanish); the 10-second test with real viewers.
 
 ## Sources (load-bearing; quality in brackets)
 - UKGC RTS 14 (14F celebration, 14E skip after result, 14G 2.5 s) https://www.gamblingcommission.gov.uk/standards/remote-gambling-and-software-technical-standards/rts-14-responsible-product-design [strong]; RTS 7C near-miss https://www.gamblingcommission.gov.uk/standards/remote-gambling-and-software-technical-standards/rts-7-generation-of-random-outcomes [strong]; WCAG 2.3.1 https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html [strong]; WCAG 1.4.2 https://www.w3.org/WAI/WCAG22/Understanding/audio-control.html [strong].
