@@ -11,7 +11,7 @@ from optimization_program.optimization_config import (
 
 # Bonus (UNLEASH) scatter-tier design: share of purchases and RTP contribution per tier.
 TIER_SHARE = {4: 0.880, 5: 0.100, 6: 0.0178}
-TIER_RTP = {4: 0.8230, 5: 0.1090, 6: 0.0240, 7: 0.0030}
+TIER_RTP = {4: 0.8360, 5: 0.1000, 6: 0.0200, 7: 0.0030}
 
 
 class OptimizationSetup:

@@ -1,6 +1,6 @@
 // Offline + live audio QA for src/audio.js.
-// Usage: PW_DIR=/path/to/dir-with-node_modules/playwright-core PORT=5204 node frontend/tests/audio/audio.test.mjs
-// (starts frontend/serve.mjs itself when nothing listens on PORT)
+// Usage: PW_DIR=/path/to/dir-with-node_modules/playwright-core PORT=5405 node frontend_mambo/tests/audio/audio.test.mjs
+// (starts frontend_mambo/serve.mjs itself when nothing listens on PORT)
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FRONT = path.resolve(HERE, '../..');
-const PORT = process.env.PORT || '5204';
+const PORT = process.env.PORT || '5405';
 const URL = `http://localhost:${PORT}/tests/audio/harness.html`;
 const require = createRequire((process.env.PW_DIR || '/tmp/claude-0/pw') + '/');
 const { chromium } = require('playwright-core');
@@ -40,8 +40,8 @@ const INIT = `(() => { // same graph introspection as tests/guidelines/lib.mjs (
   page.on('pageerror', (e) => { fails++; console.log('FAIL pageerror ' + e.message); });
   await page.goto(URL); await page.waitForFunction(() => window.__ready);
 
-  const IDS = ['click', 'error', 'nearmiss', 'wahwah', 'spin', 'whoosh', 'land', 'pop', 'win', 'xylo', 'scatter', 'antic', 'fuse', 'explosion', 'mult', 'fsStart', 'retrigger', 'fsEnd', 'tada', 'bigwin', 'kaching', 'coin', 'count', 'heart', 'rumble', 'crack', 'shower', 'stinger', 'tick', 'drip', 'mascot_hop', 'mascot_gasp'];
-  const OPTS = { pop: [{}, { combo: 1 }, { combo: 8 }], win: [{ combo: 1 }, { combo: 3, size: 8 }, { combo: 6, size: 30 }], bigwin: [{ level: 1 }, { level: 3 }], scatter: [{ n: 1 }, { n: 4 }], stinger: [{ level: 1 }, { level: 4 }], land: [{ vol: 0.5 }] };
+  const IDS = ['click', 'error', 'nearmiss', 'wahwah', 'spin', 'whoosh', 'land', 'pop', 'win', 'xylo', 'scatter', 'antic', 'fuse', 'explosion', 'mult', 'fsStart', 'retrigger', 'fsEnd', 'tada', 'bigwin', 'kaching', 'coin', 'count', 'heart', 'rumble', 'crack', 'shower', 'stinger', 'tick', 'drip', 'mascot_hop', 'mascot_gasp', 'dossier', 'wire', 'ticks', 'defuse', 'snip', 'blast', 'stamp', 'metermax', 'meterTick', 'meter', 'meterRise', 'riser', 'phone', 'shutter', 'vault'];
+  const OPTS = { pop: [{}, { combo: 1 }, { combo: 8 }], win: [{ combo: 1 }, { combo: 3, size: 8 }, { combo: 6, size: 30 }], bigwin: [{ level: 1 }, { level: 3 }], scatter: [{ n: 1 }, { n: 4 }], wire: [{ i: 0 }, { i: 12 }], tick: [{}, { p: 1 }], ticks: [{ burn: 0, total: 8 }, { burn: 7, total: 8 }], mult: [{ level: 1 }, { level: 12 }], stinger: [{ level: 1 }, { level: 4 }], land: [{ vol: 0.5 }] };
   const tests = []; for (const id of IDS) for (const o of (OPTS[id] || [{}])) tests.push([id, o]);
 
   const stats = await page.evaluate(async (tests) => {
@@ -123,7 +123,7 @@ const INIT = `(() => { // same graph introspection as tests/guidelines/lib.mjs (
   const ctx = await browser.newContext(); await ctx.addInitScript(INIT); const page = await ctx.newPage();
   page.on('pageerror', (e) => { fails++; console.log('FAIL pageerror ' + e.message); });
   await page.goto(URL); await page.waitForFunction(() => window.__ready);
-  const st = () => page.evaluate(() => { const a = window.A.audio, e = a._engine; return { live: e ? e.liveCount : -1, g: e ? e.master.gain.value : -1, state: e ? e.ctx.state : 'none', aud: window.__qa.audible(), muted: document.body.classList.contains('muted'), pressed: document.getElementById('btn-sound').getAttribute('aria-pressed'), ls: localStorage.getItem('tum_muted'), mood: a.mood }; });
+  const st = () => page.evaluate(() => { const a = window.A.audio, e = a._engine; return { live: e ? e.liveCount : -1, g: e ? e.master.gain.value : -1, state: e ? e.ctx.state : 'none', aud: window.__qa.audible(), muted: document.body.classList.contains('muted'), pressed: document.getElementById('btn-sound').getAttribute('aria-pressed'), ls: localStorage.getItem('am_muted'), mood: a.mood }; });
   let s = await st(); ok(s.state === 'none', 'no AudioContext before a user gesture');
   await page.mouse.click(5, 5); await sleep(1500); s = await st();
   ok(s.state === 'running' && s.live > 0 && s.g > 0.7 && s.mood === 'base', `after gesture the base bed plays (live=${s.live}, master=${s.g.toFixed(2)})`);

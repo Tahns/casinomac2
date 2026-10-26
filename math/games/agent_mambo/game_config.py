@@ -85,8 +85,8 @@ class GameConfig(Config):
         # tumble step is paid with the CURRENT value, then it rises by gm_step (capped at gm_cap). It persists
         # through all spins of the feature (also after retriggers). Base game: always x1.
         self.gm_start = 1
-        self.gm_step = 1
-        self.gm_cap = 50
+        self.gm_step = 8
+        self.gm_cap = 100
         # Bomb-timer wire (ex Fuse Line; blast REMOVES burnt non-scatter cells, no wild creation): per game type. len=N path cells, b0=cells burnt at reveal,
         # adv=cells burnt per winning cascade step, detmin=burnt cells needed to detonate. None disables.
         self.fuse_params = {

@@ -1,0 +1,59 @@
+/* MISSION METER (DESIGN 5.1). Palette 4.1. Layout is chosen by meter.js (data-layout = ladder | strip | badge).
+   The host element must be position:relative and have the SAME box as the symbol grid (overflow visible). */
+.mm{--ink:#14102B;--indigo:#2B2A6B;--teal:#1FB5A3;--lemon:#FFD23F;--coral:#F0472F;--flam:#F5799F;--cream:#FBF1D9;--lilac:#9A7BD0;
+  --hue:var(--teal);--n:20;position:absolute;z-index:6;pointer-events:none;display:flex;box-sizing:border-box;
+  font-family:"Arial Rounded MT Bold","Trebuchet MS",sans-serif}
+.mm[hidden]{display:none}
+.mm[data-tier="1"]{--hue:var(--lemon)}.mm[data-tier="2"]{--hue:var(--coral)}.mm[data-tier="3"],.mm[data-tier="4"]{--hue:var(--flam)}
+.mm-badge{position:relative;flex:none;width:var(--bs,52px);height:var(--bs,52px);display:flex;align-items:center;justify-content:center}
+.mm-burst{position:absolute;inset:-6%;width:112%;height:112%;overflow:visible}
+.mm-burst-out{fill:var(--ink)}
+.mm-burst-fill{fill:var(--cream)}
+.mm-burst-hue{fill:var(--hue)}
+.mm-ring{fill:none;stroke:var(--lemon);stroke-width:2.2;stroke-dasharray:3 6;transform-origin:50% 50%;opacity:0;animation:mmring 2.4s steps(8,end) infinite}
+.mm[data-tier="1"] .mm-ring,.mm[data-tier="2"] .mm-ring,.mm[data-tier="3"] .mm-ring,.mm[data-tier="4"] .mm-ring{opacity:1}
+.mm[data-tier="3"] .mm-ring,.mm[data-tier="4"] .mm-ring{stroke-width:3.4}
+@keyframes mmring{to{transform:rotate(360deg)}}
+.mm-digits{position:relative;font-weight:900;font-size:calc(var(--bs,52px)*.4);line-height:1;color:var(--ink);letter-spacing:-.04em;white-space:nowrap;text-shadow:1px 1px 0 var(--cream)}
+.mm-digits small{font-size:.62em;margin-right:.04em;color:var(--coral)}
+.mm.max .mm-digits{font-size:calc(var(--bs,52px)*.3);color:var(--coral);transform:rotate(-8deg)}
+.mm-kept{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%) rotate(-4deg);padding:1px 6px;background:var(--lilac);color:var(--cream);border:2px solid var(--ink);border-radius:999px;font:900 9px/1.1 "Futura","Century Gothic","Arial Black",sans-serif;letter-spacing:.08em;opacity:0;white-space:nowrap}
+.mm-kept.on{animation:mmkept 1.5s steps(8,end) 1 forwards}
+@keyframes mmkept{0%{opacity:0}10%,80%{opacity:1}100%{opacity:0}}
+.mm-bars{display:flex;position:relative;flex:1;min-width:0;min-height:0}
+.mm-bar{position:relative;flex:1 1 0;background:var(--indigo);border:2px solid var(--ink);box-sizing:border-box;border-radius:3px;box-shadow:inset 0 2px 0 rgba(251,241,217,.14)}
+.mm-bar.lit{background:var(--hue);box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(20,16,43,.25)}
+.mm-bar.cur{background:var(--lemon);border-color:var(--cream);box-shadow:0 0 0 2px var(--ink),0 0 8px var(--lemon);z-index:1}
+.mm-bar.pop{animation:mmpop .26s steps(3,end) 1}
+@keyframes mmpop{0%{transform:scale(1)}40%{transform:scale(1.3)}100%{transform:scale(1)}}
+.mm-flip{animation:mmflip .12s steps(3,end) 1}
+@keyframes mmflip{0%{transform:scaleY(1)}50%{transform:scaleY(.05)}100%{transform:scaleY(1)}}
+.mm-flash .mm-burst-fill{animation:mmflash .3s steps(3,end) 1}
+@keyframes mmflash{0%,100%{fill:var(--cream)}40%{fill:var(--lemon)}}
+.mm-pulse .mm-badge{animation:mmpulse .5s steps(4,end) 3}
+@keyframes mmpulse{50%{transform:scale(1.18)}}
+.mm-chip{position:absolute;z-index:3;padding:1px 7px;background:var(--lemon);color:var(--ink);border:2px solid var(--ink);border-radius:999px;font:900 12px/1.2 "Arial Rounded MT Bold","Trebuchet MS",sans-serif;pointer-events:none;box-shadow:2px 2px 0 var(--coral)}
+.mm-thin{display:none}
+/* --- desktop: vertical ladder, left of the grid, flush to the frame, height = grid height --- */
+.mm[data-layout="ladder"]{right:100%;top:0;bottom:0;width:var(--lw,58px);margin-right:var(--mm-gap,6px);flex-direction:column;align-items:center;gap:8px}
+.mm[data-layout="ladder"] .mm-bars{flex-direction:column-reverse;align-items:flex-end;gap:2px;width:100%;padding:3px;background:var(--ink);border-radius:8px;border:2px solid var(--teal)}
+.mm[data-layout="ladder"] .mm-bar{width:calc(30% + 70% * var(--k));flex:1 1 0;max-height:22px;align-self:flex-end}
+.mm[data-layout="ladder"] .mm-bars{justify-content:flex-start}
+/* --- portrait: 26 px strip above the grid, badge at its left end --- */
+.mm[data-layout="strip"]{left:0;right:0;bottom:100%;height:26px;margin-bottom:8px;flex-direction:row;align-items:center;gap:6px;--bs:34px}
+.mm[data-layout="strip"] .mm-badge{margin-top:-4px}
+.mm[data-layout="strip"] .mm-bars{flex-direction:row;align-items:flex-end;gap:2px;height:100%;padding:2px;background:var(--ink);border-radius:6px;border:2px solid var(--teal);box-sizing:border-box}
+.mm[data-layout="strip"] .mm-bar{height:calc(35% + 65% * var(--k));border-width:1.5px}
+.mm[data-layout="strip"] .mm-kept{bottom:-9px}
+/* --- 400x225: badge only (about 34 px) over the frame corner + a 4 px bar under the frame --- */
+.mm[data-layout="badge"]{left:0;right:0;top:0;bottom:0;--bs:34px}
+.mm[data-layout="badge"] .mm-badge{position:absolute;left:-8px;top:-8px}
+.mm[data-layout="badge"] .mm-bars{display:none}
+.mm[data-layout="badge"] .mm-kept{display:none}
+.mm[data-layout="badge"] .mm-thin{display:block;position:absolute;left:0;right:0;top:calc(100% + 3px);height:4px;background:var(--ink);border-radius:2px}
+.mm[data-layout="badge"].max .mm-digits{font-size:11px}
+.mm-thin-fill{position:absolute;left:0;top:0;height:100%;background:var(--hue);border:1px solid var(--ink);box-sizing:border-box;border-radius:2px}
+@media (prefers-reduced-motion:reduce){
+  .mm-ring,.mm-bar.pop,.mm-flip,.mm-flash .mm-burst-fill,.mm-pulse .mm-badge{animation:none!important}
+  .mm-kept.on{animation:none;opacity:1}
+}

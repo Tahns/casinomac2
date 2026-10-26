@@ -3,13 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>The Unleashed Mine - dev</title>
+<title>Agent Mambo - dev</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="styles.css">
 <style>
 #devbar{position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;flex-wrap:wrap;gap:3px;padding:3px;background:rgba(0,0,0,.7);font:11px system-ui}
 #devbar button{font:inherit;padding:3px 6px;border-radius:4px;border:1px solid #b88a3a;background:#2b1b0f;color:#ffd98a}
 body.nodev #devbar{display:none}
+#symsheet{position:fixed;inset:0;z-index:300;background:#181640;overflow:auto;padding:10px;color:#FBF1D9;font:12px system-ui}
+#symsheet .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:6px 0}
+#symsheet .cell{position:relative!important;left:auto!important;top:auto!important;flex:none}
+#symsheet .board-wrap{position:relative;display:inline-block}
+#symsheet h4{margin:8px 0 0;font-weight:600}
 </style>
 </head>
 <body class="state-idle">
@@ -36,11 +41,24 @@ async function run(name, arg) {
   if (busy) return; busy = true; document.body.className = document.body.className.replace(/state-\w+/, 'state-playing');
   try { await renderer.playBook(BOOKS[name](arg), hooks); } finally { busy = false; document.body.className = document.body.className.replace(/state-\w+/, 'state-idle'); }
 }
-window.__dev = { renderer, run, BOOKS, hooks, audio };
+// symbol sheet: ?sheet=1 (or button) shows all ten at 130/80/40 px, plus scatter anticipation + wild win states
+function symSheet(on = true) {
+  let el = document.getElementById('symsheet'); if (el) el.remove(); if (!on) return;
+  import('./src/render/symbols.js').then(({ SYMBOLS, symbolMarkup, ensureSprite }) => {
+    ensureSprite(); el = document.createElement('div'); el.id = 'symsheet';
+    const row = (title, size, cls = '', wrapCls = '') => `<h4>${title}</h4><div class="row ${wrapCls}">` + SYMBOLS.map((n, i) => `<div class="cell s-${n} ${cls}" style="--c:${i};--r:${i % 5};width:${size}px;height:${size}px">${symbolMarkup(n)}</div>`).join('') + '</div>';
+    el.innerHTML = row('130 px', 130) + row('80 px', 80) + row('40 px (mixed strip)', 40) +
+      `<h4>states: scatter anticipation (antic) / win, wild win, dim</h4><div class="row antic"><div class="cell s-S" style="width:130px;height:130px">${symbolMarkup('S')}</div><div class="cell s-S win" style="width:130px;height:130px">${symbolMarkup('S')}</div><div class="cell s-W win" style="width:130px;height:130px">${symbolMarkup('W')}</div><div class="cell s-H1 dim" style="width:130px;height:130px">${symbolMarkup('H1')}</div></div>`;
+    document.body.appendChild(el);
+  });
+}
+if (q.get('sheet')) symSheet();
+window.__dev = { symSheet, renderer, run, BOOKS, hooks, audio };
 const bar = $('devbar');
 [['baseWin'], ['cascadeWin'], ['noWin'], ['nearMiss'], ['bonus', 4], ['bigWin', 60], ['bigWin', 250], ['maxWin']].forEach(([n, a]) => {
   const b = document.createElement('button'); b.textContent = n + (a ? ' ' + a : ''); b.onclick = () => run(n, a); bar.appendChild(b);
 });
+const sb = document.createElement('button'); sb.textContent = 'symbols'; sb.onclick = () => symSheet(!document.getElementById('symsheet')); bar.appendChild(sb);
 const tb = document.createElement('button'); tb.textContent = 'turbo'; tb.onclick = () => { const on = !document.body.classList.contains('turbo'); document.body.classList.toggle('turbo', on); renderer.setTurbo(on); }; bar.appendChild(tb);
 $('btn-turbo').onclick = tb.onclick; $('btn-bet').onclick = () => run('baseWin');
 $('btn-sound').onclick = () => { audio.setMuted(!audio.muted); };

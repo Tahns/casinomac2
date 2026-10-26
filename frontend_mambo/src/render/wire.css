@@ -1,0 +1,61 @@
+/* Bomb-timer WIRE overlay (loaded at runtime by wire.js). Palette: DESIGN 4.1. */
+.wr-layer{position:absolute;inset:0;pointer-events:none;z-index:5;--u:80px;overflow:visible}
+.wr-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.wr-svg line{stroke-linecap:round;fill:none}
+/* braided cable: ink outline, indigo core, lilac braid dashes; lit = cream core + lemon braid */
+.wr-out{stroke:#14102B;stroke-width:.2}
+.wr-core{stroke:#3d3a8f;stroke-width:.13}
+.wr-braid{stroke:#9A7BD0;stroke-width:.09;stroke-dasharray:.07 .07;opacity:.75}
+.wr-hot-core{stroke:#FBF1D9;stroke-width:.13;opacity:0}
+.wr-hot-braid{stroke:#FFD23F;stroke-width:.09;stroke-dasharray:.07 .07;opacity:0}
+.wr-seg.burnt .wr-hot-core,.wr-seg.burnt .wr-hot-braid{opacity:1}
+.wr-seg.burnt .wr-core,.wr-seg.burnt .wr-braid{opacity:0}
+/* lugs */
+.wr-lug-out{fill:#14102B}
+.wr-lug{fill:#6e6aa8;stroke:#14102B;stroke-width:.02}
+.wr-led{fill:#2B2A6B}
+.wr-node.burnt .wr-lug{fill:#FBF1D9}
+.wr-node.burnt .wr-led{fill:#F0472F}
+.wr-node.burnt .wr-glow{opacity:.55}
+.wr-glow{fill:#F0472F;opacity:0}
+.wr-scorch{fill:#FFD23F;opacity:0;stroke:#FFD23F;stroke-width:.03;stroke-opacity:0;transition:opacity .35s}
+.wr-scorch.on{opacity:.16;stroke-opacity:.55}
+.wr-puff{stroke:#14102B;stroke-width:.03}
+/* spark star at the head */
+.wr-star-out{fill:#14102B}.wr-star{fill:#FFD23F}.wr-star-core{fill:#FBF1D9}
+.wr-spark-in{transform-box:fill-box;transform-origin:center;animation:wrspin .5s steps(4,end) infinite}
+.wr-spark.hot .wr-spark-in{animation-duration:.18s;transform:scale(1.5)}
+.wr-spark.hot .wr-star{fill:#F0472F}
+.wr-spark.dying .wr-star{fill:#9A7BD0}
+@keyframes wrspin{from{transform:rotate(0) scale(1)}50%{transform:rotate(45deg) scale(1.2)}to{transform:rotate(90deg) scale(1)}}
+/* alarm-clock bomb */
+.wr-body{fill:#F0472F;stroke:#14102B;stroke-width:.045;stroke-linejoin:round}
+.wr-bell{fill:#9A7BD0;stroke:#14102B;stroke-width:.04}
+.wr-face{fill:#FBF1D9;stroke:#14102B;stroke-width:.035}
+.wr-tick{stroke:#14102B;stroke-width:.025;stroke-linecap:round}
+.wr-hand{stroke:#F0472F;stroke-width:.045;stroke-linecap:round;transition:transform .3s steps(4,end)}
+.wr-hub{fill:#14102B}
+.wr-lcd-bg{fill:#14102B;stroke:#FBF1D9;stroke-width:.02}
+.wr-lcd{fill:#FFD23F;font:900 17px "Arial Rounded MT Bold","Trebuchet MS",monospace;text-anchor:middle;dominant-baseline:central}
+.wr-bomb.hot .wr-bomb-in{animation:wrshake .09s steps(2,end) infinite}
+.wr-bomb.hot .wr-body{fill:#FFD23F}
+@keyframes wrshake{from{transform:translate(-.02px,0) rotate(-4deg)}to{transform:translate(.02px,0) rotate(4deg)}}
+.wr-bomb-in{transform-box:fill-box;transform-origin:center}
+/* blast */
+.wr-star-pow{position:absolute;width:calc(var(--u)*1);height:calc(var(--u)*1);transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;z-index:7}
+.wr-star-pow svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.wr-pow-out{fill:#14102B;stroke:#14102B;stroke-width:.08;stroke-linejoin:round}
+.wr-pow-in{fill:#FBF1D9}
+.wr-pow-text{position:relative;font:900 calc(var(--u)*.27)/1 "Futura","Century Gothic","Arial Black",sans-serif;color:#F0472F;-webkit-text-stroke:calc(var(--u)*.025) #14102B;paint-order:stroke fill;transform:rotate(-8deg)}
+.wr-piece{position:absolute;z-index:6;transform-origin:50% 50%}
+.wr-dust{position:absolute;z-index:6;border-radius:50%;background:#FBF1D9;border:2px solid #14102B}
+.wr-shield{position:absolute;z-index:6;border:calc(var(--u)*.05) solid #6FA7D9;border-radius:50%;box-shadow:0 0 0 2px #14102B inset,0 0 0 2px #14102B}
+.wr-cap{position:absolute;left:50%;top:3%;transform:translateX(-50%);z-index:8;pointer-events:none;padding:.15em .6em;border:3px solid #14102B;border-radius:999px;background:#FFD23F;color:#14102B;font:900 clamp(11px,3.4vmin,26px)/1.1 "Futura","Century Gothic","Arial Black",sans-serif;letter-spacing:.06em;box-shadow:3px 3px 0 #F0472F;animation:wrcap 2.1s steps(8,end) 1 forwards;white-space:nowrap}
+.wr-cap.defuse{background:#F0472F;color:#FBF1D9;box-shadow:3px 3px 0 #14102B;top:auto;bottom:3%}
+@keyframes wrcap{0%{opacity:0;transform:translateX(-50%) scale(.4) rotate(-6deg)}15%{opacity:1;transform:translateX(-50%) scale(1.15) rotate(3deg)}25%,80%{opacity:1;transform:translateX(-50%) scale(1) rotate(-2deg)}100%{opacity:0;transform:translateX(-50%) scale(1)}}
+@media (prefers-reduced-motion:reduce){
+  .wr-spark-in,.wr-bomb.hot .wr-bomb-in{animation:none!important}
+  .wr-spark.hot .wr-spark-in{transform:scale(1.3)}
+  .wr-cap{animation:none;opacity:1}
+  .wr-hand{transition:none}
+}
