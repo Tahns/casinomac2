@@ -29,7 +29,7 @@ export function parseParams(search) {
     social: truthy(q.get('social')),
     demo: truthy(q.get('demo')),
     replay: truthy(q.get('replay')),
-    replayGame: q.get('game') || '',
+    replayGame: q.get('game') || 'agent_mambo',
     replayVersion: q.get('version') || '',
     replayMode: q.get('mode') || 'base',
     replayEvent: q.get('event') || '',

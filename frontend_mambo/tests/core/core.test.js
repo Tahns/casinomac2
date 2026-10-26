@@ -108,3 +108,12 @@ test('UNLEASH minimum price: 50 units (USD/EUR), bigger round floors for MXN/JPY
   assert.equal(unleashAvailable(500_000, 'EUR'), true);  // 0.50 x 100 = 50
   assert.equal(unleashAvailable(1_000_000, 'USD'), true);
 });
+
+test('agent_mambo defaults: replay game id, mode costs base=1 / bonus=100', async () => {
+  const { parseParams } = await import('../../src/params.js');
+  assert.equal(parseParams('?replay=true').replayGame, 'agent_mambo');
+  assert.equal(parseParams('?game=other').replayGame, 'other');
+  const { modeCost } = await import('../../src/bet.js');
+  assert.equal(modeCost('base'), 1);
+  assert.equal(modeCost('bonus'), 100);
+});

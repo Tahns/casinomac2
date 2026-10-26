@@ -1,4 +1,4 @@
-// Mock RGS for The Unleashed Mine QA. Zero dependencies. Port MOCK_PORT (default 5180; 0 = pick a free port and print it).
+// Mock RGS for Agent Mambo QA. Zero dependencies. Port MOCK_PORT (default 5180; 0 = pick a free port and print it).
 // ALL wallet state is keyed by sessionID (POST body.sessionID, or a '/s/<sessionID>' path prefix on rgs_url, which also
 // keys the stateless replay GET). Clients with different sessionIDs never see each other's balance/round/log/config.
 // Control (all take the session via ?sid=<id> or body.sid; default '_default'):

@@ -44,61 +44,31 @@ function fusePath(rand, N) {
   return Array.from({ length: N }, (_, i) => [i % COLS, 2]);
 }
 
+// opts: seed, plant[], scatters[], cascades (max winning steps), pool (symbol pool for refills), free (free spin),
+//   gm {v, step, cap} shared global multiplier state (free spins only; paid at the CURRENT value, then +step),
+//   fuse {N,b0,adv,detmin,path}: bomb-timer wire. Dead board with burned>=detmin => fuseBlast {cells (visible rows)} then a
+//   normal tumbleBoard refill (explodingSymbols padded rows); else fuseFizzle.
 export function makeSpin(opts = {}) {
   const rand = rng(opts.seed || 1);
-  const pick = () => POOL[(rand() * POOL.length) | 0];
+  const pool = opts.pool || POOL;
+  const pick = () => pool[(rand() * pool.length) | 0];
   const events = [];
   const push = (e) => { e.index = events.length; events.push(e); };
   const vis = Array.from({ length: COLS }, () => Array.from({ length: ROWS }, pick));
   const pads = Array.from({ length: COLS }, () => ({ top: pick(), bottom: pick() }));
-  // plant
   (opts.plant || []).forEach(({ symbol, cells }) => cells.forEach(([c, r]) => { vis[c][r] = symbol; }));
   (opts.scatters || []).forEach(([c, r]) => { vis[c][r] = 'S'; });
-  let mults = opts.mults || Array.from({ length: COLS }, () => Array(ROWS).fill(0));
   const free = !!opts.free;
+  const gm = opts.gm || { v: 1, step: 1, cap: 100 };
   if (opts.fsIndex != null) push({ type: 'updateFreeSpin', amount: opts.fsIndex, total: opts.fsTotal });
   const board = () => vis.map((col, c) => [sym(pads[c].top), ...col.map(sym), sym(pads[c].bottom)]);
   const antic = Array(COLS).fill(0);
   const sc = vis.flat().filter((s) => s === 'S').length;
   if (sc >= 3) { let seen = 0; for (let c = 0; c < COLS; c++) { if (seen >= 3) antic[c] = 1; seen += vis[c].filter((s) => s === 'S').length; } }
   push({ type: 'reveal', board: board(), paddingPositions: [0, 0, 0, 0, 0, 0], gameType: free ? 'freegame' : 'basegame', anticipation: antic });
-  if (free) push({ type: 'updateGrid', gridMultipliers: mults.map((c) => c.slice()) });
-  // ---- Fuse Line (synthetic; mirrors docs/ORIGINAL_FEATURES.md): fusePath after reveal, fuseBurn after each tumbleBoard, fuseBlast/fuseFizzle at the dead board ----
-  const fz = opts.fuse ? { N: 8, b0: 1, adv: 1, detmin: 3, ...opts.fuse } : null;
-  if (fz) {
-    fz.path = fz.path || fusePath(rand, fz.N);
-    fz.burned = Math.min(fz.N, fz.b0); fz.done = false;
-    push({ type: 'fusePath', cells: fz.path.map(([c, r]) => ({ reel: c, row: r })), burned: fz.burned });
-  }
-  let spinWin = 0, guard = 0, plantedOnly = opts.cascades != null ? opts.cascades : 3;
-  for (;;) {
-    let cl = clusters(vis);
-    if ((!cl.length || guard >= plantedOnly) && fz && !fz.done) {
-      fz.done = true;
-      if (fz.burned >= fz.detmin) {
-        const rep = [];
-        fz.path.slice(0, fz.burned).forEach(([c, r]) => { if (vis[c][r] !== 'S' && vis[c][r] !== 'W') rep.push({ reel: c, row: r, replaced: vis[c][r] }); else if (vis[c][r] === 'W') rep.push({ reel: c, row: r, replaced: 'W' }); });
-        rep.forEach((x) => { vis[x.reel][x.row] = 'W'; });
-        push({ type: 'fuseBlast', cells: rep.filter((x) => x.replaced !== 'S') });
-        guard = 0; cl = clusters(vis);
-      } else { push({ type: 'fuseFizzle', burned: fz.burned }); }
-    }
-    if (!cl.length || guard++ >= plantedOnly) break;
-    const wins = cl.map((k) => {
-      const base = (PAY[k.symbol] || .5) * (k.cells.length - 3);
-      const m = free ? Math.max(1, k.cells.reduce((a, [c, r]) => a + (mults[c][r] || 0), 0)) : 1;
-      const mid = k.cells[(k.cells.length / 2) | 0];
-      return { symbol: k.symbol, clusterSize: k.cells.length, win: Math.round(base * m * 100), positions: k.cells.map(([c, r]) => ({ reel: c, row: r + 1 })), meta: { globalMult: 1, clusterMult: m, winWithoutMult: Math.round(base * 100), overlay: { reel: mid[0], row: mid[1] + 1 } } };
-    });
-    const tw = wins.reduce((a, w) => a + w.win, 0); spinWin += tw;
-    push({ type: 'winInfo', totalWin: tw, wins });
-    push({ type: 'updateTumbleWin', amount: spinWin });
-    if (free) {
-      cl.forEach((k) => k.cells.forEach(([c, r]) => { mults[c][r] = mults[c][r] ? Math.min(512, mults[c][r] + 1) : 1; }));
-      push({ type: 'updateGrid', gridMultipliers: mults.map((c) => c.slice()) });
-    }
-    const exploding = []; const boom = new Set(cl.flatMap((k) => k.cells.map(([c, r]) => c * 10 + r)));
-    const newSymbols = Array.from({ length: COLS }, () => []);
+  // remove the cells in `boom` (Set of c*10+r), let the rest fall, refill; returns the tumbleBoard event body
+  const dropCells = (boom) => {
+    const exploding = [], newSymbols = Array.from({ length: COLS }, () => []);
     for (let c = 0; c < COLS; c++) {
       const keep = vis[c].filter((_, r) => !boom.has(c * 10 + r)); const n = ROWS - keep.length; if (!n) continue;
       for (let r = 0; r < ROWS; r++) if (boom.has(c * 10 + r)) exploding.push({ reel: c, row: r + 1 });
@@ -106,11 +76,45 @@ export function makeSpin(opts = {}) {
       vis[c] = [...fresh, pads[c].top, ...keep]; pads[c].top = newPad;
       newSymbols[c] = [sym(newPad), ...fresh.map(sym)];
     }
-    push({ type: 'tumbleBoard', newSymbols, explodingSymbols: exploding });
+    return { newSymbols, explodingSymbols: exploding };
+  };
+  const fz = opts.fuse ? { N: 8, b0: 1, adv: 1, detmin: 3, ...opts.fuse } : null;
+  if (fz) {
+    fz.path = fz.path || fusePath(rand, fz.N);
+    fz.burned = Math.min(fz.N, fz.b0); fz.done = false;
+    push({ type: 'fusePath', cells: fz.path.map(([c, r]) => ({ reel: c, row: r })), burned: fz.burned });
+  }
+  let spinWin = 0, guard = 0;
+  const maxSteps = opts.cascades != null ? opts.cascades : 3;
+  for (;;) {
+    let cl = clusters(vis);
+    if ((!cl.length || guard >= maxSteps) && fz && !fz.done) {
+      fz.done = true;
+      const gone = fz.burned >= fz.detmin ? fz.path.slice(0, fz.burned).filter(([c, r]) => vis[c][r] !== 'S') : [];
+      if (gone.length) {
+        push({ type: 'fuseBlast', cells: gone.map(([c, r]) => ({ reel: c, row: r })) });
+        const d = dropCells(new Set(gone.map(([c, r]) => c * 10 + r)));
+        push({ type: 'tumbleBoard', newSymbols: d.newSymbols, explodingSymbols: d.explodingSymbols });
+        guard = 0; cl = clusters(vis);
+      } else push({ type: 'fuseFizzle', burned: fz.burned });
+    }
+    if (!cl.length || guard++ >= maxSteps) break;
+    const mult = free ? gm.v : 1;
+    const wins = cl.map((k) => {
+      const base = (PAY[k.symbol] || .5) * (k.cells.length - 3);
+      const mid = k.cells[(k.cells.length / 2) | 0];
+      return { symbol: k.symbol, clusterSize: k.cells.length, win: Math.round(base * mult * 100), positions: k.cells.map(([c, r]) => ({ reel: c, row: r + 1 })), meta: { globalMult: mult, clusterMult: 1, winWithoutMult: Math.round(base * 100), overlay: { reel: mid[0], row: mid[1] + 1 } } };
+    });
+    const tw = wins.reduce((a, w) => a + w.win, 0); spinWin += tw;
+    push({ type: 'winInfo', totalWin: tw, wins });
+    push({ type: 'updateTumbleWin', amount: spinWin });
+    if (free) { gm.v = Math.min(gm.cap, gm.v + gm.step); push({ type: 'updateGlobalMult', globalMult: gm.v }); } // paid at the old value, then it rises
+    const d = dropCells(new Set(cl.flatMap((k) => k.cells.map(([c, r]) => c * 10 + r))));
+    push({ type: 'tumbleBoard', newSymbols: d.newSymbols, explodingSymbols: d.explodingSymbols });
     if (fz && !fz.done) { fz.burned = Math.min(fz.N, fz.burned + fz.adv); push({ type: 'fuseBurn', burned: fz.burned, newCells: fz.path.slice(fz.burned - fz.adv, fz.burned).map(([c, r]) => ({ reel: c, row: r })) }); }
   }
   if (spinWin) push({ type: 'setWin', amount: spinWin, winLevel: 2 });
-  return { events, win: spinWin, vis, mults };
+  return { events, win: spinWin, vis, gm };
 }
 
 const cluster = (symbol, cells) => ({ symbol, cells });
@@ -142,19 +146,19 @@ export function nearMiss() {
   r.events.push({ type: 'setTotalWin', amount: 0 }, { type: 'finalWin', amount: 0 });
   return r.events;
 }
-export function bonus(n = 4, big = false) {
+export function bonus(n = 4, big = false, step = 1) {
   const first = makeSpin({ seed: 5, cascades: 1, scatters: [[0, 0], [1, 4], [3, 0], [4, 4]], plant: PLANTS.simple });
   const events = first.events.slice();
   const push = (e) => { e.index = events.length; events.push(e); };
   let total = first.win;
   push({ type: 'setTotalWin', amount: total });
   push({ type: 'freeSpinTrigger', totalFs: n, positions: [[0, 0], [1, 4], [3, 0], [4, 4]].map(([c, r]) => ({ reel: c, row: r + 1 })) });
-  let mults = Array.from({ length: COLS }, () => Array(ROWS).fill(0));
+  const gm = { v: 1, step, cap: 100 };
+  push({ type: 'updateGlobalMult', globalMult: 1 }); // the meter starts at x1 and is never reset during the feature
   let fsWin = 0;
   for (let i = 1; i <= n; i++) {
     const ret = i === 2;
-    const sp = makeSpin({ seed: 40 + i, free: true, fsIndex: i, fsTotal: n + (i >= 2 ? 5 : 0), mults, plant: i % 2 ? PLANTS.big : PLANTS.simple, cascades: 4 });
-    mults = sp.mults;
+    const sp = makeSpin({ seed: 40 + i, free: true, fsIndex: i, fsTotal: n + (i >= 2 ? 5 : 0), gm, plant: i % 2 ? PLANTS.big : PLANTS.simple, cascades: 4, fuse: i === 3 ? { adv: 2 } : undefined });
     sp.events.forEach((e) => push(e));
     if (ret) { push({ type: 'freeSpinRetrigger', totalFs: n + 5, positions: [[1, 0], [2, 2], [5, 4]].map(([c, r]) => ({ reel: c, row: r + 1 })) }); }
     fsWin += sp.win;
@@ -168,6 +172,25 @@ export function bonus(n = 4, big = false) {
   push({ type: 'finalWin', amount: total + fsWin });
   return events;
 }
+// One free spin that chains winning steps until the meter reaches x20+ (refills only draw from two symbols so clusters keep forming).
+export function meterChain(step = 1, steps = 22) {
+  const first = makeSpin({ seed: 5, cascades: 0, scatters: [[0, 0], [1, 4], [3, 0], [4, 4]] });
+  const out = first.events.slice();
+  const push = (e) => { e.index = out.length; out.push(e); };
+  push({ type: 'freeSpinTrigger', totalFs: 2, positions: [[0, 0], [1, 4], [3, 0], [4, 4]].map(([c, r]) => ({ reel: c, row: r + 1 })) });
+  const gm = { v: 1, step, cap: 100 };
+  push({ type: 'updateGlobalMult', globalMult: 1 });
+  const sp = makeSpin({ seed: 7, free: true, fsIndex: 1, fsTotal: 2, gm, pool: ['H4', 'L1'], cascades: steps });
+  sp.events.forEach((e) => push(e));
+  push({ type: 'updateFreeSpin', amount: 2, total: 2 }); // second spin: the meter is KEPT
+  const sp2 = makeSpin({ seed: 8, free: true, gm, pool: ['H4', 'L1'], cascades: 3 });
+  sp2.events.forEach((e) => push(e));
+  const tot = sp.win + sp2.win;
+  push({ type: 'freeSpinEnd', amount: tot, winLevel: 3 }, { type: 'setWin', amount: tot, winLevel: 3 }, { type: 'setTotalWin', amount: tot }, { type: 'finalWin', amount: tot });
+  out.forEach((e, i) => { e.index = i; });
+  return out;
+}
+
 export function bigWin(x = 60) {
   const ev = baseWin(4).filter((e) => e.type !== 'setWin' && e.type !== 'setTotalWin' && e.type !== 'finalWin');
   const push = (e) => { e.index = ev.length; ev.push(e); };
@@ -180,7 +203,7 @@ export function maxWin() {
   push({ type: 'wincap', amount: 500000 }); push({ type: 'setTotalWin', amount: 500000 }); push({ type: 'finalWin', amount: 500000 });
   return ev;
 }
-// Fuse books: search seeds so the demo has the wanted shape (blast that pays after the re-evaluation / blast with no pay / fizzle).
+// Wire books: search seeds so the demo has the wanted shape (blast that pays after the refill / blast with no pay / fizzle).
 function fuseBook(kind, extra = {}) {
   for (let seed = 100; seed < 900; seed++) {
     const fz = kind === 'fizzle' ? { detmin: 99 } : kind === 'adv2' ? { adv: 2, detmin: 3 } : {};
@@ -204,14 +227,28 @@ export function fuseFizzleNoWin() {
   r.events.push({ type: 'setTotalWin', amount: 0 }, { type: 'finalWin', amount: 0 });
   return r.events;
 }
-// free-spin version: trigger, then one free spin carrying a fuse (veins keep their values)
+// Dead board with 3 burnt cells right at the reveal, a scatter on the path (it must stay): blast, holes, refill.
+export function fuseBlastScatter() {
+  const path = [[0, 2], [1, 2], [2, 2], [3, 2], [3, 1], [4, 1], [5, 1], [5, 0]];
+  for (let seed = 1; seed < 400; seed++) {
+    const r = makeSpin({ seed, cascades: 0, scatters: [[1, 2]], fuse: { b0: 3, path } });
+    if (r.events.some((e) => e.type === 'winInfo') || !r.events.some((e) => e.type === 'fuseBlast')) continue;
+    if (clusters(r.vis).length) continue; // keep the refill quiet so the removed cells are easy to see
+    r.events.push({ type: 'setTotalWin', amount: r.win }, { type: 'finalWin', amount: r.win });
+    return r.events;
+  }
+  return baseWin();
+}
+// free-spin version: trigger, then one free spin carrying a wire (the meter value is kept)
 export function fuseFree() {
   const b = bonus(2);
   const out = b.slice(0, b.findIndex((e) => e.type === 'freeSpinTrigger') + 1);
-  const sp = makeSpin({ seed: 77, free: true, fsIndex: 1, fsTotal: 2, plant: PLANTS.big, cascades: 3, fuse: { adv: 2 } });
+  out.push({ type: 'updateGlobalMult', globalMult: 1 });
+  const gm = { v: 1, step: 1, cap: 100 };
+  const sp = makeSpin({ seed: 77, free: true, fsIndex: 1, fsTotal: 2, gm, plant: PLANTS.big, cascades: 3, fuse: { adv: 2 } });
   sp.events.forEach((e) => out.push(e));
   out.push({ type: 'freeSpinEnd', amount: sp.win, winLevel: 1 }, { type: 'setTotalWin', amount: sp.win }, { type: 'finalWin', amount: sp.win });
   out.forEach((e, i) => { e.index = i; });
   return out;
 }
-export const BOOKS = { fuseBlast, fuseBlastDry, fuseBlastAdv2, fuseFizzle, fuseFizzleNoWin, fuseFree, baseWin, cascadeWin, noWin, nearMiss, bonus, bigWin, maxWin };
+export const BOOKS = { fuseBlast, fuseBlastDry, fuseBlastAdv2, fuseBlastScatter, fuseFizzle, fuseFizzleNoWin, fuseFree, meterChain, baseWin, cascadeWin, noWin, nearMiss, bonus, bigWin, maxWin };

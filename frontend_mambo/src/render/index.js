@@ -42,7 +42,7 @@ export function createRenderer(rootEl) {
     cost: 1, skip: false, turbo: false, destroyed: false, combo: 0, pad: 1, fsTotal: 0, fsCur: 0, inFs: false, hooks: {},
     fmt: (x) => `${(Math.round(x * 100) / 100).toFixed(2)}x`,
     grid: Array.from({ length: COLS }, () => Array(ROWS).fill(null)),
-    pads: Array(COLS).fill('L1'),
+    pads: Array(COLS).fill('L1'), gm: 1, cap: 0, meterOn: false, lastCluster: null,
     skip: false,
   };
   // S.skip: fast-forward the rest of the current book (replay SKIP); cleared when the book ends
@@ -60,12 +60,18 @@ export function createRenderer(rootEl) {
     mPose(name);
     if (hold) M.timer = setTimeout(() => { M.timer = 0; if (!S.destroyed) mPose(S.inFs ? 'dance' : M.base); }, hold);
   }
-  function say(key, ms = 2200, force = false) {
+  // Speech bubbles: i18n key (+ optional ".1".. ".5" variants); a missing key is skipped, never shown raw.
+  const hasKey = (k) => Object.prototype.hasOwnProperty.call(EN, k);
+  function say(key, ms = 2200, force = false, vars) {
     if (S.destroyed || !M.m || typeof M.m.say !== 'function') return;
+    if (!hasKey(key)) return;
     const now = Date.now();
     if (!force && now - M.sayAt < 3500) return;
     M.sayAt = now;
-    try { M.m.say(t(key), ms); } catch (e) { /* ignore */ }
+    let k = key;
+    const n = 1 + Math.floor(Math.random() * 5);
+    if (hasKey(key + '.' + n)) k = key + '.' + n;
+    try { M.m.say(t(k, vars), ms); } catch (e) { /* ignore */ }
   }
   (async () => {
     try {
@@ -91,24 +97,21 @@ export function createRenderer(rootEl) {
   wrap.innerHTML = `<div class="board">
       <div class="slots"></div><div class="reelglows"></div><div class="cells"></div>
       <svg class="outlines" viewBox="0 0 ${COLS} ${ROWS}" preserveAspectRatio="none" aria-hidden="true"></svg>
-      <div class="mults"></div><div class="popups"></div>
+      <div class="popups"></div>
     </div>
     <i class="lit l"></i><i class="lit r"></i><i class="rivet" style="left:2.2%;top:2.6%"></i><i class="rivet" style="right:2.2%;top:2.6%"></i><i class="rivet" style="left:2.2%;bottom:2.6%"></i><i class="rivet" style="right:2.2%;bottom:2.6%"></i>
     <div class="chip combo"></div><div class="chip fsc"></div><div class="chip tw"></div>`;
   root.appendChild(wrap);
   const board = wrap.querySelector('.board');
   const slotsEl = wrap.querySelector('.slots'), glowsEl = wrap.querySelector('.reelglows'), cellsEl = wrap.querySelector('.cells');
-  const outl = wrap.querySelector('.outlines'), multsEl = wrap.querySelector('.mults'), popsEl = wrap.querySelector('.popups');
+  const outl = wrap.querySelector('.outlines'), popsEl = wrap.querySelector('.popups');
   const chipCombo = wrap.querySelector('.chip.combo'), chipFs = wrap.querySelector('.chip.fsc'), chipTw = wrap.querySelector('.chip.tw');
-  const slotEls = [], multEls = [], glowEls = [];
+  const glowEls = [];
   for (let c = 0; c < COLS; c++) {
-    slotEls.push([]); multEls.push([]);
     const g = document.createElement('div'); g.className = 'reelglow'; g.style.setProperty('--c', c); glowsEl.appendChild(g); glowEls.push(g);
     for (let r = 0; r < ROWS; r++) {
-      const s = document.createElement('div'); s.className = 'slot'; s.style.setProperty('--c', c); s.style.setProperty('--r', r); s.innerHTML = '<i></i>' + crackSvg(c, r);
-      slotsEl.appendChild(s); slotEls[c].push(s);
-      const m = document.createElement('div'); m.className = 'mult'; m.style.setProperty('--c', c); m.style.setProperty('--r', r);
-      multsEl.appendChild(m); multEls[c].push(m);
+      const s = document.createElement('div'); s.className = 'slot'; s.style.setProperty('--c', c); s.style.setProperty('--r', r); s.innerHTML = '<i></i>';
+      slotsEl.appendChild(s);
     }
   }
   let bannerLayer = app.querySelector('.banner-layer');
@@ -161,36 +164,49 @@ export function createRenderer(rootEl) {
     }
   }
 
-  // ---------- multipliers (veins) ----------
-  const veinHue = (m) => 45 - clamp(Math.log2(Math.max(1, m)) / 9, 0, 1) * 215;
-  function paintSlot(c, r, m, animate) {
-    const s = slotEls[c][r], mu = multEls[c][r];
-    const g = clamp(Math.log2(Math.max(1, m)) / 9, 0, 1);
-    s.classList.toggle('v', m > 0); s.style.setProperty('--vh', veinHue(m).toFixed(1));
-    const i = s.firstChild;
-    i.style.setProperty('--vh', veinHue(m).toFixed(1)); i.style.setProperty('--g', g.toFixed(3));
-    if (m > 0) {
-      mu.innerHTML = `<b style="--vh:${veinHue(m).toFixed(1)};--g:${g.toFixed(3)}">${m}x</b>`;
-    } else mu.innerHTML = '';
-    if (animate && m > 0) {
-      s.classList.remove('pop'); mu.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); mu.classList.add('pop');
-      setTimeout(() => { s.classList.remove('pop'); mu.classList.remove('pop'); }, T(750));
-    }
+  // ---------- MISSION METER (global multiplier; free spins only; events updateGlobalMult {globalMult}) ----------
+  // The host `#meter-slot` is laid out by styles.css (exactly the board frame box); the meter hangs off it.
+  let meter = null;
+  try {
+    const host = app.querySelector('#meter-slot') || wrap;
+    meter = createMeter(host, { audio, reduced: REDUCE, t, cap: S.cap || undefined });
+  } catch (e) { console.error('meter init', e); meter = null; }
+  // optional MAX threshold from the rules data (gmCap); the meter stays usable without it
+  try {
+    fetch(new URL('../../data/rules_data.json', import.meta.url)).then((r) => (r.ok ? r.json() : null)).then((d) => { const c = d && Number(d.gmCap); if (c > 1) S.cap = c; }).catch(() => {});
+  } catch (e) { /* ignore */ }
+  function meterReset() { if (meter) { try { meter.reset(); } catch (e) { /* ignore */ } } S.gm = 1; }
+  function meterShow(on) { if (meter) { try { meter.show(on); } catch (e) { /* ignore */ } } }
+  // free spins start: the meter appears at x1 with a MISSION START stamp
+  async function meterStart(v = 1) {
+    if (!meter) return null;
+    S.meterOn = true; S.gm = v;
+    meterShow(true); meter.reset(); meter.set(v);
+    audio.play('stamp');
+    try { if (typeof audio.setMeter === 'function') audio.setMeter(v); } catch (e) { /* ignore */ }
+    try {
+      if (!REDUCE) { const r = app.getBoundingClientRect(), p = cellCenter(1.2, 0.2); fx.burstBubble(p.x, p.y, Math.min(r.width, r.height) * .22, t('meter.start')); }
+    } catch (e) { /* ignore */ }
+    return sleep(450);
   }
-  function setMultipliers(grid, animate = false) {
-    let up = false;
-    for (let c = 0; c < COLS; c++) {
-      const col = (grid && grid[c]) || [];
-      const off = col.length >= ROWS + 2 ? 1 : 0;
-      for (let r = 0; r < ROWS; r++) {
-        const m = Math.max(0, Number(col[r + off]) || 0);
-        if (m !== S.mults[c][r]) {
-          const grew = m > S.mults[c][r]; S.mults[c][r] = m; paintSlot(c, r, m, animate && grew); if (grew) up = true;
-          if (animate && grew) { const p = cellCenter(c, r); fx.sparks(p.x, p.y, '#ffe27a', p.size * .3, 8, 5); fx.glow(p.x, p.y, p.size * .9, '255,160,60', .5); }
-        }
-      }
-    }
-    if (up && animate) audio.play('mult');
+  function meterEnd() {
+    S.meterOn = false; S.gm = 1; meterShow(false); meterReset();
+    try { if (typeof audio.setMeter === 'function') audio.setMeter(1); } catch (e) { /* ignore */ }
+  }
+  async function onGlobalMult(ev) {
+    const v = Math.max(1, Math.round(Number(ev && ev.globalMult) || 1));
+    const prev = S.gm || 1;
+    S.gm = v;
+    if (!S.inFs && v <= 1) return null; // base game stays at x1: nothing to show
+    if (!meter) return null;
+    if (!S.meterOn) return meterStart(v);
+    if (v === prev) return null;
+    const from = S.lastCluster ? { x: S.lastCluster.x, y: S.lastCluster.y } : undefined;
+    meter.set(v, { animate: true, from });
+    try { if (typeof audio.setMeter === 'function') audio.setMeter(v); } catch (e) { /* ignore */ }
+    if (S.cap && v >= S.cap) { meter.max(); }
+    if (v > prev) { pose('happy', 900); say('mascot.meter', 1800, false, { n: v }); }
+    return sleep(260);
   }
 
   // ---------- fx helpers ----------
@@ -267,7 +283,6 @@ export function createRenderer(rootEl) {
     const nb = normaliseBoard(ev.board);
     if (!nb) return;
     S.combo = 0; S.lastWin = 0; chip(chipCombo, '', false); chip(chipTw, '', false);
-    if (ev.gameType !== 'freegame' && !S.inFs) setMultipliers(null);
     await dropOut();
     audio.play('spin');
     const antic = Array.isArray(ev.anticipation) ? ev.anticipation : [];
@@ -313,7 +328,7 @@ export function createRenderer(rootEl) {
     for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) if (S.grid[c][r] && S.grid[c][r].name === 'S') sc.push(S.grid[c][r]);
     if (sc.length >= 3) {
       audio.play('scatter', { n: sc.length - 2 }); pose('shock', 1400); say('mascot.shock');
-      sc.forEach((cell) => { cell.el.classList.add('win'); const p = cellCenter(cell.c, cell.r); fx.sparks(p.x, p.y, '#ff8a3a', p.size * .35, 10, 5); fx.glow(p.x, p.y, p.size * 1.1, '255,100,40', .7); });
+      sc.forEach((cell) => { cell.el.classList.add('win'); const p = cellCenter(cell.c, cell.r); fx.sparks(p.x, p.y, FX_COLORS.coral, p.size * .35, 10, 5); fx.glow(p.x, p.y, p.size * 1.1, '240,71,47', .7); });
       shake(.6, 400);
       await sleep(sc.length >= 4 ? 700 : 900);
       sc.forEach((cell) => cell.el.classList.remove('win'));
@@ -337,20 +352,30 @@ export function createRenderer(rootEl) {
       cells.forEach(([c, r]) => { const rc = document.createElementNS(NS, 'rect'); rc.setAttribute('class', 'wt'); rc.setAttribute('x', c); rc.setAttribute('y', r); rc.setAttribute('width', 1); rc.setAttribute('height', 1); outl.appendChild(rc); });
       const hl = document.createElementNS(NS, 'path'); hl.setAttribute('class', 'halo'); hl.setAttribute('d', outlinePath(cells)); outl.appendChild(hl);
       const path = document.createElementNS(NS, 'path');
-      path.setAttribute('d', outlinePath(cells)); path.style.stroke = '#ffe27a';
+      path.setAttribute('d', outlinePath(cells)); path.style.stroke = FX_COLORS.lemon;
       outl.appendChild(path);
       total += (w.win || 0) / 100;
       const ov = (w.meta && w.meta.overlay) ? [w.meta.overlay.reel, vis(w.meta.overlay.row)] : cells[Math.floor(cells.length / 2)];
       if (ov && inB(ov[0], ov[1])) {
-        const cm = w.meta && Number(w.meta.clusterMult) > 1 ? `<small>${w.meta.clusterMult}x</small>` : '';
+        const gmv = w.meta && Number(w.meta.globalMult) > 1 ? Number(w.meta.globalMult) : 0;
+        const cm = gmv ? `<small>x${gmv}</small>` : '';
         popup(ov[1], ov[0], `${S.fmt((w.win || 0) / 100)}${cm}`, wi * 120, (w.win || 0) / 100);
       }
       cells.forEach(([c, r]) => {
         const cell = S.grid[c][r]; if (!cell) return; cell.el.classList.add('win');
-        const p = cellCenter(c, r); fx.sparks(p.x, p.y, SYM_COLOR[cell.name] || '#ffe27a', p.size * .3, 4, 4);
+        const p = cellCenter(c, r); fx.sparks(p.x, p.y, SYM_COLOR[cell.name] || FX_COLORS.lemon, p.size * .3, 4, 4);
       });
     });
     cellsEl.querySelectorAll('.cell:not(.win)').forEach((e) => e.classList.add('dim'));
+    // the +1 chip of the Mission Meter flies from the middle of the winning cluster (client px)
+    try {
+      const flat = [...inWin].map((k) => k.split(',').map(Number));
+      if (flat.length) {
+        const mx = flat.reduce((a, p) => a + p[0], 0) / flat.length, my = flat.reduce((a, p) => a + p[1], 0) / flat.length;
+        const p = cellCenter(mx, my), ar = app.getBoundingClientRect();
+        S.lastCluster = { x: ar.left + p.x, y: ar.top + p.y };
+      }
+    } catch (e) { /* ignore */ }
     S.lastWin = total;
     if (total >= 2) shake(.15 + Math.min(total / 40, 1.1), 320);
     audio.play('win', { combo: S.combo });
@@ -364,18 +389,21 @@ export function createRenderer(rootEl) {
     const exploding = new Set();
     (ev.explodingSymbols || []).forEach((p) => { const r = vis(p.row); if (inB(p.reel, r)) exploding.add(p.reel + ',' + r); });
     outl.innerHTML = '';
-    const cells = [...exploding].map((k) => k.split(',').map(Number));
+    // cells already emptied by the wire blast (emptyCell) are holes: nothing left to pop, they only get refilled below
+    const cells = [...exploding].map((k) => k.split(',').map(Number)).filter(([c, r]) => S.grid[c][r]);
     cells.forEach(([c, r], i) => {
       const cell = S.grid[c][r]; if (!cell) return;
-      const p = cellCenter(c, r); const col = SYM_COLOR[cell.name] || '#ffd54a';
-      fx.shards(p.x, p.y, col, p.size * .35, 6 + Math.min(6, Math.round((S.lastWin || 0) / 8))); fx.sparks(p.x, p.y, '#fff6c0', p.size * .3, 5, 6); fx.ring(p.x, p.y, p.size * .6, '255,230,160', .35, 3);
+      const p = cellCenter(c, r); const col = SYM_COLOR[cell.name] || FX_COLORS.lemon;
+      fx.shards(p.x, p.y, col, p.size * .35, 6 + Math.min(6, Math.round((S.lastWin || 0) / 8))); fx.sparks(p.x, p.y, FX_COLORS.cream, p.size * .3, 5, 6); fx.ring(p.x, p.y, p.size * .6, '251,241,217', .35, 3);
       cell.el.classList.remove('win', 'dim');
       anim(cell.el, [{ transform: 'scale(1)', opacity: 1, filter: 'brightness(1)' }, { transform: 'scale(1.35)', opacity: 1, filter: 'brightness(2.4)', offset: .35 }, { transform: 'scale(.2) rotate(25deg)', opacity: 0, filter: 'brightness(2)' }],
         { duration: 330, delay: Math.min(i, 8) * 22, easing: 'ease-in', fill: 'forwards' });
       if (i < 9) setTimeout(() => audio.play('pop', { combo: S.combo + Math.floor(i / 3) }), T(i * 40));
     });
-    shake(.3 + Math.min(S.combo, 6) * .07 + Math.min((S.lastWin || 0) / 50, 1), 280);
-    await sleep(380);
+    if (cells.length) {
+      shake(.3 + Math.min(S.combo, 6) * .07 + Math.min((S.lastWin || 0) / 50, 1), 280);
+      await sleep(380);
+    }
     cells.forEach(([c, r]) => { const cell = S.grid[c][r]; if (cell) { cell.el.remove(); S.grid[c][r] = null; } });
     cellsEl.querySelectorAll('.dim').forEach((e) => e.classList.remove('dim'));
     const falls = [];
@@ -468,8 +496,8 @@ export function createRenderer(rootEl) {
                   tierIdx = Math.max(0, TIERS.indexOf(k));
                   if (k !== o.tiers0) {
                     audio.play('stinger', { level: tierIdx + 1 }); audio.play('coin');
-                    flash(.3 + tierIdx * .08, 420, '#fff0b0'); shake(.5 + tierIdx * .35, 380);
-                    const r = app.getBoundingClientRect(); fx.ring(r.width / 2, r.height / 2, Math.min(r.width, r.height) * (.5 + tierIdx * .12), '255,226,140', .7, 10);
+                    flash(.3 + tierIdx * .08, 420, FX_COLORS.cream); shake(.5 + tierIdx * .35, 380);
+                    const r = app.getBoundingClientRect(); fx.ring(r.width / 2, r.height / 2, Math.min(r.width, r.height) * (.5 + tierIdx * .12), '255,210,63', .7, 10);
                     if (tierIdx >= 2) rays.classList.add('hi');
                     if (tierIdx >= 3 && !REDUCE) bannerLayer.classList.add('shk');
                   }
@@ -505,7 +533,7 @@ export function createRenderer(rootEl) {
   async function winBanner(x, opts = {}) {
     const tier = tierFor(x);
     audio.play('bigwin', { level: x >= 100 ? 3 : x >= 50 ? 2 : 1 });
-    M.wonRound = true; pose('bigwin'); say('mascot.big', 2600, true);
+    M.wonRound = true; pose(opts.title === 'win.max' ? 'celebrate' : 'bigwin'); say('mascot.big', 2600, true);
     await banner({ title: t(opts.title || tier || 'win.big'), amount: x, kind: 'win', coins: true, hi: x >= 50, tiers: !opts.title, tiers0: 'win.big', hold: 1300, sub: opts.sub });
   }
 
@@ -527,23 +555,23 @@ export function createRenderer(rootEl) {
     const total = Number(ev.totalFs) || 0;
     const sc = scatterCells(ev);
     clearWins();
-    audio.play('scatter', { n: 4 }); audio.play('fuse'); audio.play('rumble');
+    audio.play('scatter', { n: 4 }); audio.play('stamp'); audio.play('rumble');
     pose('shock'); say('mascot.shock', 2000, true);
-    sc.forEach((cell) => { cell.el.classList.add('fuse'); const p = cellCenter(cell.c, cell.r); fx.glow(p.x, p.y, p.size * 1.3, '255,90,40', 1.0); fx.sparks(p.x, p.y, '#ffb347', p.size * .35, 14, 6); });
+    sc.forEach((cell) => { cell.el.classList.add('fuse'); const p = cellCenter(cell.c, cell.r); fx.glow(p.x, p.y, p.size * 1.3, '240,71,47', 1.0); fx.sparks(p.x, p.y, FX_COLORS.lemon, p.size * .35, 14, 6); });
     cellsEl.querySelectorAll('.cell:not(.fuse)').forEach((e) => e.classList.add('dim'));
     shake(.8, 700);
     await sleep(1100);
     // detonate
-    audio.play('explosion'); flash(.95, 900, '#fff3d0'); shake(2.6, 1100);
+    audio.play('stamp'); flash(.95, 900, FX_COLORS.cream); shake(2.6, 1100);
     M.intro = true; pose('plunger');
     setBonusMode(true); // palette swap hides under the flash
-    { const r0 = app.getBoundingClientRect(); fx.ring(r0.width / 2, r0.height / 2, Math.max(r0.width, r0.height) * .7, '255,170,80', 1.0, 18); fx.smoke(r0.width / 2, r0.height / 2, Math.min(r0.width, r0.height) * .6, 10, '40,20,14'); }
+    { const r0 = app.getBoundingClientRect(); fx.ring(r0.width / 2, r0.height / 2, Math.max(r0.width, r0.height) * .7, '255,210,63', 1.0, 18); fx.smoke(r0.width / 2, r0.height / 2, Math.min(r0.width, r0.height) * .6, 10, '43,42,107'); }
     const rect = app.getBoundingClientRect();
     sc.forEach((cell) => {
       const p = cellCenter(cell.c, cell.r);
-      fx.ring(p.x, p.y, p.size * 3.5, '255,200,120', .8, 10); fx.ring(p.x, p.y, p.size * 2.2, '255,120,50', .6, 6);
-      fx.smoke(p.x, p.y, p.size * 1.4, 7); fx.sparks(p.x, p.y, '#ffcf70', p.size * .5, 26, 9); fx.sparks(p.x, p.y, '#ff6a2a', p.size * .5, 20, 8);
-      fx.shards(p.x, p.y, '#d33a22', p.size * .5, 8);
+      fx.ring(p.x, p.y, p.size * 3.5, '251,241,217', .8, 10); fx.ring(p.x, p.y, p.size * 2.2, '240,71,47', .6, 6);
+      fx.smoke(p.x, p.y, p.size * 1.4, 7); fx.sparks(p.x, p.y, FX_COLORS.lemon, p.size * .5, 26, 9); fx.sparks(p.x, p.y, FX_COLORS.coral, p.size * .5, 20, 8);
+      fx.shards(p.x, p.y, FX_COLORS.coral, p.size * .5, 8);
     });
     // all cells get blown away from the centre of the blast
     const cx = sc.length ? sc.reduce((a, c) => a + c.c, 0) / sc.length : COLS / 2, cy = sc.length ? sc.reduce((a, c) => a + c.r, 0) / sc.length : ROWS / 2;
@@ -554,9 +582,9 @@ export function createRenderer(rootEl) {
       anim(cell.el, [{ transform: 'translate(0,0) rotate(0) scale(1)', opacity: 1 }, { transform: `translate(${(dx / d) * 260}%,${(dy / d) * 260 + 40}%) rotate(${dx * 70 + 30}deg) scale(.5)`, opacity: 0 }],
         { duration: 750, delay: d * 40, easing: 'cubic-bezier(.2,.7,.5,1)', fill: 'forwards' });
     });
-    fx.embers(0, rect.height * .5, rect.width, rect.height * .5, 60, Math.min(rect.width, rect.height) * .25);
+    try { fx.confetti(rect.width / 2, rect.height * .55, Math.min(rect.width, rect.height), 30, { spread: 6.28 }); } catch (e) { /* ignore */ }
     await sleep(1100);
-    clearCells(); setMultipliers(null);
+    clearCells(); meterEnd();
     S.fsTotal = total; S.fsCur = 0;
     hook('onFreeSpinCounter', 0, total);
     chip(chipFs, fsText(0, total), true);
@@ -569,56 +597,71 @@ export function createRenderer(rootEl) {
     const tot = Number(ev.totalFs) || 0;
     const add = tot > S.fsTotal && S.fsTotal ? tot - S.fsTotal : tot;
     audio.play('scatter', { n: 3 });
-    sc.forEach((cell) => { cell.el.classList.add('win'); const p = cellCenter(cell.c, cell.r); fx.sparks(p.x, p.y, '#ffe27a', p.size * .4, 12, 6); fx.glow(p.x, p.y, p.size * 1.2, '255,210,90', .8); });
+    sc.forEach((cell) => { cell.el.classList.add('win'); const p = cellCenter(cell.c, cell.r); fx.sparks(p.x, p.y, FX_COLORS.lemon, p.size * .4, 12, 6); fx.glow(p.x, p.y, p.size * 1.2, '255,210,63', .8); });
     shake(.7, 500);
     await sleep(900);
     clearWins();
     if (tot > S.fsTotal) S.fsTotal = tot;
-    audio.play('retrigger'); audio.play('stinger', { level: 2 }); pose('happy', 1400); flash(.5, 600, '#ffe0a0');
+    audio.play('retrigger'); audio.play('stinger', { level: 2 }); pose('happy', 1400); flash(.5, 600, FX_COLORS.cream);
     { const r = app.getBoundingClientRect(); fx.coins(r.width / 2, r.height * .6, Math.min(r.width, r.height), 24, 1.1); }
     await banner({ title: t('fs.retrigger', { n: add }), kind: 'fs', hold: 1300, dimAmt: .6, rays: true, hi: true });
   }
   async function fsEnd(ev) {
     const x = (Number(ev.amount) || 0) / 100;
     clearWins();
-    audio.play('fsEnd'); pose('celebrate'); say('mascot.big', 2400, true);
-    await banner({ title: t('fs.end'), amount: x, kind: 'win', coins: x >= (S.cost || 1), hold: 2200, sub: tierFor(x) ? t(tierFor(x)) : '', dimAmt: .94 });
+    audio.play('fsEnd'); pose('celebrate'); say(hasKey('mascot.fsEnd') ? 'mascot.fsEnd' : 'mascot.big', 2400, true);
+    // subtitle: win tier word (if any) and the Mission Meter level reached
+    const parts = [];
+    if (tierFor(x)) parts.push(t(tierFor(x)));
+    if ((S.gm || 1) > 1) parts.push(`${t('label.meter')} x${S.gm}`);
+    await banner({ title: t('fs.end'), amount: x, kind: 'win', coins: x >= (S.cost || 1), hold: 2200, sub: parts.join(' - '), dimAmt: .94 });
     setBonusMode(false);
     chip(chipFs, '', false);
     hook('onFreeSpinCounter', 0, 0);
-    setMultipliers(null);
+    meterEnd();
   }
 
-  // ---------- FUSE LINE (events fusePath / fuseBurn / fuseBlast / fuseFizzle; drawing lives in fuse.js) ----------
-  let fuse = null;
+  // ---------- bomb-timer WIRE (events fusePath / fuseBurn / fuseBlast / fuseFizzle; drawing lives in wire.js) ----------
+  // Wire events use VISIBLE rows 0..4 (tumbleBoard / winInfo use padded rows 1..5). The blast empties its cells here
+  // (holes in S.grid); the tumbleBoard that follows refills them and drops the survivors.
+  let wire = null;
+  function emptyCell(c, r) {
+    const cell = S.grid[c] && S.grid[c][r];
+    if (!cell) return;
+    try { cell.el.remove(); } catch (e) { /* ignore */ }
+    S.grid[c][r] = null;
+  }
   try {
-    fuse = createFuse({
+    wire = createWire({
       board, fx, audio, t, reduced: REDUCE,
       cellCenter, pose, shake, flash, sleep,
       turbo: () => S.turbo || S.skip, destroyed: () => S.destroyed,
       cellEl: (c, r) => (S.grid[c] && S.grid[c][r] ? S.grid[c][r].el : null),
-      swapCell: (c, r, name) => {
-        const cell = S.grid[c] && S.grid[c][r]; if (!cell) return false;
-        cell.name = name; cell.el.className = 'cell s-' + name; cell.el.innerHTML = symbolMarkup(name); return true;
-      },
+      emptyCell,
+      symColor: (c, r) => { const cell = S.grid[c] && S.grid[c][r]; return cell ? (SYM_COLOR[cell.name] || FX_COLORS.coral) : FX_COLORS.coral; },
     });
-  } catch (e) { console.error('fuse init', e); fuse = null; }
-  // ---------- end FUSE LINE ----------
+  } catch (e) { console.error('wire init', e); wire = null; }
+  // safety net: a book that ends with holes (blast without refill) never leaves an empty cell behind
+  function fillHoles() {
+    for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) if (!S.grid[c][r]) S.grid[c][r] = makeCell(c, r, SYMBOLS[(Math.random() * 8) | 0]);
+  }
+  // ---------- end WIRE ----------
 
   // ---------- main loop ----------
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   async function handle(ev) {
     switch (ev.type) {
-      case 'reveal': if (fuse) fuse.clear(); syncBannerLayer(); return reveal(ev);
-      case 'fusePath': return fuse ? fuse.path(ev) : null;
-      case 'fuseBurn': return fuse ? fuse.burn(ev) : null;
-      case 'fuseBlast': return fuse ? fuse.blast(ev) : null;
-      case 'fuseFizzle': return fuse ? fuse.fizzle(ev) : null;
+      case 'reveal': if (wire) wire.clear(); syncBannerLayer(); return reveal(ev);
+      case 'fusePath': return wire ? wire.path(ev) : null;
+      case 'fuseBurn': return wire ? wire.burn(ev) : null;
+      case 'fuseBlast': say('mascot.wire', 2000, true); return wire ? wire.blast(ev) : null;
+      case 'fuseFizzle': return wire ? wire.fizzle(ev) : null;
+      case 'updateGlobalMult': return onGlobalMult(ev);
       case 'winInfo': return showWins(ev);
       case 'setTumbleWin': case 'updateTumbleWin': {
         const x = (Number(ev.amount) || 0) / 100; hook('onWin', x); chip(chipTw, S.fmt(x), x > 0); return null;
       }
-      case 'updateGrid': setMultipliers(ev.gridMultipliers, true); return sleep(ev.gridMultipliers ? 320 : 0);
+      case 'updateGrid': return null; // legacy vein grid: the Mission Meter replaces it, ignored
       case 'tumbleBoard': return tumble(ev);
       case 'freeSpinTrigger': return fsTrigger(ev);
       case 'freeSpinRetrigger': return fsRetrigger(ev);
@@ -626,6 +669,7 @@ export function createRenderer(rootEl) {
         S.fsCur = Number(ev.amount) || 0; if (ev.total) S.fsTotal = Number(ev.total);
         hook('onFreeSpinCounter', S.fsCur, S.fsTotal); chip(chipFs, fsText(S.fsCur, S.fsTotal), true);
         if (!S.inFs) setBonusMode(true);
+        if (meter) { if (!S.meterOn) await meterStart(S.gm || 1); else if (S.fsCur > 1) { try { meter.pulse(); } catch (e) { /* ignore */ } } }
         return sleep(S.fsCur > 1 ? 120 : 300);
       }
       case 'freeSpinEnd': return fsEnd(ev);
@@ -659,12 +703,17 @@ export function createRenderer(rootEl) {
         if (ev && ev.type === 'wincap') capped = true;
       }
       S.skip = false;
-      if (fuse && fuse.active) fuse.clear();
+      if (wire && wire.active) wire.clear();
+      fillHoles();
+      if (S.meterOn && !S.inFs) meterEnd();
       M.intro = false; M.base = 'idle';
       if (S.inFs) pose('dance');
       else if (M.wonRound) { M.losses = 0; mBase(); }
-      else if (++M.losses >= 3) { M.losses = 0; pose('shrug', 2200); say('mascot.lose', 2400, true); }
-      else mBase();
+      else {
+        // dead round: Mambo shrugs; every third one she also says something
+        pose('shrug', 1800);
+        if (++M.losses >= 3) { M.losses = 0; say('mascot.lose', 2400, true); }
+      }
       clearWins();
       chip(chipCombo, '', false); chip(chipTw, '', false);
     };
@@ -694,7 +743,7 @@ export function createRenderer(rootEl) {
   const api = {
     showBoard,
     playBook,
-    setMultipliers: (g) => setMultipliers(g, false),
+    setMultipliers() { /* legacy no-op: the Mission Meter is driven by updateGlobalMult events */ },
     setTurbo(b) { S.turbo = !!b; },
     setSkip(b) { S.skip = !!b; },
     setCost(c) { S.cost = Number(c) > 0 ? Number(c) : 1; },
@@ -702,7 +751,7 @@ export function createRenderer(rootEl) {
     resize() { fx.resize(); },
     // mascot hook for the UI layer (UNLEASH confirm)
     mascot: { pose, say },
-    destroy() { S.destroyed = true; try { if (M.m) M.m.destroy(); } catch (e) { /* ignore */ } clearTimeout(M.timer); clearInterval(sweepTimer); if (fuse) fuse.destroy(); if (ro) ro.disconnect(); fx.clear(); },
+    destroy() { S.destroyed = true; try { if (M.m) M.m.destroy(); } catch (e) { /* ignore */ } clearTimeout(M.timer); clearInterval(sweepTimer); if (wire) wire.destroy(); if (meter) meter.destroy(); if (ro) ro.disconnect(); fx.clear(); },
     // exposed for dev/test harness
     _banner: banner, _winBanner: winBanner, _shake: shake, _state: S,
   };
