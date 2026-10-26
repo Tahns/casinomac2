@@ -57,7 +57,7 @@ const DISCRETE_DEF = { gl: 'fist', gr: 'fist', prop: 'L', prop2: '', layL: 'fron
 // ---------------------------------------------------------------------- poses (only the channels that differ from rest)
 export const POSES = {
   rest: {},
-  idle: { hipX: 4, hipTilt: -3, lean: 2.5, htilt: -2, lax: -8, lsr: -10, rax: 2,
+  idle: { hipX: 11, hipTilt: -6, lean: 5, htilt: -4.5, lax: 4, lay: 0, lsr: -14, lb1: 14, lb2: -8, rax: 4, rb1: -4, rb2: 4,
     arx: 254, ary: 322, arb1: -40, arb2: -34, arr: 25, gr: 'fist', alx: 146, aly: 356, alb1: 10, alb2: 6, gl: 'fist', prop: 'L', acc: 65 },
   point: { hipX: -4, hipTilt: 3, lean: 4, turn: 1.1, htilt: 2, lookx: 1, looky: 0, lax: -22, rax: 24, lsr: -4, rsr: 8, uL: 0.62, uR: 0.9,
     alx: 148, aly: 322, alb1: 38, alb2: 34, alr: 25, gl: 'fist',
@@ -109,7 +109,7 @@ function buildMarkup(outfitKey, pre, o) {
   // ---- arms
   const arm = (side) => {
     const s = side.toLowerCase(), kinds = gloveKinds(c, W);
-    let t = tubeEls(c, `arm-${s}`, 12, sleeve.fill || PAL.navy);
+    let t = tubeEls(c, `arm-${s}`, 12, sleeve.fill || PAL.navyJ);
     if (sleeve.gloveFrom != null) t += `<path id="${pre}arm-${s}-lgi" d="" fill="none" stroke="${INK}" stroke-width="${12 + 2 * OL}" stroke-linecap="butt"/><path id="${pre}arm-${s}-lgf" d="" fill="none" stroke="${W.glove || PAL.white}" stroke-width="12" stroke-linecap="butt"/>`;
     if (sleeve.trim) t += `<path id="${pre}arm-${s}-tri" d="" fill="none" stroke="${INK}" stroke-width="${12 + 2 * OL}" stroke-linecap="butt"/><path id="${pre}arm-${s}-trf" d="" fill="none" stroke="${sleeve.trim}" stroke-width="12" stroke-linecap="butt"/>`;
     const hand = G(`${pre}hand-${s}`, `<g id="${pre}hand-${s}-t"><g id="${pre}prop-slot-${s}"></g>` + Object.keys(kinds).map((k) => `<g id="${pre}g-${s}-${k}" display="${k === 'fist' ? 'inline' : 'none'}">${kinds[k]}</g>`).join('') + `</g>`);
@@ -120,7 +120,7 @@ function buildMarkup(outfitKey, pre, o) {
   const leg = (side) => G(`${pre}leg-${side.toLowerCase()}`, tubeEls(c, `leg-${side.toLowerCase()}`, W.legs.w || 13, W.legs.fill) + (W.legs.shine ? `<path id="${pre}leg-${side.toLowerCase()}-sh" d="" fill="none" stroke="${W.legs.shine}" stroke-width="3.2" stroke-linecap="round" opacity=".5"/>` : ''));
   const shoe = (side) => G(`${pre}shoe-${side.toLowerCase()}`, `<g id="${pre}shoe-${side.toLowerCase()}-t">${shoeArt(c, W)}</g>`);
   const prop = G(`${pre}prop`, W.prop ? W.prop(c) : '') + G(`${pre}prop2`, W.prop2 ? W.prop2(c) : '');
-  const neck = part(c, 'M191 218L209 218L211 252L189 252Z', PAL.skin, { sw: OL * 0.9, mis: [1.4, 1.2], shade: 'M200 214L220 214L220 258L204 258Z' });
+  const neck = part(c, 'M190 216L210 216L212 254L188 254Z', PAL.skin, { sw: OL * 0.9, mis: [1.4, 1.2], shade: 'M200 214L220 214L220 258L204 258Z' });
   const skirt = G(`${pre}skirt`, `<g id="${pre}skirt-t">${W.skirt(c)}</g>`);
   const shoes = G(`${pre}shoes`, shoe('L') + shoe('R'));
   const legs = G(`${pre}legs`, leg('L') + leg('R'));
@@ -383,10 +383,18 @@ const f2 = (n) => Math.round(n * 100) / 100;
 
   // ---- clips
   const clipDefs = { ...CLIPS, ...(O.clips || {}) };
+  const TRACK_FIELDS = ['pose', 'mood', 'set', 'mouth', 'look', 'impulse', 'fx', 'wink', 'blink', 'spin', 'outfit', 'cue'];
+  function compileClip(def) {
+    if (def.events || !def.tracks) return def;
+    const ev = new Map();
+    for (const [track, keys] of Object.entries(def.tracks)) for (const k of keys) { const at = k[0], val = k[1], extra = k[2] || {}; const e = ev.get(at) || { at }; e[track] = val; Object.assign(e, extra); ev.set(at, e); }
+    return { ...def, events: [...ev.values()].sort((a, b) => a.at - b.at) };
+  }
   function play(clip, o = {}) {
     if (clip === 'outfitChange') { const ks = OUTFIT_KEYS, k = o.outfit || ks[(ks.indexOf(outfitKey) + 1) % ks.length]; setOutfit(k, { animated: true }); return clipS.cur && clipS.cur.def; }
-    const def = typeof clip === 'string' ? clipDefs[clip] : clip;
+    let def = typeof clip === 'string' ? clipDefs[clip] : clip;
     if (!def) return null;
+    def = compileClip(def);
     if (o.queue && clipS.cur) { clipS.queue.push([def, o]); return def; }
     const events = (def.events || []).slice().sort((a, b) => a.at - b.at);
     clipS.cur = { def, events, i: 0, t: 0, speed: o.speed || 1, hold: o.hold ?? def.hold ?? false, name: def.name || (typeof clip === 'string' ? clip : 'custom'), onEnd: o.onEnd };
@@ -579,7 +587,8 @@ const f2 = (n) => Math.round(n * 100) / 100;
       const tan = cubicTan(cv, 1), ang = (Math.atan2(tan[1], tan[0]) * 180) / Math.PI - 90 + d(p + 'r');
       const thumbDown = -Math.sin(rad2(ang));
       if (thumbDown > 0.28) gsign[s] = -1; else if (thumbDown < -0.28) gsign[s] = 1;
-      setE(`hand-${s}-t`, 'transform', `translate(${f(wx)} ${f(wy)}) rotate(${f(ang)}) scale(${f2(d(p + 'sx') * gsign[s])} ${f2(d(p + 'sy'))})`);
+      const spd = reduced ? 0 : Math.hypot(V[IX[p + 'x']], V[IX[p + 'y']]), smear = clamp((spd - 500) / 3200, 0, 0.32);
+      setE(`hand-${s}-t`, 'transform', `translate(${f(wx)} ${f(wy)}) rotate(${f(ang)}) scale(${f2(d(p + 'sx') * gsign[s] * (1 - smear * 0.38))} ${f2(d(p + 'sy') * (1 + smear))})`);
       if (s === dis.prop.toLowerCase() && E.prop) {
         const kind = dis[s === 'l' ? 'gl' : 'gr'], gp = GLOVE_GRIP[kind] || [0, 26];
         const eff = (W.accBase ?? 90) + (d('acc') - 90) * (W.accGain ?? 1), flipSign = gsign[s];
@@ -687,8 +696,8 @@ const f2 = (n) => Math.round(n * 100) / 100;
 // event fields: pose, mood, set{channel:value}, mouth, look, impulse{jump,sq,cap,shake,hair...}, fx, wink, blink, spin, cue, outfit
 const rep = (arr, f2) => arr.map(f2);
 export const CLIPS = {
-  spinStart: { dur: 0.5, hold: true, events: [
-    { at: 0, pose: 'anticipation', look: 'grid', impulse: { sq: -1.6, head: -4 }, cue: 'spinStart' }, { at: 0.18, mouth: 'wry' } ] },
+  spinStart: { dur: 0.5, hold: true, tracks: {   // named tracks: [time, value, extra]
+    pose: [[0, 'anticipation']], look: [[0, 'grid']], impulse: [[0, { sq: -1.6, head: -4 }]], cue: [[0, 'spinStart']], mouth: [[0.18, 'wry']] } },
   scatterTease: { dur: 2.4, hold: true, events: [
     { at: 0, pose: 'anticipation', set: { lean: 10, hx: 12 }, look: { nx: 1, ny: -0.5, turn: 0.8 }, mouth: 'wry', cue: 'scatterTease' },
     { at: 0.35, look: { nx: 1, ny: 0.5, turn: 0.85 } }, { at: 0.7, look: { nx: 0.9, ny: -0.1, turn: 0.8 }, set: { lean: 12, hx: 15 } },
@@ -697,11 +706,12 @@ export const CLIPS = {
   winSmall: { dur: 1.6, events: [
     { at: 0, pose: 'smallwin', impulse: { sq: -1.2 }, wink: 'L', winkDur: 0.7, cue: 'winSmall' }, { at: 0.12, impulse: { jump: 520, sq: 1.2 }, fx: 'sparkles', fxOpts: { n: 3 } },
     { at: 0.3, set: { arx: 266, ary: 164 } }, { at: 0.52, set: { arx: 262, ary: 190 } }, { at: 0.8, mouth: 'smirk' }, { at: 1.25, look: 'player' } ] },
-  winBig: { dur: 2.8, endPose: 'idle', events: [
-    { at: 0, pose: 'anticipation', set: { sq: -0.2, uy: 14, arx: 250, ary: 360, alx: 150, aly: 360, hipTilt: 0, lean: 0 }, mouth: 'grin', cue: 'winBig' },
-    { at: 0.14, pose: 'bigwin', impulse: { jump: 820, sq: 1.8, hair: 18, cap: -520 }, fx: 'burstLines' },
-    { at: 0.32, fx: 'sparkles', fxOpts: { n: 6 } }, { at: 0.9, impulse: { jump: 430, sq: 0.8, hair: 8 }, fx: 'sparkles' },
-    { at: 1.4, impulse: { jump: 300, sq: 0.5 } }, { at: 1.9, set: { stars: 0 }, mouth: 'teeth', mood: 'happy' }, { at: 2.4, mood: 'sly' } ] },
+  winBig: { dur: 2.8, endPose: 'idle', tracks: {
+    pose: [[0, 'anticipation', { set: { sq: -0.2, uy: 14, arx: 250, ary: 360, alx: 150, aly: 360, hipTilt: 0, lean: 0 } }], [0.14, 'bigwin']],
+    mouth: [[0, 'grin'], [1.9, 'teeth']], cue: [[0, 'winBig']],
+    impulse: [[0.14, { jump: 820, sq: 1.8, hair: 18, cap: -520 }], [0.9, { jump: 430, sq: 0.8, hair: 8 }], [1.4, { jump: 300, sq: 0.5 }]],
+    fx: [[0.14, 'burstLines'], [0.32, 'sparkles', { fxOpts: { n: 6 } }], [0.9, 'sparkles']],
+    set: [[1.9, { stars: 0 }]], mood: [[1.9, 'happy'], [2.4, 'sly']] } },
   megaWin: { dur: 3.6, endPose: 'idle', events: [
     { at: 0, pose: 'anticipation', set: { sq: -0.25, uy: 16 }, cue: 'megaWin' },
     { at: 0.14, pose: 'bigwin', impulse: { jump: 980, sq: 2, hair: 24, cap: -620, capSpin: 600 }, spin: 2, spinDur: 0.9, fx: 'confetti', fxOpts: { n: 36 } },

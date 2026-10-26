@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><title>hero still</title><link rel="icon" href="data:,">
+<style>html,body{margin:0;background:transparent}#h{position:absolute;left:0;top:0}
+.rim{filter:drop-shadow(2px 0 0 #FFFBF0) drop-shadow(-2px 0 0 #FFFBF0) drop-shadow(0 2px 0 #FFFBF0) drop-shadow(0 -2px 0 #FFFBF0) drop-shadow(0 3px 3px rgba(20,16,43,.35))}</style></head><body><div id="h"></div>
+<script type="module">
+import { createHeroine } from './mambo_rig.mjs';
+const q = new URLSearchParams(location.search);
+const w = +(q.get('w') || 233), h = +(q.get('h') || 350);
+const el = document.getElementById('h'); el.style.cssText += `width:${w}px;height:${h}px`; if (q.get('rim') !== '0') el.classList.add('rim');
+const H = createHeroine(el, { outfit: q.get('outfit') || 'inspectrice', raf: false, idle: false, limited: 0, seed: +(q.get('seed') || 7) });
+H.setPose(q.get('pose') || 'idle', { snap: true });
+if (q.get('mood')) H.setMood(q.get('mood'));
+if (q.get('look')) H.setLook(q.get('look'));
+if (q.get('set')) H.set(JSON.parse(q.get('set')), true);
+H.snap(); for (let i = 0; i < 30; i++) H.step(1 / 60);
+window.__ready = true;
+</script></body></html>

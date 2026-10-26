@@ -1,0 +1,53 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Mambo board</title><link rel="icon" href="data:,">
+<style>
+  :root{--ink:#2B1A12;--cream:#F4E8C8;--mustard:#E8A92B;--night:#14213A;--turq:#2E8C8C}
+  *{box-sizing:border-box} html,body{margin:0;background:var(--night);color:var(--cream);font-family:"Trebuchet MS",Arial,sans-serif}
+  #b{width:2000px;padding:26px 30px 34px}
+  h1{margin:0 0 4px;font-size:44px;letter-spacing:.04em;color:var(--mustard);-webkit-text-stroke:0}
+  .sub{font-size:19px;margin-bottom:18px;color:#cfd8d6}
+  h2{font-size:23px;margin:22px 0 8px;color:var(--turq);text-transform:uppercase;letter-spacing:.12em}
+  .row{display:flex;gap:10px;align-items:flex-end}
+  .cell{position:relative;background:#E9B02C;border:4px solid var(--ink);border-radius:14px;overflow:visible}
+  .cell>.cap{position:absolute;left:0;right:0;bottom:0;background:rgba(43,26,18,.88);color:var(--cream);font-size:15px;padding:5px 9px;border-radius:0 0 9px 9px;z-index:3}
+  .cell .hero{position:absolute;left:0;right:0;top:0;bottom:30px}
+  .cell img{position:absolute;left:50%;top:6px;height:calc(100% - 40px);transform:translateX(-50%)}
+  .face{background:#F0C040;overflow:hidden}.face .hero{overflow:hidden}.face svg{overflow:hidden!important}
+</style></head><body><div id="b"></div>
+<script type="module">
+import { createHeroine } from './mambo_rig.mjs';
+const B = document.getElementById('b'); const q = new URLSearchParams(location.search);
+const H = 540, SM = 400;
+const label = { idle:'idle', smallwin:'small win', bigwin:'big win', shock:'shock', shrug:'lose / shrug', point:'point at grid', salute:'salute', anticipation:'anticipation', whistle:'whistle', impatient:'impatient', laugh:'laugh', curtsy:'curtsy' };
+function cell(parent, w, h, cap) { const c = document.createElement('div'); c.className = 'cell'; c.style.cssText = `width:${w}px;height:${h}px`; c.innerHTML = `<div class="hero"></div><div class="cap">${cap}</div>`; parent.appendChild(c); return c; }
+function hero(c, outfit, pose, opts = {}) {
+  const h = createHeroine(c.querySelector('.hero'), { outfit, raf: false, idle: false, limited: 0, ...opts });
+  h.setPose(pose, { snap: true }); if (opts.set) h.set(opts.set, true); h.snap();
+  const vb = opts.vb || (pose === 'point' ? '20 50 450 530' : pose === 'shrug' || pose === 'curtsy' ? '30 50 340 530' : pose === 'bigwin' || pose === 'shock' ? '45 -5 310 575' : '45 50 310 530');
+  c.querySelector('svg').setAttribute('viewBox', vb);
+  return h;
+}
+B.innerHTML = `<h1>AGENT MAMBO · the heroine, hand-built vector rig</h1><div class="sub">Part-based skeletal rig, noodle limbs rebuilt every frame, 8-viseme morphing mouth, eyes with lids / lashes / tracking pupils. Left of each pair: Higgsfield model sheet (visual reference only, not shipped). All other cells: generated live by mambo_rig.mjs from paths only.</div>`;
+// --- section 1: model vs rig
+let s = document.createElement('h2'); s.textContent = 'A · Inspectrice (base outfit): model sheet vs vector rig'; B.appendChild(s);
+let r = document.createElement('div'); r.className = 'row'; B.appendChild(r);
+const m = cell(r, 330, H, 'Model sheet (AI reference, not shipped)'); const k = (H - 40) / 1510;
+m.querySelector('.hero').style.cssText += `;background:url(higgs/base_v2_b.png) no-repeat;background-size:${1195 * k}px auto;background-position:${165 - 590 * k}px ${8 - 30 * k}px;`;
+m.style.overflow = 'hidden';
+const mine = cell(r, 330, H, 'Vector rig · idle'); hero(mine, 'inspectrice', 'idle');
+for (const p of ['smallwin', 'point', 'bigwin', 'shock']) { const c = cell(r, 330, H, 'rig · ' + label[p]); hero(c, 'inspectrice', p); }
+r = document.createElement('div'); r.className = 'row'; r.style.marginTop = '10px'; B.appendChild(r);
+for (const p of ['shrug', 'anticipation', 'whistle', 'impatient', 'laugh', 'salute', 'curtsy']) { const c = cell(r, 258, 410, 'rig · ' + label[p]); hero(c, 'inspectrice', p); }
+// --- expressions close-ups
+s = document.createElement('h2'); s.textContent = 'Expressions (same face rig, close-up)'; B.appendChild(s);
+r = document.createElement('div'); r.className = 'row'; B.appendChild(r);
+const faces = [['idle', 'sly side-eye'], ['smallwin', 'wink + grin'], ['bigwin', 'star eyes + laugh'], ['shock', 'wide eyes + O'], ['laugh', 'joy arcs'], ['whistle', 'whistle pucker'], ['shrug', 'wry eye-roll']];
+for (const [p, cap] of faces) { const c = cell(r, 250, 260, cap); c.classList.add('face'); hero(c, 'inspectrice', p, { vb: '116 56 196 176' }); }
+// --- section 2: other outfits
+const outs = [['casino', 'B · Casino evening (gown, mask, fan)'], ['lab', 'C · Laboratory (coat, butterfly glasses, test tube)'], ['vault', 'D · Vault / commando (jumpsuit, aviator cap, hook)'], ['trench', 'E · Trench and fedora (magnifying glass)']];
+for (const [o, t] of outs) {
+  s = document.createElement('h2'); s.textContent = t; B.appendChild(s);
+  r = document.createElement('div'); r.className = 'row'; B.appendChild(r);
+  for (const p of ['idle', 'point', 'smallwin', 'bigwin', 'shock', 'shrug']) { const c = cell(r, 318, 470, label[p]); hero(c, o, p); }
+}
+window.__ready = true;
+</script></body></html>

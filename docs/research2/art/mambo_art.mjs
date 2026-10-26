@@ -17,7 +17,7 @@ export const PAL = {
   // derived tones (same family, flat)
   white: '#FFFBF0', skin: '#F8EDCB', skinShade: '#E2C08C', blush: '#E98A6A', eyeshadow: '#EDC45A',
   hair: '#4A2216', hairShade: '#2E140D', hairHi: '#8E5230',
-  navyLight: '#2D4A78', navyDeep: '#162338', gold: '#F2C14E', goldDeep: '#C98A1E', leather: '#7A4A2A', leatherLight: '#9A6236',
+  navyLight: '#3C609A', navyDeep: '#162338', navyJ: '#27447E', gold: '#F2C14E', goldDeep: '#C98A1E', leather: '#7A4A2A', leatherLight: '#9A6236',
   steel: '#B9C7CC', lips: '#C4271E', lipsDeep: '#8E1712', mouth: '#5E1410', glass: '#CFEDEA', camel: '#B98A55', burgundy: '#6E2440',
 };
 export const INK = PAL.ink;
@@ -285,8 +285,8 @@ export function faceLayout(t) {
 
 function hairParts(c, W) {
   const col = PAL.hair;
-  const mass = part(c, 'M20 -122C16 -140 -2 -148 -30 -146C-60 -142 -88 -122 -93 -90C-95 -66 -92 -46 -84 -30C-78 -18 -66 -6 -50 0L-30 4L-24 -20L0 -20L26 -40C30 -70 26 -100 20 -122Z', col, { shade: 'M-96 -170L-30 -170L-30 10L-96 10Z', ht: 'ht' })
-    + line('M-84 -96C-90 -76 -86 -56 -76 -40', 3.6, PAL.hairHi, ' opacity=".85"') + line('M-70 -128C-82 -118 -88 -104 -88 -94', 3.2, PAL.hairHi, ' opacity=".7"')
+  const mass = part(c, 'M20 -122C16 -140 -2 -148 -30 -146C-60 -142 -88 -122 -93 -90C-97 -76 -94 -64 -88 -56C-82 -48 -96 -38 -92 -28C-88 -14 -70 -4 -50 0L-30 4L-24 -20L0 -20L26 -40C30 -70 26 -100 20 -122Z', col, { shade: 'M-98 -170L-34 -170L-34 10L-98 10Z', ht: 'ht' })
+    + line('M-82 -104C-90 -84 -82 -68 -76 -54C-72 -44 -78 -34 -72 -24', 3.6, PAL.hairHi, ' opacity=".85"') + line('M-66 -132C-80 -122 -87 -108 -88 -96', 3.2, PAL.hairHi, ' opacity=".7"')
     + `<g id="${c.pre}hair-tuft" opacity="0">` + part(c, 'M-62 -128L-60 -158L-48 -142L-42 -166L-30 -148L-20 -164L-14 -146L-2 -156L2 -134L-2 -120L-58 -120Z', col, { sw: OL * 0.95 }) + line('M-52 -146L-48 -132M-26 -150L-24 -134', 2.8, PAL.hairHi) + `</g>`;
   const curlL = part(c, 'M-80 -48C-94 -44 -101 -26 -93 -15C-86 -6 -72 -11 -72 -22C-72 -30 -80 -31 -83 -25C-81 -33 -77 -41 -72 -50Z', col, { shade: 'M-100 -30L-80 -30L-80 -5L-100 -5Z' }) + line('M-91 -33C-88 -22 -80 -20 -78 -26', 2.8, PAL.hairHi);
   const curlR = part(c, 'M28 -34C42 -42 57 -34 56 -22C55 -11 40 -10 36 -19C43 -21 45 -27 39 -28L28 -22Z', col, { sw: OL * 0.9 }) + line('M46 -34C52 -30 53 -25 50 -21', 2.6, PAL.hairHi);
@@ -305,10 +305,10 @@ function eyeMarkup(c, side, W) {
   const al = almondPath(s), lid = W.lidFill || PAL.eyeshadow;
   const g0 = eyeGeom(s, { u: 0.55 });
   c.defs.push(`<clipPath id="${P}-clip"><path d="${al}"/></clipPath>`);
-  let inner = `<path d="${al}" fill="${PAL.white}"/>`;
+  let inner = `<path id="${P}-sclera" d="${al}" fill="${PAL.white}"/>`;
   inner += `<g clip-path="url(#${P}-clip)">`
-    + `<g id="${P}-iris"><ellipse cx="0" cy="2" rx="7.6" ry="13.8" fill="${INK}"/><ellipse cx="0" cy="11.4" rx="4.6" ry="3" fill="#16484B" opacity=".9"/>`
-      + `<path d="M2.4 -8L7 -5.4L5.2 -2L7.4 1L3.6 2.4L4.8 6.4L1.4 3.6Z" fill="${PAL.white}"/>` + circ(-2.4, 8.6, 1.5, PAL.white) + `</g>`
+    + `<g id="${P}-iris"><ellipse id="${P}-iris-disc" cx="0" cy="2" rx="9.4" ry="14.6" fill="#123B40"/><ellipse cx="0" cy="11.4" rx="5.4" ry="3.2" fill="${PAL.turq}" opacity=".95"/><ellipse id="${P}-pupil" cx="0" cy="2" rx="7.4" ry="12.6" fill="${INK}"/>`
+      + `<path id="${P}-glint" d="M2.4 -8L7 -5.4L5.2 -2L7.4 1L3.6 2.4L4.8 6.4L1.4 3.6Z" fill="${PAL.white}"/>` + circ(-2.4, 8.6, 1.5, PAL.white) + `</g>`
     + `<g id="${P}-stars" opacity="0">` + circ(0, 1, 17.5, INK) + star(0, 1, 14, PAL.white, 2, 0, 5) + `</g>`
     + `<path id="${P}-lower" d="${g0.lowerFill}" fill="${PAL.skin}"/>`
     + `<path id="${P}-lidfill" d="${g0.upperFill}" fill="${lid}"/>`

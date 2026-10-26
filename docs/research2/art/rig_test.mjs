@@ -18,11 +18,11 @@ const clips = (args.clips || '').split(',').filter(Boolean), poses = (args.poses
 fs.mkdirSync(out, { recursive: true });
 const exe = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => { try { return fs.statSync(p).isFile(); } catch { return false; } });
 const b = await chromium.launch({ executablePath: exe, args: ['--no-sandbox'] });
-const page = await b.newPage({ viewport: { width: 900, height: 700 } });
+const page = await b.newPage({ viewport: { width: 900, height: 700 }, deviceScaleFactor: +(args.scale || 1) });
 const errors = [];
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`${m.type()}: ${m.text()}`); });
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
-await page.goto(`${url}?raf=0&idle=0&outfit=${outfit}&limited=0`);
+await page.goto(`${url}?raf=0&idle=0&outfit=${outfit}&limited=${args.limited ?? 0}${args.reduced ? "&reduced=1" : ""}`);
 await page.waitForFunction(() => window.__h);
 await page.addStyleTag({ content: `#panel{display:none!important} body{display:block!important} #stage{position:fixed!important;inset:0;min-height:0!important} #pt{display:none!important} #hero{left:50%!important;transform:translateX(-50%);height:${size}px!important;bottom:0!important}` });
 const hero = page.locator('#hero');
@@ -53,6 +53,56 @@ for (const c of clips) {
 for (const p of poses) {
   await page.evaluate((p) => { const h = window.__h; h.stop(true); h.setPose(p, { snap: true }); h.snap(); }, p);
   const f = path.join(out, `pose_${p}.png`); await page.screenshot({ path: f, clip: await clipBox() });
+}
+const headBox = async () => { const r = await hero.boundingBox(); return { x: r.x + r.width * 0.22, y: r.y + r.height * 0.07, width: r.width * 0.56, height: r.height * 0.34 }; };
+async function faceSheet(name, items, apply) {
+  const files = [];
+  for (let i = 0; i < items.length; i++) {
+    await page.evaluate(apply, items[i]);
+    const f = path.join(out, `${name}_${String(i).padStart(2, '0')}.png`); await page.screenshot({ path: f, clip: await headBox() }); files.push(f);
+  }
+  const py = spawnSync('python3', ['-I', '-c', `
+import sys
+from PIL import Image
+fs=sys.argv[2:]; ims=[Image.open(f).convert('RGB') for f in fs]
+w,h=ims[0].size; cols=min(len(ims),4); rows=(len(ims)+cols-1)//cols
+S=Image.new('RGB',(cols*w,rows*h),(217,167,42))
+for i,im in enumerate(ims): S.paste(im,((i%cols)*w,(i//cols)*h))
+S.save(sys.argv[1])`, path.join(out, `${name}_sheet.png`), ...files]);
+  if (py.status === 0) files.forEach((f) => fs.unlinkSync(f));
+}
+if (args.looks) {
+  await page.evaluate(() => { const h = window.__h; h.stop(true); h.setPose('idle', { snap: true }); h.snap(); });
+  const box = await hero.boundingBox();
+  const T = [[-0.5, 0.3], [0.1, -0.7], [1.4, 0.2], [1.4, -0.8], [0.5, 1.0], [-0.6, -0.8], [0.9, 0.9], [2.4, 0.3]];
+  await faceSheet('looks', T.map(([nx, ny]) => ({ x: box.width * (0.52 + nx * 0.5), y: box.height * (0.27 + ny * 0.5) })), (p) => { const h = window.__h; h.setLook(p); for (let i = 0; i < 24; i++) h.step(1 / 60); });
+}
+if (args.visemes) {
+  await page.evaluate(() => { const h = window.__h; h.stop(true); h.setPose('idle', { snap: true }); h.snap(); });
+  const V = await page.evaluate(() => window.__h.visemes());
+  await faceSheet('visemes', V, (v) => { const h = window.__h; h.setMouth(v, 0); h.step(1 / 60); });
+}
+if (args.eyes) {
+  await page.evaluate(() => { const h = window.__h; h.stop(true); h.setPose('idle', { snap: true }); h.snap(); });
+  const E = [{}, { uL: 1, uR: 1 }, { uL: 0.2, uR: 0.2 }, { uL: 0, lowL: 0.7 }, { uR: 0, lowR: 0.7 }, { joyL: 1, joyR: 1, uL: 0.1, uR: 0.1 }, { stars: 1, uL: 1, uR: 1 }, { uL: 1.1, uR: 1.1, wide: 0.5, pup: 0.4 }];
+  await faceSheet('eyes', E, (e) => { const h = window.__h; h.clear(); h.set(e, true); h.snap(); });
+}
+if (args.soak) {
+  results.soak = await page.evaluate(() => {
+    const h = window.__h, bad = [], n = { steps: 0 };
+    for (const o of h.outfits()) {
+      h.setOutfit(o); h.snap();
+      for (const p of h.poses()) { h.setPose(p, { snap: true }); for (let i = 0; i < 6; i++) { h.step(1 / 30); n.steps++; } }
+      for (const c of h.clips()) {
+        if (c === 'outfitChange') continue;
+        h.stop(true); h.play(c);
+        for (let i = 0; i < 150; i++) { h.step(1 / 30); n.steps++; const s = h.state(); for (const k in s) if (typeof s[k] === 'number' && !isFinite(s[k])) bad.push(`${o}/${c}/${k}`); }
+      }
+      h.stop(true);
+    }
+    h.setOutfit('inspectrice', { animated: true }); for (let i = 0; i < 90; i++) h.step(1 / 30);
+    return { steps: n.steps, nonFinite: [...new Set(bad)].slice(0, 10) };
+  });
 }
 if (args.perf) {
   results.perf = await page.evaluate(() => {

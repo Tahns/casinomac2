@@ -14,19 +14,20 @@ const R_SHADE = 'M208 250L290 250L290 480L208 480Z';       // right-hand shade b
 // ====================================================================== A. INSPECTRICE (base)
 const inspectrice = {
   key: 'inspectrice', label: 'A. Inspectrice (base)', accent: PAL.navy,
-  sleeve: { fill: PAL.navy, trim: PAL.mustard, trimAt: [0.8, 0.9], gloveFrom: null },
+  sleeve: { fill: PAL.navyJ, trim: PAL.mustard, trimAt: [0.8, 0.9], gloveFrom: null },
   glove: PAL.white, cuff: PAL.white,
   legs: { fill: INK, w: 13, shine: '#7A5646' },
   shoe: { base: PAL.white },
   lidFill: PAL.eyeshadow, propKind: 'flashlight', whistle: true, accBase: 90, accGain: 1, hairTop: () => '', capOver: false,
   skirt(c) {
-    const d = 'M181 300L219 300C233 316 239 334 239 352C239 384 233 420 228 452Q200 459 172 452C167 420 161 384 161 352C161 334 167 316 181 300Z';
-    return part(c, d, PAL.navy, { shade: 'M208 296L270 296L270 470L208 470Z' })
+    const d = 'M180 300L220 300C238 314 247 336 246 358C245 392 236 424 229 454Q200 462 171 454C166 424 157 392 155 358C153 336 162 314 180 300Z';
+    return part(c, d, PAL.navyJ, { shade: 'M208 296L270 296L270 470L208 470Z' })
       + line('M183 308C170 346 168 400 172 446', 3, PAL.navyLight, ' opacity=".7"');
   },
   torso(c) {
-    const J = 'M158 252C168 242 186 238 200 240C214 238 232 242 242 252C250 264 246 282 236 291C227 298 220 301 219 306C226 316 240 328 241 340L159 340C160 328 174 316 181 306C180 301 173 298 164 291C154 282 150 264 158 252Z';
-    let s = part(c, J, PAL.navy, { shade: 'M214 236L290 236L290 344L214 344Z' });
+    const J = 'M158 252C168 242 186 238 200 240C214 238 232 242 242 252C253 264 248 284 236 293C226 299 219 302 217 306C226 316 242 328 243 340L157 340C158 328 174 316 183 306C181 302 174 299 164 293C152 284 147 264 158 252Z';
+    let s = part(c, J, PAL.navyJ, { shade: 'M214 236L290 236L290 344L214 344Z' });
+    s += line('M168 276C174 284 184 288 192 286M232 276C226 284 216 288 208 286', 2.6, PAL.navyLight, ' opacity=".8"');
     // shirt V + collar + thin tie
     s += part(c, 'M185 241L215 241L200 288Z', PAL.white, { sw: 4, mis: [1.4, 1.2] });
     s += part(c, 'M187 239L179 249L193 252L197 242Z M213 239L221 249L207 252L203 242Z', PAL.white, { sw: 3.4, mis: [1.2, 1] });
@@ -47,7 +48,7 @@ const inspectrice = {
   head(c) { // garrison cap (calot): big boat shape tilted over the back-left of the head, gold piping, 8-point fictional star
     let s = '';
     const body = 'M-82 -112C-60 -135 -30 -156 -7 -166L11 -156C17 -140 20 -130 20 -122C8 -108 -8 -101 -22 -99C-40 -97 -58 -92 -72 -90C-74 -98 -78 -106 -82 -112Z';
-    s += part(c, body, PAL.navy, { shade: 'M-6 -176L30 -176L30 -80L-30 -80Z' });
+    s += part(c, body, PAL.navyJ, { shade: 'M-6 -176L30 -176L30 -80L-30 -80Z' });
     s += `<path d="M-78 -110C-52 -126 -24 -142 2 -150" fill="none" stroke="${INK}" stroke-width="8.4" stroke-linecap="round"/><path d="M-78 -110C-52 -126 -24 -142 2 -150" fill="none" stroke="${PAL.gold}" stroke-width="3.4" stroke-linecap="round"/>`;
     s += `<path d="M-7 -166L2 -168L14 -158L11 -156Z" fill="${PAL.navyLight}" stroke="${INK}" stroke-width="4.4" stroke-linejoin="round"/>`;
     s += `<g transform="translate(-9 -125) rotate(-12)">${star(0, 0, 17, PAL.gold, 3.2, 22.5, 8)}${circ(0, 0, 4.4, PAL.navy, ` stroke="${INK}" stroke-width="2.2"`)}</g>`;
@@ -55,12 +56,12 @@ const inspectrice = {
   },
   gear: () => '',
   prop(c) { // flashlight, grip at origin, working end toward +y
-    const beam = `<g id="${c.pre}beam" opacity="0"><path d="M-12 56L-46 205L46 205L12 56Z" fill="${PAL.gold}" opacity=".5"/><path d="M-12 56L-46 205L46 205L12 56Z" fill="url(#${c.pre}ht)" opacity=".5"/></g>`;
-    return beam
+    const beam = `<g id="${c.pre}beam" opacity="0"><path d="M-12 56L-46 205L46 205L12 56Z" fill="#FFF1A8" opacity=".5"/><path d="M-12 56L-46 205L46 205L12 56Z" fill="url(#${c.pre}htl)" opacity=".6"/></g>`;
+    return beam + `<g transform="scale(1.22)">`
       + part(c, 'M-9 -30L9 -30L9 12L-9 12Z', '#4A2A1C', { sw: 4.8, mis: [1.6, 1.4] })
       + part(c, 'M-9 6L9 6L19 40L-19 40Z', '#4A2A1C', { sw: 4.8, mis: [1.6, 1.4] })
       + part(c, ellD(0, 41, 20, 7), PAL.gold, { sw: 4.4, mis: [1.4, 1.2] }) + `<ellipse cx="0" cy="41.5" rx="12.5" ry="3.8" fill="${PAL.cream}"/>`
-      + part(c, 'M-10 -30L10 -30L10 -24L-10 -24Z', PAL.gold, { sw: 3.6, mis: [1.2, 1] }) + line('M-3.4 -18L-3.4 -2', 2.6, PAL.goldDeep, ' opacity=".9"');
+      + part(c, 'M-10 -30L10 -30L10 -24L-10 -24Z', PAL.gold, { sw: 3.6, mis: [1.2, 1] }) + line('M-3.4 -18L-3.4 -2', 2.6, PAL.goldDeep, ' opacity=".9"') + `</g>`;
   },
 };
 
