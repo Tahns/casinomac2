@@ -13,18 +13,28 @@
 // L / R = SCREEN left / right. She faces RIGHT (toward the grid, which sits on her right).
 
 import {
-  PAL, INK, OL, REST, GROUND, f, clamp, lerp, rotp, cubicD, cubicSub, cubicTan, limb, tf, ellD, line, circ, part, G, star,
+  PAL, INK, OL, REST, GROUND, TORSO_LIFT, f, clamp, lerp, rotp, cubicD, cubicSub, cubicTan, limb, tf, ellD, line, circ, part, G, star,
   makeCtx, defsCommon, buildHead, faceLayout, HEAD_PIVOT, HEAD_SCALE, gloveKinds, GLOVE_GRIP, shoeArt, tubeEls, limbEls, tubeD, spl, OLL, eyeGeom, browPath,
   VISEMES, VISEME_NAMES, MOUTH_LEN, mouthPaths, mixVisemes,
 } from './mambo_art.mjs';
 import { OUTFIT_DEFS, OUTFIT_KEYS } from './mambo_outfits.mjs';
 
+const HAND_K = 0.92;   // pass 2: slightly smaller gloves (less chunky)
 // ====================================================================== easing library
 export const Ease = {
   linear: (t) => t, in: (t) => t * t, out: (t) => 1 - (1 - t) * (1 - t), inOut: (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2),
   outBack: (t) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
   snap: (t) => (t < 0.5 ? 0 : 1), steps: (n) => (t) => Math.floor(clamp(t, 0, 0.9999) * n) / (n - 1 || 1),
   parabola: (t) => 4 * t * (1 - t), pulse: (t) => Math.sin(Math.PI * clamp(t, 0, 1)),
+};
+
+// ====================================================================== crops (viewBox windows in art coordinates)
+// full = the whole figure (overflow visible so jumps and props may leave the box), bust = waist-up for portrait mobile (bust, cap, eyes: readable from about
+// 120 px wide; the lower body is not even updated), head = face + cap only (avatars, 64 px and up). Windows are mirrored automatically with `mirror`.
+export const CROPS = {
+  full: { vb: [0, 0, 400, 600], overflow: 'visible', lower: true },
+  bust: { vb: [86, 46, 226, 280], overflow: 'hidden', lower: false },
+  head: { vb: [100, 60, 150, 150], overflow: 'hidden', lower: false },
 };
 
 // ====================================================================== parameters
@@ -38,7 +48,7 @@ const DEF = {
   hipX: [0, 'body', 1], hipTilt: [0, 'body', 1],
   lax: [0, 'leg', 1], lay: [0, 'leg', 1], lb1: [6, 'leg', 1], lb2: [-5, 'leg', 1], lsr: [-6, 'leg', 1], lsf: [-1, 'leg', 1],
   rax: [0, 'leg', 1], ray: [0, 'leg', 1], rb1: [-6, 'leg', 1], rb2: [5, 'leg', 1], rsr: [6, 'leg', 1], rsf: [1, 'leg', 1],
-  ux: [0, 'body', 1], uy: [0, 'body', 1], lean: [0, 'body', 1], shr: [0, 'body', 1],
+  ux: [0, 'body', 1], uy: [0, 'body', 1], lean: [0, 'body', 1], shr: [0, 'body', 1], sho: [0, 'body', 1],   // sho = shoulder-line tilt (torso + arm roots), the S-curve control
   hx: [0, 'head', 1], hy: [0, 'head', 1], htilt: [0, 'head', 1], turn: [1.0, 'head', 1],
   uL: [0.45, 'lid', 0], uR: [0.85, 'lid', 0], slL: [6, 'lid', 0], slR: [2, 'lid', 0], joyL: [0, 'lid', 0], joyR: [0, 'lid', 0], lowL: [0.1, 'lid', 0], lowR: [0.1, 'lid', 0],
   stars: [0, 'fx', 0], wide: [0, 'lid', 0], pup: [1, 'lid', 0], lookx: [-0.75, 'look', 0], looky: [0.05, 'look', 0],
@@ -57,21 +67,26 @@ const DISCRETE_DEF = { gl: 'relax', gr: 'relax', prop: 'L', prop2: '', layL: 'fr
 // ---------------------------------------------------------------------- poses (only the channels that differ from rest)
 export const POSES = {
   rest: {},
-  idle: { hipX: 5, hipTilt: -4, lean: 3, htilt: -4, lax: 6, lay: 0, lsr: -14, lb1: 14, lb2: -8, rax: 4, rb1: -4, rb2: 4,
+  idle: { hipX: 2, hipTilt: 2, lean: 2, sho: 2, ux: -1.5, hx: 2, htilt: -4, lax: -4, lay: 0, lsr: -10, lb1: 12, lb2: -8, rax: -2, rsr: 4, rb1: -4, rb2: 4,
     arx: 249, ary: 302, arb1: -38, arb2: -22, arr: -8, gr: 'hip', alx: 134, aly: 334, alb1: 10, alb2: 6, gl: 'fist', prop: 'L', acc: 65 },
-  point: { hipX: -4, hipTilt: 3, lean: 4, turn: 1.1, htilt: 2, lookx: 1, looky: 0, lax: -22, rax: 24, lsr: -4, rsr: 8, uL: 0.62, uR: 0.9,
-    alx: 148, aly: 322, alb1: 38, alb2: 34, alr: 25, gl: 'fist',
-    arx: 352, ary: 246, arb1: -4, arb2: 4, arr: 0, gr: 'fist', prop: 'R', acc: 270, beam: 1, mouth: 'smirk' },
-  smallwin: { hipX: -5, hipTilt: 4, lean: -3, htilt: 5, turn: 0.9, lax: -6, rax: 16, ray: -34, rsr: 40, rb1: -12, rb2: 16, uL: 0, lowL: 0.7, uR: 0.8, bLy: 8, bLr: 6, bRy: -5,
-    arx: 284, ary: 222, arb1: -34, arb2: -26, arr: 0, gr: 'fist', alx: 142, aly: 354, alb1: 12, alb2: 6, gl: 'fist', prop: 'L', acc: 62, mouth: 'grin', lookx: 0.2, looky: 0 },
-  bigwin: { lean: 0, htilt: 6, turn: 0.9, uL: 1, uR: 1, stars: 1, wide: 0.12, lax: -20, lay: -36, lsr: -30, rax: 22, ray: -44, rsr: 34, lb1: 14, rb1: -14, cy: -34, cr: 14, hipTilt: 5, shr: 2,
-    alx: 112, aly: 138, alb1: 26, alb2: -16, alr: 0, gl: 'fist', prop: 'L', acc: 180, beam: 1, arx: 296, ary: 140, arb1: -26, arb2: 16, arr: 0, gr: 'fist', mouth: 'laugh', bLy: -6, bRy: -12, bLa: 13, bRa: 13, bLr: -8, bRr: -10, lookx: 0, looky: 0 },
+  point: { hipX: -2, hipTilt: 6, lean: 6, sho: -5, ux: -4, hx: 4, hy: 6, htilt: 4, turn: 1.1, lookx: 1, looky: 0, uL: 0.62, uR: 0.9,
+    lax: -22, lsr: -6, rax: 30, rsr: 10, lb1: 10, rb1: -8,
+    alx: 154, aly: 313, alb1: 58, alb2: 26, alr: 0, gl: 'hip',
+    arx: 348, ary: 240, arb1: -6, arb2: 6, arr: 0, gr: 'fist', prop: 'R', acc: 270, beam: 1, mouth: 'smirk' },
+  smallwin: { hipX: -2, hipTilt: 3, lean: 2, sho: 2, htilt: 6, turn: 0.9, lookx: 0.2, looky: 0,
+    lax: -30, lay: -82, lsr: -48, lb1: 40, lb2: -30, rax: 4, rsr: 4, rb1: -4, rb2: 4,
+    uL: 0, lowL: 0.7, uR: 0.8, bLy: 8, bLr: 6, bRy: -5, mouth: 'grin',
+    arx: 280, ary: 262, arb1: 62, arb2: 30, arr: 0, gr: 'fist', alx: 138, aly: 334, alb1: 12, alb2: 6, gl: 'fist', prop: 'L', acc: 62 },
+  bigwin: { lean: 4, sho: -2, htilt: 8, turn: 0.9, uL: 1, uR: 1, stars: 1, wide: 0.12, mouth: 'laugh', cy: -34, cr: 14,
+    lax: -30, lay: -94, lsr: -40, lb1: 44, lb2: -34, rax: 12, ray: -52, rsr: 30, rb1: -34, rb2: 24, hipTilt: 4, hipX: -2, shr: 2,
+    alx: 108, aly: 132, alb1: -34, alb2: 8, alr: 0, gl: 'fist', prop: 'L', acc: 180, beam: 1,
+    arx: 298, ary: 134, arb1: 34, arb2: -8, arr: 0, gr: 'fist', bLy: -6, bRy: -12, bLa: 13, bRa: 13, bLr: -8, bRr: -10, lookx: 0, looky: 0 },
   shock: { lean: -3, uy: -3, shr: 8, hy: -4, htilt: 3, turn: 0.6, uL: 1.1, uR: 1.1, wide: 0.5, pup: 0.4, lookx: 0, looky: 0, cy: -58, cr: 10, lax: 10, rax: -10, lsr: -2, rsr: 2,
-    alx: 152, aly: 240, alb1: 30, alb2: -22, alr: 0, gl: 'open', arx: 266, ary: 240, arb1: -26, arb2: 18, arr: 0, gr: 'open', mouth: 'oh', prop: '', bLy: -9, bRy: -12, bLr: 4, bRr: -4, bLa: 13, bRa: 14 },
+    alx: 174, aly: 228, alb1: -52, alb2: -46, alr: 0, gl: 'flat', arx: 230, ary: 228, arb1: 52, arb2: 46, arr: 0, gr: 'flat', mouth: 'oh', prop: '', bLy: -9, bRy: -12, bLr: 4, bRr: -4, bLa: 13, bRa: 14 },
   shrug: { shr: 9, htilt: 8, lean: -2, turn: 0.8, lookx: -0.8, looky: -0.7, uL: 0.5, uR: 0.6, bLy: -4, bLr: 14, bRy: -6, bRr: -16, lax: -6, rax: 6,
-    alx: 82, aly: 318, alb1: 22, alb2: -18, alr: 0, gl: 'fist', prop: 'L', acc: 62, arx: 322, ary: 314, arb1: -24, arb2: 20, arr: 0, gr: 'open', mouth: 'wry' },
+    alx: 92, aly: 246, alb1: -40, alb2: -4, alr: 0, gl: 'fist', prop: 'L', acc: 70, arx: 310, ary: 240, arb1: 38, arb2: 4, arr: 0, gr: 'palm', mouth: 'wry' },
   anticipation: { lean: 7, hx: 8, hy: 2, htilt: 5, turn: 1.1, hipTilt: -4, hipX: 4, lookx: 1, looky: 0.15, uL: 0.5, uR: 0.8, bRy: -8, bRr: -12, bRa: 14, bLy: 4, lax: -8, rax: 8, mouth: 'wry',
-    arx: 246, ary: 208, arb1: -34, arb2: -26, arr: 0, gr: 'point', alx: 148, aly: 322, alb1: 38, alb2: 34, alr: 25, gl: 'fist', prop: '' },
+    arx: 246, ary: 208, arb1: -34, arb2: -26, arr: 0, gr: 'point', alx: 152, aly: 312, alb1: 54, alb2: 24, alr: 0, gl: 'hip', prop: '' },
   whistle: { lean: 2, htilt: -4, turn: 0.8, uL: 0.12, lowL: 0.8, bLy: 8, bLr: 6, lookx: 0.2, looky: 0, mouth: 'whistle',
     arx: 240, ary: 214, arb1: -34, arb2: -20, arr: 0, gr: 'pinch', alx: 118, aly: 240, alb1: 26, alb2: -14, alr: 0, gl: 'fist', prop: 'L', acc: 150 },
   impatient: { lean: -2, htilt: 7, turn: 0.9, hipTilt: 3, uL: 0.4, uR: 0.6, lookx: -0.9, looky: -0.4, bRy: -3, bLy: 6, mouth: 'wry', rax: 8, ray: -6, rsr: 22, prop: '',
@@ -79,7 +94,7 @@ export const POSES = {
   laugh: { lean: 3, htilt: -9, hy: 2, turn: 0.8, joyL: 1, joyR: 1, uL: 0.1, uR: 0.1, lowL: 0.6, lowR: 0.6, bLy: -2, bRy: -6, bLa: 14, bRa: 14, mouth: 'laugh', lax: -6, rax: 6,
     alx: 214, aly: 312, alb1: 28, alb2: 22, alr: 0, gl: 'flat', arx: 190, ary: 306, arb1: -26, arb2: -22, arr: 0, gr: 'fist', prop: '' },
   salute: { lean: -1, htilt: -3, turn: 0.9, uL: 0, lowL: 0.7, uR: 0.9, bLy: 8, mouth: 'grin', lax: 0, rax: 0, lsr: -4, rsr: 4,
-    alx: 140, aly: 128, alb1: 40, alb2: 20, alr: 0, gl: 'flat', arx: 252, ary: 322, arb1: -40, arb2: -34, arr: 25, gr: 'fist', prop: '', lookx: 0.1 },
+    alx: 140, aly: 128, alb1: 40, alb2: 20, alr: 0, gl: 'flat', arx: 249, ary: 302, arb1: -38, arb2: -22, arr: -8, gr: 'hip', prop: '', lookx: 0.1 },
   curtsy: { lean: 12, hx: 6, hy: 4, htilt: -6, turn: 1.1, uy: 14, hipTilt: -6, hipX: 6, lookx: -0.2, looky: -0.7, uL: 0.5, uR: 0.8, bRy: -8, rax: -30, rsr: -10, lax: -14, mouth: 'smirk',
     arx: 338, ary: 336, arb1: -26, arb2: 18, arr: 0, gr: 'open', alx: 140, aly: 132, alb1: 40, alb2: 20, alr: 0, gl: 'flat', prop: '' },
 };
@@ -125,13 +140,13 @@ function buildMarkup(outfitKey, pre, o) {
   const shoes = G(`${pre}shoes`, shoe('L') + shoe('R'));
   const legs = G(`${pre}legs`, leg('L') + leg('R'));
   const lowerBlock = W.shoesUnder ? legs + shoes + skirt : legs + skirt + shoes;
-  const torso = G(`${pre}torso`, `<g id="${pre}torso-t">${W.torso(c)}</g>`);
+  const torso = G(`${pre}torso`, `<g id="${pre}torso-t"><g transform="translate(0 ${-TORSO_LIFT})">${W.torso(c)}</g></g>`);
   const body =
     `<ellipse id="${pre}shadow" cx="200" cy="${GROUND + 3}" rx="92" ry="11" fill="${INK}" opacity=".26"/>` +
     G(`${pre}lower`, lowerBlock) +
     G(`${pre}upper`, G(`${pre}upper-t`, G(`${pre}arms-back`, '') + neck + torso + head + G(`${pre}arms-front`, armL + armR))) +
     G(`${pre}prop-store`, prop, ' display="none"');
-  return { defs: defsCommon(pre) + c.defs.join(''), body: G(`${pre}root`, G(`${pre}root-t`, body)) + G(`${pre}fx`, ''), W };
+  return { defs: defsCommon(pre) + c.defs.join(''), body: G(`${pre}mirror`, G(`${pre}root`, G(`${pre}root-t`, body))) + G(`${pre}fx`, ''), W };
 }
 
 // ====================================================================== deterministic PRNG
@@ -139,7 +154,7 @@ function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t 
 
 // ====================================================================== the heroine
 export function createHeroine(container, opts = {}) {
-  const O = { outfit: 'inspectrice', seed: 7, limited: 12, autoplay: true, raf: true, rim: false, lookTargets: {}, onCue: null, idle: true, size: null, ...opts };
+  const O = { outfit: 'inspectrice', seed: 7, limited: 12, autoplay: true, raf: true, rim: false, lookTargets: {}, onCue: null, idle: true, size: null, crop: 'full', mirror: false, ...opts };
   const pre = O.idPrefix || `mambo${++UID}-`;
   const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   let reduced = O.reduced ?? !!(mq && mq.matches);
@@ -153,6 +168,7 @@ export function createHeroine(container, opts = {}) {
   NAMES.forEach((n, i) => { const [, g, p] = DEF[n]; KK[i] = GROUPS[g][0]; CC[i] = GROUPS[g][1]; PRIM[i] = p; });
   const dis = { ...DISCRETE_DEF };
   let outfitKey = OUTFIT_KEYS.includes(O.outfit) ? O.outfit : 'inspectrice';
+  let cropName = CROPS[O.crop] ? O.crop : 'full', mirrored = !!O.mirror;   // mirrored: she stands on the right of the grid and looks left (cheap: one flipped group)
   let mood = 'sly', poseName = 'idle', overrides = {}, W = null, E = {}, svg = null, markup = null;
   let ry = 0, vy = 0, ryTarget = 0, grounded = true;            // ballistic height (negative = up)
   const sec = {};                                                // secondary springs
@@ -179,7 +195,7 @@ export function createHeroine(container, opts = {}) {
     const { defs, body, W: w } = buildMarkup(outfitKey, pre, O);
     W = w;
     const rimCss = O.rim ? ' style="filter:drop-shadow(0 0 0 #FFFBF0)"' : '';
-    container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" preserveAspectRatio="xMidYMax meet" style="width:100%;height:100%;display:block;overflow:visible"${O.size ? ` height="${O.size}"` : ''} role="img" aria-label="Agent Mambo heroine"><defs>${defs}</defs>${body}</svg>`;
+    container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbOf()}" preserveAspectRatio="xMidYMax meet" style="width:100%;height:100%;display:block;overflow:${CROPS[cropName].overflow}"${O.size ? ` height="${O.size}"` : ''} role="img" aria-label="Agent Mambo heroine"><defs>${defs}</defs>${body}</svg>`;
     svg = container.firstElementChild;
     E = {}; for (const k of Object.keys(cache)) delete cache[k];
     svg.querySelectorAll('[id]').forEach((el) => { E[el.id.slice(pre.length)] = el; });
@@ -190,6 +206,15 @@ export function createHeroine(container, opts = {}) {
     if (propEl) { const slot = E[`prop-slot-${dis.prop.toLowerCase()}`]; if (slot) slot.appendChild(propEl); }
     applyDiscrete(true);
     markup = true;
+    applyCrop();
+  }
+  function vbOf() { const [x, y, w, h] = CROPS[cropName].vb; return `${mirrored ? 400 - x - w : x} ${y} ${w} ${h}`; }
+  function applyCrop() {
+    if (!svg) return;
+    svg.setAttribute('viewBox', vbOf()); svg.style.overflow = CROPS[cropName].overflow;
+    const low = CROPS[cropName].lower !== false;
+    for (const n of ['lower', 'shadow']) if (E[n]) E[n].setAttribute('display', low ? 'inline' : 'none');
+    if (E.mirror) E.mirror.setAttribute('transform', mirrored ? 'translate(400 0) scale(-1 1)' : '');
   }
   const set = (el, a, v) => { const k = el.id + '|' + a; if (cache[k] !== v) { cache[k] = v; el.setAttribute(a, v); } };
   const setE = (n, a, v) => { const el = E[n]; if (el) { const k = n + '|' + a; if (cache[k] !== v) { cache[k] = v; el.setAttribute(a, v); } } };
@@ -247,8 +272,8 @@ export function createHeroine(container, opts = {}) {
     if (t && 'nx' in t) return t;
     if (t && 'x' in t && svg) { // container-relative pixel target
       const r = svg.getBoundingClientRect(), cr = container.getBoundingClientRect();
-      const ex = r.left + r.width * 209 / 400 - cr.left, ey = r.top + r.height * 160 / 600 - cr.top, sz = Math.max(60, r.width);
-      const dx = t.x - ex, dy = t.y - ey;
+      const ex = r.left + r.width * 200 / 400 - cr.left, ey = r.top + r.height * 176 / 600 - cr.top, sz = Math.max(60, r.width);
+      const dx = (mirrored ? -1 : 1) * (t.x - ex), dy = t.y - ey;
       return { nx: clamp(dx / (sz * 0.7), -1, 1), ny: clamp(dy / (sz * 1.0), -1, 1), turn: clamp(1 + dx / (sz * 2.4), 0.05, 1.15) };
     }
     return null;
@@ -271,7 +296,11 @@ export function createHeroine(container, opts = {}) {
       if (blinkS.next <= 0) { const r = rnd(); blink(r < 0.12 ? 'slow' : r < 0.3 ? 'half' : 'normal'); blinkS.next = rr(2, 6); if (rnd() < 0.15) blinkS.next = 0.25; }
     }
   }
-  function wink(side = 'L', dur = 0.6) { overrideTimed(side === 'L' ? { uL: 0, lowL: 0.7, bLy: 10, bLr: 6 } : { uR: 0, lowR: 0.7, bRy: 8 }, dur); }
+  // wink('L'|'R') = SCREEN side as seen by the player (the mirrored heroine swaps eyes); 'near' / 'far' = the eye nearer / farther from the camera (art-space L / R)
+  function wink(side = 'L', dur = 0.6) {
+    const isNear = side === 'near' ? true : side === 'far' ? false : (side === 'L') !== mirrored;
+    overrideTimed(isNear ? { uL: 0, lowL: 0.7, bLy: 10, bLr: 6 } : { uR: 0, lowR: 0.7, bRy: 8 }, dur);
+  }
   const timedOver = [];
   function overrideTimed(set, dur) { timedOver.push({ set, left: dur, prev: {} }); for (const k of Object.keys(set)) { timedOver[timedOver.length - 1].prev[k] = overrides[k]; overrides[k] = set[k]; } applyTargets(); }
   function updateTimed(dt) {
@@ -298,6 +327,7 @@ export function createHeroine(container, opts = {}) {
   function spawn(type, o = {}) {
     if (reduced && type !== 'sparkle') return;
     const L = fxLayer(); if (!L) return;
+    if (mirrored) { o = { ...o, x: 400 - (o.x ?? 200), vx: -(o.vx ?? 0), rot: type === 'dash' ? 180 - (o.rot ?? 0) : o.rot, vr: -(o.vr ?? 0) }; }
     const p = { type, t: 0, life: o.life ?? 0.6, x: o.x ?? 200, y: o.y ?? 120, vx: o.vx ?? 0, vy: o.vy ?? 0, g: o.g ?? 0, r: o.r ?? 1, rot: o.rot ?? 0, vr: o.vr ?? 0, s: o.s ?? 1, col: o.col, el: null, delay: o.delay ?? 0 };
     const mk = (inner) => { const gg = document.createElementNS('http://www.w3.org/2000/svg', 'g'); gg.innerHTML = inner; gg.setAttribute('visibility', 'hidden'); L.appendChild(gg); return gg; };
     if (type === 'sparkle') p.el = mk(star(0, 0, 11, o.col || PAL.white, 2.6));
@@ -362,7 +392,7 @@ export function createHeroine(container, opts = {}) {
     if (!screenEl) return; const el = screenEl;
     tween(el, (e2, v) => e2.setAttribute('transform', `translate(${f(v)} 0)`), 74, 460, 0.34, Ease.in, 0, () => { el.remove(); if (screenEl === el) screenEl = null; });
   }
-  const headWorld = () => { const a = rad2(X[IX.htilt] + X[IX.lean]); return [200 + X[IX.rx] + X[IX.ux] + X[IX.hipX] * 0.55 + 190 * Math.sin(a) + X[IX.hx], 164 + ry + X[IX.uy] + X[IX.hy]]; };
+  const headWorld = () => { const a = rad2(X[IX.htilt] + X[IX.lean]); return [200 + X[IX.rx] + X[IX.ux] + X[IX.hipX] * 0.55 + 190 * Math.sin(a) + X[IX.hx], 164 + (REST.neck[1] - 225) + ry + X[IX.uy] + X[IX.hy]]; };
   const rad2 = (d) => (d * Math.PI) / 180;
 const f2 = (n) => Math.round(n * 100) / 100;
   function fxPreset(name, o = {}) {
@@ -520,8 +550,10 @@ const f2 = (n) => Math.round(n * 100) / 100;
     const lift = clamp(-ry / 260, 0, 1);
     setE('shadow', 'transform', `translate(${f(d('hipX') * 0.5)} 0) scale(${f2(1 - lift * 0.45)} 1)`);
     setE('shadow', 'opacity', f2(0.26 * (1 - lift * 0.6)));
-    // ---- lower body
+    // ---- lower body (skipped entirely in the waist-up crops)
+    const lowerOn = CROPS[cropName].lower !== false;
     const hipX = d('hipX') + sway * 1.2, tilt = d('hipTilt') + sway * 0.5;
+    if (lowerOn) {
     setE('skirt', 'transform', `translate(${f(hipX)} 0) rotate(${f(tilt)} 200 346)`);
     setE('skirt-t', 'transform', `rotate(${f(sec.skirt.x)} 200 304)`);
     const LW = (W.legs.w || 13) / 13, legW = (t) => LW * (11.4 - 3.6 * t + 1.1 * Math.sin(Math.PI * t));   // slim, tapering, slight calf
@@ -534,7 +566,8 @@ const f2 = (n) => Math.round(n * 100) / 100;
       setE(`leg-${s}-ink`, 'd', dd); setE(`leg-${s}-fill`, 'd', dd);
       if (E[`leg-${s}-sh`]) setE(`leg-${s}-sh`, 'd', cubicD(limb([root[0] - 3, root[1] + 6], [ax - 3, ay - 6], d(p + 'b1') * 0.8, d(p + 'b2') * 0.8)));
       const flip = d(p + 'sf');
-      setE(`shoe-${s}-t`, 'transform', `translate(${f(ax)} ${f(ay)}) rotate(${f(d(p + 'sr'))}) scale(${f2(flip * 0.95)} 0.95)`);
+      setE(`shoe-${s}-t`, 'transform', `translate(${f(ax)} ${f(ay)}) rotate(${f(d(p + 'sr'))}) scale(${f2(flip * 0.88)} 0.88)`);
+    }
     }
     // ---- upper body
     const ux = d('ux') + hipX * 0.55, uy = d('uy') + breath * 1.1;
@@ -542,7 +575,8 @@ const f2 = (n) => Math.round(n * 100) / 100;
     setE('upper-t', 'transform', `translate(${f(ux)} ${f(uy)}) rotate(${f(d('lean') + breath * 0.25)} ${waist[0]} ${waist[1]})`);
     const shr = d('shr') + breath * 1.6;
     // chest breath: tiny vertical scale of the torso about the waist
-    setE('torso-t', 'transform', `translate(200 ${waist[1]}) scale(${f2(1 + breath * 0.006)} ${f2(1 + breath * 0.012)}) translate(-200 -${waist[1]})`);
+    const sho = d('sho');
+    setE('torso-t', 'transform', `translate(200 ${waist[1]}) rotate(${f(sho)}) scale(${f2(1 + breath * 0.006)} ${f2(1 + breath * 0.012)}) translate(-200 -${waist[1]})`);
     // ---- head & face
     const turn = clamp(d('turn'), 0, 1.2);
     const lx = clamp(X[IX.lookx] + look.sx, -1.2, 1.2), ly = clamp(X[IX.looky] + look.sy, -1.2, 1.2);
@@ -576,9 +610,9 @@ const f2 = (n) => Math.round(n * 100) / 100;
     // ---- mouth
     renderMouth(L);
     // ---- arms
-    const AW = (W.sleeve && W.sleeve.w) || [10.6, 7.6], armW = (t) => AW[0] + (AW[1] - AW[0]) * t;
+    const AW = (W.sleeve && W.sleeve.w) || [10.2, 8.2], armW = (t) => AW[0] + (AW[1] - AW[0]) * t + 5.4 * Math.exp(-t * 9);   // slim noodle with a rounded sleeve head at the shoulder
     for (const s of ['l', 'r']) {
-      const S = s === 'l' ? REST.shoulderL : REST.shoulderR;
+      const S0 = s === 'l' ? REST.shoulderL : REST.shoulderR, S = sho ? rotp(S0, sho, waist) : S0;
       const Sx = S[0], Sy = S[1] - shr;
       const p = s === 'l' ? 'al' : 'ar';
       let wx = d(p + 'x'), wy = d(p + 'y');
@@ -595,7 +629,7 @@ const f2 = (n) => Math.round(n * 100) / 100;
       const kindNow = dis[s === 'l' ? 'gl' : 'gr'];
       setE(`g-${s}-${kindNow}-ta`, 'opacity', f2(clamp((1 + gt.v) / 2, 0, 1))); setE(`g-${s}-${kindNow}-tb`, 'opacity', f2(clamp((1 - gt.v) / 2, 0, 1)));
       const spd = reduced ? 0 : Math.hypot(V[IX[p + 'x']], V[IX[p + 'y']]), smear = clamp((spd - 500) / 3200, 0, 0.32);
-      setE(`hand-${s}-t`, 'transform', `translate(${f(wx)} ${f(wy)}) rotate(${f(ang)}) scale(${f2(d(p + 'sx') * (1 - smear * 0.38))} ${f2(d(p + 'sy') * (1 + smear))})`);
+      setE(`hand-${s}-t`, 'transform', `translate(${f(wx)} ${f(wy)}) rotate(${f(ang)}) scale(${f2(HAND_K * d(p + 'sx') * (1 - smear * 0.38))} ${f2(HAND_K * d(p + 'sy') * (1 + smear))})`);
       if (s === dis.prop.toLowerCase() && E.prop) {
         const kind = dis[s === 'l' ? 'gl' : 'gr'], gp = GLOVE_GRIP[kind] || [0, 26];
         const eff = (W.accBase ?? 90) + (d('acc') - 90) * (W.accGain ?? 1);
@@ -629,12 +663,12 @@ const f2 = (n) => Math.round(n * 100) / 100;
   }
   function renderChain(d, shr) {
     // collar anchor -> whistle (hanging at the hip, swinging) or at the mouth for the whistle pose
-    const A = [189, 246 - shr * 0.4];
+    const A = [223, 253 - shr * 0.4];   // torso frame (the torso art is lifted by TORSO_LIFT)
     let end;
     const inMouth = dis.gr === 'pinch';
-    if (inMouth) { const ml = faceLayout(clamp(d('turn'), 0, 1.2)).mouth, ang = rad2(d('htilt')), vx = ml[0] + 9, vy = ml[1] + 6; end = [200 + d('hx') + vx * Math.cos(ang) - vy * Math.sin(ang) + 6, 225 + d('hy') + vx * Math.sin(ang) + vy * Math.cos(ang)]; }
-    else end = [232 + sec.whistle.x * 0.9, 346 - Math.abs(sec.whistle.x) * 0.1];
-    const mid = [(A[0] + end[0]) / 2 + (inMouth ? -10 : -8), (A[1] + end[1]) / 2 + (inMouth ? 26 : 30)];
+    if (inMouth) { const ml = faceLayout(clamp(d('turn'), 0, 1.2)).mouth, ang = rad2(d('htilt')), vx = ml[0] + 9, vy = ml[1] + 6; end = [200 + d('hx') + vx * Math.cos(ang) - vy * Math.sin(ang) + 6, TORSO_LIFT + REST.neck[1] + d('hy') + vx * Math.sin(ang) + vy * Math.cos(ang)]; }
+    else end = [233 + sec.whistle.x * 0.9, 349 - Math.abs(sec.whistle.x) * 0.1];
+    const mid = [(A[0] + end[0]) / 2 + (inMouth ? -10 : 5), (A[1] + end[1]) / 2 + (inMouth ? 26 : 14)];
     setE('chain', 'd', `M${f(A[0])} ${f(A[1])}Q${f(mid[0])} ${f(mid[1])} ${f(end[0])} ${f(end[1])}`);
     setE('whistle', 'transform', `translate(${f(end[0])} ${f(end[1])}) rotate(${f(inMouth ? -8 : sec.whistle.x * 0.6)})`);
   }
@@ -669,9 +703,11 @@ const f2 = (n) => Math.round(n * 100) / 100;
 
   // ====================================================================== public API
   const api = {
-    get svg() { return svg; }, get outfit() { return outfitKey; }, get pose() { return poseName; }, get mood() { return mood; }, get reduced() { return reduced; },
+    get svg() { return svg; }, get outfit() { return outfitKey; }, get crop() { return cropName; }, get mirror() { return mirrored; }, get pose() { return poseName; }, get mood() { return mood; }, get reduced() { return reduced; },
     setLook, setMood(name) { if (MOODS[name]) { mood = name; applyTargets(); } },
     setPose(name, o2 = {}) { if (!POSES[name]) return; clipS.cur = null; poseName = name; overrides = o2.keep ? overrides : {}; applyTargets(!!o2.snap); },
+    setCrop(name) { if (CROPS[name]) { cropName = name; applyCrop(); rendered = false; render(true); } },
+    setMirror(b) { mirrored = !!b; applyCrop(); },
     setOutfit, play, stop: stopClip, wink, blink, impulse, fx: fxPreset, setMouth(n, d2) { overrides.mouth = n; setMouth(n, d2); },
     set(over, snap) { Object.assign(overrides, over); applyTargets(snap); },
     clear() { overrides = {}; applyTargets(); },

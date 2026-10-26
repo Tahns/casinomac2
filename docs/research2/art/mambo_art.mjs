@@ -25,11 +25,12 @@ export const OL = 4.6;                 // uniform outline weight (viewBox units)
 export const MIS = [2.8, 2.4];         // print misregistration (fill layer shifted against the outline)
 export const MIS_T = [1.4, 1.2];
 export const GROUND = 566;
+export const TORSO_LIFT = 6;           // pass 2: the torso art is lifted 6 units (shorter torso, collar right under the chin like the model sheet)
 
 // rest skeleton (upper-body coordinates at rest). Proportions measured on the model sheet (cap top 66 -> ground 566).
 export const REST = {
-  neck: [200, 225], shoulderL: [161, 258], shoulderR: [239, 258], waist: [200, 304], hip: [200, 346],
-  hipJointL: [188, 420], hipJointR: [212, 420], ankleL: [164, 524], ankleR: [238, 524], ground: [200, GROUND], skirtHem: 452,
+  neck: [200, 236], shoulderL: [166, 253], shoulderR: [234, 252], waist: [200, 304], hip: [200, 346],
+  hipJointL: [188, 420], hipJointR: [212, 420], ankleL: [156, 524], ankleR: [234, 524], ground: [200, GROUND], skirtHem: 452,
 };
 
 // ------------------------------------------------------------------ helpers
@@ -168,10 +169,10 @@ export function tubeEls(c, id, w, fill, o = {}) {
 // The line of the body is an S: chest tipped slightly back (left), waist tucked, pelvis pushed the other way, front edge flat over the belly.
 // Every costume draws its torso and lower garment from these tables (plus its own ease), so the five outfits share one body.
 export const SIL = {
-  ys:    [240, 252, 266, 282, 296, 306, 326, 346, 372, 404, 436, 456],
-  back:  [190, 170, 163, 163, 170, 177, 168, 158, 159, 164, 168, 170],
-  front: [212, 232, 239, 238, 231, 226, 230, 240, 240, 236, 231, 229],
-  cl:    [203, 208, 212, 214, 214, 214, 216, 216, 214, 212, 209, 207],
+  ys:    [240, 252, 266, 282, 296, 306, 318, 332, 348, 366, 390, 420, 445, 458],
+  back:  [191, 172, 166, 166, 172, 178, 172, 163, 157, 157, 160, 167, 174, 177],
+  front: [211, 230, 237, 236, 230, 226, 228, 236, 241, 240, 236, 229, 222, 219],
+  cl:    [203, 208, 212, 214, 214, 214, 215, 216, 216, 215, 213, 211, 208, 207],
 };
 export const silBack = lut(SIL.ys, SIL.back), silFront = lut(SIL.ys, SIL.front), silCl = lut(SIL.ys, SIL.cl);
 // closed garment outline between heights y0..y1 following the shared silhouette. o.eB / o.eF = outward ease (functions of y), o.headB / o.headF =
@@ -179,7 +180,7 @@ export const silBack = lut(SIL.ys, SIL.back), silFront = lut(SIL.ys, SIL.front),
 // points appended after the last knot (flares).
 export function garmentD(y0, y1, o = {}) {
   const eB = o.eB || (() => 0), eF = o.eF || (() => 0);
-  const ys = [y0, ...SIL.ys.filter((y) => y > y0 + 3 && y < y1 - 3), y1];
+  const ys = [y0, ...SIL.ys.concat(o.extraYs || []).sort((a, b) => a - b).filter((y) => y > y0 + 3 && y < y1 - 3), y1];
   const B = (o.headB || []).concat(ys.map((y) => [silBack(y) - eB(y), y])).concat(o.endB || []);
   const F = (o.headF || []).concat(ys.map((y) => [silFront(y) + eF(y), y])).concat(o.endF || []);
   const bl = B[B.length - 1], fl = F[F.length - 1];
@@ -385,7 +386,7 @@ export function shoeArt(c, W) {
 // The cranium (hair) is wide to the LEFT of the face; the garrison cap sits on the back-left of the head.
 export const FACE_D = 'M9 -13C22 -14 36 -25 41 -43C46 -61 45 -84 38 -98C30 -110 14 -115 0 -114C-18 -114 -36 -104 -43 -86C-48 -70 -45 -50 -35 -35C-26 -23 -10 -13 9 -13Z';
 export const HEAD_PIVOT = [5, -6];        // art point that sits on the neck pivot (head tilts about the neck); pass 2: head moved 14 units toward the body line
-export const HEAD_SCALE = 0.95;           // pass 2: slightly smaller head on a slimmer neck (more elegant proportion)
+export const HEAD_SCALE = 1.0;            // head scale about the neck (pass 2 tried 0.95: the model sheet head is bigger, so it stays 1)
 export const HEAD_REST_TURN = 1.0;
 // feature layout as a function of the face turn t (0 = frontal, 1 = three-quarter toward the grid)
 export function faceLayout(t) {
@@ -398,7 +399,7 @@ export function faceLayout(t) {
 function hairParts(c, W) {
   const col = PAL.hair;
   // pass 2: waved page-boy: wide at the back, a wave that tucks in then flips out, the underside slants up toward the neck (no more block)
-  const mass = part(c, 'M20 -122C16 -140 -2 -148 -30 -146C-60 -142 -88 -122 -94 -92C-98 -74 -96 -62 -90 -54C-85 -47 -91 -42 -94 -34C-99 -22 -88 -5 -68 -3C-52 -2 -43 -9 -35 -17L-22 -22L0 -22L26 -40C30 -70 26 -100 20 -122Z', col, { shade: 'M-100 -170L-34 -170L-34 10L-100 10Z', ht: 'ht' })
+  const mass = part(c, 'M20 -122C16 -140 -2 -148 -30 -146C-60 -142 -88 -122 -94 -92C-98 -74 -96 -62 -90 -54C-85 -47 -91 -42 -94 -34C-101 -22 -90 -2 -68 0C-52 1 -43 -8 -35 -17L-22 -22L0 -22L26 -40C30 -70 26 -100 20 -122Z', col, { shade: 'M-100 -170L-34 -170L-34 10L-100 10Z', ht: 'ht' })
     + line('M-83 -106C-91 -86 -84 -70 -78 -56C-74 -46 -80 -38 -75 -27', 3.6, PAL.hairHi, ' opacity=".85"') + line('M-66 -132C-80 -122 -88 -108 -89 -96', 3.2, PAL.hairHi, ' opacity=".7"')
     + `<g id="${c.pre}hair-tuft" opacity="0">` + part(c, 'M-62 -128L-60 -158L-48 -142L-42 -166L-30 -148L-20 -164L-14 -146L-2 -156L2 -134L-2 -120L-58 -120Z', col, { sw: OL * 0.95 }) + line('M-52 -146L-48 -132M-26 -150L-24 -134', 2.8, PAL.hairHi) + `</g>`;
   const curlL = part(c, 'M-80 -48C-94 -44 -101 -26 -93 -15C-86 -6 -72 -11 -72 -22C-72 -30 -80 -31 -83 -25C-81 -33 -77 -41 -72 -50Z', col, { shade: 'M-100 -30L-80 -30L-80 -5L-100 -5Z' }) + line('M-91 -33C-88 -22 -80 -20 -78 -26', 2.8, PAL.hairHi);

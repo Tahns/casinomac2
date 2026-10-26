@@ -1,7 +1,7 @@
 <!doctype html><html><head><meta charset="utf-8"><title>Mambo compare</title><link rel="icon" href="data:,">
 <style>
   html,body{margin:0;background:#1b2542;color:#fff;font:12px Arial}
-  #g{display:flex;gap:6px;padding:6px;align-items:flex-start}
+  #g{display:flex;flex-wrap:wrap;gap:6px;padding:6px;align-items:flex-start;width:calc(100vw - 12px)}
   .c{position:relative;background:#d9a72a;overflow:hidden;flex:none}
   .c b{position:absolute;left:4px;top:2px;color:#2B1A12;z-index:3}
   .c svg{position:absolute;inset:0;width:100%;height:100%}
@@ -13,7 +13,7 @@
 // Model mapping (base_v2_b.png): x_rig = 200 + (x_img - 655) * k, y_rig = 66 + (y_img - 40) * k, k = 0.3289.
 import { createHeroine } from './mambo_rig.mjs';
 const q = new URLSearchParams(location.search);
-const pose = q.get('pose') || 'idle', outfit = q.get('outfit') || 'inspectrice', H = +(q.get('h') || 640);
+const poses = (q.get('poses') || q.get('pose') || 'idle').split(','); let pose = poses[0]; const outfit = q.get('outfit') || 'inspectrice', H = +(q.get('h') || 640);
 const vb = (q.get('vb') || '40,50,320,530').split(/[ ,]+/).map(Number), mode = +(q.get('mode') || 3), grid = q.get('grid') !== '0';
 const W = Math.round(H * vb[2] / vb[3]);
 const k = 0.3289 * (+(q.get('mk') || 1)), mx = +(q.get('mx') || 0), my = +(q.get('my') || 0);
@@ -39,8 +39,11 @@ const mkHero = (host, extra = {}) => {
   inner.firstElementChild.setAttribute('viewBox', vb.join(' ')); inner.firstElementChild.setAttribute('preserveAspectRatio', 'xMidYMid meet'); inner.firstElementChild.style.overflow = 'hidden'; return h;
 };
 window.H = [];
-if (mode & 1) { const c = cell('model'); c.insertAdjacentHTML('beforeend', modelSvg()); c.insertAdjacentHTML('beforeend', gridEl()); }
-if (mode & 2) { const c = cell('rig ' + pose); window.H.push(mkHero(c)); c.insertAdjacentHTML('beforeend', gridEl()); }
-if (mode & 4) { const c = cell('overlay'); c.insertAdjacentHTML('beforeend', modelSvg()); window.H.push(mkHero(c)); c.lastElementChild.style.opacity = '.6'; c.insertAdjacentHTML('beforeend', gridEl()); }
+for (const ps of poses) {
+  pose = ps;
+  if (mode & 1) { const c = cell('model ' + (poses.length > 1 ? pose : '')); c.insertAdjacentHTML('beforeend', modelSvg()); c.insertAdjacentHTML('beforeend', gridEl()); }
+  if (mode & 2) { const c = cell('rig ' + pose); window.H.push(mkHero(c)); c.insertAdjacentHTML('beforeend', gridEl()); }
+  if (mode & 4) { const c = cell('overlay'); c.insertAdjacentHTML('beforeend', modelSvg()); window.H.push(mkHero(c)); c.lastElementChild.style.opacity = '.6'; c.insertAdjacentHTML('beforeend', gridEl()); }
+}
 window.__ready = true;
 </script></body></html>
