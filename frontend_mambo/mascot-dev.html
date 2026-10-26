@@ -13,6 +13,8 @@
  .frame .host{position:absolute;right:8px;bottom:6px}
  .sec{margin:18px 0 6px;font-weight:700}
  .btns button{margin:2px;padding:4px 8px}
+ body.sheetmode .sec,body.sheetmode .btns,body.sheetmode .frame{display:none}
+ body.sheetmode .stage{min-height:300px;padding-top:70px}
  body.solo .grid,body.solo .sec,body.solo h1,body.solo .btns,body.solo .frame{display:none}
  #solo{display:none}body.solo #solo{display:flex;align-items:flex-end;gap:30px;padding:60px 40px}
  body.still .gus *{animation:none!important;transition:none!important}
@@ -29,7 +31,18 @@ const q = new URLSearchParams(location.search);
 if (q.get('still')) document.body.classList.add('still');
 const grid = document.getElementById('grid');
 const all = [];
-if (q.get('pose')) {
+if (q.get('sheet')) {
+  // contact sheet: every pose at one size, 3 columns (?sheet=220&still=1)
+  document.body.classList.add('sheetmode');
+  grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+  const sz = +q.get('sheet') || 220;
+  for (const p of POSES) {
+    const c = document.createElement('div'); c.className = 'cell'; c.id = 'cell-' + p;
+    c.innerHTML = `<h2>${p}</h2><div class="stage"></div>`;
+    grid.appendChild(c);
+    createMascot(c.querySelector('.stage'), { size: sz, pose: p, variant: sz <= 140 ? 'small' : 'full' });
+  }
+} else if (q.get('pose')) {
   document.body.classList.add('solo');
   const solo = document.getElementById('solo');
   const sz = +(q.get('size') || 360);

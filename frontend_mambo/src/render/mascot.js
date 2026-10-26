@@ -42,7 +42,7 @@ function buildSVG(uid) {
       `</g><path class="o" d="${od || d}"/></g>`;
   };
   const ln = (d, cls = 'fine') => `<path class="o ${cls}" d="${d}"/>`;
-  const inkFill = (d, fill) => `<path d="${d}" fill="${fill}" stroke="${C.ink}" stroke-width="3" stroke-linejoin="round"/>`;
+  const inkFill = (d, fill) => `<path d="${d}" fill="${fill}" stroke="${C.ink}" stroke-width="2.4" stroke-linejoin="round"/>`;
 
   // ---------------------------------------------------------------- legs (left drawn, right mirrored)
   const leg =
@@ -70,8 +70,8 @@ function buildSVG(uid) {
 
   // ---------------------------------------------------------------- arms (two-segment, pivots at shoulder + elbow)
   const T = (x, y, s) => `translate(${x} ${y}) scale(${s} 1)`;
-  const upperD = 'M-5.5,0Q-5.5,-5.5 0,-5.5Q5.5,-5.5 5.5,0L5,25L-5,25Z';
-  const upperO = 'M-5,25L-5.5,0Q-5.5,-5.5 0,-5.5Q5.5,-5.5 5.5,0L5,25';
+  const upperD = 'M-5.5,0Q-5.5,-5.5 0,-5.5Q5.5,-5.5 5.5,0L5,23L-5,23Z';
+  const upperO = 'M-5,23L-5.5,0Q-5.5,-5.5 0,-5.5Q5.5,-5.5 5.5,0L5,23';
   const foreD = 'M-5,-1Q-5,-5 0,-5Q5,-5 5,-1L4.6,22L-4.6,22Z';
   const hand = sh(ell(0, 27, 6.4, 6.8), C.cream) +
     sh('M3.8,21.5Q10.5,22.5 9.4,29Q5.4,29.4 3.8,26Z', C.cream, '', 'thumb') +
@@ -101,7 +101,7 @@ function buildSVG(uid) {
     const s = side === 'L' ? 1 : -1, N = 'arm' + side, F = 'fore' + side;
     return `<g class="${N} mir${side}"><g class="${N}-a">` +
       `<g class="mir${side}" transform="${T(px, 138, s)}">` + sh(upperD, C.cream, 'M2,-6L9,-6L9,26L2,26Z', '', '', upperO) + `</g>` +
-      `<g class="${F}"><g class="${F}-a"><g transform="${T(px, 162, s)}" class="mir${side}">` +
+      `<g class="${F}"><g class="${F}-a"><g transform="${T(px, 161, s)}" class="mir${side}">` +
         sh(foreD, C.cream, 'M2,-6L9,-6L9,24L2,24Z') + cuff + hand + (withProp ? caseHold : '') +
       `</g></g></g>` +
       `</g></g>`;
@@ -123,39 +123,39 @@ function buildSVG(uid) {
 
   // ---------------------------------------------------------------- head
   // hair (behind face): beehive, stripes, highlight, antenna, hinged lid
-  const hairD = 'M64,96C52,58 70,12 100,8C130,12 148,58 136,96Z';
+  const hairD = 'M76,106C64,96 64,60 74,44C81,33 91,28 100,28C109,28 119,33 126,44C136,60 136,96 124,106Z';
   const stripes =
-    `<path d="M62,32Q100,46 138,32M54,50Q100,66 146,50M54,68Q100,84 146,68" fill="none" stroke="${C.cream}" stroke-width="3.2" stroke-linecap="round" opacity=".95"/>`;
+    `<path d="M60,46Q100,57 140,46M58,61Q100,73 142,61M60,76Q100,88 140,76" fill="none" stroke="${C.cream}" stroke-width="3.2" stroke-linecap="round" opacity=".95"/>`;
   const lidO =
     // slot + speaker grille under the lid
-    `<g class="lidslot"><rect x="124" y="43" width="17" height="13" rx="3" fill="${C.ink}"/><path d="M127,47.5L138,47.5M127,51.5L138,51.5" stroke="${C.lemon}" stroke-width="1.8"/></g>` +
+    `<g class="lidslot"><rect x="114" y="54" width="18" height="13" rx="3" fill="${C.ink}"/><path d="M117,58.5L129,58.5M117,62.5L129,62.5" stroke="${C.lemon}" stroke-width="1.8"/></g>` +
     part('lid',
-      sh('M123,43.6Q123,41.6 125,41.6L138,41.6Q140,41.6 140,43.6L140,54Q140,56 138,56L125,56Q123,56 123,54Z', C.flamingo, '', 'lidp') +
-      `<circle cx="127.4" cy="49" r="1.7" fill="${C.ink}"/><circle cx="133" cy="49" r="1.7" fill="${C.ink}"/>`);
+      sh('M114,54.6Q114,52.6 116,52.6L129,52.6Q131,52.6 131,54.6L131,65Q131,67 129,67L116,67Q114,67 114,65Z', C.flamingo, '', 'lidp') +
+      `<circle cx="118.4" cy="60" r="1.7" fill="${C.ink}"/><circle cx="124.4" cy="60" r="1.7" fill="${C.ink}"/>`);
   const hair = part('hair',
-    sh(hairD, C.aub, 'M104,0L170,0L170,100L112,100Q122,50 104,0Z', 'hairs', stripes) +
-    `<path class="o thin hl" d="M76,44Q80,28 92,17" style="stroke:#fff"/>` +
+    sh(hairD, C.aub, 'M108,0L170,0L170,130L114,130Q126,60 108,0Z', 'hairs', stripes) +
+    `<path class="o thin hl" d="M74,58Q74,44 88,36" style="stroke:#fff"/>` +
     lidO);
   const antenna =
     `<g class="ant"><g class="ant-a">` +
-      `<path class="shaft" d="M100,13L100,-19" stroke="${C.ink}" stroke-width="4.6" stroke-linecap="round" fill="none"/>` +
+      `<path class="shaft" d="M100,31L100,-2" stroke="${C.ink}" stroke-width="4.6" stroke-linecap="round" fill="none"/>` +
       `<g class="anttop">` +
-        `<g class="fins"><path d="M86,-4Q100,-9 114,-4Q100,1 86,-4Z" fill="${C.lemon}" stroke="${C.ink}" stroke-width="2.4" stroke-linejoin="round"/></g>` +
-        sh(ell(100, -4, 6, 6), C.lemon, '', 'ball') +
-        `<path d="M97,-7.4Q98.6,-9 100.6,-8.6" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round"/>` +
+        `<g class="fins"><path d="M86,13Q100,8 114,13Q100,18 86,13Z" fill="${C.lemon}" stroke="${C.ink}" stroke-width="2.4" stroke-linejoin="round"/></g>` +
+        sh(ell(100, 13, 6, 6), C.lemon, '', 'ball') +
+        `<path d="M97,9.6Q98.6,8 100.6,8.4" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round"/>` +
         `<g class="qstar">` +
-          `<path d="${burstPath(124, -6, 12, 6.8, 8)}" fill="${C.lemon}" stroke="${C.ink}" stroke-width="2.6" stroke-linejoin="round"/>` +
-          `<path d="M119.8,-9.6Q119.8,-13.6 124,-13.6Q128.2,-13.6 128.2,-9.6Q128.2,-6.6 124,-5.6L124,-3" fill="none" stroke="${C.ink}" stroke-width="2.6" stroke-linecap="round"/>` +
-          `<circle cx="124" cy="0.2" r="1.6" fill="${C.ink}"/>` +
+          `<path d="${burstPath(124, 11, 12, 6.8, 8)}" fill="${C.lemon}" stroke="${C.ink}" stroke-width="2.6" stroke-linejoin="round"/>` +
+          `<path d="M119.8,7.4Q119.8,3.4 124,3.4Q128.2,3.4 128.2,7.4Q128.2,10.4 124,11.4L124,14" fill="none" stroke="${C.ink}" stroke-width="2.6" stroke-linecap="round"/>` +
+          `<circle cx="124" cy="17.2" r="1.6" fill="${C.ink}"/>` +
         `</g>` +
       `</g>` +
     `</g></g>`;
 
-  const faceD = ell(100, 108, 26, 26);
+  const faceD = ell(100, 108, 26, 30);
   const ears = `<g class="ears">${sh(ell(74.4, 112, 4.4, 6.6), C.skin)}${sh(ell(125.6, 112, 4.4, 6.6), C.skin)}</g>`;
   const neck = `<g class="neck"><path d="M91,124L91,138L109,138L109,124Z" fill="${C.skin}"/><path d="M91,124L91,137M109,124L109,137" class="o" fill="none"/>` +
     `<path d="M91,128Q100,136 109,128L109,138L91,138Z" fill="${C.ink}" opacity=".22"/></g>`;
-  const face = sh(faceD, C.skin, 'M110,80L136,80L136,140L116,140Q122,112 110,80Z', 'face') +
+  const face = sh(faceD, C.skin, 'M110,80L136,80L136,140L116,140Q122,112 110,80Z', 'face', '', 'M76.2,96A26,30 0 1 0 123.8,96') +
     `<ellipse class="fine" cx="82.6" cy="119" rx="5.4" ry="3.2" fill="${C.flamingo}" opacity=".55"/><ellipse class="fine" cx="117.4" cy="119" rx="5.4" ry="3.2" fill="${C.flamingo}" opacity=".55"/>`;
 
   // earrings: lemon atoms
@@ -164,38 +164,37 @@ function buildSVG(uid) {
   const earrings = `<g class="earr"><path class="fine" d="M74.5,118L74.5,121M125.5,118L125.5,121" stroke="${C.ink}" stroke-width="1.6"/>${atom(74.5)}${atom(125.5)}</g>`;
 
   // eyes: big white ovals, ink pupils, winged liner. Lids are skin-coloured, clipped to the eye (blink).
-  const EL = 91, ER = 109, EY = 106;
-  const eyeOval = (cx) => ell(cx, EY, 8, 10);
+  const EL = 90, ER = 110, EY = 106;
+  const eyeOval = (cx) => ell(cx, EY, 7.2, 9.4);
   const mkEye = (cx, side, cid) => {
     const w = side === 'L' ? -1 : 1;
     return `<g class="eye${side}"><g class="eye${side}-a">` +
-      sh(eyeOval(cx), '#FFFEF8') +
+      `<path d="${eyeOval(cx)}" fill="#FFFEF8"/>` +
       `<g class="pup"><circle cx="${cx - w * 0.6}" cy="${EY + 0.6}" r="4.2" fill="${C.ink}"/><circle cx="${cx - w * 0.6 - 1.4}" cy="${EY - 1.4}" r="1.4" fill="#fff"/></g>` +
       `<clipPath id="${uid}${cid}"><path d="${eyeOval(cx)}"/></clipPath>` +
       `<g clip-path="url(#${uid}${cid})">${part('lid' + side, `<path d="M${cx - 10},${EY - 14}L${cx + 10},${EY - 14}L${cx + 10},${EY + 1}L${cx - 10},${EY + 1}Z" fill="${C.skin}"/><path class="o" d="M${cx - 10},${EY + 1}L${cx + 10},${EY + 1}"/>`)}</g>` +
-      `<path class="o" d="${eyeOval(cx)}"/>` +
-      // upper liner + wing flick
-      `<path class="o thick liner" d="M${cx + w * 8},${EY - 1.5}Q${cx + w * 1},${EY - 12.4} ${cx - w * 8.2},${EY - 3}"/>` +
-      `<path class="o thick wing" d="M${cx + w * 8},${EY - 1.5}L${cx + w * 14},${EY - 6}"/>` +
+            // upper liner + wing flick
+      `<path class="o liner" d="M${cx + w * 7.6},${EY - 1.6}Q${cx + w * 0.8},${EY - 11.2} ${cx - w * 5.6},${EY - 7}"/>` +
+      `<path class="o wing" d="M${cx + w * 7.6},${EY - 1.6}L${cx + w * 13},${EY - 5.6}"/>` +
       `</g></g>`;
   };
   const eyes = mkEye(EL, 'L', 'ecl') + mkEye(ER, 'R', 'ecr');
   // closed happy eyes (arcs) + wink
-  const arcL = `M${EL - 8},${EY + 3}Q${EL},${EY - 9} ${EL + 8},${EY + 3}`;
-  const arcR = `M${ER - 8},${EY + 3}Q${ER},${EY - 9} ${ER + 8},${EY + 3}`;
+  const arcL = `M${EL - 7.4},${EY + 3}Q${EL},${EY - 8} ${EL + 7.4},${EY + 3}`;
+  const arcR = `M${ER - 7.4},${EY + 3}Q${ER},${EY - 8} ${ER + 7.4},${EY + 3}`;
   const eyesHappy = `<g class="eyesHappy"><path class="o thick" d="${arcL}"/><path class="o thick" d="${arcR}"/>` +
-    `<path class="o thick wing" d="M${EL - 8},${EY + 3}L${EL - 13},${EY - 1}M${ER + 8},${EY + 3}L${ER + 13},${EY - 1}"/></g>`;
-  const winkR = `<g class="winkR"><path class="o thick" d="${arcR}"/><path class="o thick wing" d="M${ER + 8},${EY + 3}L${ER + 13},${EY - 1}"/></g>`;
+    `<path class="o thick wing" d="M${EL - 7.4},${EY + 3}L${EL - 12},${EY - 0.6}M${ER + 7.4},${EY + 3}L${ER + 12},${EY - 0.6}"/></g>`;
+  const winkR = `<g class="winkR"><path class="o thick" d="${arcR}"/><path class="o thick wing" d="M${ER + 7.4},${EY + 3}L${ER + 12},${EY - 0.6}"/></g>`;
 
   // brows: thin 3 px arcs
-  const browL = `<g class="browL"><g class="browL-a"><path class="o brow" d="M82,92.4Q90,87 99,91.4"/></g></g>`;
-  const browR = `<g class="browR"><g class="browR-a"><path class="o brow" d="M101,91.4Q110,87 118,92.4"/></g></g>`;
+  const browL = `<g class="browL"><g class="browL-a"><path class="o brow" d="M82,91Q89,85.6 97,89"/></g></g>`;
+  const browR = `<g class="browR"><g class="browR-a"><path class="o brow" d="M103,89Q111,85.6 118,91"/></g></g>`;
 
-  const nose = `<path class="o thin nose" d="M101.6,112Q106.4,116.4 101.8,118.6"/>`;
+  const nose = `<path class="o thin nose" d="M101.4,112.6Q104.8,116.2 101.4,118.2"/>`;
 
   // mouths (coral lips, no teeth)
   const lipsD = 'M90.6,124.4Q95,120.8 100,123Q105,120.8 109.4,124.4Q105,131.4 100,131.4Q95,131.4 90.6,124.4Z';
-  const mouths =
+  const mouths = '<g transform="translate(0 -3)">' +
     `<g class="m m-smile">${inkFill(lipsD, C.lip)}<path class="fine" d="M95,126.6Q100,128.6 105,126.6" stroke="${C.ink}" stroke-width="1.4" fill="none" opacity=".7"/></g>` +
     `<g class="m m-grin">${inkFill('M89.6,122.6Q100,128.6 110.4,122.6Q108.6,134 100,134Q91.4,134 89.6,122.6Z', C.ink)}` +
       `<path d="M94,131.2Q100,128.4 106,131.2Q100,134 94,131.2Z" fill="${C.flamingo}"/>` +
@@ -204,21 +203,27 @@ function buildSVG(uid) {
     `<g class="m m-gasp"><ellipse cx="100" cy="129.6" rx="3.8" ry="4.8" fill="${C.ink}" stroke="${C.lip}" stroke-width="2.6"/><ellipse cx="100" cy="129.6" rx="5.4" ry="6.4" fill="none" stroke="${C.ink}" stroke-width="2"/></g>` +
     `<g class="m m-flat"><path d="M92.4,127.6L107.6,127.6" stroke="${C.ink}" stroke-width="6.6" stroke-linecap="round"/><path d="M92.4,127.6L107.6,127.6" stroke="${C.lip}" stroke-width="3" stroke-linecap="round"/></g>` +
     `<g class="m m-side"><path d="M92.6,128.4Q100,129.8 108.4,124.8" stroke="${C.ink}" stroke-width="6.6" stroke-linecap="round" fill="none"/><path d="M92.6,128.4Q100,129.8 108.4,124.8" stroke="${C.lip}" stroke-width="3" stroke-linecap="round" fill="none"/></g>` +
-    `<circle class="fine" cx="113" cy="121" r="1.4" fill="${C.ink}"/>`;
+    `<circle class="fine" cx="113" cy="124" r="1.4" fill="${C.ink}"/></g>`;
 
   // fringe + headband in front of the face
   const fringe =
     part('bangs',
-      sh('M73,106C68,86 82,73 100,73C118,73 132,86 127,106C126,98 121,92 113,90C104,95 92,95 82,99C77,101 75,103 73,106Z', C.aub, 'M104,70L136,70L136,110L120,110Q120,86 104,70Z', 'fringe') +
-      sh('M71.4,96C76,80 124,80 128.6,96L126,101C119,89 81,89 74,101Z', C.teal, '', 'band') +
-      `<path class="o thin hl2" d="M90,78Q97,75 106,76" style="stroke:#fff"/>`);
+      sh('M72,104C70,88 84,80 100,80C116,80 130,88 128,104C120,94 110,90 100,91C90,92 80,96 72,104Z', C.aub, 'M106,76L136,76L136,110L122,110Q122,86 106,76Z', 'fringe', '', 'M128,104C120,94 110,90 100,91C90,92 80,96 72,104') +
+      `<g class="sh band"><g class="fill"><path d="M70,89C80,72 120,72 130,89L127.6,93C118,82 82,82 72.4,93Z" fill="${C.teal}"/></g><path class="o thin" d="M70,89C80,72 120,72 130,89L127.6,93C118,82 82,82 72.4,93Z"/></g>`);
 
   // hand-on-chin glove for think (sits on the head so it follows its tilt)
-  const head = part('head', neck + ears + face + earrings + eyes + eyesHappy + winkR + browL + browR + nose + mouths + fringe);
+  // glove on the chin for think (drawn over the face; the real forearm rises behind it)
+  const handThink = `<g class="handThink">` +
+    sh('M89,141L104,141L103,150L90,150Z', C.cream, '', 'ht-wrist') +
+    sh(ell(96.5, 134.4, 8.8, 7.6), C.cream, 'M98,126L108,126L108,142L98,142Z', 'ht-fist') +
+    `<path class="o thin" d="M90,131.6Q96.5,128.4 103,131.6"/>` +
+    sh('M101.4,138Q107,138 107.6,143.4Q103,144 100.4,141Z', C.cream, '', 'ht-thumb') +
+    `</g>`;
+  const head = part('head', `<g transform="translate(0 -2)">` + hair + antenna + neck + ears + face + earrings + eyes + eyesHappy + winkR + browL + browR + nose + mouths + fringe + handThink + `</g>`);
 
   // ---------------------------------------------------------------- fx
   const fxBurst = `<g class="burst">${sh(burstPath(100, 130, 120, 76, 12), C.lemon)}<path d="${burstPath(100, 130, 80, 50, 12)}" fill="${C.cream}" stroke="${C.ink}" stroke-width="3" stroke-linejoin="round" opacity=".96"/></g>`;
-  const fxBurst2 = `<g class="burst2">${sh(burstPath(100, 110, 140, 96, 14), C.coral, 'M100,-50L250,-50L250,250L100,250Z')}</g>`;
+  const fxBurst2 = `<g class="burst2">${sh(burstPath(100, 110, 140, 96, 14), C.teal, 'M100,-50L250,-50L250,250L100,250Z')}</g>`;
   const cfCols = [C.coral, C.teal, C.lemon, C.flamingo, C.cream, C.lilac, C.lime];
   const cfPos = [[-8, 22], [24, -14], [56, -22], [146, -26], [176, -12], [208, 22], [-14, 74], [214, 78], [-4, 124], [206, 126], [10, 176], [196, 176]];
   const confetti = `<g class="confetti">${cfPos.map(([x, y], i) => {
@@ -245,9 +250,10 @@ function buildSVG(uid) {
 
   // everything is drawn in a 200x233 box and lifted into the 240x280 viewBox (ground y232 -> 248)
   return `<svg class="gus mambo" xmlns="http://www.w3.org/2000/svg" viewBox="-20 -24 240 280" role="img" aria-label="Agent Mambo, Mabel Fontaine">
-<defs><pattern id="${uid}ht" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="2.5" cy="2.5" r="1.3" fill="${C.lilac}"/></pattern></defs>
+<defs><pattern id="${uid}ht" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="2.5" cy="2.5" r="1.05" fill="${C.lilac}"/></pattern></defs>
+<g transform="translate(-10 -8) scale(1.1)">${shadow}</g>
 <g class="fig" transform="translate(-10 -8) scale(1.1)">
-${shadow}${fxBurst}${fxBurst2}
+${fxBurst}${fxBurst2}
 ${plunger}
 <g class="body"><g class="body-a">
 ${part('legL', legL)}${part('legR', legR)}
@@ -255,7 +261,6 @@ ${skirt}
 ${torso}
 ${arm('L', 78, false)}${arm('R', 122, true)}
 ${head}
-${antenna}
 ${sweat}${mlh}${tdots}${puff}${notes}${lidConf}
 </g></g>
 ${spark}${stars}${confetti}

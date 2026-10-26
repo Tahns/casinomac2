@@ -5,6 +5,8 @@
 .gus * { transform-box: view-box; }
 .gus .o { fill: none; stroke: #14102B; stroke-width: var(--sw); stroke-linejoin: round; stroke-linecap: round; }
 .gus .o.thick { stroke-width: calc(var(--sw) * 1.2); }
+.gus .o.eyeo { stroke-width: calc(var(--sw) * .42); }
+.gus .o.liner, .gus .o.wing { stroke-width: calc(var(--sw) * .85); }
 .gus .o.thin { stroke-width: calc(var(--sw) * .66); }
 .gus .o.brow { stroke-width: calc(var(--sw) * .78); }
 .gus .fill { transform: translate(var(--fo), var(--fo)); }
@@ -14,22 +16,22 @@
 .gus.small .fine, .gus.small .ht { display: none; }
 
 /* die-cut sticker rim: keeps the aubergine hair and ink outlines legible on the dark indigo scene */
-.gus .fig { filter: drop-shadow(2.2px 0 0 #FBF1D9) drop-shadow(-2.2px 0 0 #FBF1D9) drop-shadow(0 2.2px 0 #FBF1D9) drop-shadow(0 -2.2px 0 #FBF1D9); }
-.gus.small .fig { filter: drop-shadow(2.8px 0 0 #FBF1D9) drop-shadow(-2.8px 0 0 #FBF1D9) drop-shadow(0 2.8px 0 #FBF1D9) drop-shadow(0 -2.8px 0 #FBF1D9); }
+.gus .fig { filter: drop-shadow(1.7px 0 0 #FBF1D9) drop-shadow(-1.7px 0 0 #FBF1D9) drop-shadow(0 1.7px 0 #FBF1D9) drop-shadow(0 -1.7px 0 #FBF1D9); }
+.gus.small .fig { filter: drop-shadow(2.2px 0 0 #FBF1D9) drop-shadow(-2.2px 0 0 #FBF1D9) drop-shadow(0 2.2px 0 #FBF1D9) drop-shadow(0 -2.2px 0 #FBF1D9); }
 
 /* origins (user units of the 200x233 drawing box) */
 .body, .body-a { transform-origin: 100px 232px; }
 .torso, .torso-a { transform-origin: 100px 160px; }
 .skirt, .skirt-a { transform-origin: 100px 156px; }
 .head, .head-a { transform-origin: 100px 136px; }
-.hair, .hair-a, .bangs, .bangs-a { transform-origin: 100px 96px; }
-.ant, .ant-a, .shaft { transform-origin: 100px 13px; }
-.anttop, .fins, .qstar { transform-origin: 100px -4px; }
-.lid, .lid-a { transform-origin: 140px 49px; }
+.hair, .hair-a, .bangs, .bangs-a { transform-origin: 100px 100px; }
+.ant, .ant-a, .shaft { transform-origin: 100px 31px; }
+.anttop, .fins, .qstar { transform-origin: 100px 13px; }
+.lid, .lid-a { transform-origin: 131px 60px; }
 .armL, .armL-a { transform-origin: 78px 138px; }
-.foreL, .foreL-a { transform-origin: 78px 162px; }
+.foreL, .foreL-a { transform-origin: 78px 161px; }
 .armR, .armR-a { transform-origin: 122px 138px; }
-.foreR, .foreR-a { transform-origin: 122px 162px; }
+.foreR, .foreR-a { transform-origin: 122px 161px; }
 .hold { transform-origin: 0px 30px; }
 .legL, .legL-a { transform-origin: 83px 206px; }
 .legR, .legR-a { transform-origin: 117px 206px; }
@@ -45,13 +47,13 @@
 .spark { transform-origin: 168px 192px; }
 
 /* defaults */
-.m, .eyesHappy, .winkR, .burst, .burst2, .confetti, .lidconf, .stars, .sweat, .mlh, .tdots, .puff, .notes, .plunger, .spark, .qstar, .glass, .fing, .fins { display: none; }
+.m, .eyesHappy, .winkR, .burst, .burst2, .confetti, .lidconf, .stars, .sweat, .mlh, .tdots, .handThink, .puff, .notes, .plunger, .spark, .qstar, .glass, .fing, .fins { display: none; }
 .hold { transform: rotate(-8deg); }
 .shaft { transform: scaleY(.5); }
 .pup { transform: translate(calc(var(--lx) * 1px), calc(var(--ly) * 1px)); }
 .lidL, .lidR { transform: translateY(calc(var(--lid) * 1px)); }
-.armL { transform: rotate(28deg); }
-.foreL { transform: rotate(-115deg); }
+.armL { transform: rotate(40deg); }
+.foreL { transform: rotate(-142deg); }
 .armR { transform: rotate(-8deg); }
 .skirt { transform: skewX(-2deg); }
 
@@ -69,7 +71,7 @@
 .p-think .foreL { transform: rotate(-141deg); }
 .p-think .shaft { transform: scaleY(.83); }
 .p-think .anttop { transform: translateY(-10px); }
-.p-think .qstar, .p-think .tdots { display: inline; }
+.p-think .qstar, .p-think .tdots, .p-think .handThink { display: inline; }
 .p-think .skirt { transform: skewX(-2deg); }
 
 .p-happy .m-grin, .p-happy .winkR { display: inline; }
@@ -111,7 +113,7 @@
 .p-shock .armR { transform: rotate(-72deg); }
 .p-shock .foreR { transform: rotate(-102deg); }
 .p-shock .shaft { transform: scaleY(1); }
-.p-shock .anttop { transform: translateY(-15px); }
+.p-shock .anttop { transform: translateY(-14px); }
 .p-shock .sweat, .p-shock .mlh { display: inline; }
 .p-shock .body { transform: scale(1.04, .97); }
 .p-shock .skirt { transform: skewX(0deg); }
@@ -125,8 +127,8 @@
 .p-plunger .browR { transform: translateY(3px) rotate(-10deg); }
 .p-plunger .armR { transform: rotate(-24deg) scaleY(1.04); }
 .p-plunger .foreR { transform: rotate(-24deg) scaleY(1.04); }
-.p-plunger .armL { transform: rotate(28deg); }
-.p-plunger .foreL { transform: rotate(-115deg); }
+.p-plunger .armL { transform: rotate(40deg); }
+.p-plunger .foreL { transform: rotate(-142deg); }
 .p-plunger .skirt { transform: skewX(4deg); }
 
 .p-shrug { --lid: -6; --lx: -3; --ly: 3; }

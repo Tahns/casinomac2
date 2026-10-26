@@ -143,7 +143,7 @@ function drawSky(c, w, h, p) {
   ctx.fillStyle = p.near; ctx.fillRect(tx - tw / 2 + 2 * u, ty - legh - thh * .72, tw - 4 * u, 2.4 * u); ctx.fillRect(tx - tw / 2 + 2 * u, ty - legh - thh * .3, tw - 4 * u, 2.4 * u);
   ctx.fillStyle = p.dark; ctx.beginPath(); ctx.moveTo(tx - tw * .58, ty - legh - thh); ctx.lineTo(tx, ty - legh - thh - S * .26); ctx.lineTo(tx + tw * .58, ty - legh - thh); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = p.lilac; ctx.lineWidth = 1.8 * u; ctx.beginPath(); ctx.moveTo(tx - tw * .52, ty - legh - thh - 1.5 * u); ctx.lineTo(tx, ty - legh - thh - S * .26 + 1 * u); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(tx - tw / 2 + 3 * u, ty - legh - thh + 4 * u); ctx.lineTo(tx - tw / 2 + 3 * u, ty - legh - 4 * u); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tx - tw / 2 + 3 * u, ty - legh - thh + 4 * u); ctx.lineTo(tx - tw / 2 + 3 * u, ty - legh - 4 * u); ctx.moveTo(tx - tw * .4, ty - legh + 1.5 * u); ctx.lineTo(tx - tw * .3, ty - 6 * u); ctx.stroke();
 }
 
 // ---------- BASE: mid layer (static sparkles) ----------
@@ -171,14 +171,14 @@ function drawBlinds(c, w, h, color) {
 // ---------- BASE: foreground cut-paper silhouettes (palm leaf left, bongo stack right) ----------
 function drawFore(c, w, h, p) {
   const ctx = c.getContext('2d'); ctx.clearRect(0, 0, w, h);
-  const u = Math.min(w, h) / 600; const S = Math.min(w, h) * .3; const dk = p.dark;
+  const u = Math.min(w, h) / 600; const S = Math.min(w, h) * .34; const dk = p.dark;
   ctx.fillStyle = dk; ctx.strokeStyle = dk; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   // palm leaf: curved blades fanning from the bottom-left corner
   const px = -S * .06, py = h + S * .06;
   for (let i = 0; i < 7; i++) {
-    const a = -Math.PI * .5 + (i - 3) * .27 + .5; const L = S * (.85 + (i % 2) * .22 - Math.abs(i - 3) * .06);
+    const a = -Math.PI * .5 + (i - 3) * .27 + .5; const L = S * (1.05 + (i % 2) * .26 - Math.abs(i - 3) * .07);
     const ex = px + Math.cos(a) * L, ey = py + Math.sin(a) * L; const nx = -Math.sin(a), ny = Math.cos(a);
-    const bend = (i - 3) * .06 * L, mx = (px + ex) / 2 + nx * bend - 8 * u, my = (py + ey) / 2 + ny * bend - 4 * u, wd = S * .09;
+    const bend = (i - 3) * .06 * L, mx = (px + ex) / 2 + nx * bend - 8 * u, my = (py + ey) / 2 + ny * bend - 4 * u, wd = S * .15;
     ctx.beginPath(); ctx.moveTo(px, py); ctx.quadraticCurveTo(mx + nx * wd, my + ny * wd, ex, ey); ctx.quadraticCurveTo(mx - nx * wd, my - ny * wd, px, py); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = p.near; ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.moveTo(px + Math.cos(a) * 8 * u, py + Math.sin(a) * 8 * u); ctx.quadraticCurveTo(mx, my, ex - Math.cos(a) * 4 * u, ey - Math.sin(a) * 4 * u); ctx.stroke();
     ctx.strokeStyle = dk;
@@ -208,12 +208,12 @@ function drawLairBg(c, w, h, p) {
     ctx.beginPath(); ctx.arc(cx, cy, R0 * k, 0, TAU); ctx.lineWidth = wd * u; ctx.strokeStyle = p.ring; ctx.stroke();
     ctx.lineWidth = 2.6 * u; ctx.strokeStyle = p.dark; ctx.beginPath(); ctx.arc(cx, cy, R0 * k + wd * u * .5 + 1.3 * u, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, R0 * k - wd * u * .5 - 1.3 * u, 0, TAU); ctx.stroke();
   }
-  ctx.strokeStyle = p.seam; ctx.lineWidth = 6 * u;
-  for (let i = 0; i < 16; i++) { const a = (i / 16) * TAU + .1; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * R0 * .2, cy + Math.sin(a) * R0 * .2); ctx.lineTo(cx + Math.cos(a) * R0 * .97, cy + Math.sin(a) * R0 * .97); ctx.stroke(); }
+  ctx.strokeStyle = p.seam; ctx.lineWidth = 7 * u; ctx.lineCap = 'butt';
+  for (const [r1, r2, n] of [[.8, .97, 24], [.6, .76, 16], [.4, .56, 12]]) for (let i = 0; i < n; i++) { const a = (i / n) * TAU + Math.PI / n; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * R0 * r1, cy + Math.sin(a) * R0 * r1); ctx.lineTo(cx + Math.cos(a) * R0 * r2, cy + Math.sin(a) * R0 * r2); ctx.stroke(); }
   ctx.fillStyle = p.rivet; ctx.strokeStyle = p.dark; ctx.lineWidth = 1.6 * u;
   for (const k of [.78, .58]) for (let i = 0; i < 48; i++) { const a = (i / 48) * TAU, rr = R0 * k + (i % 2 ? 1 : -1) * 0; if (i % 2) continue; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 3.2 * u, 0, TAU); ctx.fill(); ctx.stroke(); }
   // map screen (ink bezel, dark screen, grid, route and blips): placed low-left on portrait, upper-left on wide screens
-  const portrait = w < h * 1.05; const mw = Math.min(w * (portrait ? .42 : .26), 200 * u * 1.6), mh = mw * .62, mx = portrait ? w * .05 : w * .015, my = portrait ? h * .6 : h * .27;
+  const portrait = w < h * 1.05; const mw = Math.min(w * (portrait ? .42 : .26), 200 * u * 1.6), mh = mw * .62, mx = portrait ? w * .08 : w * .07, my = portrait ? h * .62 : h * .3;
   ctx.fillStyle = p.dark; rrect(ctx, mx - 7 * u, my - 7 * u, mw + 14 * u, mh + 14 * u, 12 * u); ctx.fill();
   ctx.fillStyle = p.screen; rrect(ctx, mx, my, mw, mh, 7 * u); ctx.fill();
   ctx.save(); rrect(ctx, mx, my, mw, mh, 7 * u); ctx.clip();
@@ -253,13 +253,13 @@ const CSS = `
 #scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #scene .mbs-blinds{position:absolute;inset:-12% -12%;opacity:.10;pointer-events:none;animation:mbsblind 60s linear infinite alternate}
 #scene .mbs-blinds canvas{width:100%;height:100%}
-#scene .mbs-lair .mbs-blinds{opacity:.14}
+#scene .mbs-lair .mbs-blinds{opacity:.2}
 @keyframes mbsblind{from{transform:translateX(0)}to{transform:translateX(360px)}}
 #scene .mbs-sat{position:absolute;left:0;top:7%;width:clamp(30px,8vmin,64px);animation:mbssat 40s linear infinite;pointer-events:none}
 #scene .mbs-sat svg{display:block;width:100%;height:auto;overflow:visible;animation:mbsspin 4s steps(8,end) infinite}
 @keyframes mbssat{0%{transform:translate3d(-12vw,0,0)}50%{transform:translate3d(50vw,-3vh,0)}100%{transform:translate3d(112vw,3vh,0)}}
 @keyframes mbsspin{to{transform:rotate(360deg)}}
-#scene .mbs-radar{position:absolute;left:23%;bottom:3.2%;width:clamp(26px,9vmin,70px);pointer-events:none}
+#scene .mbs-radar{position:absolute;left:23%;bottom:3.2%;width:clamp(36px,13vmin,100px);pointer-events:none}
 #scene .mbs-radar svg{display:block;width:100%;height:auto;overflow:visible}
 #scene .mbs-radar .dish{transform-box:fill-box;transform-origin:50% 100%;animation:mbsdish 4.8s steps(12,end) infinite}
 @keyframes mbsdish{0%{transform:scaleX(1)}50%{transform:scaleX(.18)}100%{transform:scaleX(1)}}

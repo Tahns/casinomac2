@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#0b0705">
-<title>The Unleashed Mine</title>
+<title>Agent Mambo</title>
 <style id="mascot-slot-base">:where(#mascot-slot){position:absolute;pointer-events:none;z-index:2;left:0;bottom:0;width:var(--side,120px);aspect-ratio:1;max-height:28%}:where(#mascot-slot) *{pointer-events:none!important}</style>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="src/render/mascot.css">
@@ -15,7 +15,7 @@
   <div id="scene" aria-hidden="true"></div>
 
   <header id="logo-area">
-    <h1 id="logo" class="logo" data-i18n-aria-label="game.title"><span class="sr-only" data-i18n="game.title">The Unleashed Mine</span></h1>
+    <h1 id="logo" class="logo" data-i18n-aria-label="game.title"><span class="sr-only" data-i18n="game.title">Agent Mambo</span></h1>
   </header>
 
   <div id="mascot-slot" aria-hidden="true"></div>
@@ -105,14 +105,61 @@
   <div id="modal-info" class="modal modal-wide" hidden role="dialog" aria-modal="true"></div>
 
   <div id="loading" role="status">
-    <div class="ld-inner">
-      <div class="ld-title">THE UNLEASHED MINE</div>
-      <div class="ld-gem"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l22 16-22 40L10 20z" fill="#ff3b57" stroke="#ffd54a" stroke-width="3" stroke-linejoin="round"/><path d="M10 20h44M32 4l-9 16 9 40 9-40z" fill="none" stroke="#ffd54a" stroke-width="1.5" opacity=".7"/></svg></div>
-      <div class="ld-bar"><i></i></div>
-      <div class="ld-text" data-i18n="loading.text">Loading...</div>
+    <style id="mb-ld-css">
+      #loading{background:#181640;overflow:hidden}
+      #loading::before{content:"";position:absolute;inset:0;background:radial-gradient(rgba(251,241,217,.1) 1.6px,transparent 2.2px) 0 0/12px 12px}
+      #loading .mb-ld-in{position:relative;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:clamp(6px,3vmin,28px);padding:0 16px;max-width:100%}
+      #loading .mb-ld-mascot{flex:0 0 auto;display:grid;place-items:center;min-width:clamp(60px,26vmin,200px)}
+      #loading .mb-ld-main{display:flex;flex-direction:column;align-items:center;gap:clamp(4px,1.8vmin,14px);min-width:0}
+      #loading #mb-ld-logo{width:clamp(150px,56vmin,330px);line-height:0}
+      #loading #mb-ld-logo svg{width:100%;height:auto;display:block;overflow:visible}
+      #loading .mb-ld-wire{width:clamp(150px,56vmin,330px);line-height:0}
+      #loading .mb-ld-wire svg{width:100%;height:auto;display:block;overflow:visible}
+      #loading .mb-ld-text{font-family:"Futura","Century Gothic","Arial Black",sans-serif;font-weight:800;font-size:clamp(10px,2.6vmin,16px);letter-spacing:.14em;text-transform:uppercase;color:#FBF1D9;text-align:center;text-shadow:1px 2px 0 #14102B}
+      #loading .mb-burn{stroke-dasharray:100;stroke-dashoffset:100;animation:mbburn 3.6s steps(8,end) infinite}
+      #loading .mb-spark{animation:mbspark 3.6s steps(8,end) infinite}
+      #loading .mb-n{fill:#3C3A86;animation-duration:3.6s;animation-iteration-count:infinite;animation-timing-function:steps(1,end)}
+      #loading .mb-n:nth-of-type(1){animation-name:mbn1}#loading .mb-n:nth-of-type(2){animation-name:mbn2}#loading .mb-n:nth-of-type(3){animation-name:mbn3}#loading .mb-n:nth-of-type(4){animation-name:mbn4}
+      #loading .mb-n:nth-of-type(5){animation-name:mbn5}#loading .mb-n:nth-of-type(6){animation-name:mbn6}#loading .mb-n:nth-of-type(7){animation-name:mbn7}#loading .mb-n:nth-of-type(8){animation-name:mbn8}
+      #loading .mb-hand{transform-origin:0 0;animation:mbtick 3.6s steps(8,end) infinite}
+      @keyframes mbburn{0%{stroke-dashoffset:100}88.89%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
+      @keyframes mbspark{0%{transform:translateX(0);opacity:1}88.89%{transform:translateX(276px);opacity:1}94%{transform:translateX(276px);opacity:0}100%{transform:translateX(0);opacity:0}}
+      @keyframes mbtick{0%{transform:rotate(0)}88.89%{transform:rotate(300deg)}100%{transform:rotate(300deg)}}
+      @keyframes mbn1{0%{fill:#3C3A86}11.11%{fill:#F0472F}97%{fill:#F0472F}97.1%{fill:#3C3A86}}
+      @keyframes mbn2{0%{fill:#3C3A86}22.22%{fill:#F0472F}97%{fill:#F0472F}97.1%{fill:#3C3A86}}
+      @keyframes mbn3{0%{fill:#3C3A86}33.33%{fill:#F0472F}97%{fill:#F0472F}97.1%{fill:#3C3A86}}
+      @keyframes mbn4{0%{fill:#3C3A86}44.44%{fill:#F0472F}97%{fill:#F0472F}97.1%{fill:#3C3A86}}
+      @keyframes mbn5{0%{fill:#3C3A86}55.56%{fill:#F0472F}97%{fill:#F0472F}97.1%{fill:#3C3A86}}
+      @keyframes mbn6{0%{fill:#3C3A86}66.67%{fill:#F0472F}97%{fill:#F0472F}97.1%{fill:#3C3A86}}
+      @keyframes mbn7{0%{fill:#3C3A86}77.78%{fill:#F0472F}97%{fill:#F0472F}97.1%{fill:#3C3A86}}
+      @keyframes mbn8{0%{fill:#3C3A86}88.89%{fill:#F0472F}97%{fill:#F0472F}97.1%{fill:#3C3A86}}
+      @media (max-aspect-ratio:1/1){#loading .mb-ld-in{flex-direction:column}#loading .mb-ld-mascot{order:2;min-width:0}#loading .mb-ld-main{order:1}}
+      @media (max-height:260px){#loading .mb-ld-mascot{min-width:clamp(50px,24vmin,90px)}#loading #mb-ld-logo,#loading .mb-ld-wire{width:clamp(130px,52vmin,200px)}}
+      @media (prefers-reduced-motion:reduce){#loading .mb-burn{animation:none;stroke-dashoffset:50}#loading .mb-spark,#loading .mb-hand,#loading .mb-n{animation:none}}
+    </style>
+    <div class="mb-ld-in">
+      <div class="mb-ld-mascot" id="mb-ld-mascot" aria-hidden="true"></div>
+      <div class="mb-ld-main">
+        <div id="mb-ld-logo" aria-hidden="true"></div>
+        <div class="mb-ld-wire" aria-hidden="true">
+          <svg viewBox="0 0 330 46" focusable="false">
+            <path d="M14 23q34.5-8 69 0t69 0t69 0t69 0" fill="none" stroke="#14102B" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 23q34.5-8 69 0t69 0t69 0t69 0" fill="none" stroke="#2B2A6B" stroke-width="8.5" stroke-linecap="round"/>
+            <path d="M14 23q34.5-8 69 0t69 0t69 0t69 0" fill="none" stroke="#9A7BD0" stroke-width="2" stroke-dasharray="4 4"/>
+            <path class="mb-burn" pathLength="100" d="M14 23q34.5-8 69 0t69 0t69 0t69 0" fill="none" stroke="#FBF1D9" stroke-width="6.5" stroke-linecap="butt"/>
+            <path class="mb-burn" pathLength="100" d="M14 23q34.5-8 69 0t69 0t69 0t69 0" fill="none" stroke="#FFD23F" stroke-width="2.4" stroke-linecap="butt"/>
+            <g stroke="#14102B" stroke-width="2.6">
+              <circle class="mb-n" cx="36" cy="19.5" r="5.6"/><circle class="mb-n" cx="70.5" cy="20.6" r="5.6"/><circle class="mb-n" cx="105" cy="26.5" r="5.6"/><circle class="mb-n" cx="139.5" cy="25.4" r="5.6"/>
+              <circle class="mb-n" cx="174" cy="19.5" r="5.6"/><circle class="mb-n" cx="208.5" cy="20.6" r="5.6"/><circle class="mb-n" cx="243" cy="26.5" r="5.6"/><circle class="mb-n" cx="277.5" cy="25.4" r="5.6"/>
+            </g>
+            <g class="mb-spark"><g transform="translate(14 23)"><path d="M0-10L3-3L10 0L3 3L0 10L-3 3L-10 0L-3-3Z" fill="#FFD23F" stroke="#14102B" stroke-width="2" stroke-linejoin="round"/></g></g>
+            <g transform="translate(308 23)"><circle cx="-8" cy="-12" r="4.4" fill="#F0472F" stroke="#14102B" stroke-width="2.4"/><circle cx="8" cy="-12" r="4.4" fill="#F0472F" stroke="#14102B" stroke-width="2.4"/><circle r="15" fill="#FBF1D9" stroke="#14102B" stroke-width="3.6"/><circle r="11.5" fill="none" stroke="#F0472F" stroke-width="1.6"/><path d="M0-9V0" stroke="#14102B" stroke-width="2.6" stroke-linecap="round"/><g class="mb-hand"><path d="M0 0V-8" stroke="#14102B" stroke-width="2.6" stroke-linecap="round"/></g><circle r="2" fill="#14102B"/></g>
+          </svg>
+        </div>
+        <div class="mb-ld-text" data-i18n="loading.text">Preparing the mission...</div>
+      </div>
     </div>
   </div>
-</div>
 <noscript><p style="color:#fff;padding:1em">JavaScript is required.</p></noscript>
 <script type="module">
   // The renderer is created by src/main.js (CORE); this tiny boot only prepares static visuals so the loading screen can leave.

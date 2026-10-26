@@ -83,6 +83,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .val{display:block;font-family:var(--num);font-size:calc(var(--fs)*1.45);font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hud-win .val{color:var(--coral-dk)}
 .hud-win.hot{animation:winhot .5s steps(3,end);background:var(--lemon)}
+.hud-win.hot .val{color:var(--ink)}
 @keyframes winhot{0%{transform:scale(1)}33%{transform:scale(1.1,.92) rotate(-1.2deg)}66%{transform:scale(.96,1.07) rotate(1deg)}100%{transform:none}}
 .betrow{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--fs)*.3)}
 .betrow .val{flex:1 1 auto;min-width:0}
@@ -179,6 +180,7 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
   #app:has(#meter-slot),#app:has(#meter-slot):has(#mascot-slot){grid-template-columns:minmax(0,1fr);grid-template-rows:auto var(--mh) minmax(0,1fr) auto auto;grid-template-areas:"logo" "meter" "game" "info" "ctrl"}
   #app:has(#mascot-slot) #hud-ctrl{grid-row:auto}
   #mascot-slot{grid-area:game;align-self:end;justify-self:start;width:min(30vw,140px);height:clamp(64px,10.5vh,100px);margin:0 0 0 var(--gap);--gh:100cqh}
+  #app:has(#meter-slot) #mascot-slot{height:clamp(54px,8vh,80px)}
   #mascot-slot :is(.gus-wrap,.mambo-wrap,.mascot-wrap){justify-content:flex-start}
   #app:has(#mascot-slot) .board-wrap,#app:has(#meter-slot) .board-wrap{--cell:min(calc(100cqw / 6.5),calc(100cqh / 5.3));top:calc(var(--gap)*.6);transform:translate(-50%,0)}
   #logo-area{padding:calc(var(--gap)*1 + 100vw*.02) calc(100vw*.14) 0}
@@ -461,9 +463,10 @@ body.state-error #loading{opacity:0;visibility:hidden;pointer-events:none}
   .hud-bet .betrow .val{order:-1;flex:0 0 100%;min-width:0;text-align:center;text-overflow:clip}
 }
 
-/* hit areas: 40px on the small round buttons */
+/* hit areas: every small button answers taps in at least a 40px box (invisible extension, no visual change) */
 .mini::after{content:"";position:absolute;inset:-9px}
-@media (max-height:360px){ .mini::after{inset:-12px} }
+@media (max-height:360px){ .mini::after{inset:-13px} #btn-bet-minus::after{inset:-13px -2px -13px -13px} #btn-bet-plus::after{inset:-13px -13px -13px -2px} }
+.tbtn::after{content:"";position:absolute;inset:min(0px,calc((var(--s) - 40px)/2))}
 @media (max-aspect-ratio:11/10){
   :is(.gus-bubble,.mambo-bubble,.mascot-bubble){max-width:46vw}
   :is(.gus-bubble,.mambo-bubble,.mascot-bubble){font-size:clamp(10px,3.3vw,15px)!important}

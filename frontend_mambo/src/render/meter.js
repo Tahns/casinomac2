@@ -46,7 +46,7 @@ export function createMeter(hostEl, ctx = {}) {
   const later = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
 
   // layout: ladder (desktop) | strip (portrait) | badge (400x225-class heights)
-  const mqTiny = matchMedia('(max-height: 300px)'), mqPort = matchMedia('(max-aspect-ratio: 4/5)');
+  const mqTiny = matchMedia('(max-height: 300px)'), mqPort = matchMedia('(max-aspect-ratio: 11/10)');
   function layout() {
     root.dataset.layout = ctx.layout || (mqTiny.matches ? 'badge' : mqPort.matches ? 'strip' : 'ladder');
     try { // desktop badge scales with the ladder column

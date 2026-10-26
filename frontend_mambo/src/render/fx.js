@@ -108,11 +108,12 @@ export function createFx(app) {
   // breakCell(x, y, size, color, opts): the whole "removed cell" effect for the wire blast: 80 ms cream flash, comic bubble,
   // 3 paper pieces in the symbol colour, dust on the now empty cell. opts: {word, bubble:false, dust:false, pieces:n}
   function breakCell(x, y, size, color = FX_COLORS.flamingo, opts = {}) {
+    // parts are drawn newest-first (underneath), so the order here is top-to-bottom: flash, bubble, pieces, stars, dust
     add({ t: 'flash', x, y, r: size * .48, life: .08, age: 0 });
+    if (opts.bubble !== false) burstBubble(x, y - size * .05, size * .46, opts.word);
     pieces(x, y, color, size * .8, opts.pieces || 3);
-    if (opts.bubble !== false) burstBubble(x, y - size * .05, size * .62, opts.word);
-    if (opts.dust !== false) dust(x, y, size, 2);
     stars(x, y, size * .4, 3);
+    if (opts.dust !== false) dust(x, y, size, 2);
   }
   // iris wipe: a flat colour covers the screen except a circle. dir 'close' shrinks the hole (holds closed until 'open'/clear),
   // 'open' grows it. Returns a promise resolved when the wipe finished. x,y default to the centre.
@@ -176,12 +177,30 @@ export function createFx(app) {
     ctx.closePath();
   }
 
+  function drawTop(p, k) {
+    if (p.t === 'flash') {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.globalAlpha = 1 - k * .5; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff';
+        ctx.beginPath(); ctx.rect(-p.r, -p.r, p.r * 2, p.r * 2); ctx.fill(); ctx.restore(); return;
+      }
+    if (p.t === 'bubble') {
+        const pop = k < .18 ? .45 + k / .18 * .67 : k < .3 ? 1.12 - (k - .18) / .12 * .12 : 1; // pop in, settle (stepped by q)
+        const rr = p.r * pop, yy = p.y - k * p.r * .35;
+        ctx.save(); ctx.translate(p.x, yy); ctx.rotate(p.rot); ctx.globalAlpha = k > .8 ? Math.max(0, 1 - (k - .8) / .2) : 1;
+        ctx.save(); ctx.translate(rr * .09, rr * .1); spiky(rr, p.spikes, .72); ctx.fillStyle = INK; ctx.fill(); ctx.restore(); // offset shadow
+        spiky(rr, p.spikes, .72); ctx.fillStyle = p.fill; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, rr * .09); ctx.fill(); ctx.stroke();
+        const fs = Math.max(8, rr * (p.text.length > 4 ? .5 : .62)); ctx.font = `900 ${fs}px ${DISP}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = Math.max(2, fs * .2); ctx.strokeStyle = INK; ctx.strokeText(p.text, 0, rr * .04); ctx.fillStyle = p.ink; ctx.fillText(p.text, 0, rr * .04);
+        ctx.restore();
+    }
+  }
+
   function tick(now) {
     const raw = now - last; ema = ema * .92 + Math.min(raw, 200) * .08; lite = ema > 42;
     const dt = Math.min(0.05, raw / 1000); last = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const tops = [];
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
       p.age += dt;
@@ -200,20 +219,7 @@ export function createFx(app) {
         ctx.fillStyle = `rgb(${p.color})`; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, rr * .06); ctx.stroke();
         ctx.restore(); continue;
       }
-      if (p.t === 'flash') {
-        ctx.save(); ctx.translate(p.x, p.y); ctx.globalAlpha = 1 - k * .5; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff';
-        ctx.beginPath(); ctx.rect(-p.r, -p.r, p.r * 2, p.r * 2); ctx.fill(); ctx.restore(); continue;
-      }
-      if (p.t === 'bubble') {
-        const pop = k < .18 ? .45 + k / .18 * .75 : k < .3 ? 1.2 - (k - .18) / .12 * .2 : 1; // pop in, settle (stepped by q)
-        const rr = p.r * pop, yy = p.y - k * p.r * .35;
-        ctx.save(); ctx.translate(p.x, yy); ctx.rotate(p.rot); ctx.globalAlpha = k > .8 ? Math.max(0, 1 - (k - .8) / .2) : 1;
-        ctx.save(); ctx.translate(rr * .09, rr * .1); spiky(rr, p.spikes, .72); ctx.fillStyle = INK; ctx.fill(); ctx.restore(); // offset shadow
-        spiky(rr, p.spikes, .72); ctx.fillStyle = p.fill; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, rr * .09); ctx.fill(); ctx.stroke();
-        const fs = Math.max(8, rr * (p.text.length > 4 ? .5 : .62)); ctx.font = `900 ${fs}px ${DISP}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.lineWidth = Math.max(2, fs * .2); ctx.strokeStyle = INK; ctx.strokeText(p.text, 0, rr * .04); ctx.fillStyle = p.ink; ctx.fillText(p.text, 0, rr * .04);
-        ctx.restore(); continue;
-      }
+      if (p.t === 'flash' || p.t === 'bubble') { tops.push([p, k]); continue; } // drawn last, above dust/pieces
       if (p.drag) { const d = Math.exp(-p.drag * dt); p.vx *= d; p.vy *= d; }
       p.vy += (p.g || 0) * dt;
       p.x += p.vx * dt; p.y += p.vy * dt;
@@ -251,6 +257,8 @@ export function createFx(app) {
       }
       ctx.restore();
     }
+    ctx.globalAlpha = 1;
+    for (const [p, k] of tops) drawTop(p, k);
     ctx.globalAlpha = 1;
     if (irisP) {
       irisP.age = Math.min(irisP.life, irisP.age + dt);
