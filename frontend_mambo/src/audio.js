@@ -80,7 +80,7 @@ const GUIT = [
 const BONGO = 'H.HL.HL.H.HL.HLH';
 const BEDS = {
   base: { bpm: 118, key: 0, tr: 0, prog: CHORDS },
-  freespins: { bpm: 132, key: 2, tr: 2, prog: CHORDS },
+  freespins: { bpm: 132, key: 2, tr: FS_TRANSPOSE, prog: CHORDS }, // tr = semitones over the D dorian chart; the engine option fsTranspose overrides it (2 = the v1 E dorian)
 };
 function bedInfo(mood) {
   const b = BEDS[mood]; if (!b) return null;
@@ -147,7 +147,8 @@ export function createEngine(c, o = {}) {
   const buses = new Set();
   function reg(src, bed) {
     live.add(src); if (!bed) voices++;
-    src.onended = () => { live.delete(src); if (!bed) voices--; try { src.disconnect(); } catch (e) { /* ignore */ } };
+    // only a still-registered voice gives its slot back: after killAll() (which zeroes the counter) the stopped sources must not drive it negative
+    src.onended = () => { if (live.delete(src) && !bed) voices--; try { src.disconnect(); } catch (e) { /* ignore */ } };
   }
   function killAll() {
     live.forEach((s) => { try { s.stop(); } catch (e) { /* ignore */ } }); live.clear(); voices = 0; buses.forEach((b) => b.kill()); buses.clear();

@@ -2,7 +2,7 @@
 
 Owner: WP2. Files: `frontend_mambo/src/audio.js`, `frontend_mambo/tests/audio/**`. Ports 5830-5839 (5830 static server, 5831 mock RGS). Spec: SYNTHESIS section 6 "Audio graph" and "Tests", lever L10 (`winLike`), section 8 cue ids; design detail in `docs/research2/06_menu_audio_settings.md` section 6 and 7.
 
-## State: first complete version in place (see "Verification" at the end for the last run)
+## State: complete, all acceptance tests green (see "Verification" at the end)
 
 ### Done
 1. **Baseline first (A4).** Before any change: `tests/audio/baseline_render.mjs --write` rendered 62 cases with the v1 engine in an OfflineAudioContext (every v1 cue and option set, both beds, two mixed scenes; overall rms, peak and a per-window rms envelope in dBFS) into `tests/audio/fixtures/baseline_v1.json`. Committed alone (381db51). `--check` re-renders and compares at 0.001 dB: the render is bit-stable run to run.
@@ -23,9 +23,9 @@ Owner: WP2. Files: `frontend_mambo/src/audio.js`, `frontend_mambo/tests/audio/**
 
 ### Tests (all in `frontend_mambo/tests/audio/`)
 - `taper.test.mjs` (node:test, U1 + cue table shape). `node --test tests/audio/taper.test.mjs`.
-- `audio.test.mjs` (Playwright + OfflineAudioContext): U1 (spawns the unit test), every cue renders, quiet path, unknown ids, A1 to A5, free-spins key, duck, beds (v1 checks kept), live mute (v1 checks kept), L1 to L7, bypass probe, replay probe (starts the mock RGS on PORT+1). Run: `PORT=5830 node tests/audio/audio.test.mjs` (`NO_GAME=1` skips the replay probe).
+- `audio.test.mjs` (Playwright + OfflineAudioContext): U1 (spawns the unit test), every cue renders, quiet path, unknown ids, A1 to A5, free-spins key, duck (offline and live), beds (v1 checks kept), live mute (v1 checks kept), gains moved by `setTargetAtTime(g, t, 0.03)`, L1 to L7 through the audio API, bypass probe, replay probe (starts the mock RGS on PORT+1). Run: `PORT=5830 node tests/audio/audio.test.mjs` (about 4 minutes; `NO_GAME=1` skips the replay probe).
+- `menu.test.mjs`: the same L1-L7 through WP1's real settings dialog in the real game (`#btn-settings`, `#st-vol-*`, `#st-mute`, `#btn-sound`). Skips with exit 0 when the dialog is not shipped. About 25 s. `PORT=5830 node tests/audio/menu.test.mjs`.
 - `baseline_render.mjs --write|--check`, `render_cases.mjs` (shared render cases + comparison), `fixtures/baseline_v1.json`, `harness.html` (exposes `window.A` = module exports and `window.H.scene(spec)`).
-- L1 to L7 run through the audio API in `page.evaluate` (WP1's dialog is not shipped yet). When `#modal-settings` has real sliders, re-run the same checks through them (see "Left").
 
 ## Decisions
 - `winLike` is conservative (true when in doubt), because a wrong false is a compliance miss and a wrong true only costs a sound on the quiet path.
@@ -35,7 +35,7 @@ Owner: WP2. Files: `frontend_mambo/src/audio.js`, `frontend_mambo/tests/audio/**
 - Ducking is off by default (engine and live); it is implemented and tested, the switch is `audio.duck = true` (or `DUCK_DEFAULT`), to be flipped after a human has listened.
 
 ## Left / handed over
-- WP1: use `audio.toggleMute()`, `audio.onChange` (`silent`), `audio.preview(kind)` on slider `change`, `audio.resetVolumes()`; re-run L1-L7 through the real dialog.
+- WP1: done in the working tree (dialog uses `setVolume` on input, `preview` on change, `onChange`; `#btn-sound` calls `toggleMute()`); `menu.test.mjs` proves it. Still open for WP1: `audio.resetVolumes()` if a Reset button is added.
 - WP4/WP5/WP6: call the new cue ids; pass `quiet: true` on the R <= C path; `layoutDraw {dur}`, `doorCreak {dur}`, `dialStep {n}`, `spotlightStep {i}`, `stamp {vol,pitch}`.
 - WP10: import `tests/audio/taper.test.mjs` from `tests/core/index.js` if the unit tests should run with `node --test tests/core tests/text` (request file written).
 - Human: listen to the whole mix (loudness at 75/75/75 and at 100, the new cues against the bed, the F# free-spins bed, the duck), on speakers and Bluetooth; iOS silent switch; touch drag on the sliders.
@@ -44,3 +44,11 @@ Owner: WP2. Files: `frontend_mambo/src/audio.js`, `frontend_mambo/tests/audio/**
 - Nothing here was listened to; levels of the new cues are set by numbers (peaks between -29 and -7 dBFS) and by analogy with the v1 cues.
 - The `quiet` flag is a convention: the renderer must pass it. The audio layer cannot know R and C on its own.
 - `body.muted` is also toggled by `main.js` (`btn-sound` handler) in v1; until WP1 switches to `toggleMute()`, a slider-made silence and the handler can disagree on the icon.
+
+## Verification (last full run, 2026-10-26, Chromium via Playwright, own ports 5830/5831)
+- `PORT=5830 node tests/audio/audio.test.mjs`: 161 PASS, 0 FAIL ("ALL PASSED"). Highlights: A4 62 cases within 0.1 dB (worst rms difference 0.0000 dB, the buses are bit-transparent at 75/75/75); A3 all sliders 100: post-limiter peak 0.822 (pre-limiter 0.832; defaults 0.651); A2 the two reverb returns each follow only their own bus (injected burst: return -55.2 dB, unchanged when the other bus is 0, exactly silent when its own bus is 0); A1 music 0: bed peak 0 and nothing queued while the win cue is unchanged, sfx 0 the inverse; free-spins bed rms -27.37 -> -27.24 dB, peak -4.05 -> -4.11 dBFS; duck gain 0.501 during `bigwin`, back to 1.000 afterwards; no source bypasses `master` (520 sources on the harness page after playing every cue and both beds; 153 sources in the real game in replay mode); the mute silences them all.
+- `PORT=5830 node tests/audio/menu.test.mjs`: ALL PASSED (the same L1-L7 through the real dialog, 0 console errors).
+- `node --test tests/core tests/text`: 60 / 60 pass; `node --test tests/audio/taper.test.mjs`: 4 / 4 pass.
+- Real game smoke (static 5830 + mock RGS 5831): boot, spin, speaker button mute / unmute, sliders changed between spins: zero console errors or warnings.
+- Guideline runner from a scratch copy (own ports 5832/5833), `QA_ONLY=107,222,227`: 3 PASS ([107] sound toggle mutes everything, [222], [227]). The static AT RISK lines are the old ones from the step-0 notes.
+- Side fix found on the way: in v1 the voice counter went negative after `killAll()` (mute) because the stopped sources still ran `voices--` in `onended`; only still-registered voices give their slot back now (test A5).

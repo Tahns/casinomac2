@@ -253,6 +253,8 @@ const tp = (s) => Math.pow(10, (s <= 75 ? -45 * (75 - s) / 75 : 3 * (s - 75) / 2
   await sleep(100); s = await st(); ok(s.live > 40, `sfx + bed voices live (${s.live})`);
   await page.evaluate(() => window.A.audio.setMuted(true)); await sleep(300); s = await st();
   ok(s.live === 0 && s.g < 0.001 && s.aud.audibleSources === 0 && s.muted && s.pressed === 'true' && s.ls === '1', `muted: every voice stopped, master 0, no audible source, body.muted, aria-pressed, localStorage (${JSON.stringify({ live: s.live, g: s.g, aud: s.aud })})`);
+  const vc = await page.evaluate(async () => { const e = window.A.audio._engine; await new Promise((r) => setTimeout(r, 1500)); return e.voices; });
+  ok(vc === 0, `A5 after a mute (killAll) the voice counter stays at 0 when the stopped sources end (voices ${vc}, it used to go negative)`);
   await page.evaluate(() => { const a = window.A.audio; a.play('bigwin'); a.play('click'); a.setMood('freespins'); }); await sleep(1200); s = await st();
   ok(s.live === 0 && s.aud.audibleSources === 0, `while muted nothing is queued or scheduled (live=${s.live})`);
   await page.evaluate(() => window.A.audio.setMuted(false)); await sleep(1500); s = await st();
@@ -271,6 +273,17 @@ const tp = (s) => Math.pow(10, (s <= 75 ? -45 * (75 - s) / 75 : 3 * (s - 75) / 2
   const { ctx, page, st } = await openLive();
   await page.mouse.click(5, 5); await sleep(1200);
   // L1: each slider persists; the storage keys are exactly the four names; reload restores and applies the taper
+  const calls = await page.evaluate(() => { // the gains must be moved with setTargetAtTime(g, t, 0.03) (mute keeps 0.02)
+    const a = window.A.audio, e = a._engine, rec = [], orig = AudioParam.prototype.setTargetAtTime;
+    AudioParam.prototype.setTargetAtTime = function (v, t, tc) { rec.push([this, v, tc]); return orig.call(this, v, t, tc); };
+    a.setVolume('music', 50); a.setVolume('sfx', 40); a.setVolume('master', 55); a.setMuted(true); a.setMuted(false);
+    AudioParam.prototype.setTargetAtTime = orig;
+    const find = (node) => rec.filter((r) => r[0] === node.gain).map((r) => [+r[1].toFixed(4), r[2]]);
+    a.setVolume('music', 75); a.setVolume('sfx', 75); a.setVolume('master', 75);
+    return { music: find(e.musicBus), sfx: find(e.sfxBus), master: find(e.master) };
+  });
+  const tcOk = (list, v) => list.some(([val, tc]) => Math.abs(val - v) < 0.002 && tc === 0.03);
+  ok(tcOk(calls.music, +tp(50).toFixed(4)) && tcOk(calls.sfx, +tp(40).toFixed(4)) && tcOk(calls.master, +(0.8 * tp(55)).toFixed(4)) && calls.master.some(([v, tc]) => v === 0 && tc === 0.02), `gains move by setTargetAtTime(g, t, 0.03), mute by 0.02 (${JSON.stringify(calls.music)} ...)`);
   await page.evaluate(() => { const a = window.A.audio; a.setVolume('master', 60); a.setVolume('music', 30); a.setVolume('sfx', 90); a.setMuted(false); });
   const keys = await page.evaluate(() => Object.keys(localStorage).sort());
   ok(JSON.stringify(keys) === JSON.stringify(['am_muted', 'am_vol_master', 'am_vol_music', 'am_vol_sfx']), `L1 localStorage keys are exactly the four audio names (${keys.join(', ')})`);
@@ -324,12 +337,12 @@ const tp = (s) => Math.pow(10, (s <= 75 ? -45 * (75 - s) / 75 : 3 * (s - 75) / 2
   // L7: preview rate limit (one per 250 ms), nothing while muted
   const pv = await page.evaluate(async () => {
     const a = window.A.audio, e = a._engine; let n = 0; const f = e.SOUNDS.settingsTest; e.SOUNDS.settingsTest = (p) => { n++; return f(p); };
-    const res = []; for (let i = 0; i < 8; i++) { res.push(a.preview(['master', 'music', 'sfx'][i % 3])); await new Promise((r) => setTimeout(r, 60)); }
-    const burst = n; await new Promise((r) => setTimeout(r, 320)); const later = a.preview('sfx'); const afterGap = n;
+    const res = [], t0 = performance.now(); for (let i = 0; i < 8; i++) { res.push(a.preview(['master', 'music', 'sfx'][i % 3])); await new Promise((r) => setTimeout(r, 60)); }
+    const burst = n, span = performance.now() - t0; await new Promise((r) => setTimeout(r, 320)); const later = a.preview('sfx'); const afterGap = n;
     a.setMuted(true); const muted = a.preview('sfx'); const nMuted = n; a.setMuted(false);
-    return { burst, res, later, afterGap, muted, nMuted };
+    return { burst, span, res, later, afterGap, muted, nMuted };
   });
-  ok(pv.burst >= 1 && pv.burst <= 2 && pv.res[0] === true, `L7 eight previews in 480 ms start ${pv.burst} sound(s) (<= 1 per 250 ms)`);
+  ok(pv.burst >= 1 && pv.burst <= Math.floor(pv.span / 250) + 1 && pv.res[0] === true, `L7 eight previews in ${Math.round(pv.span)} ms start ${pv.burst} sound(s) (<= 1 per 250 ms)`);
   ok(pv.later === true && pv.afterGap === pv.burst + 1, 'L7 after 250 ms quiet the next preview plays');
   ok(pv.muted === false && pv.nMuted === pv.afterGap, 'L7 no preview while muted');
 
