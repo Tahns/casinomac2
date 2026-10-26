@@ -6,7 +6,7 @@ all runs that write files used a scratch game id (`games/wp8_smoke`, `games/wp8_
 ## 1. Modes (4 of 20) and what to run
 | mode | cost | books | criteria (quota) | notes |
 |---|---|---|---|---|
-| `base` | 1 | 93 750 or 112 500 (multiple of 3 threads x 6250) | `BASE_PROFILE` v1: wincap .001, freegame .1, 0 .4, basegame .5. v2: wincap .001, fg_briefing .04, fg_orders .03, fg_blackout .03, 0 .4, bg_sub .24, bg_mid .24, bg_big .019 | profile switch below |
+| `base` | 1 | 93 750 or 112 500 (multiple of 3 threads x 6250) | `BASE_PROFILE` v1: wincap .001, freegame .1, 0 .4, basegame .5. v2: wincap .001, fg_briefing .04, fg_orders .03, fg_blackout .03, 0 .4, bg_sub .24, bg_mid .24, bg_big .019 | BASE_PROFILE v2 is the default |
 | `bonus` (Stage Door) | 100 | the 100k PUBLISHED v1 books are reused unchanged | unchanged (wincap, fgfloor4..7) | do NOT re-simulate; `SIMS=0` + reweight only |
 | `entrance_orders` | 100 | 50 000 (seed offset 1 000 000) | wincap .001, fgfloor4 .55, fgfloor5 .25, fgfloor6 .12, fgfloor7 .079 | one mission, no random draw |
 | `entrance_blackout` | 100 | 50 000 (seed offset 2 000 000) | same | |
@@ -44,11 +44,6 @@ Shares for `shares.json` come from these keys weighted by the final lookup table
 
 ## 5. Numbers and open items
 All stamps and numbers are in PROGRESS.md (section WP8). Short version:
-* Base v2 (profile default): 93 750 books simulate in 303 s on 3 threads (v1 profile about 60 s), the Rust optimizer takes 136 s on 3 threads; weighted table: RTP 0.96000, hit 23.32 %, P(R > 1x) 12.52 %, sub-stake wins 10.8 % of spins, missions pinned 40/30/30 (each 74.2x mean book win), layout shares 50.2/21.7/13.3/14.8 % (outputs).  rewrites the tracked file : restore it (M	frontend_mambo/src/i18n/en_hero.js
-M	frontend_mambo/src/render/heroine/heroine.css
-M	frontend_mambo/src/render/mascot.js
-M	math/games/agent_mambo/PROGRESS.md
-Your branch is ahead of 'origin/claude/elegant-bell-5q79k8' by 11 commits.
-  (use "git push" to publish your local commits)) after a run. The optimizer is not reproducible run to run (shares are pinned, the shape inside a fence is not).
-* Doors: with the plain exponential tilt of  the estimated final tables are Orders median 65.4x / P(R > price) 29.6 %, Blackout 65.5x / 28.9 % (published Briefing 64.1x / 28.8 %): the 30 % target is missed by 0.4 / 1.1 points. A reweight that adds a boost on the books above the price ( shows kappa 0.146 / 0.218) reaches 31.0 % with median 66.3x / 66.9x and RTP exactly 96.000 %: please build it into the generalised reweighter (one lambda AND one kappa per mode).
-* Wincap criterion on the WCAP strip works in every door (1.0 attempts per book, 11-12 ms): 300 wincap books per door all reach 5000x and reconcile; for Orders 296 of 300 cap when an envelope opens (), 4 of 300 while banking at x1.
+* Base v2 (profile default): 93 750 books simulate in 303 s on 3 threads (v1 profile about 60 s), the Rust optimizer takes 136 s on 3 threads; weighted table: RTP 0.96000, hit 23.32 %, P(R > 1x) 12.52 %, sub-stake wins 10.8 % of spins, missions pinned 40/30/30 (each 74.2x mean book win), layout shares 50.2/21.7/13.3/14.8 % (outputs). `OptimizationExecution.run_opt_single_mode` rewrites the tracked file `optimization_program/src/setup.toml`: restore it with `git checkout -- math/optimization_program/src/setup.toml` after a run. The optimizer is not reproducible run to run (the pinned shares are, the shape inside a fence is not).
+* Doors: with the plain exponential tilt of `reweight_bonus.py` the estimated final tables are Orders median 65.4x / P(R > price) 29.6 %, Blackout 65.5x / 28.9 % (published Briefing 64.1x / 28.8 %): the 30 % target is missed by 0.4 / 1.1 points. A reweight that adds a boost on the books above the price (`mission_calib.py door --pin-over 0.31` shows kappa 0.146 / 0.218) reaches 31.0 % with median 66.3x / 66.9x and RTP exactly 96.000 %: please build it into the generalised reweighter (one lambda AND one kappa per mode).
+* Wincap criterion on the WCAP strip works in every door (1.0 attempts per book, 11-12 ms): 300 wincap books per door all reach 5000x and reconcile; for Orders 296 of 300 cap when an envelope opens (`caseOpen.capped`), 4 of 300 while banking at x1.
