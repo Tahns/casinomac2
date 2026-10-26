@@ -7,7 +7,7 @@
 //   m.setPose('bigwin'); m.say('BIG WIN!', 2200); m.heroine.setLook('grid'); m.destroy();
 //
 // Nothing here touches the DOM outside `hostEl`. Text goes through textContent only.
-import { createHeroine } from './mambo_rig.mjs';
+import { createHeroine, CROPS } from './mambo_rig.mjs';
 
 const POSE_TO_CLIP = {
   idle: null, think: 'spinStart', happy: 'winSmall', bigwin: 'winBig', celebrate: 'megaWin', shock: 'shock', shrug: 'lose',
@@ -20,10 +20,11 @@ export function createMascot(hostEl, opts = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'mambo-wrap';
   wrap.style.cssText = 'position:relative;width:100%;height:100%;display:flex;align-items:flex-end;justify-content:flex-start;pointer-events:none';
+  const crop = CROPS[opts.crop] ? opts.crop : 'full', vb = CROPS[crop].vb;   // opts.crop = 'bust' (waist-up, portrait mobile) | 'head' | 'full'; opts.mirror = stand on the right of the grid
   const stage = document.createElement('div');
-  stage.style.cssText = `position:relative;height:${opts.size ? opts.size + 'px' : '100%'};aspect-ratio:2/3;overflow:visible`;
+  stage.style.cssText = `position:relative;height:${opts.size ? opts.size + 'px' : '100%'};aspect-ratio:${vb[2]}/${vb[3]};overflow:${crop === 'full' ? 'visible' : 'hidden'}`;
   wrap.appendChild(stage); hostEl.appendChild(wrap);
-  const heroine = createHeroine(stage, { outfit: opts.outfit || 'inspectrice', reduced: opts.reduced, lookTargets: opts.lookTargets || {}, onCue: opts.onCue });
+  const heroine = createHeroine(stage, { outfit: opts.outfit || 'inspectrice', reduced: opts.reduced, lookTargets: opts.lookTargets || {}, onCue: opts.onCue, crop, mirror: !!opts.mirror });
   let current = 'idle', bubble = null, bubbleTimer = 0;
   function setPose(name, holdMs) {
     const n = POSE_TO_CLIP[name] === undefined ? 'idle' : name; current = n;

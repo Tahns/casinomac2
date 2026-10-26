@@ -33,8 +33,8 @@ export const Ease = {
 // 120 px wide; the lower body is not even updated), head = face + cap only (avatars, 64 px and up). Windows are mirrored automatically with `mirror`.
 export const CROPS = {
   full: { vb: [0, 0, 400, 600], overflow: 'visible', lower: true },
-  bust: { vb: [86, 46, 226, 280], overflow: 'hidden', lower: false },
-  head: { vb: [100, 60, 150, 150], overflow: 'hidden', lower: false },
+  bust: { vb: [86, 24, 226, 322], overflow: 'hidden', lower: false },
+  head: { vb: [96, 60, 160, 176], overflow: 'hidden', lower: false },
 };
 
 // ====================================================================== parameters
@@ -68,7 +68,7 @@ const DISCRETE_DEF = { gl: 'relax', gr: 'relax', prop: 'L', prop2: '', layL: 'fr
 export const POSES = {
   rest: {},
   idle: { hipX: 2, hipTilt: 2, lean: 2, sho: 2, ux: -1.5, hx: 2, htilt: -4, lax: -4, lay: 0, lsr: -10, lb1: 12, lb2: -8, rax: -2, rsr: 4, rb1: -4, rb2: 4,
-    arx: 249, ary: 302, arb1: -38, arb2: -22, arr: -8, gr: 'hip', alx: 134, aly: 334, alb1: 10, alb2: 6, gl: 'fist', prop: 'L', acc: 65 },
+    arx: 249, ary: 302, arb1: -38, arb2: -22, arr: -8, gr: 'hip', alx: 134, aly: 334, alb1: 16, alb2: -8, gl: 'fist', prop: 'L', acc: 65 },
   point: { hipX: -2, hipTilt: 6, lean: 6, sho: -5, ux: -4, hx: 4, hy: 6, htilt: 4, turn: 1.1, lookx: 1, looky: 0, uL: 0.62, uR: 0.9,
     lax: -22, lsr: -6, rax: 30, rsr: 10, lb1: 10, rb1: -8,
     alx: 154, aly: 313, alb1: 58, alb2: 26, alr: 0, gl: 'hip',
@@ -82,21 +82,21 @@ export const POSES = {
     alx: 108, aly: 132, alb1: -34, alb2: 8, alr: 0, gl: 'fist', prop: 'L', acc: 180, beam: 1,
     arx: 298, ary: 134, arb1: 34, arb2: -8, arr: 0, gr: 'fist', bLy: -6, bRy: -12, bLa: 13, bRa: 13, bLr: -8, bRr: -10, lookx: 0, looky: 0 },
   shock: { lean: -3, uy: -3, shr: 8, hy: -4, htilt: 3, turn: 0.6, uL: 1.1, uR: 1.1, wide: 0.5, pup: 0.4, lookx: 0, looky: 0, cy: -58, cr: 10, lax: 10, rax: -10, lsr: -2, rsr: 2,
-    alx: 174, aly: 228, alb1: -52, alb2: -46, alr: 0, gl: 'flat', arx: 230, ary: 228, arb1: 52, arb2: 46, arr: 0, gr: 'flat', mouth: 'oh', prop: '', bLy: -9, bRy: -12, bLr: 4, bRr: -4, bLa: 13, bRa: 14 },
+    alx: 140, aly: 226, alb1: -40, alb2: -12, alr: 0, gl: 'flat', arx: 256, ary: 226, arb1: 40, arb2: 12, arr: 0, gr: 'flat', mouth: 'oh', prop: '', bLy: -9, bRy: -12, bLr: 4, bRr: -4, bLa: 13, bRa: 14 },
   shrug: { shr: 9, htilt: 8, lean: -2, turn: 0.8, lookx: -0.8, looky: -0.7, uL: 0.5, uR: 0.6, bLy: -4, bLr: 14, bRy: -6, bRr: -16, lax: -6, rax: 6,
     alx: 92, aly: 246, alb1: -40, alb2: -4, alr: 0, gl: 'fist', prop: 'L', acc: 70, arx: 310, ary: 240, arb1: 38, arb2: 4, arr: 0, gr: 'palm', mouth: 'wry' },
   anticipation: { lean: 7, hx: 8, hy: 2, htilt: 5, turn: 1.1, hipTilt: -4, hipX: 4, lookx: 1, looky: 0.15, uL: 0.5, uR: 0.8, bRy: -8, bRr: -12, bRa: 14, bLy: 4, lax: -8, rax: 8, mouth: 'wry',
-    arx: 246, ary: 208, arb1: -34, arb2: -26, arr: 0, gr: 'point', alx: 152, aly: 312, alb1: 54, alb2: 24, alr: 0, gl: 'hip', prop: '' },
+    arx: 242, ary: 206, arb1: 36, arb2: 14, arr: 0, gr: 'point', alx: 152, aly: 312, alb1: 54, alb2: 24, alr: 0, gl: 'hip', prop: '' },
   whistle: { lean: 2, htilt: -4, turn: 0.8, uL: 0.12, lowL: 0.8, bLy: 8, bLr: 6, lookx: 0.2, looky: 0, mouth: 'whistle',
-    arx: 240, ary: 214, arb1: -34, arb2: -20, arr: 0, gr: 'pinch', alx: 118, aly: 240, alb1: 26, alb2: -14, alr: 0, gl: 'fist', prop: 'L', acc: 150 },
+    arx: 244, ary: 202, arb1: 32, arb2: 12, arr: 0, gr: 'pinch', alx: 112, aly: 232, alb1: -34, alb2: -6, alr: 0, gl: 'fist', prop: 'L', acc: 150 },
   impatient: { lean: -2, htilt: 7, turn: 0.9, hipTilt: 3, uL: 0.4, uR: 0.6, lookx: -0.9, looky: -0.4, bRy: -3, bLy: 6, mouth: 'wry', rax: 8, ray: -6, rsr: 22, prop: '',
-    alx: 226, aly: 296, alb1: 30, alb2: 38, alr: 0, gl: 'fist', arx: 176, ary: 296, arb1: -30, arb2: -38, arr: 0, gr: 'fist' },
+    alx: 222, aly: 290, alb1: 22, alb2: 30, alr: 0, gl: 'relax', arx: 182, ary: 296, arb1: -22, arb2: -30, arr: 0, gr: 'relax' },
   laugh: { lean: 3, htilt: -9, hy: 2, turn: 0.8, joyL: 1, joyR: 1, uL: 0.1, uR: 0.1, lowL: 0.6, lowR: 0.6, bLy: -2, bRy: -6, bLa: 14, bRa: 14, mouth: 'laugh', lax: -6, rax: 6,
-    alx: 214, aly: 312, alb1: 28, alb2: 22, alr: 0, gl: 'flat', arx: 190, ary: 306, arb1: -26, arb2: -22, arr: 0, gr: 'fist', prop: '' },
+    alx: 212, aly: 306, alb1: 22, alb2: 18, alr: 0, gl: 'flat', arx: 190, ary: 302, arb1: -20, arb2: -18, arr: 0, gr: 'flat', prop: '' },
   salute: { lean: -1, htilt: -3, turn: 0.9, uL: 0, lowL: 0.7, uR: 0.9, bLy: 8, mouth: 'grin', lax: 0, rax: 0, lsr: -4, rsr: 4,
-    alx: 140, aly: 128, alb1: 40, alb2: 20, alr: 0, gl: 'flat', arx: 249, ary: 302, arb1: -38, arb2: -22, arr: -8, gr: 'hip', prop: '', lookx: 0.1 },
+    alx: 162, aly: 128, alb1: -36, alb2: -22, alr: 0, gl: 'flat', arx: 249, ary: 302, arb1: -38, arb2: -22, arr: -8, gr: 'hip', prop: '', lookx: 0.1 },
   curtsy: { lean: 12, hx: 6, hy: 4, htilt: -6, turn: 1.1, uy: 14, hipTilt: -6, hipX: 6, lookx: -0.2, looky: -0.7, uL: 0.5, uR: 0.8, bRy: -8, rax: -30, rsr: -10, lax: -14, mouth: 'smirk',
-    arx: 338, ary: 336, arb1: -26, arb2: 18, arr: 0, gr: 'open', alx: 140, aly: 132, alb1: 40, alb2: 20, alr: 0, gl: 'flat', prop: '' },
+    arx: 330, ary: 330, arb1: -22, arb2: 16, arr: 0, gr: 'open', alx: 168, aly: 140, alb1: -36, alb2: -22, alr: 0, gl: 'flat', prop: '' },
 };
 POSES.think = { ...POSES.anticipation, mouth: 'smirk', lookx: 0.9, looky: -0.5, hx: 3, lean: 4 };
 
@@ -124,7 +124,7 @@ function buildMarkup(outfitKey, pre, o) {
   // ---- arms
   const arm = (side) => {
     const s = side.toLowerCase(), kinds = gloveKinds(c, W, s);
-    let t = limbEls(c, `arm-${s}`, sleeve.fill || PAL.navyJ);
+    let t = limbEls(c, `arm-${s}`, sleeve.fill || PAL.navyJ) + (sleeve.tex && c.halftone ? `<path id="${pre}arm-${s}-tx" d="" fill="url(#${pre}htf)" transform="translate(${f(c.misT[0])} ${f(c.misT[1])})"/>` : '');
     if (sleeve.gloveFrom != null) t += limbEls(c, `arm-${s}-lg`, W.glove || PAL.white, { suffix: ['i', 'f'] });
     if (sleeve.trim) t += limbEls(c, `arm-${s}-tr`, sleeve.trim, { suffix: ['i', 'f'] });
     const hand = G(`${pre}hand-${s}`, `<g id="${pre}hand-${s}-t"><g id="${pre}prop-slot-${s}"></g>` + Object.keys(kinds).map((k) => `<g id="${pre}g-${s}-${k}" display="${k === 'relax' ? 'inline' : 'none'}">${kinds[k]}</g>`).join('') + `</g>`);
@@ -187,7 +187,7 @@ export function createHeroine(container, opts = {}) {
   const cache = Object.create(null);
   const spinS = { angle: 0, active: false };
   const gthumb = { l: { t: 1, v: 1 }, r: { t: 1, v: 1 } };     // thumb side: target (+1 = side A on the glove's -x, -1 = side B) and eased value (cross-fade, no mirror pop)
-  let lastRenderT = 0;
+  let lastRenderT = 0, snapThumbs = true;
 
   // ---- DOM
   function mount() {
@@ -245,6 +245,7 @@ export function createHeroine(container, opts = {}) {
     return { base, disc };
   }
   function applyTargets(snap) {
+    if (snap) snapThumbs = true;
     const { base, disc } = composeTargets();
     NAMES.forEach((n, i) => { if (n === 'lookx' || n === 'looky') return; T[i] = base[n]; if (snap || reduced) { X[i] = T[i]; V[i] = 0; D[i] = T[i]; } });
     if (!look.target) { look.tx = base.lookx; look.ty = base.looky; }
@@ -556,7 +557,7 @@ const f2 = (n) => Math.round(n * 100) / 100;
     if (lowerOn) {
     setE('skirt', 'transform', `translate(${f(hipX)} 0) rotate(${f(tilt)} 200 346)`);
     setE('skirt-t', 'transform', `rotate(${f(sec.skirt.x)} 200 304)`);
-    const LW = (W.legs.w || 13) / 13, legW = (t) => LW * (11.4 - 3.6 * t + 1.1 * Math.sin(Math.PI * t));   // slim, tapering, slight calf
+    const LW = (W.legs.w || 13) / 13, legW = (t) => LW * (12.2 - 3.9 * t + 1.1 * Math.sin(Math.PI * t));   // slim, tapering, slight calf
     const rootL = rotp(REST.hipJointL, tilt, REST.hip), rootR = rotp(REST.hipJointR, tilt, REST.hip);
     rootL[0] += hipX; rootR[0] += hipX;
     for (const [s, root, A] of [['l', rootL, REST.ankleL], ['r', rootR, REST.ankleR]]) {
@@ -618,14 +619,14 @@ const f2 = (n) => Math.round(n * 100) / 100;
       let wx = d(p + 'x'), wy = d(p + 'y');
       // chain / whistle special-case: whistle pose uses pinch glove at the mouth (handled by pose targets)
       const cv = limb([Sx, Sy], [wx, wy], d(p + 'b1'), d(p + 'b2')), dd = tubeD(cv, armW);
-      setE(`arm-${s}-ink`, 'd', dd); setE(`arm-${s}-fill`, 'd', dd);
+      setE(`arm-${s}-ink`, 'd', dd); setE(`arm-${s}-fill`, 'd', dd); if (E[`arm-${s}-tx`]) setE(`arm-${s}-tx`, 'd', dd);
       const sl = W.sleeve || {};
       if (sl.trim) { const [t0, t1] = sl.trimAt, tr = tubeD(cubicSub(cv, t0, t1), (t) => armW(t0 + (t1 - t0) * t) + 1.8, { n: 3, capS: false, capE: false }); setE(`arm-${s}-tri`, 'd', tr); setE(`arm-${s}-trf`, 'd', tr); }
       if (sl.gloveFrom != null) { const g0 = sl.gloveFrom, lg = tubeD(cubicSub(cv, g0, 1), (t) => armW(g0 + (1 - g0) * t) + 0.8, { n: 5, capS: false }); setE(`arm-${s}-lgi`, 'd', lg); setE(`arm-${s}-lgf`, 'd', lg); }
       const tan = cubicTan(cv, 1), ang = (Math.atan2(tan[1], tan[0]) * 180) / Math.PI - 90 + d(p + 'r');
       const thumbDown = -Math.sin(rad2(ang)), gt = gthumb[s];
       if (thumbDown > 0.28) gt.t = -1; else if (thumbDown < -0.28) gt.t = 1;
-      gt.v = reduced || force ? gt.t : gt.v + (gt.t - gt.v) * (1 - Math.exp(-gdt / 0.055));
+      gt.v = reduced || snapThumbs ? gt.t : gt.v + (gt.t - gt.v) * (1 - Math.exp(-gdt / 0.055));
       const kindNow = dis[s === 'l' ? 'gl' : 'gr'];
       setE(`g-${s}-${kindNow}-ta`, 'opacity', f2(clamp((1 + gt.v) / 2, 0, 1))); setE(`g-${s}-${kindNow}-tb`, 'opacity', f2(clamp((1 - gt.v) / 2, 0, 1)));
       const spd = reduced ? 0 : Math.hypot(V[IX[p + 'x']], V[IX[p + 'y']]), smear = clamp((spd - 500) / 3200, 0, 0.32);
@@ -645,6 +646,7 @@ const f2 = (n) => Math.round(n * 100) / 100;
     if (E.chain) renderChain(d, shr);
     // ---- scarf (vault)
     if (E['scarf-1']) { setE('scarf-1', 'transform', `rotate(${f(sec.scarf1.x)} 186 270)`); if (E['scarf-2']) setE('scarf-2', 'transform', `rotate(${f(sec.scarf2.x)} 186 272)`); }
+    snapThumbs = false;
     rendered = true;
   }
   function renderMouth(L) {

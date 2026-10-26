@@ -21,7 +21,7 @@ export const PAL = {
   steel: '#B9C7CC', lips: '#C4271E', lipsDeep: '#8E1712', mouth: '#5E1410', glass: '#CFEDEA', camel: '#B98A55', burgundy: '#6E2440',
 };
 export const INK = PAL.ink;
-export const OL = 4.6;                 // uniform outline weight (viewBox units)
+export const OL = 5;                   // uniform outline weight (viewBox units); pass 2: 4.6 -> 5 (the model sheet has a heavier contour)
 export const MIS = [2.8, 2.4];         // print misregistration (fill layer shifted against the outline)
 export const MIS_T = [1.4, 1.2];
 export const GROUND = 566;
@@ -29,7 +29,7 @@ export const TORSO_LIFT = 6;           // pass 2: the torso art is lifted 6 unit
 
 // rest skeleton (upper-body coordinates at rest). Proportions measured on the model sheet (cap top 66 -> ground 566).
 export const REST = {
-  neck: [200, 236], shoulderL: [166, 253], shoulderR: [234, 252], waist: [200, 304], hip: [200, 346],
+  neck: [200, 236], shoulderL: [165, 253], shoulderR: [232, 255], waist: [200, 304], hip: [200, 346],
   hipJointL: [188, 420], hipJointR: [212, 420], ankleL: [156, 524], ankleR: [234, 524], ground: [200, GROUND], skirtHem: 452,
 };
 
@@ -128,6 +128,7 @@ export function part(c, d, fill, o = {}) {
   const sw = o.sw ?? OL, mis = o.mis ?? c.mis;
   const tr = mis[0] || mis[1] ? ` transform="translate(${f(mis[0])} ${f(mis[1])})"` : '';
   let s = fill && fill !== 'none' ? `<path d="${d}" fill="${fill}"${tr}/>` : '';
+  if (o.tex && c.halftone) s += `<path d="${d}" fill="url(#${c.pre}htf)"${tr}/>`;      // fine print-screen texture over the whole fill (no clip needed)
   if (o.shade && c.halftone) {
     const cid = c.uid('c');
     c.defs.push(`<clipPath id="${cid}"><path d="${d}"${tr}/></clipPath>`);
@@ -148,7 +149,7 @@ export function star(x, y, r, fill = PAL.white, sw = 3.2, rot = 0, pts = 4) {
   }
   return `<path d="${d}Z" fill="${fill}" stroke="${INK}" stroke-width="${sw}" stroke-linejoin="round"/>`;
 }
-export const OLL = 4.2;                // outline of the (slimmer) noodle limbs
+export const OLL = 4.6;                // outline of the (slimmer) noodle limbs
 // tapered limb pair (dynamic: runtime writes the closed outline from tubeD() into both): ink = filled + stroked, fill = shifted flat colour
 export function limbEls(c, id, fill, o = {}) {
   const mis = c.misT, tr = mis[0] || mis[1] ? ` transform="translate(${f(mis[0])} ${f(mis[1])})"` : '';
@@ -170,8 +171,8 @@ export function tubeEls(c, id, w, fill, o = {}) {
 // Every costume draws its torso and lower garment from these tables (plus its own ease), so the five outfits share one body.
 export const SIL = {
   ys:    [240, 252, 266, 282, 296, 306, 318, 332, 348, 366, 390, 420, 445, 458],
-  back:  [191, 172, 166, 166, 172, 178, 172, 163, 157, 157, 160, 167, 174, 177],
-  front: [211, 230, 237, 236, 230, 226, 228, 236, 241, 240, 236, 229, 222, 219],
+  back:  [191, 171, 164, 164, 171, 178, 171, 161, 155, 155, 158, 166, 174, 177],
+  front: [211, 231, 239, 238, 231, 226, 229, 238, 243, 242, 237, 229, 222, 219],
   cl:    [203, 208, 212, 214, 214, 214, 215, 216, 216, 215, 213, 211, 208, 207],
 };
 export const silBack = lut(SIL.ys, SIL.back), silFront = lut(SIL.ys, SIL.front), silCl = lut(SIL.ys, SIL.cl);
@@ -402,8 +403,11 @@ function hairParts(c, W) {
   const mass = part(c, 'M20 -122C16 -140 -2 -148 -30 -146C-60 -142 -88 -122 -94 -92C-98 -74 -96 -62 -90 -54C-85 -47 -91 -42 -94 -34C-101 -22 -90 -2 -68 0C-52 1 -43 -8 -35 -17L-22 -22L0 -22L26 -40C30 -70 26 -100 20 -122Z', col, { shade: 'M-100 -170L-34 -170L-34 10L-100 10Z', ht: 'ht' })
     + line('M-83 -106C-91 -86 -84 -70 -78 -56C-74 -46 -80 -38 -75 -27', 3.6, PAL.hairHi, ' opacity=".85"') + line('M-66 -132C-80 -122 -88 -108 -89 -96', 3.2, PAL.hairHi, ' opacity=".7"')
     + `<g id="${c.pre}hair-tuft" opacity="0">` + part(c, 'M-62 -128L-60 -158L-48 -142L-42 -166L-30 -148L-20 -164L-14 -146L-2 -156L2 -134L-2 -120L-58 -120Z', col, { sw: OL * 0.95 }) + line('M-52 -146L-48 -132M-26 -150L-24 -134', 2.8, PAL.hairHi) + `</g>`;
-  const curlL = part(c, 'M-80 -48C-94 -44 -101 -26 -93 -15C-86 -6 -72 -11 -72 -22C-72 -30 -80 -31 -83 -25C-81 -33 -77 -41 -72 -50Z', col, { shade: 'M-100 -30L-80 -30L-80 -5L-100 -5Z' }) + line('M-91 -33C-88 -22 -80 -20 -78 -26', 2.8, PAL.hairHi);
-  const curlR = part(c, 'M28 -34C42 -42 57 -34 56 -22C55 -11 40 -10 36 -19C43 -21 45 -27 39 -28L28 -22Z', col, { sw: OL * 0.9 }) + line('M46 -34C52 -30 53 -25 50 -21', 2.6, PAL.hairHi);
+  // pass 2: flips drawn as crescents with a pointed tip (never a closed ring, so they cannot read as hoop earrings)
+  const curlL = part(c, 'M-80 -48C-98 -50 -109 -36 -105 -21C-101 -7 -85 -3 -75 -12C-83 -12 -91 -19 -91 -28C-91 -35 -87 -41 -79 -43Z', col, { shade: 'M-112 -30L-86 -30L-86 -2L-112 -2Z', tex: true })
+    + line('M-97 -37C-101 -28 -97 -16 -86 -13', 2.8, PAL.hairHi, ' opacity=".85"');
+  const curlR = part(c, 'M28 -38C42 -48 60 -40 62 -26C63 -12 48 -6 38 -14C46 -15 51 -21 49 -27C47 -33 40 -33 34 -29Z', col, { sw: OL * 0.9, tex: true })
+    + line('M50 -40C57 -35 58 -27 54 -21', 2.6, PAL.hairHi);
   return { mass, curlL, curlR };
 }
 function bangsArt(c) {
@@ -461,6 +465,7 @@ export function buildHead(c, W) {
 }
 
 export function defsCommon(pre) {
-  return `<pattern id="${pre}ht" width="6.4" height="6.4" patternUnits="userSpaceOnUse" patternTransform="rotate(32)"><circle cx="3.2" cy="3.2" r="1.5" fill="${INK}" opacity=".28"/></pattern>`
+  return `<pattern id="${pre}htf" width="3.6" height="3.6" patternUnits="userSpaceOnUse" patternTransform="rotate(32)"><circle cx="1.8" cy="1.8" r="0.8" fill="${INK}" opacity=".2"/></pattern>`
+    + `<pattern id="${pre}ht" width="6.4" height="6.4" patternUnits="userSpaceOnUse" patternTransform="rotate(32)"><circle cx="3.2" cy="3.2" r="1.5" fill="${INK}" opacity=".28"/></pattern>`
     + `<pattern id="${pre}htl" width="6.4" height="6.4" patternUnits="userSpaceOnUse" patternTransform="rotate(32)"><circle cx="3.2" cy="3.2" r="1.45" fill="${PAL.white}" opacity=".32"/></pattern>`;
 }

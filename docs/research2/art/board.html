@@ -3,51 +3,96 @@
   :root{--ink:#2B1A12;--cream:#F4E8C8;--mustard:#E8A92B;--night:#14213A;--turq:#2E8C8C}
   *{box-sizing:border-box} html,body{margin:0;background:var(--night);color:var(--cream);font-family:"Trebuchet MS",Arial,sans-serif}
   #b{width:2000px;padding:26px 30px 34px}
-  h1{margin:0 0 4px;font-size:44px;letter-spacing:.04em;color:var(--mustard);-webkit-text-stroke:0}
-  .sub{font-size:19px;margin-bottom:18px;color:#cfd8d6}
-  h2{font-size:23px;margin:22px 0 8px;color:var(--turq);text-transform:uppercase;letter-spacing:.12em}
-  .row{display:flex;gap:10px;align-items:flex-end}
-  .cell{position:relative;background:#E9B02C;border:4px solid var(--ink);border-radius:14px;overflow:visible}
-  .cell>.cap{position:absolute;left:0;right:0;bottom:0;background:rgba(43,26,18,.88);color:var(--cream);font-size:15px;padding:5px 9px;border-radius:0 0 9px 9px;z-index:3}
-  .cell .hero{position:absolute;left:0;right:0;top:0;bottom:30px}
-  .cell img{position:absolute;left:50%;top:6px;height:calc(100% - 40px);transform:translateX(-50%)}
-  .face{background:#F0C040;overflow:hidden}.face .hero{overflow:hidden}.face svg{overflow:hidden!important}
+  h1{margin:0 0 4px;font-size:44px;letter-spacing:.04em;color:var(--mustard)}
+  .sub{font-size:19px;margin-bottom:14px;color:#cfd8d6;max-width:1900px;line-height:1.35}
+  h2{font-size:23px;margin:24px 0 8px;color:var(--turq);text-transform:uppercase;letter-spacing:.12em}
+  .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+  .cell{position:relative;background:#E9B02C;border:4px solid var(--ink);border-radius:14px;overflow:hidden;flex:none}
+  .cell.model{background:#F2BE1E}
+  .cell>.cap{position:absolute;left:0;right:0;bottom:0;background:rgba(43,26,18,.88);color:var(--cream);font-size:15px;padding:5px 9px;z-index:3}
+  .cell .hero{position:absolute;left:0;right:0;top:0;bottom:28px}
+  .cell svg.m{position:absolute;left:0;top:0;width:100%;height:calc(100% - 28px)}
+  .face{background:#F0C040}
+  .px{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+  .px .cell{border-width:2px;border-radius:6px}
+  .note{font-size:16px;color:#cfd8d6;margin:4px 0 8px;max-width:1900px;line-height:1.35}
+  .hand{background:#E8B83A;border-radius:10px;border:3px solid var(--ink);position:relative;flex:none;overflow:hidden}
+  .hand b{position:absolute;left:6px;bottom:3px;font-size:14px;color:var(--ink)}
 </style></head><body><div id="b"></div>
 <script type="module">
-import { createHeroine } from './mambo_rig.mjs';
-const B = document.getElementById('b'); const q = new URLSearchParams(location.search);
-const H = 540, SM = 400;
-const label = { idle:'idle', smallwin:'small win', bigwin:'big win', shock:'shock', shrug:'lose / shrug', point:'point at grid', salute:'salute', anticipation:'anticipation', whistle:'whistle', impatient:'impatient', laugh:'laugh', curtsy:'curtsy' };
-function cell(parent, w, h, cap) { const c = document.createElement('div'); c.className = 'cell'; c.style.cssText = `width:${w}px;height:${h}px`; c.innerHTML = `<div class="hero"></div><div class="cap">${cap}</div>`; parent.appendChild(c); return c; }
-function hero(c, outfit, pose, opts = {}) {
-  const h = createHeroine(c.querySelector('.hero'), { outfit, raf: false, idle: false, limited: 0, ...opts });
-  h.setPose(pose, { snap: true }); if (opts.set) h.set(opts.set, true); h.snap();
-  const vb = opts.vb || (pose === 'point' ? '20 50 450 530' : pose === 'shrug' || pose === 'curtsy' ? '30 50 340 530' : pose === 'bigwin' || pose === 'shock' ? '45 -5 310 575' : '45 50 310 530');
-  c.querySelector('svg').setAttribute('viewBox', vb);
+// Board generator (dev tool, not shipped): model sheets (AI reference, never shipped) next to the live vector rig. Everything on the rig side is generated
+// by mambo_rig.mjs from hand-written Bezier paths. The model side is only a visual reference for the comparison.
+import { createHeroine, CROPS } from './mambo_rig.mjs';
+import { makeCtx, defsCommon, gloveKinds, GLOVE_KIND_NAMES, PAL } from './mambo_art.mjs';
+const B = document.getElementById('b');
+const SHEET = { idle: [358, 410], point: [916, 410], smallwin: [1674, 338], bigwin: [410, 1126], shock: [983, 1085], shrug: [1669, 1096] };
+const CELLRECT = { idle: [0, 0, 690, 680], point: [650, 0, 760, 680], smallwin: [1365, 0, 683, 680], bigwin: [0, 680, 690, 680], shock: [690, 680, 680, 680], shrug: [1365, 680, 683, 680] };
+const kk = 0.784, label = { idle: 'idle', smallwin: 'small win', bigwin: 'big win', shock: 'shock', shrug: 'lose / shrug', point: 'point at grid', salute: 'salute', anticipation: 'anticipation', whistle: 'whistle', impatient: 'impatient', laugh: 'laugh', curtsy: 'curtsy' };
+const VB = { point: '0 30 440 560', default: '40 30 340 560', wide: '20 30 380 560', jump: '30 -10 350 580' };
+const q = new URLSearchParams(location.search);
+function add(parent, tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; parent.appendChild(e); return e; }
+function cell(parent, w, h, cap, cls = '') { const c = add(parent, 'div', 'cell ' + cls, `<div class="hero"></div><div class="cap">${cap}</div>`); c.style.cssText = `width:${w}px;height:${h}px`; return c; }
+function hero(c, outfit, pose, o = {}) {
+  const h = createHeroine(c.querySelector('.hero'), { outfit, raf: false, idle: false, limited: 0, crop: o.crop || 'full', mirror: !!o.mirror, seed: 7 });
+  h.setPose(pose, { snap: true }); if (o.mood) h.setMood(o.mood); if (o.set) h.set(o.set, true); h.snap(); for (let i = 0; i < (o.settle ?? 14); i++) h.step(1 / 60);
+  if (o.mouth) h.setMouth(o.mouth, 0); if (o.look) h.setLook(o.look); h.render();
+  const svg = c.querySelector('.hero svg'); if (o.vb) svg.setAttribute('viewBox', o.vb); svg.setAttribute('preserveAspectRatio', 'xMidYMax meet'); svg.style.overflow = 'hidden';
   return h;
 }
-B.innerHTML = `<h1>AGENT MAMBO · the heroine, hand-built vector rig</h1><div class="sub">Part-based skeletal rig, noodle limbs rebuilt every frame, 8-viseme morphing mouth, eyes with lids / lashes / tracking pupils. Left of each pair: Higgsfield model sheet (visual reference only, not shipped). All other cells: generated live by mambo_rig.mjs from paths only.</div>`;
-// --- section 1: model vs rig
-let s = document.createElement('h2'); s.textContent = 'A · Inspectrice (base outfit): model sheet vs vector rig'; B.appendChild(s);
-let r = document.createElement('div'); r.className = 'row'; B.appendChild(r);
-const m = cell(r, 330, H, 'Model sheet (AI reference, not shipped)'); const k = (H - 40) / 1510;
-m.querySelector('.hero').style.cssText += `;background:url(higgs/base_v2_b.png) no-repeat;background-size:${1195 * k}px auto;background-position:${165 - 590 * k}px ${8 - 30 * k}px;`;
-m.style.overflow = 'hidden';
-const mine = cell(r, 330, H, 'Vector rig · idle'); hero(mine, 'inspectrice', 'idle');
-for (const p of ['smallwin', 'point', 'bigwin', 'shock']) { const c = cell(r, 330, H, 'rig · ' + label[p]); hero(c, 'inspectrice', p); }
-r = document.createElement('div'); r.className = 'row'; r.style.marginTop = '10px'; B.appendChild(r);
-for (const p of ['shrug', 'anticipation', 'whistle', 'impatient', 'laugh', 'salute', 'curtsy']) { const c = cell(r, 258, 410, 'rig · ' + label[p]); hero(c, 'inspectrice', p); }
-// --- expressions close-ups
-s = document.createElement('h2'); s.textContent = 'Expressions (same face rig, close-up)'; B.appendChild(s);
-r = document.createElement('div'); r.className = 'row'; B.appendChild(r);
-const faces = [['idle', 'sly side-eye'], ['smallwin', 'wink + grin'], ['bigwin', 'star eyes + laugh'], ['shock', 'wide eyes + O'], ['laugh', 'joy arcs'], ['whistle', 'whistle pucker'], ['shrug', 'wry eye-roll']];
-for (const [p, cap] of faces) { const c = cell(r, 250, 260, cap); c.classList.add('face'); hero(c, 'inspectrice', p, { vb: '116 56 196 176' }); }
-// --- section 2: other outfits
-const outs = [['casino', 'B · Casino evening (gown, mask, fan)'], ['lab', 'C · Laboratory (coat, butterfly glasses, test tube)'], ['vault', 'D · Vault / commando (jumpsuit, aviator cap, hook)'], ['trench', 'E · Trench and fedora (magnifying glass)']];
+function modelCell(parent, pose, w, h, vb) {
+  const [hx, hy] = SHEET[pose], [cx, cy, cw, ch] = CELLRECT[pose];
+  const c = cell(parent, w, h, 'Model sheet · ' + label[pose] + ' (AI reference, not shipped)', 'model'); c.querySelector('.hero').remove();
+  const id = 'clip' + pose, x0 = 200 - hx * kk, y0 = 346 - hy * kk;
+  c.insertAdjacentHTML('afterbegin', `<svg class="m" viewBox="${vb}" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="${id}"><rect x="${x0 + cx * kk}" y="${y0 + cy * kk}" width="${cw * kk}" height="${ch * kk}"/></clipPath></defs><g clip-path="url(#${id})"><image href="higgs/pose_sheet_1.png" x="${x0}" y="${y0}" width="${2048 * kk}" height="${1360 * kk}"/></g></svg>`);
+  return c;
+}
+add(B, 'h1', '', 'AGENT MAMBO · the heroine, hand-built vector rig · art pass 2');
+add(B, 'div', 'sub', 'Part-based skeletal rig: shared S-curve body silhouette with a slight 3/4 turn toward the grid (she stands LEFT of the grid, facing right), slim tapered noodle arms and legs, 11 glove shapes with a blended thumb swap, 8-viseme morphing mouth, eyes with lids / lashes / tracking pupils. Left of each pair: the Higgsfield model sheet (visual reference only, never shipped). Every other cell is generated live by mambo_rig.mjs from hand-written paths only (no bitmap, no tracing).');
+
+// ---------------------------------------------------------------- A: six key poses vs model
+add(B, 'h2', '', 'A · Inspectrice (base outfit): model sheet vs vector rig, the six key poses');
+let r = add(B, 'div', 'row');
+for (const p of ['idle', 'point', 'smallwin', 'bigwin', 'shock', 'shrug']) {
+  const vb = p === 'point' ? VB.point : p === 'bigwin' || p === 'smallwin' ? VB.jump : VB.default;
+  modelCell(r, p, 300, 500, vb);
+  const c = cell(r, 300, 500, 'Vector rig · ' + label[p]); hero(c, 'inspectrice', p, { vb });
+}
+// ---------------------------------------------------------------- B: other poses
+add(B, 'h2', '', 'B · Other poses of the same rig (inspectrice)');
+r = add(B, 'div', 'row');
+for (const p of ['anticipation', 'whistle', 'impatient', 'laugh', 'salute', 'curtsy']) { const c = cell(r, 308, 470, 'rig · ' + label[p]); hero(c, 'inspectrice', p, { vb: VB.default }); }
+// ---------------------------------------------------------------- C: expressions
+add(B, 'h2', '', 'C · Expressions (same face rig, close-up)');
+r = add(B, 'div', 'row');
+for (const [p, cap] of [['idle', 'sly side-eye'], ['smallwin', 'wink + grin'], ['bigwin', 'star eyes + laugh'], ['shock', 'wide eyes + O'], ['laugh', 'joy arcs'], ['whistle', 'whistle pucker'], ['shrug', 'wry eye-roll']]) {
+  const c = cell(r, 250, 260, cap, 'face'); hero(c, 'inspectrice', p, { vb: '96 62 176 176' });
+}
+// ---------------------------------------------------------------- D: waist-up crop for portrait mobile
+add(B, 'h2', '', 'D · Waist-up crop for portrait mobile (crop: "bust"): real pixel size 120 px wide, then 2x');
+add(B, 'div', 'note', 'createHeroine(el, { crop: "bust" }) or h.setCrop("bust"): bust, cap and eyes stay readable at 120 px wide; the lower body is hidden and not even updated (cheaper frames). crop "head" is the face-and-cap avatar (64 px and up). Mirrored crops follow the mirror option.');
+r = add(B, 'div', 'px');
+const O5 = ['inspectrice', 'casino', 'lab', 'vault', 'trench'];
+for (const o of O5) { const c = cell(r, 120, 172, '', ''); c.querySelector('.cap').remove(); c.querySelector('.hero').style.bottom = '0'; hero(c, o, 'idle', { crop: 'bust', vb: null }); }
+for (const [o, p] of [['inspectrice', 'smallwin'], ['inspectrice', 'shock'], ['casino', 'idle'], ['lab', 'laugh']]) { const c = cell(r, 120, 172, '', ''); c.querySelector('.cap').remove(); c.querySelector('.hero').style.bottom = '0'; hero(c, o, p, { crop: 'bust' }); }
+for (const [o, p] of [['inspectrice', 'idle'], ['inspectrice', 'smallwin'], ['casino', 'idle']]) { const c = cell(r, 240, 342, '', ''); c.querySelector('.cap').remove(); c.querySelector('.hero').style.bottom = '0'; hero(c, o, p, { crop: 'bust' }); }
+for (const p of ['idle', 'smallwin', 'shock']) { const c = cell(r, 96, 106, '', ''); c.querySelector('.cap').remove(); c.querySelector('.hero').style.bottom = '0'; hero(c, 'inspectrice', p, { crop: 'head' }); }
+// ---------------------------------------------------------------- E: gloves
+add(B, 'h2', '', 'E · Glove shapes (11 kinds, the thumb exists on both sides and cross-fades: no mirror pop)');
+r = add(B, 'div', 'row');
+for (const k of GLOVE_KIND_NAMES) {
+  const c = makeCtx({ idPrefix: 'gl' + k + '-' }), kinds = gloveKinds(c, { glove: PAL.white }, 'x');
+  const d = add(r, 'div', 'hand', `<svg width="150" height="168" viewBox="-44 -22 88 98" xmlns="http://www.w3.org/2000/svg"><defs>${defsCommon(c.pre)}${c.defs.join('')}</defs>${kinds[k]}</svg><b>${k}</b>`);
+  d.style.cssText = 'width:150px;height:168px';
+}
+// ---------------------------------------------------------------- F: mirror
+add(B, 'h2', '', 'F · Mirror option (she may stand on the right of the grid: one flipped group, particles and look targets follow)');
+r = add(B, 'div', 'row');
+for (const [m, p, o] of [[false, 'point', 'inspectrice'], [true, 'point', 'inspectrice'], [true, 'idle', 'casino'], [true, 'smallwin', 'lab'], [true, 'shock', 'vault']]) { const c = cell(r, 300, 470, (m ? 'mirror · ' : 'normal · ') + o + ' ' + p); hero(c, o, p, { mirror: m, vb: m ? '0 30 440 560' : VB.point }); }
+// ---------------------------------------------------------------- G: other outfits
+const outs = [['casino', 'B · Casino evening (gown, domino mask, fan)'], ['lab', 'C · Laboratory (coat, butterfly glasses, test tube)'], ['vault', 'D · Vault / commando (jumpsuit, aviator cap, hook)'], ['trench', 'E · Trench and fedora (magnifying glass)']];
 for (const [o, t] of outs) {
-  s = document.createElement('h2'); s.textContent = t; B.appendChild(s);
-  r = document.createElement('div'); r.className = 'row'; B.appendChild(r);
-  for (const p of ['idle', 'point', 'smallwin', 'bigwin', 'shock', 'shrug']) { const c = cell(r, 318, 470, label[p]); hero(c, o, p); }
+  add(B, 'h2', '', t); r = add(B, 'div', 'row');
+  for (const p of ['idle', 'point', 'smallwin', 'bigwin', 'shock', 'shrug']) { const vb = p === 'point' ? VB.point : p === 'bigwin' || p === 'smallwin' ? VB.jump : VB.default; const c = cell(r, p === 'point' ? 360 : 300, 460, p === 'shrug' ? 'lose / shrug' : label[p]); hero(c, o, p, { vb }); }
 }
 window.__ready = true;
 </script></body></html>

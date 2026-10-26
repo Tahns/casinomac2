@@ -38,20 +38,20 @@ const R_SHADE = 'M208 250L290 250L290 480L208 480Z';       // right-hand shade b
 // ====================================================================== A. INSPECTRICE (base)
 const inspectrice = {
   key: 'inspectrice', label: 'A. Inspectrice (base)', accent: PAL.navy,
-  sleeve: { fill: PAL.navyJ, trim: PAL.mustard, trimAt: [0.8, 0.9], gloveFrom: null },
+  sleeve: { fill: PAL.navyJ, trim: PAL.mustard, trimAt: [0.8, 0.9], gloveFrom: null, tex: true },
   glove: PAL.white, cuff: PAL.white,
   legs: { fill: INK, w: 13, shine: '#7A5646' },
   shoe: { base: PAL.white },
   lidFill: PAL.eyeshadow, propKind: 'flashlight', whistle: true, accBase: 90, accGain: 1, hairTop: () => '', capOver: false,
   skirt(c) { // pencil skirt: waist tucked under the peplum, hips on the S-curve, narrow hem, front fold line
     const d = garmentD(292, 447, { eB: (y) => (y > 430 ? 1 : 0), eF: (y) => (y > 430 ? 1 : 0), hem: 5 });
-    return part(c, d, PAL.navyJ, { shade: `M${CL(300) + 4} 296L280 296L280 470L${CL(456) - 8} 470C${CL(420)} 420 ${CL(360)} 350 ${CL(320) + 4} 296Z` })
+    return part(c, d, PAL.navyJ, { tex: true, shade: `M${CL(300) + 4} 296L280 296L280 470L${CL(456) - 8} 470C${CL(420)} 420 ${CL(360)} 350 ${CL(320) + 4} 296Z` })
       + line(spl([[CL(312) - 5, 314], [CL(346) - 7, 350], [CL(404) - 9, 404], [CL(450) - 8, 450]]), 3, PAL.navyLight, ' opacity=".75"')
       + line(spl([[SB(330) + 7, 330], [SB(380) + 5, 382], [SB(430) + 4, 432]]), 2.6, PAL.navyLight, ' opacity=".5"');
   },
   torso(c) { // fitted jacket with a peplum, notch lapels in 3/4 view, thin tie, three gold buttons on the centre-front line
     const J = garmentD(256, 326, { headB: NECK_B, headF: NECK_F, eB: (y) => (y > 312 ? (y - 312) * 0.12 : 0), eF: (y) => (y > 312 ? (y - 312) * 0.1 : 0), hem: 5, hemShift: 6 });
-    let s = part(c, J, PAL.navyJ, { shade: shadeRight(236, 350) });
+    let s = part(c, J, PAL.navyJ, { shade: shadeRight(236, 350), tex: true });
     s += seams(PAL.navyLight);
     s += shirtV(c, PAL.white, PAL.white);
     s += part(c, 'M201 247L208 247L217 283L213 296L208 285Z', INK, { sw: 3, mis: [1, 1] });
@@ -90,7 +90,7 @@ const inspectrice = {
 // ====================================================================== B. CASINO EVENING (gown, mask, fan, chips)
 const casino = {
   key: 'casino', label: 'B. Casino evening', accent: PAL.brick,
-  sleeve: { fill: PAL.brick, trim: null, gloveFrom: 0.52 }, glove: PAL.white, cuff: PAL.white,
+  sleeve: { fill: PAL.brick, trim: null, gloveFrom: 0.52, tex: true }, glove: PAL.white, cuff: PAL.white,
   legs: { fill: INK, w: 13 }, shoe: { base: PAL.white }, shoesUnder: true,
   lidFill: '#1E1411', lidShadowOp: 0, accBase: 180, accGain: 0.5, capOver: false,
   hairTop(c) { // big 60s wave on top (no hat)
@@ -100,7 +100,7 @@ const casino = {
   skirt(c) { // fitted gown: pencil to the knee, mermaid flare to the floor (no slit), godet seams
     const fl = flare(446, 556, 126, 278, 1.9), RD = '#8E1F1B';
     const d = garmentD(290, 556, { extraYs: [470, 490, 512, 534, 548], eB: fl.eB, eF: fl.eF, hem: 9, hemShift: 6 });
-    return part(c, d, PAL.brick, { shade: shadeRight(290, 580) })
+    return part(c, d, PAL.brick, { shade: shadeRight(290, 580), tex: true })
       + line(spl([[SB(452) + 6, 452], [152, 510], [142, 552]]), 3, RD, ' opacity=".8"') + line(spl([[CL(452) - 2, 452], [CL(452) - 4, 510], [CL(452) - 8, 560]]), 3, RD, ' opacity=".8"')
       + line(spl([[SF(452) - 6, 452], [250, 510], [260, 552]]), 3, RD, ' opacity=".8"')
       + line(spl([[CL(312) - 5, 314], [CL(346) - 7, 350], [CL(404) - 9, 404], [CL(450) - 8, 450]]), 3, RD, ' opacity=".55"');
@@ -108,7 +108,7 @@ const casino = {
   torso(c) { // fitted bodice, high gold collar, waist sash, brooch; closure line shifted right (3/4 turn)
     const RD = '#8E1F1B';
     const J = garmentD(256, 312, { headB: NECK_B, headF: NECK_F, hem: 3, hemShift: 2 });
-    let s = part(c, J, PAL.brick, { shade: shadeRight(236, 330) });
+    let s = part(c, J, PAL.brick, { shade: shadeRight(236, 330), tex: true });
     s += seams(RD) + line(spl([[CL(252), 252], [CL(282), 282], [CL(306), 306]]), 2.4, RD, ' opacity=".6"');
     s += part(c, spl([[SB(298) - 1, 299], [CL(300), 302], [SF(298) + 1, 299], [SF(312) + 1, 311], [CL(314), 314], [SB(312) - 1, 311]], { closed: true, corners: [0, 2, 3, 5] }), PAL.gold, { sw: 3.8, mis: [1.4, 1.2] });
     s += part(c, 'M188 232L212 232L217 248C207 253 195 253 184 247Z', PAL.gold, { sw: 4, mis: [1.4, 1.2] });
@@ -149,8 +149,8 @@ const lab = {
   },
   skirt(c) { // turquoise dress, long coat open on the centre-front line, patch pockets
     const e = (y) => 2 + Math.max(0, y - 306) * 0.075;
-    let s = part(c, garmentD(292, 456, { eB: (y) => (y > 440 ? 1 : 0), eF: (y) => (y > 440 ? 1 : 0), hem: 5 }), PAL.turq, {});
-    s += part(c, garmentD(292, 462, { eB: e, eF: e, hem: 6, hemShift: 5 }), COAT, { shade: shadeRight(290, 480) });
+    let s = part(c, garmentD(292, 456, { eB: (y) => (y > 440 ? 1 : 0), eF: (y) => (y > 440 ? 1 : 0), hem: 5 }), PAL.turq, { tex: true });
+    s += part(c, garmentD(292, 462, { eB: e, eF: e, hem: 6, hemShift: 5 }), COAT, { shade: shadeRight(290, 480), tex: true });
     s += part(c, spl([[CL(300) - 3, 300], [CL(380) - 6, 380], [CL(462) - 10, 462], [CL(462) + 10, 462], [CL(380) + 6, 380], [CL(300) + 3, 300]], { closed: true, corners: [0, 2, 3, 5] }), PAL.turq, { sw: 3.6, mis: [1.2, 1] });
     s += line(spl([[CL(300) - 3, 300], [CL(380) - 6, 380], [CL(462) - 10, 462]]), 0, PAL.turq);
     s += part(c, rectD(SB(380) + 8, 372, 20, 22), COAT, { sw: 3.4, mis: [1.2, 1] }) + part(c, rectD(SF(380) - 28, 372, 20, 22), COAT, { sw: 3.4, mis: [1.2, 1] });
@@ -160,7 +160,7 @@ const lab = {
   torso(c) { // coat bodice: turquoise blouse V, cream notch lapels, breast pocket with pens, two buttons
     const e = (y) => 1.5 + Math.max(0, y - 300) * 0.05;
     const J = garmentD(256, 333, { headB: NECK_B, headF: NECK_F, eB: e, eF: e, hem: 5 });
-    let s = part(c, J, COAT, { shade: shadeRight(236, 350) });
+    let s = part(c, J, COAT, { shade: shadeRight(236, 350), tex: true });
     s += seams('#E4D6AE', 0.9);
     s += shirtV(c, PAL.turq, null);
     s += lapelPair(c, { fill: COAT, sw: 4 });
@@ -195,17 +195,17 @@ const lab = {
 const SUIT = PAL.mustard, LEATHER = '#7A4A2A';
 const vault = {
   key: 'vault', label: 'D. Vault / commando', accent: PAL.mustard, scarf: true,
-  sleeve: { fill: SUIT, trim: LEATHER, trimAt: [0.8, 0.9], gloveFrom: null }, glove: PAL.white, cuff: PAL.white,
+  sleeve: { fill: SUIT, trim: LEATHER, trimAt: [0.8, 0.9], gloveFrom: null, tex: true }, glove: PAL.white, cuff: PAL.white,
   legs: { fill: SUIT, w: 17, sock: '#5A3A22' }, shoe: { base: PAL.white },
   lidFill: PAL.eyeshadow, accBase: 90, accGain: 1, capOver: true, hairTop: () => '',
   skirt(c) { // jumpsuit hips down to the leg tops, centre seam, thigh pockets
     const d = garmentD(290, 414, { hem: 3, hemShift: 2 });
-    return part(c, d, SUIT, { shade: shadeRight(290, 440) }) + line(spl([[CL(310), 310], [CL(360), 360], [CL(410), 410]]), 2.6, '#B77A12', ' opacity=".8"')
+    return part(c, d, SUIT, { shade: shadeRight(290, 440), tex: true }) + line(spl([[CL(310), 310], [CL(360), 360], [CL(410), 410]]), 2.6, '#B77A12', ' opacity=".8"')
       + part(c, rectD(SB(372) + 4, 362, 18, 22), SUIT, { sw: 3.4, mis: [1.2, 1] }) + part(c, rectD(SF(372) - 22, 362, 18, 22), SUIT, { sw: 3.4, mis: [1.2, 1] });
   },
   torso(c) { // zip-front jumpsuit, belt with buckle, hip pouches, olive scarf (neck wrap + two swinging tails)
     const J = garmentD(256, 322, { headB: NECK_B, headF: NECK_F, hem: 3, hemShift: 2 });
-    let s = part(c, J, SUIT, { shade: shadeRight(236, 340) });
+    let s = part(c, J, SUIT, { shade: shadeRight(236, 340), tex: true });
     s += seams('#B77A12', 0.8);
     s += `<path d="M${CL(246)} 246L${CL(300)} 300" stroke="${INK}" stroke-width="3.2" stroke-linecap="round"/><path d="M${CL(252)} 252L${CL(296)} 296" stroke="${PAL.cream}" stroke-width="1.6" stroke-dasharray="1.6 3.4"/>` + part(c, 'M210 254L216 254L216 264L213 268L210 264Z', PAL.steel, { sw: 2.4, mis: [0.8, 0.8] });
     // belt + buckle + pouches
@@ -247,12 +247,12 @@ const vault = {
 const CAMEL = PAL.camel, BURG = PAL.burgundy;
 const trench = {
   key: 'trench', label: 'E. Trench and fedora', accent: BURG,
-  sleeve: { fill: CAMEL, trim: '#8A5E34', trimAt: [0.78, 0.86], gloveFrom: null }, glove: PAL.white, cuff: PAL.white,
+  sleeve: { fill: CAMEL, trim: '#8A5E34', trimAt: [0.78, 0.86], gloveFrom: null, tex: true }, glove: PAL.white, cuff: PAL.white,
   legs: { fill: '#3A1A10', w: 13, shine: '#8A5A44' }, shoe: { base: PAL.white },
   lidFill: PAL.eyeshadow, accBase: 90, accGain: 1, capOver: true, hairTop: () => '',
   skirt(c) { // belted trench coat, flares to the hem, double row of buttons, storm flap
     const e = (y) => 2 + Math.max(0, y - 310) * 0.1;
-    let s = part(c, garmentD(290, 456, { eB: e, eF: e, hem: 6 }), CAMEL, { shade: shadeRight(290, 480) });
+    let s = part(c, garmentD(290, 456, { eB: e, eF: e, hem: 6 }), CAMEL, { shade: shadeRight(290, 480), tex: true });
     s += line(spl([[CL(306), 306], [CL(380), 380], [CL(454) + 1, 454]]), 3.2, '#8A5E34');
     for (const y of [352, 384, 416]) s += part(c, ellD(CL(y) - 9, y, 3.8, 3.8), '#4A2E1A', { sw: 2.4, mis: [0.8, 0.8] }) + part(c, ellD(CL(y) + 9, y, 3.8, 3.8), '#4A2E1A', { sw: 2.4, mis: [0.8, 0.8] });
     s += part(c, spl([[SB(344) + 4, 344], [SB(344) + 22, 349], [SB(344) + 20, 376], [SB(344) + 2, 370]], { closed: true, corners: [0, 1, 2, 3] }), CAMEL, { sw: 3.4, mis: [1.2, 1] });
@@ -261,7 +261,7 @@ const trench = {
   },
   torso(c) { // trench bodice: big collar and lapels in 3/4 view, burgundy tie, belt with gold buckle, shoulder straps
     const J = garmentD(256, 312, { headB: NECK_B, headF: NECK_F, eB: () => 1.5, eF: () => 1.5, hem: 3, hemShift: 2 });
-    let s = part(c, J, CAMEL, { shade: shadeRight(236, 330) });
+    let s = part(c, J, CAMEL, { shade: shadeRight(236, 330), tex: true });
     s += seams('#8A5E34', 0.8);
     s += shirtV(c, PAL.white, null);
     s += part(c, 'M201 247L208 247L217 283L213 296L208 285Z', BURG, { sw: 3, mis: [1, 1] });

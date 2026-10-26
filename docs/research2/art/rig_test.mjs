@@ -104,6 +104,22 @@ if (args.soak) {
     return { steps: n.steps, nonFinite: [...new Set(bad)].slice(0, 10) };
   });
 }
+if (args.crops) {   // pass 2: the crop and mirror options must run every pose and clip without a NaN or an exception
+  results.crops = await page.evaluate(() => {
+    const h = window.__h, bad = [], n = { steps: 0 };
+    for (const [crop, mirror] of [['bust', false], ['head', false], ['full', true], ['bust', true]]) {
+      h.setCrop(crop); h.setMirror(mirror);
+      for (const o of h.outfits()) {
+        h.setOutfit(o); h.snap();
+        for (const p of h.poses()) { h.setPose(p, { snap: true }); for (let i = 0; i < 4; i++) { h.step(1 / 30); n.steps++; } }
+        for (const c of ['winBig', 'shock', 'lose', 'winSmall', 'blowWhistle']) { h.stop(true); h.play(c); h.wink('L'); for (let i = 0; i < 60; i++) { h.step(1 / 30); n.steps++; const s = h.state(); for (const k in s) if (typeof s[k] === 'number' && !isFinite(s[k])) bad.push(`${crop}/${mirror}/${o}/${c}/${k}`); } }
+      }
+      h.stop(true);
+    }
+    h.setCrop('full'); h.setMirror(false); h.setOutfit('inspectrice');
+    return { steps: n.steps, nonFinite: [...new Set(bad)].slice(0, 10), crop: h.crop, mirror: h.mirror };
+  });
+}
 if (args.perf) {
   results.perf = await page.evaluate(() => {
     const h = window.__h; h.setPose('idle', { snap: true }); const seq = ['winBig', 'shock', 'lose', 'scatterTease', 'blowWhistle', 'impatient']; let n = 0, tot = 0, max = 0;
