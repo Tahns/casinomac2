@@ -631,9 +631,12 @@ export function createRenderer(rootEl) {
     try { cell.el.remove(); } catch (e) { /* ignore */ }
     S.grid[c][r] = null;
   }
+  // the wire draws its own POW!/BAM!/BOOM! stars: keep fx.breakCell's paper pieces but drop its speech bubble
+  const wireFx = Object.create(fx);
+  wireFx.breakCell = (x, y, size, color, o) => (typeof fx.breakCell === 'function' ? fx.breakCell(x, y, size, color, { ...(o || {}), bubble: false }) : null);
   try {
     wire = createWire({
-      board, fx, audio, t, reduced: REDUCE,
+      board, fx: wireFx, audio, t, reduced: REDUCE,
       cellCenter, pose, shake, flash, sleep,
       turbo: () => S.turbo || S.skip, destroyed: () => S.destroyed,
       cellEl: (c, r) => (S.grid[c] && S.grid[c][r] ? S.grid[c][r].el : null),
