@@ -49,12 +49,12 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
   grid-template-columns:var(--side) minmax(0,1fr) var(--side);
   grid-template-rows:auto minmax(0,1fr);
   grid-template-areas:"logo game ctrl" "info game ctrl"}
-/* mascot hook: the grid reserves its room only when #mascot-slot exists */
-#app:has(#mascot-slot){grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"logo game ctrl" "info game ctrl" "mascot game ctrl"}
+/* mascot hook: the grid reserves its room only while a figure slot is shown (v1 #mascot-slot, or v2 #heroine-slot once the rig is in: src/ui/heroine_shell.js) */
+#app:has(:is(#mascot-slot,#heroine-slot):not([hidden])){grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"logo game ctrl" "info game ctrl" "mascot game ctrl"}
 /* MISSION METER hook (desktop): a slim empty column `meter` between the left column and the board, full height.
    The ladder itself is drawn by meter.js inside #meter-slot, which overlays the board frame (see further down). */
 #app:has(#meter-slot){grid-template-columns:var(--side) var(--mw) minmax(0,1fr) var(--side);grid-template-areas:"logo meter game ctrl" "info meter game ctrl"}
-#app:has(#meter-slot):has(#mascot-slot){grid-template-areas:"logo meter game ctrl" "info meter game ctrl" "mascot meter game ctrl"}
+#app:has(#meter-slot):has(:is(#mascot-slot,#heroine-slot):not([hidden])){grid-template-areas:"logo meter game ctrl" "info meter game ctrl" "mascot meter game ctrl"}
 #mascot-slot{grid-area:mascot;position:relative;z-index:3;min-width:0;min-height:0;max-height:none;width:auto;aspect-ratio:auto;pointer-events:none;container-type:size;margin:0 var(--gap) var(--gap);--gh:min(76cqh,117cqw)}
 #mascot-slot :is(.gus-wrap,.mambo-wrap,.mascot-wrap){width:100%!important;height:100%!important;display:flex;align-items:flex-end;justify-content:center}
 #mascot-slot :is(svg.gus,svg.mambo,svg.mascot){flex:none;width:calc(var(--gh)*.857);height:var(--gh)}
@@ -63,7 +63,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 #game{grid-area:game;z-index:2;position:relative;container-type:size;min-width:0;min-height:0;touch-action:none}
 #hud-info{grid-area:info;z-index:3;display:flex;flex-direction:column;justify-content:center;gap:var(--gap);padding:var(--gap);min-width:0;min-height:0}
 #hud-ctrl{grid-area:ctrl;grid-row:1 / span 2;z-index:3;position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;align-items:center;gap:var(--gap);padding:var(--gap);min-width:0}
-#app:has(#mascot-slot) #hud-ctrl{grid-row:1 / span 3}
+#app:has(:is(#mascot-slot,#heroine-slot):not([hidden])) #hud-ctrl{grid-row:1 / span 3}
 
 .logo{margin:0;width:100%;line-height:0}
 .logo svg{width:100%;height:auto;max-height:calc(var(--side)*.78);display:block;overflow:visible}
@@ -119,7 +119,9 @@ body.fs-mode .fsbox{display:block}
 body.muted #btn-sound .x{display:block}
 body.muted #btn-sound .waves{display:none}
 #btn-menu{display:none}
-.tools{display:contents}
+/* v2: four tools now (sound, settings, info, fullscreen): one row of their own, sized so that four fit the column */
+.tools{display:flex;flex:0 0 100%;order:0;justify-content:center;gap:var(--gap)}
+@media (min-aspect-ratio:1101/1000) and (min-height:361px){.tools .tbtn{--s:clamp(24px,calc((var(--side) - var(--gap)*5.4)/4),52px)}}
 
 /* spin = big round dial (brass tick ring, cream collar, coral cap) */
 .spin{--sp:clamp(46px,calc(var(--side)*.58),132px);flex:0 0 100%;order:1;position:relative;width:var(--sp);max-width:var(--sp);height:var(--sp);flex-basis:var(--sp);margin:0 auto;border-radius:50%;padding:0;display:grid;place-items:center;
@@ -151,7 +153,7 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
 .unleash:hover:not(:disabled){transform:rotate(-1.5deg)}
 .unleash:active:not(:disabled){transform:translate(2px,3px);box-shadow:0 0 0 var(--ink)}
 .unleash:disabled{filter:grayscale(.6) brightness(.85);cursor:default}
-#btn-autoplay{order:3}#btn-turbo{order:4}#btn-menu{order:5}.tools{order:6}
+#btn-autoplay{order:3}#btn-turbo{order:4}#btn-menu{order:5}
 
 /* compact landscape: tools hide behind the menu button */
 @media (orientation:landscape) and (max-height:360px){
@@ -175,14 +177,14 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
   #app{--side:0px;--fs:clamp(10px,3.3vw,19px);--gap:clamp(4px,1.4vw,10px);
     grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;
     grid-template-areas:"logo" "game" "info" "ctrl"}
-  #app:has(#mascot-slot){grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"logo" "game" "info" "ctrl"}
+  #app:has(:is(#mascot-slot,#heroine-slot):not([hidden])){grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"logo" "game" "info" "ctrl"}
   /* MISSION METER (portrait): a reserved strip row above the grid; meter.js draws the 26 px strip inside the slot's top edge */
-  #app:has(#meter-slot),#app:has(#meter-slot):has(#mascot-slot){grid-template-columns:minmax(0,1fr);grid-template-rows:auto var(--mh) minmax(0,1fr) auto auto;grid-template-areas:"logo" "meter" "game" "info" "ctrl"}
-  #app:has(#mascot-slot) #hud-ctrl{grid-row:auto}
+  #app:has(#meter-slot),#app:has(#meter-slot):has(:is(#mascot-slot,#heroine-slot):not([hidden])){grid-template-columns:minmax(0,1fr);grid-template-rows:auto var(--mh) minmax(0,1fr) auto auto;grid-template-areas:"logo" "meter" "game" "info" "ctrl"}
+  #app:has(:is(#mascot-slot,#heroine-slot):not([hidden])) #hud-ctrl{grid-row:auto}
   #mascot-slot{grid-area:game;align-self:end;justify-self:start;width:min(30vw,140px);height:clamp(64px,10.5vh,100px);margin:0 0 0 var(--gap);--gh:100cqh}
   #app:has(#meter-slot) #mascot-slot{height:clamp(54px,8vh,80px)}
   #mascot-slot :is(.gus-wrap,.mambo-wrap,.mascot-wrap){justify-content:flex-start}
-  #app:has(#mascot-slot) .board-wrap,#app:has(#meter-slot) .board-wrap{--cell:min(calc(100cqw / 6.5),calc(100cqh / 5.3));top:calc(var(--gap)*.6);transform:translate(-50%,0)}
+  #app:has(:is(#mascot-slot,#heroine-slot):not([hidden])) .board-wrap,#app:has(#meter-slot) .board-wrap{--cell:min(calc(100cqw / 6.5),calc(100cqh / 5.3));top:calc(var(--gap)*.6);transform:translate(-50%,0)}
   #logo-area{padding:calc(var(--gap)*1 + 100vw*.02) calc(100vw*.14) 0}
   .logo svg{max-height:min(15vh,116px);margin:0 auto}
   .logo .stack{display:none}.logo .wide{display:block}
@@ -221,7 +223,7 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
 /* <=300 px high landscape (400x225): no column, no row; the slot lies on the board frame, badge layout */
 @media (orientation:landscape) and (max-height:300px){
   #app:has(#meter-slot){grid-template-columns:var(--side) minmax(0,1fr) var(--side);grid-template-areas:"logo game ctrl" "info game ctrl"}
-  #app:has(#meter-slot):has(#mascot-slot){grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"logo game ctrl" "info game ctrl" "mascot game ctrl"}
+  #app:has(#meter-slot):has(:is(#mascot-slot,#heroine-slot):not([hidden])){grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"logo game ctrl" "info game ctrl" "mascot game ctrl"}
   #meter-slot{grid-area:game;align-self:center;justify-self:center;margin:0;
     --cell:min(calc((100cqw - 2*var(--side))/6.3),calc(100cqh/5.3))}
 }
@@ -437,6 +439,8 @@ body.state-error #loading{opacity:0;visibility:hidden;pointer-events:none}
 .chip.fsc.on{transform:translateX(-50%) scale(1)}
 .chip.fsc.bump{animation:bumptw .45s steps(4,end)}
 @media (max-aspect-ratio:11/10){ body.fs-mode #hud-info .fsbox{display:none} }
+/* compact landscape: the free-spin chip on the board already shows the count; the plate would take the heroine's room (v2) */
+@media (orientation:landscape) and (max-height:360px){ body.fs-mode #hud-info .fsbox{display:none} }
 @media (max-aspect-ratio:11/10){
   #hud-info .hud-bet{flex:1.35 1 0}
   #hud-info .hud-win{flex:1 1 0}
@@ -444,12 +448,77 @@ body.state-error #loading{opacity:0;visibility:hidden;pointer-events:none}
 }
 @media (max-height:360px){ .chip.fsc{top:0;font-size:calc(var(--cell)*.22);padding:calc(var(--cell)*.05) calc(var(--cell)*.2)} }
 
-/* ---------- reduced motion: calm everything ---------- */
+/* ---------- motion: Calm / Still / Auto (src/settings.js writes html[data-motion]; Auto follows prefers-reduced-motion) ----------
+   Calm and Still switch the decorative loops off; they never shorten a round (the event player owns the timing). Full wins over the OS query.
+   (selectors are written out: a pseudo-element is not allowed inside :is()) */
+html[data-motion="calm"] .cell .sym-svg,
+html[data-motion="calm"] .twk,
+html[data-motion="calm"] .fl,
+html[data-motion="calm"] .lglow,
+html[data-motion="calm"] .spk,
+html[data-motion="calm"] .puff,
+html[data-motion="calm"] .wink,
+html[data-motion="calm"] .lgstar,
+html[data-motion="calm"] #scene .drift-a canvas,
+html[data-motion="calm"] #scene .drift-b canvas,
+html[data-motion="calm"] .rays,
+html[data-motion="calm"] .banner::before,
+html[data-motion="calm"] .chip.bump,
+html[data-motion="calm"] .board-wrap.antic,
+html[data-motion="calm"] .board-wrap.antic::after,
+html[data-motion="calm"] .spin,
+html[data-motion="calm"] .tbtn,
+html[data-motion="calm"] .banner .bn-title,
+html[data-motion="still"] .cell .sym-svg,
+html[data-motion="still"] .twk,
+html[data-motion="still"] .fl,
+html[data-motion="still"] .lglow,
+html[data-motion="still"] .spk,
+html[data-motion="still"] .puff,
+html[data-motion="still"] .wink,
+html[data-motion="still"] .lgstar,
+html[data-motion="still"] #scene .drift-a canvas,
+html[data-motion="still"] #scene .drift-b canvas,
+html[data-motion="still"] .rays,
+html[data-motion="still"] .banner::before,
+html[data-motion="still"] .chip.bump,
+html[data-motion="still"] .board-wrap.antic,
+html[data-motion="still"] .board-wrap.antic::after,
+html[data-motion="still"] .spin,
+html[data-motion="still"] .tbtn,
+html[data-motion="still"] .banner .bn-title{animation:none!important}
+html[data-motion="calm"] .cell.win .sym-svg,
+html[data-motion="still"] .cell.win .sym-svg{transform:scale(1.08)}
+html[data-motion="calm"] .twk,
+html[data-motion="calm"] .wink,
+html[data-motion="calm"] .fl2,
+html[data-motion="still"] .twk,
+html[data-motion="still"] .wink,
+html[data-motion="still"] .fl2{opacity:0}
+html[data-motion="still"] *,html[data-motion="still"] *::before,html[data-motion="still"] *::after{transition:none!important}
 @media (prefers-reduced-motion:reduce){
-  .cell .sym-svg,.twk,.fl,.lglow,.spk,.puff,.wink,.lgstar,#scene .drift-a canvas,#scene .drift-b canvas,.rays,.banner::before,.chip.bump,.board-wrap.antic,.board-wrap.antic::after,.spin,.tbtn,.banner .bn-title{animation:none!important}
-  .cell.win .sym-svg{transform:scale(1.08)}
-  .twk,.wink{opacity:0}
-  .fl2{opacity:0}
+  html:not([data-motion="full"]) .cell .sym-svg,
+  html:not([data-motion="full"]) .twk,
+  html:not([data-motion="full"]) .fl,
+  html:not([data-motion="full"]) .lglow,
+  html:not([data-motion="full"]) .spk,
+  html:not([data-motion="full"]) .puff,
+  html:not([data-motion="full"]) .wink,
+  html:not([data-motion="full"]) .lgstar,
+  html:not([data-motion="full"]) #scene .drift-a canvas,
+  html:not([data-motion="full"]) #scene .drift-b canvas,
+  html:not([data-motion="full"]) .rays,
+  html:not([data-motion="full"]) .banner::before,
+  html:not([data-motion="full"]) .chip.bump,
+  html:not([data-motion="full"]) .board-wrap.antic,
+  html:not([data-motion="full"]) .board-wrap.antic::after,
+  html:not([data-motion="full"]) .spin,
+  html:not([data-motion="full"]) .tbtn,
+  html:not([data-motion="full"]) .banner .bn-title{animation:none!important}
+  html:not([data-motion="full"]) .cell.win .sym-svg{transform:scale(1.08)}
+  html:not([data-motion="full"]) .twk,
+  html:not([data-motion="full"]) .wink,
+  html:not([data-motion="full"]) .fl2{opacity:0}
 }
 
 /* comic onomatopoeia bubble spawned by fx.js on banners */

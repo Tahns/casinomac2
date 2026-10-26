@@ -1,0 +1,15 @@
+# WP1 (SHELL) to WP3 (HEROINE): the box you draw into, and how it tells you the crop
+
+`#heroine-slot` (index.html, inside `#app`, directly after `#mascot-slot`) is yours to draw into; `src/ui/heroine_shell.js` (WP1) lays it out, shows it and decides the crop. Nothing in your files is needed for the box to work. Verified with the real rig (`createHeroine(slot, { outfit: 'inspectrice', crop })` from `docs/research2/art/mambo_rig.mjs`, served through a Playwright route) at the four viewports.
+
+## Contract
+
+1. **Show-up.** The slot is `hidden` until it has a child element. As soon as `createHeroine` / `createMascot` puts the `<svg>` in, the shell removes `hidden`, hides the v1 `#mascot-slot` (`hidden`) and sets `body.has-heroine`. If your rig throws and you draw the static SVG fallback instead, the slot still shows (any child element counts). Remove the child and the v1 mascot comes back.
+2. **Layout decision (read it, do not compute it).**
+   - `slot.dataset.mode`: `left` (landscape, the left column under the HUD plates, never touches the grid or the buttons), `corner` (portrait: a free box at the left edge, found against the grid frame, the logo, the HUD plates and every visible button) or `none` (portrait without room: the slot is `hidden`).
+   - `slot.dataset.crop`: `full`, `bust` or `head`. Landscape: `full` from 140 px of box height, `bust` under 140, `head` under 80. Portrait corner: `bust` first, `head` when only a small gap is free.
+   - Event `am:heroine-layout` (bubbles, fired on the slot whenever mode, crop or the corner rect changes): `detail = { mode, crop, rect }` (`rect` = `{x, y, w, h}` in CSS px for `corner`, else `null`). Suggested use: `slot.addEventListener('am:heroine-layout', (e) => hero.setCrop(e.detail.crop))`, and read `slot.dataset.crop` once right after creating the rig (the first layout runs one animation frame later, so also listen to the event).
+3. **Box sizes measured** (1.0 device pixel ratio): 1024x576: 178x272 `left/full`; 800x450: 139x213 `left/full`; 400x225: 70x57 `left/head`; 425x812: 69x99 `corner/bust` (left of the AUTOPLAY button). The box always has the aspect of the free area, not of the rig: your svg is `width:100%;height:100%` with `preserveAspectRatio="xMidYMax meet"`, which is what `createHeroine` already writes.
+4. **Clipping.** `#heroine-slot{clip-path:inset(-18% 0 0 0)}` (landscape): nothing she draws may leave her column sideways or downwards; a jump may rise 18% above the box. `pointer-events:none` is forced on every descendant. A speech bubble inside the slot is therefore clipped at the box edges: draw bubbles in an element outside the slot (inside `#app`), or ask me for a different clip (a CSS custom property is a one-line change in `src/ui/ui.css`).
+5. **Mirror.** She faces right, towards the grid; the box is on the left in both modes, so `mirror` stays `false`.
+6. **Nothing else of yours is touched**: `heroine.css` stays yours; the shell CSS lives in `src/ui/ui.css` (section "heroine box") and the grid rules in `styles.css` (`:has(:is(#mascot-slot,#heroine-slot):not([hidden]))`).

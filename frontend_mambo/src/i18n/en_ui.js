@@ -1,5 +1,74 @@
 // Agent Mambo v2 i18n partial (WP1 owns it). Merged by index.js AFTER en.js, so a key here wins over the same key in en.js.
-// Social-casino wording rules apply to every string here (restricted word list: src/i18n/social.js and tests/text).
-// Step 0: empty on purpose.
-export const en_ui = {};
+// Social-casino wording rules apply to every string here (restricted word list: src/i18n/social.js and tests/text):
+// no bet/bets/betting, buy/bought/purchase, pay/paid/pays/paytable, cash, money, credit, deposit, wager, gamble, fund,
+// currency, withdraw, "cost of", "at the cost of". Say "play amount" or "cost" (the platform review scans src/** for one more word, see guideline [275]).
+export const en_ui = {
+  'btn.settings': 'SETTINGS',
+
+  // settings dialog
+  'settings.title': 'SETTINGS',
+  'settings.tabs': 'Settings sections',
+  'settings.tab.sound': 'Sound',
+  'settings.tab.display': 'Display',
+  'settings.tab.play': 'Play',
+  'settings.tab.info': 'Info',
+  'settings.mute': 'Mute sound',
+  'settings.vol.master': 'Master volume',
+  'settings.vol.music': 'Music',
+  'settings.vol.sfx': 'Effects',
+  'settings.vol.text': '{n} percent',
+  'settings.vol.off': 'Off',
+  'settings.motion': 'Motion',
+  'settings.motion.hint': 'Auto follows your device. Calm and Still never shorten a round.',
+  'settings.motion.auto': 'Auto',
+  'settings.motion.full': 'Full',
+  'settings.motion.calm': 'Calm',
+  'settings.motion.still': 'Still',
+  'settings.flash': 'Screen flash effects',
+  'settings.flash.hint': 'Switch off to remove bright flashes.',
+  'settings.contrast': 'High contrast',
+  'settings.summary': 'Session summary',
+  'settings.summary.hint': 'Shows your net position and time played on the main screen.',
+  'settings.summary.locked': 'Always shown in your region.',
+  'settings.turbo.hint': 'Faster animations. Not saved between visits.',
+  'settings.autoplay': 'Autoplay',
+  'settings.autoplay.hint': 'Choose the number of spins and when to stop.',
+  'settings.autoplay.open': 'Autoplay settings',
+  'settings.autoplay.stop': 'Stop autoplay',
+  'settings.autoplay.busy': 'Available between rounds.',
+
+  // info tab
+  'info.rtp.all': 'Expected return (RTP): {rtp} in every mode.',
+  'info.rtp.modes': 'Expected return (RTP): {list}.',
+  'info.session': 'This session',
+  'info.version': 'Version {v}',
+  'info.rules': 'Rules',
+  'info.controls': 'Controls',
+  'info.modes': 'Modes and RTP',
+  'info.legal': 'Legal',
+  'info.controls.settings': 'SETTINGS: opens this window with sound, motion, flashes, contrast, the session summary and the play shortcuts. Space toggles the control that has the focus while this window is open.',
+
+  // session summary (main screen)
+  'ledger.title': 'Session summary',
+  'ledger.label': 'SESSION',
+  'ledger.net': 'Net position',
+  'ledger.time': 'Time played',
+  'ledger.netShort': 'NET',
+  'ledger.timeShort': 'TIME',
+
+  // secret entrance doors
+  'door.title': 'Choose a door',
+  'door.hint': 'Choose a door to continue.',
+  'door.stage': 'Stage Door',
+  'door.coat': 'Coat Check',
+  'door.stairs': 'Service Stairs',
+  'unleash.chooseText': 'Take the secret entrance? This starts the free spins right away. Each door shows what it costs for this round. Continue?',
+  'door.cost': 'Cost: {cost}',
+  'door.fact.rtp': 'RTP {rtp}',
+  'door.fact.max': 'Max win {max}x',
+  'door.fact.median': 'Median round {x}x',
+  'door.fact.share': '{p} of rounds return more than the cost',
+  'mode.entrance_orders': 'SECRET ENTRANCE: COAT CHECK',
+  'mode.entrance_blackout': 'SECRET ENTRANCE: SERVICE STAIRS',
+};
 export default en_ui;

@@ -83,6 +83,8 @@ t.mode = function mode(name) {
   const n = String(name || '').toLowerCase();
   if (n === 'bonus' || n === 'unleash' || n === 'unleashed') return t('mode.bonus');
   if (n === 'base' || n === 'basegame' || n === 'base game') return t('mode.base');
+  if (n === 'entrance_orders') return t('mode.entrance_orders');
+  if (n === 'entrance_blackout') return t('mode.entrance_blackout');
   if (n === 'freegame' || n === 'free') return t('mode.freegame');
   const h = humanise(n);
   return socialMode ? socialize(h) : h;

@@ -1,9 +1,14 @@
 // Bet state. Pure / DOM-free. All values micro-units.
 // Mirrored from math index.json (modes: base cost 1, bonus cost 100).
 export const MODE_COSTS = { base: 1, bonus: 100 };
+// v2: the two later Secret Entrance doors cost 100x as well (SYNTHESIS 7). A door only appears in the picker once the rules
+// data lists its mode (src/ui/doors.js); kept apart from MODE_COSTS, which tests pin to the v1 modes.
+export const DOOR_MODE_COSTS = { entrance_orders: 100, entrance_blackout: 100 };
 
 export function modeCost(mode) {
-  const c = MODE_COSTS[mode];
+  const k = String(mode == null ? '' : mode).toLowerCase();
+  const has = (o) => Object.prototype.hasOwnProperty.call(o, k);
+  const c = has(MODE_COSTS) ? MODE_COSTS[k] : has(DOOR_MODE_COSTS) ? DOOR_MODE_COSTS[k] : undefined;
   return typeof c === 'number' ? c : 1;
 }
 // UNLEASH is sold at round prices and never below a minimum price (display-currency units, converted to micro).
@@ -15,7 +20,7 @@ export function unleashMinPrice(currency) {
   const u = UNLEASH_MIN_PRICE[String(currency || '').toUpperCase()];
   return Math.round((typeof u === 'number' ? u : 50) * 1000000);
 }
-export function unleashAvailable(bet, currency) { return totalCost(bet, 'bonus') >= unleashMinPrice(currency); }
+export function unleashAvailable(bet, currency, mode = 'bonus') { return totalCost(bet, mode) >= unleashMinPrice(currency); }
 export function totalCost(bet, mode) { return Math.round(bet * modeCost(mode)); }
 export function canAfford(balance, bet, mode) { return Number(balance) >= totalCost(bet, mode); }
 

@@ -1,5 +1,6 @@
 // Pure (DOM-free) game logic: guards, end-round rule, autoplay, keyboard decision.
 import { canAfford, totalCost } from './bet.js';
+import { remainingRoundMs } from './settings.js';
 
 export const BIG_WIN_MULT = 10; // x bet counts as "big win" for autoplay stop
 
@@ -31,6 +32,35 @@ export function needsConfirm(cost) { return cost > 2; }
 export function spaceAction({ state, modalOpen }) {
   if (modalOpen) return null;
   return state === 'idle' ? 'spin' : null;
+}
+
+// v2 Space guard (Engine [228], jurisdiction `disabledSpacebar`, SYNTHESIS 6 "Space inside a modal toggles the control, not a spin").
+// Pure decision for the window keydown listener: { spin, prevent }.
+//  - replay, or no bet state yet (not authenticated): never a spin, never prevented (the replay buttons keep the native Space).
+//  - a dialog is open: never a spin; the key is left alone when a control inside the dialog has the focus (so it toggles that
+//    control, a tab, a switch ...), and prevented otherwise (no page scroll, nothing behind the dialog).
+//  - `spacebar` capability off: never a spin, always prevented (also stops a focused SPIN button from clicking on Space).
+//  - otherwise a spin only when idle and no autoplay is running; the key itself is always prevented (no page scroll).
+export function spaceDecision({ state, modalOpen = false, replay = false, spacebar = true, hasBet = true, autoplayActive = false, controlFocused = false, repeat = false } = {}) {
+  if (replay || !hasBet) return { spin: false, prevent: false };
+  if (modalOpen) return { spin: false, prevent: !controlFocused };
+  if (!spacebar) return { spin: false, prevent: true };
+  if (repeat) return { spin: false, prevent: true };
+  return { spin: spaceAction({ state, modalOpen: false }) === 'spin' && !autoplayActive, prevent: true };
+}
+
+// v2 round pacing (jurisdiction `minimumRoundDuration`, assumed milliseconds; SYNTHESIS 6): the next round never starts before
+// t0 + minMs, whatever the turbo or autoplay setting. begin() marks the start of a round (the play request), remaining() is what
+// is still to wait, wait() resolves when the minimum has elapsed (immediately when there is none).
+export function createPacer({ now = () => Date.now(), sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+  let t0 = null;
+  const remaining = (minMs) => (t0 === null ? 0 : remainingRoundMs(t0, now(), minMs));
+  return {
+    begin() { t0 = now(); },
+    remaining,
+    async wait(minMs) { const ms = remaining(minMs); if (ms > 0) await sleep(ms); return ms; },
+    get started() { return t0; },
+  };
 }
 
 export function createAutoplay() {

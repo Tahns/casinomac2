@@ -1,2 +1,155 @@
-/* Agent Mambo v2: shell UI styles (WP1 owns this file): settings dialog, session ledger, Secret Entrance picker, heroine box layout.
-   Linked from index.html after styles.css. Step 0: intentionally empty, v1 look unchanged. */
+/* Agent Mambo v2 shell styles (WP1): settings dialog, session summary, door cards, heroine box, replay gear, motion / flash /
+   contrast attributes. Same look as the rest of the game: cream plates, thick ink outlines, hard coral offset shadows.
+   Linked after styles.css and meter.css, so these rules win ties. */
+
+/* ---------- heroine box (LEFT of the grid) ----------
+   src/ui/heroine_shell.js shows the slot once the rig is inside (WP3 draws into it) and decides the crop. Landscape: the
+   slot is the grid area `mascot` of the left column (styles.css :has(#heroine-slot)), so it can never touch the grid (middle
+   columns) or the buttons (right column). Portrait: a free corner at the left edge found by the shell (--hx --hy --hw --hh). */
+#heroine-slot{grid-area:mascot;position:relative;z-index:3;min-width:0;min-height:0;margin:0 var(--gap) var(--gap);pointer-events:none;container-type:size;
+  /* nothing she draws may leave her column sideways or downwards; a jump may rise 18% above the box (headroom for the rig) */
+  clip-path:inset(-18% 0 0 0)}
+#heroine-slot *{pointer-events:none!important}
+#heroine-slot>*{width:100%;height:100%}
+@media (max-aspect-ratio:11/10){
+  #heroine-slot{grid-area:auto;position:absolute;left:var(--hx,4px);top:var(--hy,0);width:var(--hw,0);height:var(--hh,0);margin:0;clip-path:none}
+}
+
+/* ---------- session summary (HUD column): one slim row "NET value  TIME value" ---------- */
+.stat.ledger{display:flex;flex-wrap:nowrap;justify-content:space-between;align-items:baseline;gap:calc(var(--fs)*.5);padding:calc(var(--fs)*.2) calc(var(--fs)*.55);border-width:calc(var(--fs)*.14);border-radius:calc(var(--fs)*.6);box-shadow:calc(var(--o)*.7) calc(var(--o)*.7) 0 0 var(--ink)}
+.ledger .lg-cell{display:flex;align-items:baseline;gap:.35em;min-width:0;text-align:left}
+.ledger .lg-cell:first-child{flex:1 1 auto}
+.ledger .lbl{display:inline;flex:0 0 auto;font-size:calc(var(--fs)*.58);letter-spacing:.08em;overflow:visible}
+.ledger .lg-v{display:block;flex:1 1 auto;min-width:0;font-family:var(--num);font-size:calc(var(--fs)*.95);font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;color:var(--ink)}
+.ledger .lg-cell:last-child .lg-v{flex:0 0 auto}
+@media (max-height:360px){
+  .stat.ledger{flex-direction:column;align-items:stretch;gap:0;padding:2px 4px}
+  .ledger .lg-cell{justify-content:space-between;gap:3px}
+  .ledger .lbl{font-size:6.5px;letter-spacing:.06em}
+  .ledger .lg-v{text-align:right;font-size:8.5px}
+  .ledger .lg-cell:last-child .lg-v{flex:1 1 auto}
+}
+@media (max-aspect-ratio:11/10){
+  #hud-info{flex-wrap:wrap}
+  #hud-info .stat.ledger{flex:1 1 100%;flex-direction:row;justify-content:center;gap:calc(var(--fs)*1.6);padding:1px calc(var(--fs)*.6)}
+  .ledger .lg-cell:first-child{flex:0 1 auto}
+  .ledger .lg-v,.ledger .lg-cell:last-child .lg-v{flex:0 1 auto;font-size:calc(var(--fs)*.9)}
+  .ledger .lbl{font-size:calc(var(--fs)*.62)}
+}
+
+/* ---------- settings dialog ---------- */
+#modal-settings .modal-box.st-box{display:flex;flex-direction:column;width:min(540px,94vw);height:min(94%,430px);max-height:94%;padding:0;overflow:hidden;gap:0;font-size:clamp(11px,2.4vmin,16px)}
+#modal-settings .st-head{display:flex;align-items:center;justify-content:space-between;gap:.6em;padding:.7em .9em .4em;flex:0 0 auto}
+#modal-settings .st-title{display:block;margin:0;padding:.15em .8em;font-size:1.25em;grid-column:auto}
+#modal-settings .st-close{min-height:28px;padding:.25em 1em;font-size:.95em}
+#modal-settings .st-tabs{display:flex;gap:.4em;padding:.2em .9em .6em;flex:0 0 auto;overflow-x:auto}
+#modal-settings .st-tab{flex:1 1 0;min-width:0;min-height:30px;padding:.2em .5em;border:3px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink);font-family:var(--disp);font-weight:900;letter-spacing:.04em;font-size:.95em;box-shadow:2px 3px 0 var(--ink)}
+#modal-settings .st-tab[aria-selected=true]{background:var(--teal);box-shadow:none;transform:translate(2px,3px)}
+#modal-settings .st-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:.5em .9em 1em;border-top:3px solid var(--ink);background:rgba(255,255,255,.55);overscroll-behavior:contain;touch-action:pan-y}
+#modal-settings .st-panel{outline-offset:2px}
+@media (max-aspect-ratio:11/10) and (min-height:600px){#modal-settings .modal-box.st-box{height:min(94%,560px)}}
+#modal-settings .st-row{display:flex;align-items:center;justify-content:space-between;gap:.8em;min-height:34px;padding:.45em 0;border-bottom:2px dotted rgba(20,16,43,.28)}
+#modal-settings .st-row[hidden]{display:none}
+#modal-settings .st-lbl{min-width:0}
+#modal-settings .st-name{display:block;font-weight:900;color:var(--ink)}
+#modal-settings .st-hint{display:block;font-size:.82em;font-weight:600;line-height:1.25;color:var(--ink-dim)}
+#modal-settings .st-sw{position:relative;flex:0 0 auto;width:48px;height:28px;padding:0;border-radius:14px;border:3px solid var(--ink);background:#cfc9dd;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+#modal-settings .st-sw::after{content:"";box-sizing:border-box;position:absolute;top:1px;left:1px;width:18px;height:18px;border-radius:50%;background:var(--cream);border:2.5px solid var(--ink);transition:transform .12s steps(3,end)}
+#modal-settings .st-sw[aria-checked=true]{background:var(--teal)}
+#modal-settings .st-sw[aria-checked=true]::after{transform:translateX(20px)}
+#modal-settings .st-sw[aria-disabled=true]{opacity:.6;cursor:default}
+#modal-settings .st-slider{display:grid;grid-template-columns:8.2em minmax(0,1fr) 3.2em;gap:.6em}
+#modal-settings .st-out{font-family:var(--num);font-weight:900;text-align:right;font-variant-numeric:tabular-nums}
+#modal-settings.st-muted .st-slider{opacity:.6}
+#modal-settings .st-range{-webkit-appearance:none;appearance:none;display:block;width:100%;height:28px;margin:0;padding:0;background:transparent;cursor:pointer;touch-action:pan-y}
+#modal-settings .st-range::-webkit-slider-runnable-track{height:10px;border-radius:6px;border:2.5px solid var(--ink);background:linear-gradient(90deg,var(--coral) var(--fill,50%),#fff var(--fill,50%))}
+#modal-settings .st-range::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-9px;border-radius:50%;border:3px solid var(--ink);background:var(--lemon);box-shadow:2px 2px 0 var(--ink)}
+#modal-settings .st-range::-moz-range-track{height:10px;border-radius:6px;border:2.5px solid var(--ink);background:#fff}
+#modal-settings .st-range::-moz-range-progress{height:10px;border-radius:6px;background:var(--coral)}
+#modal-settings .st-range::-moz-range-thumb{width:20px;height:20px;border-radius:50%;border:3px solid var(--ink);background:var(--lemon);box-shadow:2px 2px 0 var(--ink)}
+#modal-settings .st-motion{flex-wrap:wrap}
+#modal-settings .st-seg{display:flex;flex:0 0 auto;border:3px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff}
+#modal-settings .st-seg-opt{position:relative;display:grid;place-items:center;min-width:3.4em;min-height:28px;padding:0 .65em;font-weight:900;cursor:pointer;color:var(--ink)}
+#modal-settings .st-seg-opt+.st-seg-opt{border-left:2px solid var(--ink)}
+#modal-settings .st-seg-in{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+#modal-settings .st-seg-opt:has(.st-seg-in:checked){background:var(--teal)}
+#modal-settings .st-seg-opt:has(.st-seg-in:focus-visible){outline:3px solid var(--ink);outline-offset:-5px}
+#modal-settings .st-btn{flex:0 0 auto;min-height:30px;padding:.3em 1em;font-size:.95em}
+#modal-settings .st-btn[aria-disabled=true]{opacity:.5;cursor:default;box-shadow:none}
+#modal-settings .st-rtp{margin:0 0 .6em;text-align:left;font-weight:900}
+#modal-settings .st-h{margin:.2em 0 .3em;font-family:var(--disp);letter-spacing:.04em;font-size:1.05em}
+#modal-settings .st-dl{display:grid;grid-template-columns:auto 1fr;gap:.2em .8em;margin:0 0 .6em;font-weight:700}
+#modal-settings .st-dl dt{font-weight:900}
+#modal-settings .st-dl dd{margin:0;font-family:var(--num);font-weight:900;font-variant-numeric:tabular-nums}
+#modal-settings .st-version{margin:.6em 0 0;text-align:left;font-size:.85em;color:var(--ink-dim)}
+#modal-settings .st-det{margin:.3em 0;border:3px solid var(--ink);border-radius:10px;background:#fff;box-shadow:2px 2px 0 var(--ink)}
+#modal-settings .st-det summary{display:flex;align-items:center;min-height:30px;padding:.2em .7em;font-family:var(--disp);font-weight:900;letter-spacing:.03em;cursor:pointer}
+#modal-settings .st-det[open] summary{border-bottom:2px solid var(--ink)}
+#modal-settings .st-det-body{padding:.3em .8em .6em;font-weight:600;line-height:1.4;user-select:text}
+#modal-settings .st-det-body h3{margin:.8em 0 .2em;font-size:1.05em}
+#modal-settings .st-det-body p{margin:.3em 0;text-align:left;font-weight:600}
+#modal-settings .st-det-body ul,#modal-settings .st-det-body ol{margin:.3em 0;padding-left:1.3em}
+#modal-settings .rl-table{border-collapse:collapse;width:100%;margin:.4em 0;font-size:.9em}
+#modal-settings .rl-table th,#modal-settings .rl-table td{border:1px solid rgba(20,16,43,.45);padding:2px 5px;text-align:center}
+#modal-settings .rl-table tbody th{text-align:left}
+#modal-settings .rl-scroll{overflow-x:auto}
+#modal-settings .rl-glyph{margin-right:3px}
+#modal-settings .st-extra{font-weight:800}
+@media (max-height:360px){
+  #modal-settings .modal-box.st-box{font-size:11px;line-height:1.25;border-width:3px}
+  #modal-settings .st-head{padding:3px 8px 0}
+  #modal-settings .st-title{font-size:12px;padding:1px 8px}
+  #modal-settings .st-tabs{padding:2px 8px 4px}
+  #modal-settings .st-tab{min-height:26px;font-size:10px;padding:0 4px}
+  #modal-settings .st-body{padding:2px 8px 6px}
+  #modal-settings .st-row{min-height:28px;padding:2px 0;gap:6px}
+  #modal-settings .st-sw{width:44px;height:26px}
+  #modal-settings .st-sw::after{width:16px;height:16px}
+  #modal-settings .st-sw[aria-checked=true]::after{transform:translateX(18px)}
+  #modal-settings .st-hint{font-size:9px}
+  #modal-settings .st-seg-opt{min-width:2.8em;padding:0 .4em}
+  #modal-settings .st-close{padding:2px 10px}
+}
+
+/* ---------- Secret Entrance door cards (inside #modal-confirm) ---------- */
+.doors{display:flex;flex-direction:column;gap:.5em;margin:.2em 0 .7em}
+.doors[hidden]{display:none}
+.door{position:relative;display:block;border:3px solid var(--ink);border-radius:12px;background:#fff;padding:.5em .8em;box-shadow:3px 3px 0 var(--ink);text-align:left;cursor:pointer}
+.door.single{cursor:default}
+.door:has(.door-in:checked){background:var(--lemon)}
+.door:has(.door-in:focus-visible){outline:3px solid var(--ink);outline-offset:3px}
+.door-in{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.door-name{display:block;font-family:var(--disp);letter-spacing:.04em;font-size:1.05em}
+.door-cost{display:block;font-weight:900}
+.door-facts{display:flex;flex-wrap:wrap;gap:0 1.1em;margin:.15em 0 0;padding:0;list-style:none;font-size:.86em;font-weight:600}
+.door-facts li{white-space:nowrap}
+.door-facts li:last-child{white-space:normal}
+.door-hint{margin:0 0 .4em;font-size:.9em;text-align:center}
+.door-hint[hidden]{display:none}
+.mbtn:disabled{opacity:.5;cursor:default;box-shadow:none}
+@media (max-height:360px){
+  .doors{grid-column:1/-1;margin:0 0 2px;gap:3px}
+  .door{padding:2px 8px;border-radius:8px;border-width:2px;box-shadow:2px 2px 0 var(--ink)}
+  .door-facts{gap:0 10px;font-size:9px}
+  .door-hint{grid-column:1/-1;margin:0}
+}
+
+/* ---------- replay: the settings gear lives in the replay bar (the HUD column is hidden in portrait / compact) ---------- */
+body.replay .rp-gear{display:inline-grid;place-items:center;width:34px;height:34px;min-width:34px;padding:0;border:2px solid #ffe45e;border-radius:8px;background:#2b2a6b;color:#fff;cursor:pointer}
+body.replay .rp-gear svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+body.replay .rp-gear:focus-visible{outline:3px solid #fff;outline-offset:2px}
+body.replay #btn-settings{display:none!important}
+
+/* ---------- display settings written on <html> by src/settings.js: data-flash, data-contrast ---------- */
+/* flashes: the white flash layer and the flickering reel glow are the two full-surface flashers of the shell */
+html[data-flash="reduced"] #flash{display:none!important}
+html[data-flash="reduced"] .reelglow.on{animation:none!important;filter:none!important}
+/* high contrast: no halftone texture under text, solid plates, heavier ink, calmer scene */
+html[data-contrast="more"]{--ink-dim:#14102B}
+html[data-contrast="more"] .stat::after,html[data-contrast="more"] .slot i::after,html[data-contrast="more"] .board::before{display:none}
+html[data-contrast="more"] .modal{background:rgba(20,16,43,.94)}
+html[data-contrast="more"] #scene{opacity:.35}
+html[data-contrast="more"] .stat,html[data-contrast="more"] .modal-box,html[data-contrast="more"] .tbtn,html[data-contrast="more"] .mini,html[data-contrast="more"] .unleash{border-color:#000}
+html[data-contrast="more"] .lbl,html[data-contrast="more"] .val,html[data-contrast="more"] .lg-v{color:#000}
+html[data-contrast="more"] #modal-settings .st-hint,html[data-contrast="more"] #modal-settings .st-version{color:#000}
+html[data-contrast="more"] #modal-settings .st-body{background:#fff}

@@ -1,0 +1,13 @@
+# WP1 (SHELL) to WP4 (RENDER-CORE): what the shell now offers and what only render/index.js can do
+
+1. **Mascot host.** `render/index.js` creates the mascot in `document.getElementById('mascot-slot')` (line ~79). Once WP3's `createMascot` builds the v2 rig, pass `#heroine-slot` instead (the shell shows it and retires `#mascot-slot` as soon as it has a child, see `WP1_to_WP3.md`):
+```js
+const slot = document.getElementById('heroine-slot') || document.getElementById('mascot-slot');
+```
+   Creating into the hidden `#heroine-slot` is fine. Pass the crop the shell publishes: `slot.dataset.crop` and the event `am:heroine-layout` (`detail.crop`).
+2. **`disabledSlamstop`.** `settings.capabilities.slamstop === false` (also `body.no-slam`) means: no banner skip (tap to skip) before the count-up has ended. Only the event player can honour it; the shell has no skip of its own.
+3. **Turbo / `minimumRoundDuration` (nothing to do).** `renderer.setTurbo` is only ever called with `true` when `capabilities.turbo` is on, and the shell holds the next round until `t0 + minimumRoundDuration` (turbo and autoplay included, `src/main.js playRound`). Rule P: do not shorten pre-result sequences with turbo where `capabilities.turbo` is false or `capabilities.minRound` is true; read `settings.capabilities` at the point of use.
+4. **Replay SKIP.** `replay.js` hides its SKIP button when `capabilities.superTurbo` is false. If you ever want a graded skip, `setSkip(b | factor)` (number = time factor) would let the shell offer a slower one instead of hiding it.
+5. **Motion and flashes.** The shell's CSS already follows `html[data-motion=calm|still]` (decorative loops off, never shorter rounds), `html[data-flash=reduced]` (`#flash` layer off, reel glow flicker off) and `html[data-contrast=more]`. Your rAF / WAAPI code is not covered by CSS: read `settings.get('motionLevel' | 'flashReduced')` and `settings.on(...)` (WP4 `motion.js`, WP5 `flash.js`).
+6. **Layout changes you may notice.** The session summary strip (`#ledger`, WP1) sits in `#hud-info`: portrait 425x812 now has a 351 px game area (was 376); the 6x5 frame (347 px) still fits, a 6-row Annex frame must be sized from `cqh` as well as `cqw` (it already is in `.board-wrap` `--cell:min(...)`, but the frame constants are yours). The four tool buttons (sound, settings, info, fullscreen) now share one row.
+7. **Space.** The window `keydown` listener (main.js) uses `input.js spaceDecision`: Space never spins while a dialog is open and lets a focused dialog control toggle natively. If the renderer adds its own Space/click-to-skip handlers, respect `document.querySelector('.modal.open')`.

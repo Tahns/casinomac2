@@ -45,6 +45,11 @@
     </div>
     <div class="stat hud-win"><span class="lbl" data-i18n="label.win">WIN</span><b id="win" class="val">0.00</b></div>
     <div id="freespin-box" class="stat fsbox"><span class="lbl" data-i18n="label.freeSpins">FREE SPINS</span><b id="freespin-counter" class="val"></b></div>
+    <!-- v2: session summary (net position, time played); shown while settings 'ledgerOn' (src/ui/ledger.js) -->
+    <div id="ledger" class="stat ledger" role="group" hidden>
+      <span class="lg-cell"><span class="lbl" data-i18n="ledger.netShort">NET</span><b class="lg-v" data-ledger="net">0.00</b></span>
+      <span class="lg-cell"><span class="lbl" data-i18n="ledger.timeShort">TIME</span><b class="lg-v" data-ledger="time">0:00</b></span>
+    </div>
   </section>
 
   <nav id="hud-ctrl" class="hud-ctrl" aria-label="Controls">
@@ -70,8 +75,8 @@
       <button id="btn-sound" class="tbtn" type="button" data-i18n-title="btn.sound" aria-pressed="false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M4 9h4l5-4v14l-5-4H4z" /><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /><path class="x" d="M16 9l5 6M21 9l-5 6" /></svg>
       </button>
-      <!-- v2: settings gear (WP1 wires it to #modal-settings and removes [hidden]; hidden in step 0 so v1 shows no dead button) -->
-      <button id="btn-settings" class="tbtn" type="button" hidden aria-haspopup="dialog" data-i18n-title="btn.settings">
+      <!-- v2: settings gear, opens #modal-settings (src/ui/settings_dialog.js, wired in main.js; also inside the menu at height <= 360 px) -->
+      <button id="btn-settings" class="tbtn" type="button" aria-haspopup="dialog" data-i18n-title="btn.settings">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.1" /><circle cx="12" cy="12" r="6.4" /><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7" /></svg>
       </button>
       <button id="btn-info" class="tbtn" type="button" data-i18n-title="btn.info">
@@ -105,6 +110,8 @@
     <div class="modal-box">
       <h2 id="confirm-title" data-i18n="unleash.title">SECRET ENTRANCE</h2>
       <p id="confirm-text"></p>
+      <div id="door-cards" class="doors" hidden></div>
+      <p id="door-hint" class="door-hint" role="status" hidden data-i18n="door.hint">Choose a door to continue.</p>
       <div class="modal-actions">
         <button id="confirm-cancel" class="mbtn ghost" type="button" data-i18n="btn.cancel">CANCEL</button>
         <button id="confirm-ok" class="mbtn" type="button" data-i18n="btn.confirm">CONFIRM</button>
@@ -118,8 +125,8 @@
     </div>
   </div>
   <div id="modal-info" class="modal modal-wide" hidden role="dialog" aria-modal="true"></div>
-  <!-- v2: settings dialog shell (WP1 fills it: 4 tabs Sound / Display / Play / Info, see SYNTHESIS 6) -->
-  <div id="modal-settings" class="modal" hidden role="dialog" aria-modal="true" data-i18n-aria-label="btn.settings"><div class="modal-box"></div></div>
+  <!-- v2: settings dialog (4 tabs Sound / Display / Play / Info, SYNTHESIS 6); the box is built by src/ui/settings_dialog.js on first open -->
+  <div id="modal-settings" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="st-title" data-i18n-aria-label="btn.settings"><div class="modal-box"></div></div>
 
   <div id="loading" role="status">
     <style id="mb-ld-css">

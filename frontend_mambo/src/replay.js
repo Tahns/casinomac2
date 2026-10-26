@@ -3,9 +3,10 @@ import { t, isSocial, applyI18n } from './i18n/index.js';
 import { params } from './params.js';
 import { fetchReplay } from './rgs.js';
 import { formatMoney as defaultFormatMoney } from './money.js';
+import { settings } from './settings.js';
 
 const MICRO = 1_000_000;
-const HIDE = ['#btn-bet', '#btn-bet-minus', '#btn-bet-plus', '#btn-autoplay', '#btn-unleash', '#btn-menu', '#btn-turbo',
+const HIDE = ['#btn-bet', '#btn-bet-minus', '#btn-bet-plus', '#btn-autoplay', '#btn-unleash', '#btn-menu', '#btn-turbo', '#btn-settings', '#ledger',
   '#modal-autoplay', '#modal-confirm', '.bet-controls', '.hud-bet', '#unleash-cost'];
 
 const STYLE = `
@@ -83,10 +84,25 @@ export async function startReplay(opts = {}) {
   turboBtn.type = 'button';
   turboBtn.setAttribute('aria-pressed', 'false');
   let turbo = false;
+  // v2: the settings gear lives in the replay bar (sound, motion, flashes, contrast; the HUD column is hidden in portrait and
+  // in compact landscape, so there was no sound control at all there). The dialog itself is created by main.js.
+  const gearBtn = mk('button', 'rp-gear');
+  gearBtn.id = 'replay-settings';
+  gearBtn.type = 'button';
+  gearBtn.setAttribute('aria-haspopup', 'dialog');
+  gearBtn.setAttribute('title', t('btn.settings'));
+  gearBtn.setAttribute('aria-label', t('btn.settings'));
+  gearBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="6.4"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7"/></svg>';
+  gearBtn.addEventListener('click', () => { if (typeof opts.openSettings === 'function') opts.openSettings(gearBtn); });
   (infoHost || ui).appendChild(lineEl);
   ui.appendChild(btn);
   ui.appendChild(turboBtn);
   ui.appendChild(skipBtn);
+  ui.appendChild(gearBtn);
+  // jurisdiction `disabledSuperTurbo`: SKIP is the replay's super-fast level; without it only the one TURBO level is offered
+  const syncCaps = () => { skipBtn.hidden = !settings.capabilities.superTurbo; turboBtn.hidden = !settings.capabilities.turbo; };
+  syncCaps();
+  settings.on('capabilities', syncCaps);
   ui.appendChild(winEl);
   ui.appendChild(msgEl);
   if (!doc.querySelector('.rp-badge')) doc.body.appendChild(mk('div', 'rp-badge', t('replay.badge')));
