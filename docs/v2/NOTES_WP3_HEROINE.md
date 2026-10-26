@@ -32,10 +32,46 @@ Chain of failure: rig throws or does not load -> static picture of the same hero
 - **Speech bubble**: a sibling inside `#app` (the slot clips its children), over her skirt with the tail up at her head; no visible bubble when the box is smaller than 118x150 px (portrait corner, face crop); `aria-hidden` (flavour, the slot is aria-hidden too).
 - **Gaze**: real element positions (`.board-wrap`, `#btn-bet`, `#meter-slot .mm-badge`, `react(.., { at: {x,y} })` for the last winning cluster, viewport px), computed with the crop and the svg letterboxing.
 
+## More decisions (added during the build)
+
+- **`.mjs` -> `.js`**: the art uses `.mjs`; the shipped copies are `mambo_art.js`, `mambo_outfits.js`, `mambo_rig.js`, `mambo_compat.js` (every other module of the game is `.js`, a static host that does not map `.mjs` would refuse to serve it as a module). The sync retargets the import specifiers; `SYNC.json` records source and shipped hashes. `mambo_compat.js` is the art's reference adapter: shipped for parity, imported by nothing (WP11 may drop it from `dist`).
+- **Third patch `tightFull`**: the rig's full-figure window was 400x600 art units, the painted figure only spans x 100..300, y 40..566, so the full crop is now `[60, 30, 280, 556]` (+10% bigger in the left column: painted 249 px of the 272 px box at 1024x576, was 226). The ground shadow stays inside the window, jumps use the 18% headroom of the slot (`JUMP_MAX` 700 = 102 art units).
+- **Motion**: Auto + an OS "reduce motion" request = Still for the figure (the settings store says Calm for it: springs, breathing and saccades are still too much for a person who asked for reduced motion). An explicit Calm, Full or Still is taken as chosen, live.
+- **Gaze at rest**: the grid target is the lower left part of the board (she stands low, staring at its far top corner looked odd); `look('grid')` is restored after every reaction.
+- **Free-standing figure** (loading screen: `logo.js` calls `createMascot(#mb-ld-mascot, { size })` then `setPose('think')`): the heroine is drawn there too, in the held `think` pose with the sober hand.
+- **Not done on purpose**: no cream rim by default (`createMascot(host, { rim: true })` turns on 4 hard drop-shadows, about 0.3 ms/frame in the art notes), no frame-rate throttling while idle (0.3-0.6 ms per frame measured), no per-costume static fallback (the picture is the inspectrice idle pose), no mirror (she is left of the grid in both layouts).
+
+## Verification (all green at the time of writing)
+
+- `node --test tests/heroine`: 58 unit tests (vocabulary and table, whitelist, the ten clip targets, wind-up, calm and neutral transforms, jump cap, outfit change timing, director arbitration with a fake rig and clock, Still, outfit lock, gaze geometry, bubble placement fuzz, sync drift, fallback art content, en_hero lines and word screen, source hygiene).
+- `node tests/heroine/browser.mjs`: 41 checks. Budget 0.45 ms/frame average (max 8.9 ms = the costume swap frame) over 600 frames of the busiest reactions with the director on; live in the game 0.4-0.65 ms; 28,800 soak steps (16 kinds x 5 outfits x 3 crops x 3 motion levels) without a non-finite value; one simulated hour of the rig's own gag director: no hairFlip; fallback chain (5 cases); Still / Calm / hidden tab / live settings; bounding boxes at 1024x576 (177x272, left/full), 800x450 (139x213), 400x225 (70x57, head), 425x812 (69x99, corner bust): no overlap with the grid, a button, a HUD plate or the logo, no scroll, painted figure inside the box; gaze; 100 px readability.
+- `node --test tests/core tests/text tests/shell tests/heroine`: 153 pass. The guideline runner was run from an isolated copy of `frontend_mambo` (it writes its report and shots into the tree it runs from).
+- Looked at (Read): `tests/heroine/shots/game_1024x576.png`, `game_425x812.png`, `readable_100px.png`; contact sheets of every reaction at 300 px (inspectrice) and win / bigwin / blast for the casino gown; the portrait corner crop in six reactions at 3x; the static fallback at three crops; the loading screen.
+
+## For a human to judge ([217], Stake review)
+
+1. The casino gown is the most fitted costume (floor length, high gold collar, no slit): fallback is the trench cut. `winSmall` shows a small heel kick behind her (shoe only, skirt covers the leg); `bigwin` both arms up with star eyes; `blast` open mouth, hands on cheeks.
+2. The idle gag `glancePlayer` winks at the player now and then (user directive: wink allowed as sober charm); remove it from the rig's gag pool (`MICRO` in `mambo_rig.js`) if the review objects. `blowWhistle` is a mouth whistle (round O, no finger on the lips, no kiss shape).
+3. The rig's `anticipation` pose was changed (hand moved off her face: it read as a finger to the lips); `POSE_FIX` in `clips.js`.
+4. The costume change is behind an opaque screen, her face is hidden too, a puff at the swap, no garment confetti: please confirm it reads as a quick change and nothing else.
+
+## Flaws and limits
+
+- The bubble covers her skirt and legs for 2 s (no free room in the left column); no bubble in boxes under 118x150 px (portrait corner, face crop at 400x225).
+- The portrait corner box (69x99, waist-up) cuts raised hands in the big-win poses (known art limit); jumps are capped there so the head stays in.
+- The costume swap re-parses the whole figure (about 60 KB of markup): one frame of 9-12 ms, hidden behind the screen, not visible but measurable (max in the budget run).
+- `fallback_art.js` is 47 KB, loaded only when the rig fails.
+- Not tested on a real phone GPU; the halftone patterns are off on low-end devices (`hardwareConcurrency <= 2`, `deviceMemory <= 2`) and with high contrast.
+- Audio cues (`onCue`) are available but nothing consumes them yet (WP4 / WP2).
+
 ## State
 
-- [x] sync script, rig copied, fallback generated
+- [x] sync script (3 patches, `.js` copies, `--check`, `--fallback`), rig copied, static fallback generated
 - [x] heroine/ modules, mascot.js wiring, en_hero.js
-- [x] unit tests (`node --test tests/heroine`)
-- [ ] browser tests (`node tests/heroine/browser.mjs`), screenshots, perf
-- [ ] request files, final notes, commit
+- [x] unit tests, browser tests, screenshots viewed
+- [x] request files WP3_to_WP4 / WP11 / WP10
+- [ ] commit (own paths only)
+
+## Resume hints
+
+`cd frontend_mambo`; static server `PORT=5840 node tools/mock-rgs/static-server.mjs`, mock RGS `MOCK_PORT=5841 node tools/mock-rgs/server.mjs` (only needed by hand; `browser.mjs` starts its own). New art drop: `node tools/sync_heroine.mjs --fallback && node --test tests/heroine`. Dev harness: `/tests/heroine/harness.html` (exposes `window.H`). Scratch scripts (contact sheets, live shots) were in `/tmp/claude-0/scratch/wp3/` and are not part of the repo.
