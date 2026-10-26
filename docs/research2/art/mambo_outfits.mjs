@@ -6,7 +6,7 @@
 // [217] discipline: every costume is fully covering (high necklines, long sleeves or gloves, knee-length or longer,
 // no slit, no cleavage); glamour comes from style, not exposure.
 
-import { PAL, INK, OL, part, line, circ, G, star, rectD, ellD, tf, f } from './mambo_art.mjs';
+import { PAL, INK, OL, part, line, circ, G, star, rectD, ellD, tf, f, spl, silBack as SB, silFront as SF, silCl as CL, garmentD } from './mambo_art.mjs';
 
 const dotsShade = (x, y, w, h) => `M${x} ${y}h${w}v${h}h${-w}Z`;
 const R_SHADE = 'M208 250L290 250L290 480L208 480Z';       // right-hand shade band on the body (halftone side)
@@ -19,27 +19,29 @@ const inspectrice = {
   legs: { fill: INK, w: 13, shine: '#7A5646' },
   shoe: { base: PAL.white },
   lidFill: PAL.eyeshadow, propKind: 'flashlight', whistle: true, accBase: 90, accGain: 1, hairTop: () => '', capOver: false,
-  skirt(c) {
-    const d = 'M180 300L220 300C238 314 247 336 246 358C245 392 236 424 229 454Q200 462 171 454C166 424 157 392 155 358C153 336 162 314 180 300Z';
-    return part(c, d, PAL.navyJ, { shade: 'M208 296L270 296L270 470L208 470Z' })
-      + line('M183 308C170 346 168 400 172 446', 3, PAL.navyLight, ' opacity=".7"');
+  skirt(c) { // pencil skirt: waist tucked under the peplum, hips on the S-curve, narrow hem, front fold line
+    const d = garmentD(298, 456, { eB: (y) => (y > 440 ? 1.5 : 0), eF: (y) => (y > 440 ? 1.5 : 0), hem: 5 });
+    return part(c, d, PAL.navyJ, { shade: `M${CL(300) + 4} 296L280 296L280 470L${CL(456) - 8} 470C${CL(420)} 420 ${CL(360)} 350 ${CL(320) + 4} 296Z` })
+      + line(spl([[CL(312) - 5, 314], [CL(346) - 7, 350], [CL(404) - 9, 404], [CL(450) - 8, 450]]), 3, PAL.navyLight, ' opacity=".75"')
+      + line(spl([[SB(330) + 7, 330], [SB(380) + 5, 382], [SB(430) + 4, 432]]), 2.6, PAL.navyLight, ' opacity=".5"');
   },
-  torso(c) {
-    const J = 'M158 252C168 242 186 238 200 240C214 238 232 242 242 252C253 264 248 284 236 293C226 299 219 302 217 306C226 316 242 328 243 340L157 340C158 328 174 316 183 306C181 302 174 299 164 293C152 284 147 264 158 252Z';
-    let s = part(c, J, PAL.navyJ, { shade: 'M214 236L290 236L290 344L214 344Z' });
-    s += line('M168 276C174 284 184 288 192 286M232 276C226 284 216 288 208 286', 2.6, PAL.navyLight, ' opacity=".8"');
-    // shirt V + collar + thin tie
-    s += part(c, 'M185 241L215 241L200 288Z', PAL.white, { sw: 4, mis: [1.4, 1.2] });
-    s += part(c, 'M187 239L179 249L193 252L197 242Z M213 239L221 249L207 252L203 242Z', PAL.white, { sw: 3.4, mis: [1.2, 1] });
-    s += part(c, 'M197.4 246L202.6 246L204.6 280L200 292L195.4 280Z', INK, { sw: 3, mis: [1, 1] });
-    s += part(c, 'M196 240L204 240L203 247L197 247Z', INK, { sw: 2.8, mis: [1, 1] });
-    // lapels with gold piping
-    s += part(c, 'M185 240L169 257L188 292L199 286L191 257Z', PAL.navyLight, { sw: 4.4 }) + part(c, 'M215 240L231 257L212 292L201 286L209 257Z', PAL.navyLight, { sw: 4.4 });
-    s += line('M185 245L173 258L189 288M215 245L227 258L211 288', 2.6, PAL.gold);
-    // three gold buttons on the centre line, epaulettes
-    for (const y of [297, 311, 325]) s += part(c, ellD(200, y, 4.6, 4.6), PAL.gold, { sw: 3, mis: [1, 1] });
-    s += part(c, 'M159 252L180 243L184 251L162 261Z', PAL.cream, { sw: 3.4, mis: [1.2, 1] }) + part(c, 'M241 252L220 243L216 251L238 261Z', PAL.cream, { sw: 3.4, mis: [1.2, 1] });
-    s += line('M162 334L238 334', 2.8, PAL.gold, ' opacity=".9"');
+  torso(c) { // fitted jacket with a peplum, notch lapels in 3/4 view, thin tie, three gold buttons on the centre-front line
+    const J = garmentD(256, 339, { headB: [[190, 238], [174, 246]], headF: [[211, 238], [229, 246]], eB: (y) => (y > 318 ? (y - 318) * 0.1 : 0), eF: (y) => (y > 318 ? (y - 318) * 0.08 : 0), hem: 6, hemShift: 6 });
+    let s = part(c, J, PAL.navyJ, { shade: `M${CL(290) + 6} 236L300 236L300 350L${CL(330) + 4} 350C${CL(310) + 8} 322 ${CL(290) + 14} 290 ${CL(262) + 10} 236Z` });
+    // princess seams (give the chest its curve)
+    s += line(spl([[183, 264], [179, 284], [186, 306]]), 2.6, PAL.navyLight, ' opacity=".8"') + line(spl([[234, 268], [230, 286], [224, 304]]), 2.6, PAL.navyLight, ' opacity=".7"');
+    // shirt V (narrow, far lapel nearly vertical) + collar + thin tie
+    s += part(c, 'M189 240L212 240L215 284Z', PAL.white, { sw: 4, mis: [1.4, 1.2] });
+    s += part(c, 'M190 238L180 247L194 252L199 243Z M211 238L219 246L207 250L203 242Z', PAL.white, { sw: 3.4, mis: [1.2, 1] });
+    s += part(c, 'M201 247L208 247L217 283L213 296L208 285Z', INK, { sw: 3, mis: [1, 1] });
+    s += part(c, 'M200 241L207 241L208 248L201 248Z', INK, { sw: 2.8, mis: [1, 1] });
+    // lapels with gold piping: near lapel wide, far lapel a sliver
+    s += part(c, 'M190 240L171 255L179 266L214 296L216 286L203 262Z', PAL.navyLight, { sw: 4.4 }) + part(c, 'M212 240L230 251L224 260L215 292L215 284Z', PAL.navyLight, { sw: 4.2 });
+    s += line('M189 243L173 255L181 265L212 293', 2.6, PAL.gold) + line('M213 243L228 252L222 261', 2.4, PAL.gold);
+    // buttons on the centre line, shoulder boards
+    for (const y of [298, 312, 326]) s += part(c, ellD(CL(y) + 1, y, 4.6, 4.6), PAL.gold, { sw: 3, mis: [1, 1] });
+    s += part(c, 'M168 250L182 244L185 252L170 259Z', PAL.cream, { sw: 3.4, mis: [1.2, 1] }) + part(c, 'M232 250L222 244L219 251L231 258Z', PAL.cream, { sw: 3.4, mis: [1.2, 1] });
+    s += line(spl([[SB(333) + 3, 333], [CL(334), 336], [SF(333) - 3, 333]]), 2.8, PAL.gold, ' opacity=".9"');
     // whistle chain (dynamic path) + whistle (positioned by the runtime)
     s += `<path id="${c.pre}chain" d="" fill="none" stroke="${PAL.gold}" stroke-width="3" stroke-linecap="round"/>`;
     s += `<g id="${c.pre}whistle"><g transform="rotate(-12)">${part(c, 'M-9 -5L7 -7L11 -1L9 6L-9 6Z', PAL.gold, { sw: 3.4, mis: [1.2, 1] })}${circ(-2, 0, 2, INK)}${part(c, ellD(-12, 0, 4, 4), 'none', { sw: 2.6 })}</g></g>`;

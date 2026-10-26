@@ -7,8 +7,9 @@ import { createWire } from './wire.js';
 import { createMeter } from './meter.js';
 import { buildLogo } from './logo.js';
 import { audio } from '../audio.js';
-import { applyI18n, t } from '../i18n/index.js';
-import { en as EN } from '../i18n/en.js';
+import { applyI18n, t, EN } from '../i18n/index.js';
+import * as geo from './geo.js';
+import { dispatch as dispatchLayers, resetLayers } from './layers/index.js';
 
 const COLS = 6, ROWS = 5;
 const WINCAP = 5000;
@@ -87,6 +88,12 @@ export function createRenderer(rootEl) {
     } catch (e) { M.m = null; }
   })();
 
+  // v2 layer dispatcher context (docs/v2/INTERFACES.md). Fields are only ever added. LAYERS is empty in step 0.
+  const layerCtx = {
+    app, root, geo, T, sleep,
+    get turbo() { return S.turbo; }, get skip() { return S.skip; }, get cost() { return S.cost; }, get inFs() { return S.inFs; },
+  };
+
   const anim = (el, frames, opts) => {
     try { const a = el.animate(frames, { fill: 'backwards', ...opts, duration: T(opts.duration), delay: T(opts.delay || 0) }); return a.finished.catch(() => {}); } catch (e) { return Promise.resolve(); }
   };
@@ -94,6 +101,7 @@ export function createRenderer(rootEl) {
   // ---------- DOM ----------
   root.innerHTML = '';
   const wrap = document.createElement('div'); wrap.className = 'board-wrap';
+  layerCtx.wrap = wrap;
   wrap.innerHTML = `<div class="board">
       <div class="slots"></div><div class="reelglows"></div><div class="cells"></div>
       <svg class="outlines" viewBox="0 0 ${COLS} ${ROWS}" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -103,6 +111,7 @@ export function createRenderer(rootEl) {
     <div class="chip combo"></div><div class="chip fsc"></div><div class="chip tw"></div>`;
   root.appendChild(wrap);
   const board = wrap.querySelector('.board');
+  layerCtx.board = board;
   const slotsEl = wrap.querySelector('.slots'), glowsEl = wrap.querySelector('.reelglows'), cellsEl = wrap.querySelector('.cells');
   const outl = wrap.querySelector('.outlines'), popsEl = wrap.querySelector('.popups');
   const chipCombo = wrap.querySelector('.chip.combo'), chipFs = wrap.querySelector('.chip.fsc'), chipTw = wrap.querySelector('.chip.tw');
@@ -697,15 +706,21 @@ export function createRenderer(rootEl) {
   function playBook(events, hooks) {
     const run = async () => {
       S.hooks = hooks || {};
+      resetLayers();
       M.wonRound = false; M.intro = false; M.base = 'think'; pose(S.inFs ? 'dance' : 'think');
       let capped = false; // after the win cap the book still lists the remaining free spins (not evaluated): go straight to the end
       for (const ev of events || []) {
         if (S.destroyed) break;
         if (capped && ev && ev.type !== 'freeSpinEnd' && ev.type !== 'finalWin') continue;
-        try { await handle(ev); } catch (e) { console.error('render event', ev && ev.type, e); }
+        try {
+          const lw = dispatchLayers(ev, layerCtx); // v2: null while LAYERS is empty
+          await handle(ev);
+          if (lw) await lw;
+        } catch (e) { console.error('render event', ev && ev.type, e); }
         if (ev && ev.type === 'wincap') capped = true;
       }
       S.skip = false;
+      resetLayers();
       if (wire && wire.active) wire.clear();
       fillHoles();
       if (S.meterOn && !S.inFs) meterEnd();
@@ -753,8 +768,8 @@ export function createRenderer(rootEl) {
     setFormat(fn, tick) { if (typeof fn === 'function') { S.fmt = fn; S.fmtTick = typeof tick === 'function' ? tick : fn; } },
     resize() { fx.resize(); },
     // mascot hook for the UI layer (UNLEASH confirm)
-    mascot: { pose, say },
-    destroy() { S.destroyed = true; try { if (M.m) M.m.destroy(); } catch (e) { /* ignore */ } clearTimeout(M.timer); clearInterval(sweepTimer); if (wire) wire.destroy(); if (meter) meter.destroy(); if (ro) ro.disconnect(); fx.clear(); },
+    mascot: { pose, say, react(kind, info) { try { return !!(M.m && typeof M.m.react === 'function' && M.m.react(kind, info)); } catch (e) { return false; } } },
+    destroy() { S.destroyed = true; resetLayers(); try { if (M.m) M.m.destroy(); } catch (e) { /* ignore */ } clearTimeout(M.timer); clearInterval(sweepTimer); if (wire) wire.destroy(); if (meter) meter.destroy(); if (ro) ro.disconnect(); fx.clear(); },
     // exposed for dev/test harness
     _banner: banner, _winBanner: winBanner, _shake: shake, _state: S,
   };

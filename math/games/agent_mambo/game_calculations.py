@@ -1,13 +1,17 @@
 from src.executables.executables import Executables
-from src.calculations.cluster import Cluster
 from src.calculations.board import Board
 from src.config.config import Config
+from game_geometry import GeometryMixin
 
 
-class GameCalculations(Executables):
+class GameCalculations(GeometryMixin, Executables):
     """
     Overrides cluster evaluation so that every cluster is paid with the CURRENT global multiplier
     (there is no per-cell multiplier in Agent Mambo).
+
+    GeometryMixin (game_geometry.py) adds the per-spin floor plan: layout draw + `layout` event in `draw_board`,
+    geometry-aware `find_clusters`, `generate_wire_path`, `geo_cells`. Cluster positions stay COMPACT (the SDK emitters
+    pad them); the win overlay is placed through `cluster_overlay` (geometric centroid, identical to the stock one on Mezzanine).
     """
 
     def evaluate_clusters_with_grid(
@@ -28,7 +32,7 @@ class GameCalculations(Executables):
                     symwin_mult = sym_win * global_multiplier
                     total_win += symwin_mult
                     json_positions = [{"reel": p[0], "row": p[1]} for p in cluster]
-                    central_pos = Cluster.get_central_cluster_position(json_positions)
+                    central_pos = self.cluster_overlay(cluster)
                     return_data["wins"] += [
                         {
                             "symbol": sym,

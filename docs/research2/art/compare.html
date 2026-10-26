@@ -1,0 +1,46 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Mambo compare</title><link rel="icon" href="data:,">
+<style>
+  html,body{margin:0;background:#1b2542;color:#fff;font:12px Arial}
+  #g{display:flex;gap:6px;padding:6px;align-items:flex-start}
+  .c{position:relative;background:#d9a72a;overflow:hidden;flex:none}
+  .c b{position:absolute;left:4px;top:2px;color:#2B1A12;z-index:3}
+  .c svg{position:absolute;inset:0;width:100%;height:100%}
+  .ov{opacity:.62}
+</style></head><body><div id="g"></div>
+<script type="module">
+// Dev page (not shipped): model sheet (AI reference, never shipped) | live rig | overlay, all in the rig's coordinates, with a 10-unit grid.
+//   compare.html?pose=idle&outfit=inspectrice&vb=40,50,320,530&h=640&mode=3&grid=1&set={json}&mx=0&my=0&mk=1
+// Model mapping (base_v2_b.png): x_rig = 200 + (x_img - 655) * k, y_rig = 66 + (y_img - 40) * k, k = 0.3289.
+import { createHeroine } from './mambo_rig.mjs';
+const q = new URLSearchParams(location.search);
+const pose = q.get('pose') || 'idle', outfit = q.get('outfit') || 'inspectrice', H = +(q.get('h') || 640);
+const vb = (q.get('vb') || '40,50,320,530').split(/[ ,]+/).map(Number), mode = +(q.get('mode') || 3), grid = q.get('grid') !== '0';
+const W = Math.round(H * vb[2] / vb[3]);
+const k = 0.3289 * (+(q.get('mk') || 1)), mx = +(q.get('mx') || 0), my = +(q.get('my') || 0);
+const gridSvg = () => { if (!grid) return ''; let s = ''; const [x0, y0, w, h] = vb;
+  for (let x = Math.ceil(x0 / 10) * 10; x <= x0 + w; x += 10) s += `<path d="M${x} ${y0}v${h}" stroke="${x % 50 ? '#fff' : '#f33'}" stroke-width="${x % 50 ? 0.25 : 0.5}" opacity=".7"/>` + (x % 50 === 0 ? `<text x="${x + 1}" y="${y0 + 6}" font-size="5" fill="#fff">${x}</text>` : '');
+  for (let y = Math.ceil(y0 / 10) * 10; y <= y0 + h; y += 10) s += `<path d="M${x0} ${y}h${w}" stroke="${y % 50 ? '#fff' : '#f33'}" stroke-width="${y % 50 ? 0.25 : 0.5}" opacity=".7"/>` + (y % 50 === 0 ? `<text x="${x0 + 1}" y="${y - 1}" font-size="5" fill="#fff">${y}</text>` : '');
+  return s; };
+const g = document.getElementById('g');
+const cell = (label) => { const d = document.createElement('div'); d.className = 'c'; d.style.cssText = `width:${W}px;height:${H}px`; d.innerHTML = `<b>${label}</b>`; g.appendChild(d); return d; };
+// pose sheets: pose_sheet_1.png is 2048x1360, 3 x 2 poses. SHEET anchors = hip centre of each figure in image pixels, kk = rig units per image pixel
+const SHEET = { idle: [358, 410], point: [916, 410], smallwin: [1674, 338], bigwin: [410, 1126], shock: [983, 1085], shrug: [1669, 1096] }, kk = 0.784 * (+(q.get('mk') || 1));
+const modelSvg = (cls = '') => {
+  if (q.get('model') === 'sheet' && SHEET[pose]) { const [hx, hy] = SHEET[pose]; return `<svg class="${cls}" viewBox="${vb.join(' ')}" xmlns="http://www.w3.org/2000/svg"><image href="higgs/pose_sheet_1.png" x="${200 - hx * kk + mx}" y="${346 - hy * kk + my}" width="${2048 * kk}" height="${1360 * kk}"/></svg>`; }
+  return `<svg class="${cls}" viewBox="${vb.join(' ')}" xmlns="http://www.w3.org/2000/svg"><image href="higgs/base_v2_b.png" x="${200 - 655 * k + mx}" y="${66 - 40 * k + my}" width="${1195 * k}" height="${1600 * k}"/></svg>`;
+};
+const gridEl = () => `<svg style="z-index:2" viewBox="${vb.join(' ')}" xmlns="http://www.w3.org/2000/svg">${gridSvg()}</svg>`;
+const mkHero = (host, extra = {}) => {
+  const inner = document.createElement('div'); inner.style.cssText = 'position:absolute;inset:0'; host.appendChild(inner);
+  const h = createHeroine(inner, { outfit, raf: false, idle: false, limited: 0, ...extra });
+  h.setPose(pose, { snap: true }); if (q.get('set')) h.set(JSON.parse(q.get('set')), true);
+  if (q.get('mood')) h.setMood(q.get('mood'));
+  h.snap(); for (let i = 0; i < +(q.get('settle') || 0); i++) h.step(1 / 60);
+  inner.firstElementChild.setAttribute('viewBox', vb.join(' ')); inner.firstElementChild.setAttribute('preserveAspectRatio', 'xMidYMid meet'); inner.firstElementChild.style.overflow = 'hidden'; return h;
+};
+window.H = [];
+if (mode & 1) { const c = cell('model'); c.insertAdjacentHTML('beforeend', modelSvg()); c.insertAdjacentHTML('beforeend', gridEl()); }
+if (mode & 2) { const c = cell('rig ' + pose); window.H.push(mkHero(c)); c.insertAdjacentHTML('beforeend', gridEl()); }
+if (mode & 4) { const c = cell('overlay'); c.insertAdjacentHTML('beforeend', modelSvg()); window.H.push(mkHero(c)); c.lastElementChild.style.opacity = '.6'; c.insertAdjacentHTML('beforeend', gridEl()); }
+window.__ready = true;
+</script></body></html>

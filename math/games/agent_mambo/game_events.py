@@ -8,15 +8,16 @@ FUSE_BLAST = "fuseBlast"
 FUSE_FIZZLE = "fuseFizzle"
 
 
-def _cells(cells):
-    """Visible rows 0..4 (NOT padded): this differs from winInfo/tumbleBoard, which add +1."""
-    return [{"reel": r, "row": c} for r, c in cells]
+def _cells(gamestate, cells):
+    """GEOMETRIC visible rows of the frame (NOT padded; winInfo/tumbleBoard add +1 to COMPACT rows instead).
+    `cells` are COMPACT (reel, row) tuples; the floor plan maps them (identity on Mezzanine)."""
+    return gamestate.geo_cells(cells)
 
 
 def fuse_path_event(gamestate):
     f = gamestate.fuse
     gamestate.book.add_event(
-        {"index": len(gamestate.book.events), "type": FUSE_PATH, "cells": _cells(f["path"]), "burned": f["burn"]}
+        {"index": len(gamestate.book.events), "type": FUSE_PATH, "cells": _cells(gamestate, f["path"]), "burned": f["burn"]}
     )
 
 
@@ -26,7 +27,7 @@ def fuse_burn_event(gamestate, new_cells):
             "index": len(gamestate.book.events),
             "type": FUSE_BURN,
             "burned": gamestate.fuse["burn"],
-            "newCells": _cells(new_cells),
+            "newCells": _cells(gamestate, new_cells),
         }
     )
 
@@ -34,7 +35,7 @@ def fuse_burn_event(gamestate, new_cells):
 def fuse_blast_event(gamestate, removed):
     """removed: list of (reel, row) burnt cells that vanish (never scatters). No `replaced` field."""
     gamestate.book.add_event(
-        {"index": len(gamestate.book.events), "type": FUSE_BLAST, "cells": _cells(removed)}
+        {"index": len(gamestate.book.events), "type": FUSE_BLAST, "cells": _cells(gamestate, removed)}
     )
 
 

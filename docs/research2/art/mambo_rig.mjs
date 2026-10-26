@@ -14,7 +14,7 @@
 
 import {
   PAL, INK, OL, REST, GROUND, f, clamp, lerp, rotp, cubicD, cubicSub, cubicTan, limb, tf, ellD, line, circ, part, G, star,
-  makeCtx, defsCommon, buildHead, faceLayout, HEAD_PIVOT, gloveKinds, GLOVE_GRIP, shoeArt, tubeEls, eyeGeom, browPath,
+  makeCtx, defsCommon, buildHead, faceLayout, HEAD_PIVOT, HEAD_SCALE, gloveKinds, GLOVE_GRIP, shoeArt, tubeEls, limbEls, tubeD, spl, OLL, eyeGeom, browPath,
   VISEMES, VISEME_NAMES, MOUTH_LEN, mouthPaths, mixVisemes,
 } from './mambo_art.mjs';
 import { OUTFIT_DEFS, OUTFIT_KEYS } from './mambo_outfits.mjs';
@@ -52,13 +52,13 @@ const NAMES = Object.keys(DEF), NP = NAMES.length, IX = {}; NAMES.forEach((n, i)
 const REST_VALUES = NAMES.map((n) => DEF[n][0]);
 
 // discrete channels (swapped, not sprung)
-const DISCRETE_DEF = { gl: 'fist', gr: 'fist', prop: 'L', prop2: '', layL: 'front', layR: 'front', mouth: 'smirk' };
+const DISCRETE_DEF = { gl: 'relax', gr: 'relax', prop: 'L', prop2: '', layL: 'front', layR: 'front', mouth: 'smirk' };
 
 // ---------------------------------------------------------------------- poses (only the channels that differ from rest)
 export const POSES = {
   rest: {},
-  idle: { hipX: 11, hipTilt: -6, lean: 5, htilt: -4.5, lax: 4, lay: 0, lsr: -14, lb1: 14, lb2: -8, rax: 4, rb1: -4, rb2: 4,
-    arx: 254, ary: 322, arb1: -40, arb2: -34, arr: 25, gr: 'fist', alx: 146, aly: 356, alb1: 10, alb2: 6, gl: 'fist', prop: 'L', acc: 65 },
+  idle: { hipX: 5, hipTilt: -4, lean: 3, htilt: -4, lax: 6, lay: 0, lsr: -14, lb1: 14, lb2: -8, rax: 4, rb1: -4, rb2: 4,
+    arx: 249, ary: 302, arb1: -38, arb2: -22, arr: -8, gr: 'hip', alx: 134, aly: 334, alb1: 10, alb2: 6, gl: 'fist', prop: 'L', acc: 65 },
   point: { hipX: -4, hipTilt: 3, lean: 4, turn: 1.1, htilt: 2, lookx: 1, looky: 0, lax: -22, rax: 24, lsr: -4, rsr: 8, uL: 0.62, uR: 0.9,
     alx: 148, aly: 322, alb1: 38, alb2: 34, alr: 25, gl: 'fist',
     arx: 352, ary: 246, arb1: -4, arb2: 4, arr: 0, gr: 'fist', prop: 'R', acc: 270, beam: 1, mouth: 'smirk' },
@@ -108,19 +108,19 @@ function buildMarkup(outfitKey, pre, o) {
   const head = G(pre + 'head', `<g id="${pre}head-t">${headInner}</g>`);
   // ---- arms
   const arm = (side) => {
-    const s = side.toLowerCase(), kinds = gloveKinds(c, W);
-    let t = tubeEls(c, `arm-${s}`, 12, sleeve.fill || PAL.navyJ);
-    if (sleeve.gloveFrom != null) t += `<path id="${pre}arm-${s}-lgi" d="" fill="none" stroke="${INK}" stroke-width="${12 + 2 * OL}" stroke-linecap="butt"/><path id="${pre}arm-${s}-lgf" d="" fill="none" stroke="${W.glove || PAL.white}" stroke-width="12" stroke-linecap="butt"/>`;
-    if (sleeve.trim) t += `<path id="${pre}arm-${s}-tri" d="" fill="none" stroke="${INK}" stroke-width="${12 + 2 * OL}" stroke-linecap="butt"/><path id="${pre}arm-${s}-trf" d="" fill="none" stroke="${sleeve.trim}" stroke-width="12" stroke-linecap="butt"/>`;
-    const hand = G(`${pre}hand-${s}`, `<g id="${pre}hand-${s}-t"><g id="${pre}prop-slot-${s}"></g>` + Object.keys(kinds).map((k) => `<g id="${pre}g-${s}-${k}" display="${k === 'fist' ? 'inline' : 'none'}">${kinds[k]}</g>`).join('') + `</g>`);
+    const s = side.toLowerCase(), kinds = gloveKinds(c, W, s);
+    let t = limbEls(c, `arm-${s}`, sleeve.fill || PAL.navyJ);
+    if (sleeve.gloveFrom != null) t += limbEls(c, `arm-${s}-lg`, W.glove || PAL.white, { suffix: ['i', 'f'] });
+    if (sleeve.trim) t += limbEls(c, `arm-${s}-tr`, sleeve.trim, { suffix: ['i', 'f'] });
+    const hand = G(`${pre}hand-${s}`, `<g id="${pre}hand-${s}-t"><g id="${pre}prop-slot-${s}"></g>` + Object.keys(kinds).map((k) => `<g id="${pre}g-${s}-${k}" display="${k === 'relax' ? 'inline' : 'none'}">${kinds[k]}</g>`).join('') + `</g>`);
     return G(`${pre}arm-${s}`, t + hand);
   };
   const armL = arm('L'), armR = arm('R');
   // ---- legs + shoes
-  const leg = (side) => G(`${pre}leg-${side.toLowerCase()}`, tubeEls(c, `leg-${side.toLowerCase()}`, W.legs.w || 13, W.legs.fill) + (W.legs.shine ? `<path id="${pre}leg-${side.toLowerCase()}-sh" d="" fill="none" stroke="${W.legs.shine}" stroke-width="3.2" stroke-linecap="round" opacity=".5"/>` : ''));
+  const leg = (side) => G(`${pre}leg-${side.toLowerCase()}`, limbEls(c, `leg-${side.toLowerCase()}`, W.legs.fill) + (W.legs.shine ? `<path id="${pre}leg-${side.toLowerCase()}-sh" d="" fill="none" stroke="${W.legs.shine}" stroke-width="3.2" stroke-linecap="round" opacity=".5"/>` : ''));
   const shoe = (side) => G(`${pre}shoe-${side.toLowerCase()}`, `<g id="${pre}shoe-${side.toLowerCase()}-t">${shoeArt(c, W)}</g>`);
   const prop = G(`${pre}prop`, W.prop ? W.prop(c) : '') + G(`${pre}prop2`, W.prop2 ? W.prop2(c) : '');
-  const neck = part(c, 'M190 216L210 216L212 254L188 254Z', PAL.skin, { sw: OL * 0.9, mis: [1.4, 1.2], shade: 'M200 214L220 214L220 258L204 258Z' });
+  const neck = part(c, 'M193 212C193 226 191 238 189 250L211 250C210 238 209 226 208 212Z', PAL.skin, { sw: OL * 0.9, mis: [1.4, 1.2], shade: 'M186 212L214 212L214 230C204 226 194 226 186 230Z' });
   const skirt = G(`${pre}skirt`, `<g id="${pre}skirt-t">${W.skirt(c)}</g>`);
   const shoes = G(`${pre}shoes`, shoe('L') + shoe('R'));
   const legs = G(`${pre}legs`, leg('L') + leg('R'));
@@ -170,7 +170,8 @@ export function createHeroine(container, opts = {}) {
   const prevHead = { x: 0, y: 0, a: 0, vx: 0, vy: 0, w: 0, ax: 0, ay: 0, al: 0, init: false };
   const cache = Object.create(null);
   const spinS = { angle: 0, active: false };
-  const gsign = { l: 1, r: 1 };
+  const gthumb = { l: { t: 1, v: 1 }, r: { t: 1, v: 1 } };     // thumb side: target (+1 = side A on the glove's -x, -1 = side B) and eased value (cross-fade, no mirror pop)
+  let lastRenderT = 0;
 
   // ---- DOM
   function mount() {
@@ -505,6 +506,7 @@ const f2 = (n) => Math.round(n * 100) / 100;
   function render(force) {
     if (!svg) return;
     const lim = !reduced && O.limited > 0;
+    const gdt = clamp(time - lastRenderT, 0, 0.1); lastRenderT = time;
     if (!primSnap) primSnap = new Float64Array(X);
     if (lim) { if (time - lastSample >= 1 / O.limited || force) { lastSample = time; for (let i = 0; i < NP; i++) if (PRIM[i]) primSnap[i] = X[i]; } }
     for (let i = 0; i < NP; i++) D[i] = reduced ? T[i] : (PRIM[i] && lim ? primSnap[i] : X[i]);
@@ -522,12 +524,13 @@ const f2 = (n) => Math.round(n * 100) / 100;
     const hipX = d('hipX') + sway * 1.2, tilt = d('hipTilt') + sway * 0.5;
     setE('skirt', 'transform', `translate(${f(hipX)} 0) rotate(${f(tilt)} 200 346)`);
     setE('skirt-t', 'transform', `rotate(${f(sec.skirt.x)} 200 304)`);
+    const LW = (W.legs.w || 13) / 13, legW = (t) => LW * (11.4 - 3.6 * t + 1.1 * Math.sin(Math.PI * t));   // slim, tapering, slight calf
     const rootL = rotp(REST.hipJointL, tilt, REST.hip), rootR = rotp(REST.hipJointR, tilt, REST.hip);
     rootL[0] += hipX; rootR[0] += hipX;
     for (const [s, root, A] of [['l', rootL, REST.ankleL], ['r', rootR, REST.ankleR]]) {
       const p = s;
       const ax = A[0] + d(p + 'ax'), ay = A[1] + d(p + 'ay');
-      const cv = limb(root, [ax, ay], d(p + 'b1'), d(p + 'b2')), dd = cubicD(cv);
+      const cv = limb(root, [ax, ay], d(p + 'b1'), d(p + 'b2')), dd = tubeD(cv, legW);
       setE(`leg-${s}-ink`, 'd', dd); setE(`leg-${s}-fill`, 'd', dd);
       if (E[`leg-${s}-sh`]) setE(`leg-${s}-sh`, 'd', cubicD(limb([root[0] - 3, root[1] + 6], [ax - 3, ay - 6], d(p + 'b1') * 0.8, d(p + 'b2') * 0.8)));
       const flip = d(p + 'sf');
@@ -544,7 +547,7 @@ const f2 = (n) => Math.round(n * 100) / 100;
     const turn = clamp(d('turn'), 0, 1.2);
     const lx = clamp(X[IX.lookx] + look.sx, -1.2, 1.2), ly = clamp(X[IX.looky] + look.sy, -1.2, 1.2);
     const ht = d('htilt') + lx * 1.6 * (reduced ? 0 : 1) + sway * 0.5;
-    setE('head-t', 'transform', `translate(${f(REST.neck[0] + d('hx'))} ${f(REST.neck[1] + d('hy'))}) rotate(${f(ht)}) translate(${-HEAD_PIVOT[0]} ${-HEAD_PIVOT[1]})`);
+    setE('head-t', 'transform', `translate(${f(REST.neck[0] + d('hx'))} ${f(REST.neck[1] + d('hy'))}) rotate(${f(ht)}) scale(${HEAD_SCALE}) translate(${-HEAD_PIVOT[0]} ${-HEAD_PIVOT[1]})`);
     setE('hair-mass', 'transform', `rotate(${f(sec.hair.x)} -20 -130)`);
     setE('hair-curl-l', 'transform', `rotate(${f(sec.curlL.x)} -80 -48)`);
     setE('hair-curl-r', 'transform', `rotate(${f(sec.curlR.x)} 30 -30)`);
@@ -573,30 +576,34 @@ const f2 = (n) => Math.round(n * 100) / 100;
     // ---- mouth
     renderMouth(L);
     // ---- arms
+    const AW = (W.sleeve && W.sleeve.w) || [10.6, 7.6], armW = (t) => AW[0] + (AW[1] - AW[0]) * t;
     for (const s of ['l', 'r']) {
       const S = s === 'l' ? REST.shoulderL : REST.shoulderR;
       const Sx = S[0], Sy = S[1] - shr;
       const p = s === 'l' ? 'al' : 'ar';
       let wx = d(p + 'x'), wy = d(p + 'y');
       // chain / whistle special-case: whistle pose uses pinch glove at the mouth (handled by pose targets)
-      const cv = limb([Sx, Sy], [wx, wy], d(p + 'b1'), d(p + 'b2')), dd = cubicD(cv);
+      const cv = limb([Sx, Sy], [wx, wy], d(p + 'b1'), d(p + 'b2')), dd = tubeD(cv, armW);
       setE(`arm-${s}-ink`, 'd', dd); setE(`arm-${s}-fill`, 'd', dd);
       const sl = W.sleeve || {};
-      if (sl.trim) { const tr = cubicD(cubicSub(cv, sl.trimAt[0], sl.trimAt[1])); setE(`arm-${s}-tri`, 'd', tr); setE(`arm-${s}-trf`, 'd', tr); }
-      if (sl.gloveFrom != null) { const lg = cubicD(cubicSub(cv, sl.gloveFrom, 1)); setE(`arm-${s}-lgi`, 'd', lg); setE(`arm-${s}-lgf`, 'd', lg); }
+      if (sl.trim) { const [t0, t1] = sl.trimAt, tr = tubeD(cubicSub(cv, t0, t1), (t) => armW(t0 + (t1 - t0) * t) + 1.8, { n: 3, capS: false, capE: false }); setE(`arm-${s}-tri`, 'd', tr); setE(`arm-${s}-trf`, 'd', tr); }
+      if (sl.gloveFrom != null) { const g0 = sl.gloveFrom, lg = tubeD(cubicSub(cv, g0, 1), (t) => armW(g0 + (1 - g0) * t) + 0.8, { n: 5, capS: false }); setE(`arm-${s}-lgi`, 'd', lg); setE(`arm-${s}-lgf`, 'd', lg); }
       const tan = cubicTan(cv, 1), ang = (Math.atan2(tan[1], tan[0]) * 180) / Math.PI - 90 + d(p + 'r');
-      const thumbDown = -Math.sin(rad2(ang));
-      if (thumbDown > 0.28) gsign[s] = -1; else if (thumbDown < -0.28) gsign[s] = 1;
+      const thumbDown = -Math.sin(rad2(ang)), gt = gthumb[s];
+      if (thumbDown > 0.28) gt.t = -1; else if (thumbDown < -0.28) gt.t = 1;
+      gt.v = reduced || force ? gt.t : gt.v + (gt.t - gt.v) * (1 - Math.exp(-gdt / 0.055));
+      const kindNow = dis[s === 'l' ? 'gl' : 'gr'];
+      setE(`g-${s}-${kindNow}-ta`, 'opacity', f2(clamp((1 + gt.v) / 2, 0, 1))); setE(`g-${s}-${kindNow}-tb`, 'opacity', f2(clamp((1 - gt.v) / 2, 0, 1)));
       const spd = reduced ? 0 : Math.hypot(V[IX[p + 'x']], V[IX[p + 'y']]), smear = clamp((spd - 500) / 3200, 0, 0.32);
-      setE(`hand-${s}-t`, 'transform', `translate(${f(wx)} ${f(wy)}) rotate(${f(ang)}) scale(${f2(d(p + 'sx') * gsign[s] * (1 - smear * 0.38))} ${f2(d(p + 'sy') * (1 + smear))})`);
+      setE(`hand-${s}-t`, 'transform', `translate(${f(wx)} ${f(wy)}) rotate(${f(ang)}) scale(${f2(d(p + 'sx') * (1 - smear * 0.38))} ${f2(d(p + 'sy') * (1 + smear))})`);
       if (s === dis.prop.toLowerCase() && E.prop) {
         const kind = dis[s === 'l' ? 'gl' : 'gr'], gp = GLOVE_GRIP[kind] || [0, 26];
-        const eff = (W.accBase ?? 90) + (d('acc') - 90) * (W.accGain ?? 1), flipSign = gsign[s];
-        setE('prop', 'transform', `translate(${gp[0]} ${gp[1]}) rotate(${f(flipSign * (eff - ang))})`);
+        const eff = (W.accBase ?? 90) + (d('acc') - 90) * (W.accGain ?? 1);
+        setE('prop', 'transform', `translate(${gp[0]} ${gp[1]}) rotate(${f(eff - ang)})`);
       }
       if (E.prop2 && dis._p2 === s.toUpperCase()) {
-        const kind = dis[s === 'l' ? 'gl' : 'gr'], gp = GLOVE_GRIP[kind] || [0, 26], flipSign = gsign[s];
-        setE('prop2', 'transform', `translate(${gp[0]} ${gp[1]}) rotate(${f(flipSign * (0 - ang))})`);
+        const kind = dis[s === 'l' ? 'gl' : 'gr'], gp = GLOVE_GRIP[kind] || [0, 26];
+        setE('prop2', 'transform', `translate(${gp[0]} ${gp[1]}) rotate(${f(0 - ang)})`);
       }
     }
     if (E.beam) setE('beam', 'opacity', f2(clamp(d('beam'), 0, 1)));

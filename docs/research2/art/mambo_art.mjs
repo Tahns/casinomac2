@@ -60,6 +60,56 @@ export function limb(S, W, b1 = 0, b2 = 0) {
   const dx = W[0] - S[0], dy = W[1] - S[1], L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
   return [S, [S[0] + dx * 0.33 + nx * b1, S[1] + dy * 0.33 + ny * b1], [S[0] + dx * 0.67 + nx * b2, S[1] + dy * 0.67 + ny * b2], W];
 }
+// smooth path through hand-placed knots (Catmull-Rom converted to cubic Beziers). corners = knot indices that stay sharp.
+export function spl(pts, o = {}) {
+  const n = pts.length, closed = !!o.closed, k = (o.k ?? 1) / 6, cor = o.corners || [];
+  const P = (i) => (closed ? pts[((i % n) + n) % n] : pts[Math.max(0, Math.min(n - 1, i))]);
+  let d = `M${f(pts[0][0])} ${f(pts[0][1])}`;
+  const last = closed ? n : n - 1;
+  for (let i = 0; i < last; i++) {
+    const p0 = P(i - 1), p1 = P(i), p2 = P(i + 1), p3 = P(i + 2);
+    const c1 = cor.includes(i % n) ? p1 : [p1[0] + (p2[0] - p0[0]) * k, p1[1] + (p2[1] - p0[1]) * k];
+    const c2 = cor.includes((i + 1) % n) ? p2 : [p2[0] - (p3[0] - p1[0]) * k, p2[1] - (p3[1] - p1[1]) * k];
+    d += `C${f(c1[0])} ${f(c1[1])} ${f(c2[0])} ${f(c2[1])} ${f(p2[0])} ${f(p2[1])}`;
+  }
+  return d + (closed ? 'Z' : '');
+}
+// x as a smooth function of y through knot tables (cubic Hermite, Catmull-Rom tangents): used by the shared body silhouette
+export function lut(ys, xs) {
+  const n = ys.length;
+  const m = xs.map((x, i) => (i === 0 ? (xs[1] - xs[0]) / (ys[1] - ys[0]) : i === n - 1 ? (xs[n - 1] - xs[n - 2]) / (ys[n - 1] - ys[n - 2]) : (xs[i + 1] - xs[i - 1]) / (ys[i + 1] - ys[i - 1])));
+  return (y) => {
+    if (y <= ys[0]) return xs[0] + m[0] * (y - ys[0]);
+    if (y >= ys[n - 1]) return xs[n - 1] + m[n - 1] * (y - ys[n - 1]);
+    let i = 0; while (y > ys[i + 1]) i++;
+    const h = ys[i + 1] - ys[i], t = (y - ys[i]) / h, t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * xs[i] + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * xs[i + 1] + (t3 - t2) * h * m[i + 1];
+  };
+}
+// tapered noodle tube around a cubic centre line: closed outline with round (or flat) caps, wf(t) = full width at t in [0,1]
+export function tubeD(cv, wf, o = {}) {
+  const n = o.n ?? 7, capS = o.capS !== false, capE = o.capE !== false;
+  const Lp = [], Rp = [], tg0 = cubicTan(cv, 0), tg1 = cubicTan(cv, 1);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, p = cubicAt(cv, t), tg = cubicTan(cv, t), w = wf(t) / 2;
+    Lp.push([p[0] - tg[1] * w, p[1] + tg[0] * w]); Rp.push([p[0] + tg[1] * w, p[1] - tg[0] * w]);
+  }
+  const seg = (A, d0) => { // open Catmull-Rom through A, returns path commands starting after the first point
+    let s = '';
+    for (let i = 0; i < A.length - 1; i++) {
+      const p0 = A[Math.max(0, i - 1)], p1 = A[i], p2 = A[i + 1], p3 = A[Math.min(A.length - 1, i + 2)];
+      s += `C${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(p1[1] + (p2[1] - p0[1]) / 6)} ${f(p2[0] - (p3[0] - p1[0]) / 6)} ${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])} ${f(p2[1])}`;
+    }
+    return s;
+  };
+  const Rr = Rp.slice().reverse();
+  const k1 = wf(1) * 0.667, k0 = wf(0) * 0.667;
+  let d = `M${f(Lp[0][0])} ${f(Lp[0][1])}` + seg(Lp);
+  d += capE ? `C${f(Lp[n][0] + tg1[0] * k1)} ${f(Lp[n][1] + tg1[1] * k1)} ${f(Rp[n][0] + tg1[0] * k1)} ${f(Rp[n][1] + tg1[1] * k1)} ${f(Rp[n][0])} ${f(Rp[n][1])}` : `L${f(Rp[n][0])} ${f(Rp[n][1])}`;
+  d += seg(Rr);
+  d += capS ? `C${f(Rp[0][0] - tg0[0] * k0)} ${f(Rp[0][1] - tg0[1] * k0)} ${f(Lp[0][0] - tg0[0] * k0)} ${f(Lp[0][1] - tg0[1] * k0)} ${f(Lp[0][0])} ${f(Lp[0][1])}Z` : 'Z';
+  return d;
+}
 export const rectD = (x, y, w, h) => `M${f(x)} ${f(y)}h${f(w)}v${f(h)}h${f(-w)}Z`;
 export const ellD = (cx, cy, rx, ry) => `M${f(cx - rx)} ${f(cy)}a${f(rx)} ${f(ry)} 0 1 0 ${f(2 * rx)} 0a${f(rx)} ${f(ry)} 0 1 0 ${f(-2 * rx)} 0Z`;
 export const tf = (x, y, a = 0, sx = 1, sy = sx) => `translate(${f(x)} ${f(y)})${a ? ` rotate(${f(a)})` : ''}${sx !== 1 || sy !== 1 ? ` scale(${f(sx)} ${f(sy)})` : ''}`;
@@ -97,11 +147,46 @@ export function star(x, y, r, fill = PAL.white, sw = 3.2, rot = 0, pts = 4) {
   }
   return `<path d="${d}Z" fill="${fill}" stroke="${INK}" stroke-width="${sw}" stroke-linejoin="round"/>`;
 }
-// tube element pair (dynamic: runtime writes `d` into both). returns markup with ids `${id}-ink` and `${id}-fill`
+export const OLL = 4.2;                // outline of the (slimmer) noodle limbs
+// tapered limb pair (dynamic: runtime writes the closed outline from tubeD() into both): ink = filled + stroked, fill = shifted flat colour
+export function limbEls(c, id, fill, o = {}) {
+  const mis = c.misT, tr = mis[0] || mis[1] ? ` transform="translate(${f(mis[0])} ${f(mis[1])})"` : '';
+  const sx = o.suffix || ['-ink', '-fill'];
+  return `<path id="${c.pre}${id}${sx[0]}" d="" fill="${INK}" stroke="${INK}" stroke-width="${f(2 * (o.ol ?? OLL))}" stroke-linejoin="round"/>`
+    + `<path id="${c.pre}${id}${sx[1]}" d="" fill="${fill}"${tr}/>`;
+}
+// tube element pair (legacy stroke version, kept for API compatibility). returns markup with ids `${id}-ink` and `${id}-fill`
 export function tubeEls(c, id, w, fill, o = {}) {
   const mis = c.misT, tr = mis[0] || mis[1] ? ` transform="translate(${f(mis[0])} ${f(mis[1])})"` : '';
   return `<path id="${c.pre}${id}-ink" d="${o.d || ''}" fill="none" stroke="${INK}" stroke-width="${f(w + 2 * OL)}" stroke-linecap="round" stroke-linejoin="round"/>` +
     `<path id="${c.pre}${id}-fill" d="${o.d || ''}" fill="none" stroke="${fill}" stroke-width="${w}" stroke-linecap="round"${tr}/>`;
+}
+
+// ------------------------------------------------------------------ SHARED BODY SILHOUETTE (S-curve, 3/4 turn toward the grid)
+// Fitted-body edges at knot heights (upper-body and lower-body world coordinates at rest). back = screen-left edge, front = screen-right edge,
+// cl = centre-front line (sternum / front seam): it sits right of the body's middle because she is turned 3/4 toward the grid.
+// The line of the body is an S: chest tipped slightly back (left), waist tucked, pelvis pushed the other way, front edge flat over the belly.
+// Every costume draws its torso and lower garment from these tables (plus its own ease), so the five outfits share one body.
+export const SIL = {
+  ys:    [240, 252, 266, 282, 296, 306, 326, 346, 372, 404, 436, 456],
+  back:  [190, 170, 163, 163, 170, 177, 168, 158, 159, 164, 168, 170],
+  front: [212, 232, 239, 238, 231, 226, 230, 240, 240, 236, 231, 229],
+  cl:    [203, 208, 212, 214, 214, 214, 216, 216, 214, 212, 209, 207],
+};
+export const silBack = lut(SIL.ys, SIL.back), silFront = lut(SIL.ys, SIL.front), silCl = lut(SIL.ys, SIL.cl);
+// closed garment outline between heights y0..y1 following the shared silhouette. o.eB / o.eF = outward ease (functions of y), o.headB / o.headF =
+// extra top points (back side / front side, listed from the top down), o.hem = how much the lower edge sags in the middle, o.endB / o.endF = extra
+// points appended after the last knot (flares).
+export function garmentD(y0, y1, o = {}) {
+  const eB = o.eB || (() => 0), eF = o.eF || (() => 0);
+  const ys = [y0, ...SIL.ys.filter((y) => y > y0 + 3 && y < y1 - 3), y1];
+  const B = (o.headB || []).concat(ys.map((y) => [silBack(y) - eB(y), y])).concat(o.endB || []);
+  const F = (o.headF || []).concat(ys.map((y) => [silFront(y) + eF(y), y])).concat(o.endF || []);
+  const bl = B[B.length - 1], fl = F[F.length - 1];
+  const mid = [(bl[0] + fl[0]) / 2 + (o.hemShift ?? 4), Math.max(bl[1], fl[1]) + (o.hem ?? 4)];
+  const pts = B.concat([mid]).concat(F.slice().reverse());
+  const corners = [0, B.length - 1, B.length + 1, pts.length - 1].concat(o.corners || []);
+  return spl(pts, { closed: true, corners });
 }
 
 // ------------------------------------------------------------------ EYES: geometry (pure functions of openness etc.)
@@ -230,29 +315,55 @@ export function mouthPaths(v) {
 export function mixVisemes(a, b, t, out) { for (let i = 0; i < NV; i++) out[i] = a[i] + (b[i] - a[i]) * t; return out; }
 
 // ------------------------------------------------------------------ GLOVES (local: wrist at 0,0, fingers toward +y; cuff on top)
-function finger(c, x, y, a, len, w, fill) {
-  return `<g transform="${tf(x, y, a)}">${part(c, `M${f(-w)} 0L${f(-w)} ${f(len)}Q${f(-w)} ${f(len + w * 1.35)} 0 ${f(len + w * 1.35)}Q${f(w)} ${f(len + w * 1.35)} ${f(w)} ${f(len)}L${f(w)} 0Z`, fill, { sw: 4.6, mis: [1.6, 1.4] })}</g>`;
+// Pass 2: 11 hand shapes. Fingers are sausages with round tips, the palm is a puffy rounded mitt. The thumb exists twice (side A on -x, side B on +x)
+// and the runtime cross-fades them (no mirror flip, no pop) so the thumb always stays on the upper side of the hand.
+function finger(c, x, y, a, len, w, fill, o = {}) {
+  const tip = w * 1.28;
+  return `<g transform="${tf(x, y, a)}">${part(c, `M${f(-w)} 0L${f(-w)} ${f(len)}C${f(-w)} ${f(len + tip)} ${f(w)} ${f(len + tip)} ${f(w)} ${f(len)}L${f(w)} 0Z`, fill, { sw: o.sw ?? 4.4, mis: [1.5, 1.3] })}</g>`;
 }
-function thumb(c, x, y, a, len, fill) {
-  return `<g transform="${tf(x, y, a)}">${part(c, `M-6.6 0L-6.6 ${f(len - 6)}Q-6.6 ${f(len + 3)} 0 ${f(len + 3)}Q6.6 ${f(len + 3)} 6.6 ${f(len - 6)}L6.6 0Z`, fill, { sw: 4.6, mis: [1.5, 1.3] })}</g>`;
+function fan(c, w, angles, lens, o = {}) { // fingers radiating from a palm centre (cx, cy): roots sit on a circle of radius R, drawn under the palm
+  const cx = o.cx ?? 0, cy = o.cy ?? 24, R = o.R ?? 15, fw = o.w ?? 6.9;
+  return angles.map((a, i) => { const r = (a * Math.PI) / 180; return finger(c, cx - R * Math.sin(r), cy + R * Math.cos(r), a, lens[i], fw, w); }).join('');
 }
-export function gloveKinds(c, W) {
-  const w = W.glove || PAL.white, cuffFill = W.cuff || w;
-  const sh = (d) => ({ shade: d, ht: 'ht' });
-  const cuff = part(c, 'M-16.5 -15Q0 -20 16.5 -15L17.5 4Q0 9 -17.5 4Z', cuffFill, { sw: 4.8, mis: [1.6, 1.4] }) + line('M-11 -7Q0 -3 11 -7', 2.6, INK, ' opacity=".5"');
-  const palm = (d, shadeD) => part(c, d, w, sh(shadeD || rectD(3, 8, 30, 46)));
-  return {
-    fist: palm('M-20 3C-28 20 -25 38 -17 45Q-12 52 -5 46Q0 53 6 46Q12 52 18 44C26 34 25 14 19 3Z') + line('M-5 46L-4.4 28M6 46L5.4 28', 3) + thumb(c, -16, 30, 74, 21, w) + cuff,
-    open: finger(c, 0, 17, 0, 24, 6.4, w) + finger(c, -14, 15, 34, 22, 6.2, w) + finger(c, 14, 15, -34, 22, 6.2, w)
-      + palm('M-19 3C-26 20 -20 38 0 40C20 38 26 20 19 3Z') + thumb(c, -19, 22, 64, 22, w) + cuff,
-    point: `<g transform="${tf(3, 13, 0)}">${part(c, 'M-6.2 0L-6.2 42Q-6.2 51 0 51Q6.2 51 6.2 42L6.2 0Z', w, { sw: 4.6, mis: [1.6, 1.4] })}</g>`
-      + palm('M-19 3C-26 20 -21 36 -3 37C17 37 25 22 19 3Z') + line('M-6 31Q3 36 12 30M-8 22Q2 27 13 21', 3, INK) + thumb(c, -17, 13, 34, 19, w) + cuff,
-    flat: palm('M-17 3C-22 28 -18 54 0 54C18 54 22 28 17 3Z') + line('M-6 54L-6 30M5.5 54L5.5 30', 3.2) + thumb(c, -16, 14, 40, 18, w) + cuff,
-    pinch: palm('M-19 3C-26 20 -23 34 -14 40Q-8 46 -2 42Q4 47 10 42Q17 40 18 32C24 24 23 12 18 3Z') + line('M-3 42L-3 27', 3.2)
-      + `<g transform="${tf(10, 40, -30)}">${part(c, ellD(0, 0, 8, 8.5), w, { sw: 4.4, mis: [1.2, 1.1] })}${circ(0, 0, 3, INK)}</g>` + thumb(c, -15, 29, 74, 18, w) + cuff,
-  };
+function thumbOf(c, side, p, fill) { // p = [x, y, angle, length, halfWidth]: side -1 mirrors the thumb to the other side of the hand (curved, tapered sausage)
+  const [x, y, a, len, w] = p, w2 = w * 0.88, bd = 3.4, e = len - w2;
+  return `<g transform="${tf(side * x, y, side * a, side, 1)}">${part(c, `M${f(-w)} 0C${f(-w + 1)} ${f(e * 0.45)} ${f(-w2 + bd)} ${f(e * 0.75)} ${f(-w2 + bd)} ${f(e)}C${f(-w2 + bd)} ${f(len + w2 * 0.75)} ${f(w2 + bd)} ${f(len + w2 * 0.75)} ${f(w2 + bd)} ${f(e)}C${f(w2 + bd)} ${f(e * 0.7)} ${f(w - 1)} ${f(e * 0.4)} ${f(w)} 0Z`, fill, { sw: 4.4, mis: [1.4, 1.2] })}</g>`;
 }
-export const GLOVE_GRIP = { fist: [0, 27], open: [0, 26], point: [0, 24], flat: [0, 30], pinch: [4, 36] };
+const SHADE_HAND = 'M5 6L36 6L36 60L5 60Z';
+// kind -> { body(c,w), thumb: [x,y,a,len,halfW], grip: [x,y] prop anchor }
+const GLOVE_DEFS = {
+  fist: { grip: [0, 28], thumb: [-17, 25, 66, 22, 7], body: (c, w) => part(c, 'M-19 2C-27 14 -27 33 -19 43C-14 52 -6 52 -1 47C4 53 13 53 18 46C27 38 27 15 19 2Z', w, { shade: SHADE_HAND, ht: 'ht' })
+    + line('M-1 47Q-3.4 38 -2 30M10 50Q8.6 40 9 31', 3.2) },
+  relax: { grip: [0, 26], thumb: [-16, 9, 30, 22, 6.8], body: (c, w) => finger(c, -11.5, 14, 5, 22, 7, w) + finger(c, 0.5, 16, 0, 25, 7.2, w) + finger(c, 12.5, 14, -5, 21, 6.8, w)
+    + part(c, 'M-18 2C-25 12 -23 25 -15 29C-6 33 6 33 15 29C23 25 25 12 18 2Z', w, { shade: SHADE_HAND, ht: 'ht' }) },
+  hip: { grip: [0, 24], thumb: [-18, 14, 44, 20, 7], body: (c, w) => part(c, 'M-20 2C-28 14 -26 30 -17 38C-12 43 -8 46 -3 44C1 48 8 48 11 44C17 46 24 41 25 31C27 20 24 10 19 2Z', w, { shade: SHADE_HAND, ht: 'ht' })
+    + line('M-3 44Q-4.6 36 -3 29M10.5 44Q10 36 10.5 28', 3.2) },
+  open: { grip: [0, 26], thumb: [-18, 20, 62, 22, 6.9], body: (c, w) => fan(c, w, [0, 38, -38], [17, 15, 15])
+    + part(c, 'M-19 2C-26 18 -21 36 0 40C21 36 26 18 19 2Z', w, { shade: SHADE_HAND, ht: 'ht' }) },
+  splay: { grip: [0, 22], thumb: [-18, 17, 78, 21, 6.8], body: (c, w) => fan(c, w, [0, 62, -62], [15, 14, 14], { cy: 22 })
+    + part(c, 'M-18 2C-24 14 -20 30 0 33C20 30 24 14 18 2Z', w, { shade: SHADE_HAND, ht: 'ht' }) },
+  point: { grip: [0, 24], thumb: [-17, 14, 38, 20, 6.8], body: (c, w) => finger(c, 3, 12, 0, 34, 6.6, w)
+    + part(c, 'M-19 2C-26 14 -22 30 -14 36C-8 41 -4 40 0 37C5 41 12 41 16 36C24 30 26 14 19 2Z', w, { shade: SHADE_HAND, ht: 'ht' }) + line('M-6 32Q3 37 12 31M-8 22Q2 27 13 21', 3.2) },
+  flat: { grip: [0, 30], thumb: [-16, 14, 40, 20, 6.8], body: (c, w) => part(c, 'M-17 2C-22 28 -18 54 0 55C18 54 22 28 17 2Z', w, { shade: SHADE_HAND, ht: 'ht' }) + line('M-6 55L-6.4 31M5.5 55L5.9 31', 3.2) },
+  palm: { grip: [0, 24], thumb: [-18, 22, 84, 25, 6.8], body: (c, w) => fan(c, w, [0, 28, -28], [18, 16, 16])
+    + part(c, 'M-18 2C-27 18 -22 36 0 40C22 36 27 18 18 2Z', w, { shade: SHADE_HAND, ht: 'ht' }) + line('M-8 14Q0 19 8 14', 2.8, INK, ' opacity=".55"') },
+  pinch: { grip: [4, 36], thumb: [-15, 29, 74, 19, 6.6], body: (c, w) => part(c, 'M-19 2C-26 18 -23 32 -14 38Q-8 44 -2 40Q4 45 10 40Q17 38 18 30C24 22 23 12 18 2Z', w, { shade: SHADE_HAND, ht: 'ht' }) + line('M-3 40L-3 26', 3.2)
+    + `<g transform="${tf(10, 38, -30)}">${part(c, ellD(0, 0, 8, 8.5), w, { sw: 4.2, mis: [1.2, 1.1] })}${circ(0, 0, 3, INK)}</g>` },
+  thumbup: { grip: [0, 24], thumb: [-5, 24, 0, 32, 7.2], body: (c, w) => part(c, 'M-19 2C-26 12 -25 28 -17 35C-11 40 10 40 16 35C24 28 25 12 19 2Z', w, { shade: SHADE_HAND, ht: 'ht' }) + line('M-6 36Q-8 28 -6 22M6 37Q5 29 6 23', 3 ) },
+  wave: { grip: [0, 24], thumb: [-18, 19, 70, 23, 6.9], body: (c, w) => fan(c, w, [6, 32, -22], [18, 16, 16])
+    + part(c, 'M-19 2C-26 18 -21 36 0 40C21 36 26 18 19 2Z', w, { shade: SHADE_HAND, ht: 'ht' }) },
+};
+export const GLOVE_KIND_NAMES = Object.keys(GLOVE_DEFS);
+export function gloveKinds(c, W, side = 'x') {
+  const w = W.glove || PAL.white, cuffFill = W.cuff || w, out = {};
+  const cuff = part(c, 'M-14.5 -14Q0 -19 14.5 -14L15.5 3Q0 8 -15.5 3Z', cuffFill, { sw: 4.6, mis: [1.5, 1.3] }) + line('M-9.5 -6Q0 -2.4 9.5 -6', 2.6, INK, ' opacity=".5"');
+  for (const k of GLOVE_KIND_NAMES) {
+    const D = GLOVE_DEFS[k], id = `${c.pre}g-${side}-${k}`;
+    out[k] = D.body(c, w) + `<g id="${id}-ta">${thumbOf(c, 1, D.thumb, w)}</g><g id="${id}-tb" opacity="0">${thumbOf(c, -1, D.thumb, w)}</g>` + cuff;
+  }
+  return out;
+}
+export const GLOVE_GRIP = Object.fromEntries(GLOVE_KIND_NAMES.map((k) => [k, GLOVE_DEFS[k].grip]));
 
 // ------------------------------------------------------------------ SHOES (local: leg entry at 0,0, toe toward +x, ground at y=+38)
 export function shoeArt(c, W) {
@@ -272,8 +383,9 @@ export function shoeArt(c, W) {
 // ------------------------------------------------------------------ HEAD
 // Head-art coordinates (measured on the model sheet): face centre line x=0, chin y=-14, face half-width ~43, she faces RIGHT.
 // The cranium (hair) is wide to the LEFT of the face; the garrison cap sits on the back-left of the head.
-export const FACE_D = 'M7 -14C24 -14 38 -26 42 -44C46 -62 45 -84 38 -98C30 -110 14 -115 0 -114C-18 -114 -36 -104 -43 -86C-48 -70 -46 -50 -38 -34C-30 -20 -12 -14 7 -14Z';
-export const HEAD_PIVOT = [-9, -6];       // art point that sits on the neck pivot (head tilts about the neck)
+export const FACE_D = 'M9 -13C22 -14 36 -25 41 -43C46 -61 45 -84 38 -98C30 -110 14 -115 0 -114C-18 -114 -36 -104 -43 -86C-48 -70 -45 -50 -35 -35C-26 -23 -10 -13 9 -13Z';
+export const HEAD_PIVOT = [5, -6];        // art point that sits on the neck pivot (head tilts about the neck); pass 2: head moved 14 units toward the body line
+export const HEAD_SCALE = 0.95;           // pass 2: slightly smaller head on a slimmer neck (more elegant proportion)
 export const HEAD_REST_TURN = 1.0;
 // feature layout as a function of the face turn t (0 = frontal, 1 = three-quarter toward the grid)
 export function faceLayout(t) {
@@ -285,8 +397,9 @@ export function faceLayout(t) {
 
 function hairParts(c, W) {
   const col = PAL.hair;
-  const mass = part(c, 'M20 -122C16 -140 -2 -148 -30 -146C-60 -142 -88 -122 -93 -90C-97 -76 -94 -64 -88 -56C-82 -48 -96 -38 -92 -28C-88 -14 -70 -4 -50 0L-30 4L-24 -20L0 -20L26 -40C30 -70 26 -100 20 -122Z', col, { shade: 'M-98 -170L-34 -170L-34 10L-98 10Z', ht: 'ht' })
-    + line('M-82 -104C-90 -84 -82 -68 -76 -54C-72 -44 -78 -34 -72 -24', 3.6, PAL.hairHi, ' opacity=".85"') + line('M-66 -132C-80 -122 -87 -108 -88 -96', 3.2, PAL.hairHi, ' opacity=".7"')
+  // pass 2: waved page-boy: wide at the back, a wave that tucks in then flips out, the underside slants up toward the neck (no more block)
+  const mass = part(c, 'M20 -122C16 -140 -2 -148 -30 -146C-60 -142 -88 -122 -94 -92C-98 -74 -96 -62 -90 -54C-85 -47 -91 -42 -94 -34C-99 -22 -88 -5 -68 -3C-52 -2 -43 -9 -35 -17L-22 -22L0 -22L26 -40C30 -70 26 -100 20 -122Z', col, { shade: 'M-100 -170L-34 -170L-34 10L-100 10Z', ht: 'ht' })
+    + line('M-83 -106C-91 -86 -84 -70 -78 -56C-74 -46 -80 -38 -75 -27', 3.6, PAL.hairHi, ' opacity=".85"') + line('M-66 -132C-80 -122 -88 -108 -89 -96', 3.2, PAL.hairHi, ' opacity=".7"')
     + `<g id="${c.pre}hair-tuft" opacity="0">` + part(c, 'M-62 -128L-60 -158L-48 -142L-42 -166L-30 -148L-20 -164L-14 -146L-2 -156L2 -134L-2 -120L-58 -120Z', col, { sw: OL * 0.95 }) + line('M-52 -146L-48 -132M-26 -150L-24 -134', 2.8, PAL.hairHi) + `</g>`;
   const curlL = part(c, 'M-80 -48C-94 -44 -101 -26 -93 -15C-86 -6 -72 -11 -72 -22C-72 -30 -80 -31 -83 -25C-81 -33 -77 -41 -72 -50Z', col, { shade: 'M-100 -30L-80 -30L-80 -5L-100 -5Z' }) + line('M-91 -33C-88 -22 -80 -20 -78 -26', 2.8, PAL.hairHi);
   const curlR = part(c, 'M28 -34C42 -42 57 -34 56 -22C55 -11 40 -10 36 -19C43 -21 45 -27 39 -28L28 -22Z', col, { sw: OL * 0.9 }) + line('M46 -34C52 -30 53 -25 50 -21', 2.6, PAL.hairHi);

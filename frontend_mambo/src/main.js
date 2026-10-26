@@ -6,6 +6,7 @@ import { checkPlay, shouldEndRound, needsConfirm, spaceAction, createAutoplay } 
 import * as rgs from './rgs.js';
 import * as i18n from './i18n/index.js';
 import { audio } from './audio.js';
+import { settings } from './settings.js';
 import { createRenderer } from './render/index.js';
 
 const $ = (id) => document.getElementById(id);
@@ -303,6 +304,7 @@ async function boot() {
   setBalance(auth.balance);
   renderBet(); renderWin(0);
   const fs = auth.config && auth.config.jurisdiction;
+  try { settings.applyJurisdiction(fs); } catch (e) { /* ignore */ } // v2: capabilities for the settings store (WP1 builds the UI on them)
   if (fs) {
     if (fs.disabledFullscreen && $('btn-fullscreen')) $('btn-fullscreen').hidden = true;
     if (fs.disabledTurbo && $('btn-turbo')) $('btn-turbo').hidden = true;

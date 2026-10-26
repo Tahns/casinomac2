@@ -1,0 +1,587 @@
+{
+ "_doc": "Golden fixture for frontend geo.js (WP7 MATH-GEO). events = the first events of one real base book (layout, reveal, fusePath, winInfo, tumbleBoard, fuseBurn) exactly as the math emits them. winInfo positions, winInfo overlay and tumbleBoard.explodingSymbols are COMPACT-PADDED (padded = compactIndex + 1, geometric = cells[reel][padded-1]); fusePath / fuseBurn cells are GEOMETRIC. expect.* is derived on the math side from the layout cells and is what geo.toGeo / toPadded must reproduce.",
+ "layoutId": "lobby",
+ "seed": 1,
+ "criteria": "basegame",
+ "events": [
+  {
+   "index": 0,
+   "type": "layout",
+   "id": "lobby",
+   "name": "Lobby",
+   "cols": 6,
+   "rows": 5,
+   "cells": [
+    [
+     1,
+     2,
+     3,
+     4
+    ],
+    [
+     1,
+     2,
+     3,
+     4
+    ],
+    [
+     1,
+     2,
+     3,
+     4
+    ],
+    [
+     1,
+     2,
+     3,
+     4
+    ],
+    [
+     1,
+     2,
+     3,
+     4
+    ],
+    [
+     1,
+     2,
+     3,
+     4
+    ]
+   ],
+   "cellCount": 24,
+   "links": []
+  },
+  {
+   "index": 1,
+   "type": "reveal",
+   "board": [
+    [
+     {
+      "name": "L2"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "L1"
+     },
+     {
+      "name": "H3"
+     },
+     {
+      "name": "L1"
+     }
+    ],
+    [
+     {
+      "name": "H3"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "W",
+      "wild": true
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "H4"
+     }
+    ],
+    [
+     {
+      "name": "H3"
+     },
+     {
+      "name": "S",
+      "scatter": true
+     },
+     {
+      "name": "H1"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "H4"
+     },
+     {
+      "name": "L1"
+     }
+    ],
+    [
+     {
+      "name": "H4"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L3"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "H2"
+     },
+     {
+      "name": "H3"
+     }
+    ],
+    [
+     {
+      "name": "H3"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "H4"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "W",
+      "wild": true
+     },
+     {
+      "name": "H3"
+     }
+    ],
+    [
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L3"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "L4"
+     }
+    ]
+   ],
+   "paddingPositions": [
+    41,
+    104,
+    89,
+    106,
+    21,
+    112
+   ],
+   "gameType": "basegame",
+   "anticipation": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "index": 2,
+   "type": "fusePath",
+   "cells": [
+    {
+     "reel": 0,
+     "row": 3
+    },
+    {
+     "reel": 0,
+     "row": 4
+    },
+    {
+     "reel": 1,
+     "row": 4
+    },
+    {
+     "reel": 2,
+     "row": 4
+    },
+    {
+     "reel": 2,
+     "row": 3
+    },
+    {
+     "reel": 2,
+     "row": 2
+    },
+    {
+     "reel": 3,
+     "row": 2
+    },
+    {
+     "reel": 3,
+     "row": 1
+    }
+   ],
+   "burned": 1
+  },
+  {
+   "index": 3,
+   "type": "winInfo",
+   "totalWin": 50,
+   "wins": [
+    {
+     "symbol": "L4",
+     "clusterSize": 8,
+     "win": 50,
+     "positions": [
+      {
+       "reel": 1,
+       "row": 3
+      },
+      {
+       "reel": 2,
+       "row": 3
+      },
+      {
+       "reel": 3,
+       "row": 3
+      },
+      {
+       "reel": 4,
+       "row": 3
+      },
+      {
+       "reel": 5,
+       "row": 3
+      },
+      {
+       "reel": 4,
+       "row": 4
+      },
+      {
+       "reel": 1,
+       "row": 2
+      },
+      {
+       "reel": 1,
+       "row": 4
+      }
+     ],
+     "meta": {
+      "globalMult": 1,
+      "clusterMult": 1,
+      "winWithoutMult": 50,
+      "overlay": {
+       "reel": 3,
+       "row": 3
+      }
+     }
+    }
+   ]
+  },
+  {
+   "index": 5,
+   "type": "tumbleBoard",
+   "newSymbols": [
+    [],
+    [
+     {
+      "name": "L3"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L1"
+     }
+    ],
+    [
+     {
+      "name": "L2"
+     }
+    ],
+    [
+     {
+      "name": "L1"
+     }
+    ],
+    [
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L2"
+     }
+    ],
+    [
+     {
+      "name": "H3"
+     }
+    ]
+   ],
+   "explodingSymbols": [
+    {
+     "reel": 1,
+     "row": 3
+    },
+    {
+     "reel": 1,
+     "row": 2
+    },
+    {
+     "reel": 1,
+     "row": 4
+    },
+    {
+     "reel": 2,
+     "row": 3
+    },
+    {
+     "reel": 3,
+     "row": 3
+    },
+    {
+     "reel": 4,
+     "row": 3
+    },
+    {
+     "reel": 4,
+     "row": 4
+    },
+    {
+     "reel": 5,
+     "row": 3
+    }
+   ]
+  },
+  {
+   "index": 6,
+   "type": "fuseBurn",
+   "burned": 2,
+   "newCells": [
+    {
+     "reel": 0,
+     "row": 4
+    }
+   ]
+  }
+ ],
+ "expect": {
+  "cellCount": 24,
+  "revealColumnLengths": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "geoGrid": [
+   [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    "L4",
+    "L2",
+    "S",
+    "L4",
+    "L4",
+    "L4"
+   ],
+   [
+    "L2",
+    "W",
+    "H1",
+    "L3",
+    "H4",
+    "L3"
+   ],
+   [
+    "L1",
+    "L4",
+    "L4",
+    "L4",
+    "L4",
+    "L4"
+   ],
+   [
+    "H3",
+    "L4",
+    "H4",
+    "H2",
+    "W",
+    "L2"
+   ]
+  ],
+  "winGeoPositions": [
+   [
+    {
+     "reel": 1,
+     "row": 3
+    },
+    {
+     "reel": 2,
+     "row": 3
+    },
+    {
+     "reel": 3,
+     "row": 3
+    },
+    {
+     "reel": 4,
+     "row": 3
+    },
+    {
+     "reel": 5,
+     "row": 3
+    },
+    {
+     "reel": 4,
+     "row": 4
+    },
+    {
+     "reel": 1,
+     "row": 2
+    },
+    {
+     "reel": 1,
+     "row": 4
+    }
+   ]
+  ],
+  "winOverlayGeo": [
+   {
+    "reel": 3,
+    "row": 3
+   }
+  ],
+  "tumbleExplodingGeo": [
+   {
+    "reel": 1,
+    "row": 3
+   },
+   {
+    "reel": 1,
+    "row": 2
+   },
+   {
+    "reel": 1,
+    "row": 4
+   },
+   {
+    "reel": 2,
+    "row": 3
+   },
+   {
+    "reel": 3,
+    "row": 3
+   },
+   {
+    "reel": 4,
+    "row": 3
+   },
+   {
+    "reel": 4,
+    "row": 4
+   },
+   {
+    "reel": 5,
+    "row": 3
+   }
+  ],
+  "paddedToGeo": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "geoToPadded": [
+   {
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4
+   },
+   {
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4
+   },
+   {
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4
+   },
+   {
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4
+   },
+   {
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4
+   },
+   {
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4
+   }
+  ]
+ }
+}

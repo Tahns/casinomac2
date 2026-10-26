@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Mambo gloves</title><link rel="icon" href="data:,">
+<style>html,body{margin:0;background:#d9a72a;font:12px Arial}#g{display:flex;flex-wrap:wrap;gap:4px;padding:6px}.c{background:#e8b83a;width:230px;height:250px;position:relative}.c b{position:absolute;left:4px;top:2px;color:#2B1A12}</style></head><body><div id="g"></div>
+<script type="module">
+// Dev page (not shipped): every glove kind, side-A and side-B thumb, on a 10-unit grid. ?rot=0&scale=3&b=1
+import { makeCtx, defsCommon, gloveKinds, GLOVE_KIND_NAMES, PAL } from './mambo_art.mjs';
+const q = new URLSearchParams(location.search), rot = +(q.get('rot') || 0), sc = +(q.get('scale') || 3.2), both = q.get('b') === '1';
+const g = document.getElementById('g');
+for (const k of GLOVE_KIND_NAMES) for (const side of both ? ['a', 'b'] : ['a']) {
+  const c = makeCtx({ idPrefix: `p${k}${side}-` }), kinds = gloveKinds(c, { glove: PAL.white }, 'x');
+  const d = document.createElement('div'); d.className = 'c';
+  d.innerHTML = `<b>${k} ${side}</b><svg width="230" height="250" viewBox="-44 -26 88 96" xmlns="http://www.w3.org/2000/svg"><defs>${defsCommon(c.pre)}${c.defs.join('')}</defs><g transform="rotate(${rot})">${kinds[k]}</g></svg>`;
+  if (side === 'b') { d.querySelector(`[id$="-${k}-ta"]`).setAttribute('opacity', '0'); d.querySelector(`[id$="-${k}-tb"]`).setAttribute('opacity', '1'); }
+  g.appendChild(d);
+}
+</script></body></html>

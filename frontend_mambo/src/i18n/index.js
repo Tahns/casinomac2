@@ -1,6 +1,15 @@
 // i18n: t(key, vars), t.mode(name), applyI18n(root), setLang, setSocial.
-import { en } from './en.js';
+import { en as enBase } from './en.js';
+import { en_ui } from './en_ui.js';
+import { en_hero } from './en_hero.js';
+import { en_layers } from './en_layers.js';
+import { en_rules } from './en_rules.js';
 import { social, SOCIAL_REPLACEMENTS } from './social.js';
+
+// v2: en.js plus the work-package partials, merged in this order; a later partial (and any partial over en.js) wins.
+// EN is the one English table every lookup below uses (also exported for the renderer's key checks).
+export const EN = Object.freeze({ ...enBase, ...en_ui, ...en_hero, ...en_layers, ...en_rules });
+const en = EN;
 
 const LANGS = { en };
 let params = {};
@@ -80,6 +89,7 @@ t.mode = function mode(name) {
 };
 
 export function allKeys() { return Object.keys(en); }
+export function hasKey(key) { return Object.prototype.hasOwnProperty.call(en, key); }
 
 export function applyI18n(root) {
   const doc = root || (typeof document !== 'undefined' ? document : null);

@@ -29,7 +29,7 @@ class GameExecutables(GameCalculations):
 
     def get_clusters_update_wins(self):
         """Find clusters on board and update win manager."""
-        clusters = Cluster.get_clusters(self.board, "wild")
+        clusters = self.find_clusters("wild")  # geometry-aware (game_geometry.py); identical to Cluster.get_clusters on Mezzanine
         return_data = {
             "totalWin": 0,
             "wins": [],
@@ -62,22 +62,7 @@ class GameExecutables(GameCalculations):
         self.fuse = None
         if not cfg:
             return
-        n_reels = self.config.num_reels
-        while True:
-            path = [(0, random.randrange(self.config.num_rows[0]))]
-            while len(path) < cfg["len"]:
-                reel, row = path[-1]
-                opts, wts = [], []
-                for dr, dc, w in ((1, 0, 2), (0, -1, 1), (0, 1, 1)):
-                    nr, nc = reel + dr, row + dc
-                    if nr < n_reels and 0 <= nc < self.config.num_rows[nr] and (nr, nc) not in path:
-                        opts.append((nr, nc))
-                        wts.append(w)
-                if not opts:
-                    break
-                path.append(random.choices(opts, weights=wts)[0])
-            if len(path) == cfg["len"]:
-                break
+        path = self.generate_wire_path(cfg["len"])  # on the floor plan geometry (game_geometry.py); COMPACT (reel, row) cells
         self.fuse = {"path": path, "burn": min(cfg["b0"], cfg["len"]), "cfg": cfg, "spent": False}
         fuse_path_event(self)
 

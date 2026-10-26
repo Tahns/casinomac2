@@ -1,0 +1,741 @@
+{
+ "_doc": "Golden fixture for frontend geo.js (WP7 MATH-GEO). events = the first events of one real base book (layout, reveal, fusePath, winInfo, tumbleBoard, fuseBurn) exactly as the math emits them. winInfo positions, winInfo overlay and tumbleBoard.explodingSymbols are COMPACT-PADDED (padded = compactIndex + 1, geometric = cells[reel][padded-1]); fusePath / fuseBurn cells are GEOMETRIC. expect.* is derived on the math side from the layout cells and is what geo.toGeo / toPadded must reproduce.",
+ "layoutId": "annex",
+ "seed": 0,
+ "criteria": "basegame",
+ "events": [
+  {
+   "index": 0,
+   "type": "layout",
+   "id": "annex",
+   "name": "Annex",
+   "cols": 6,
+   "rows": 6,
+   "cells": [
+    [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   ],
+   "cellCount": 36,
+   "links": []
+  },
+  {
+   "index": 1,
+   "type": "reveal",
+   "board": [
+    [
+     {
+      "name": "L2"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "H4"
+     },
+     {
+      "name": "H3"
+     },
+     {
+      "name": "L3"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "H3"
+     }
+    ],
+    [
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L1"
+     },
+     {
+      "name": "H3"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "W",
+      "wild": true
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "H4"
+     }
+    ],
+    [
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L3"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "H1"
+     }
+    ],
+    [
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "L1"
+     },
+     {
+      "name": "L1"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "H4"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L2"
+     }
+    ],
+    [
+     {
+      "name": "H2"
+     },
+     {
+      "name": "H1"
+     },
+     {
+      "name": "H4"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "L3"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L2"
+     }
+    ],
+    [
+     {
+      "name": "L4"
+     },
+     {
+      "name": "H2"
+     },
+     {
+      "name": "L2"
+     },
+     {
+      "name": "L4"
+     },
+     {
+      "name": "H2"
+     },
+     {
+      "name": "H4"
+     },
+     {
+      "name": "L1"
+     },
+     {
+      "name": "L4"
+     }
+    ]
+   ],
+   "paddingPositions": [
+    108,
+    102,
+    97,
+    8,
+    32,
+    15
+   ],
+   "gameType": "basegame",
+   "anticipation": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "index": 2,
+   "type": "fusePath",
+   "cells": [
+    {
+     "reel": 0,
+     "row": 3
+    },
+    {
+     "reel": 0,
+     "row": 4
+    },
+    {
+     "reel": 1,
+     "row": 4
+    },
+    {
+     "reel": 2,
+     "row": 4
+    },
+    {
+     "reel": 3,
+     "row": 4
+    },
+    {
+     "reel": 4,
+     "row": 4
+    },
+    {
+     "reel": 4,
+     "row": 5
+    },
+    {
+     "reel": 5,
+     "row": 5
+    }
+   ],
+   "burned": 1
+  },
+  {
+   "index": 3,
+   "type": "winInfo",
+   "totalWin": 90,
+   "wins": [
+    {
+     "symbol": "L2",
+     "clusterSize": 5,
+     "win": 40,
+     "positions": [
+      {
+       "reel": 1,
+       "row": 3
+      },
+      {
+       "reel": 1,
+       "row": 4
+      },
+      {
+       "reel": 2,
+       "row": 4
+      },
+      {
+       "reel": 3,
+       "row": 4
+      },
+      {
+       "reel": 4,
+       "row": 4
+      }
+     ],
+     "meta": {
+      "globalMult": 1,
+      "clusterMult": 1,
+      "winWithoutMult": 40,
+      "overlay": {
+       "reel": 2,
+       "row": 4
+      }
+     }
+    },
+    {
+     "symbol": "L4",
+     "clusterSize": 6,
+     "win": 50,
+     "positions": [
+      {
+       "reel": 0,
+       "row": 5
+      },
+      {
+       "reel": 1,
+       "row": 5
+      },
+      {
+       "reel": 2,
+       "row": 5
+      },
+      {
+       "reel": 1,
+       "row": 4
+      },
+      {
+       "reel": 1,
+       "row": 6
+      },
+      {
+       "reel": 0,
+       "row": 6
+      }
+     ],
+     "meta": {
+      "globalMult": 1,
+      "clusterMult": 1,
+      "winWithoutMult": 50,
+      "overlay": {
+       "reel": 1,
+       "row": 5
+      }
+     }
+    }
+   ]
+  },
+  {
+   "index": 5,
+   "type": "tumbleBoard",
+   "newSymbols": [
+    [
+     {
+      "name": "L3"
+     },
+     {
+      "name": "H4"
+     }
+    ],
+    [
+     {
+      "name": "L4"
+     },
+     {
+      "name": "L3"
+     },
+     {
+      "name": "H3"
+     },
+     {
+      "name": "L3"
+     }
+    ],
+    [
+     {
+      "name": "L3"
+     },
+     {
+      "name": "H3"
+     }
+    ],
+    [
+     {
+      "name": "L3"
+     }
+    ],
+    [
+     {
+      "name": "L3"
+     }
+    ],
+    []
+   ],
+   "explodingSymbols": [
+    {
+     "reel": 0,
+     "row": 5
+    },
+    {
+     "reel": 0,
+     "row": 6
+    },
+    {
+     "reel": 1,
+     "row": 3
+    },
+    {
+     "reel": 1,
+     "row": 4
+    },
+    {
+     "reel": 1,
+     "row": 5
+    },
+    {
+     "reel": 1,
+     "row": 4
+    },
+    {
+     "reel": 1,
+     "row": 6
+    },
+    {
+     "reel": 2,
+     "row": 4
+    },
+    {
+     "reel": 2,
+     "row": 5
+    },
+    {
+     "reel": 3,
+     "row": 4
+    },
+    {
+     "reel": 4,
+     "row": 4
+    }
+   ]
+  },
+  {
+   "index": 6,
+   "type": "fuseBurn",
+   "burned": 2,
+   "newCells": [
+    {
+     "reel": 0,
+     "row": 4
+    }
+   ]
+  }
+ ],
+ "expect": {
+  "cellCount": 36,
+  "revealColumnLengths": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ],
+  "geoGrid": [
+   [
+    "L2",
+    "L1",
+    "L4",
+    "L2",
+    "H1",
+    "H2"
+   ],
+   [
+    "H4",
+    "H3",
+    "L3",
+    "L1",
+    "H4",
+    "L2"
+   ],
+   [
+    "H3",
+    "L2",
+    "L4",
+    "L1",
+    "L4",
+    "L4"
+   ],
+   [
+    "L3",
+    "W",
+    "L2",
+    "L2",
+    "L2",
+    "H2"
+   ],
+   [
+    "L4",
+    "L4",
+    "L4",
+    "H4",
+    "L3",
+    "H4"
+   ],
+   [
+    "L4",
+    "L4",
+    "L2",
+    "L4",
+    "L4",
+    "L1"
+   ]
+  ],
+  "winGeoPositions": [
+   [
+    {
+     "reel": 1,
+     "row": 2
+    },
+    {
+     "reel": 1,
+     "row": 3
+    },
+    {
+     "reel": 2,
+     "row": 3
+    },
+    {
+     "reel": 3,
+     "row": 3
+    },
+    {
+     "reel": 4,
+     "row": 3
+    }
+   ],
+   [
+    {
+     "reel": 0,
+     "row": 4
+    },
+    {
+     "reel": 1,
+     "row": 4
+    },
+    {
+     "reel": 2,
+     "row": 4
+    },
+    {
+     "reel": 1,
+     "row": 3
+    },
+    {
+     "reel": 1,
+     "row": 5
+    },
+    {
+     "reel": 0,
+     "row": 5
+    }
+   ]
+  ],
+  "winOverlayGeo": [
+   {
+    "reel": 2,
+    "row": 3
+   },
+   {
+    "reel": 1,
+    "row": 4
+   }
+  ],
+  "tumbleExplodingGeo": [
+   {
+    "reel": 0,
+    "row": 4
+   },
+   {
+    "reel": 0,
+    "row": 5
+   },
+   {
+    "reel": 1,
+    "row": 2
+   },
+   {
+    "reel": 1,
+    "row": 3
+   },
+   {
+    "reel": 1,
+    "row": 4
+   },
+   {
+    "reel": 1,
+    "row": 3
+   },
+   {
+    "reel": 1,
+    "row": 5
+   },
+   {
+    "reel": 2,
+    "row": 3
+   },
+   {
+    "reel": 2,
+    "row": 4
+   },
+   {
+    "reel": 3,
+    "row": 3
+   },
+   {
+    "reel": 4,
+    "row": 3
+   }
+  ],
+  "paddedToGeo": [
+   [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  ],
+  "geoToPadded": [
+   {
+    "0": 1,
+    "1": 2,
+    "2": 3,
+    "3": 4,
+    "4": 5,
+    "5": 6
+   },
+   {
+    "0": 1,
+    "1": 2,
+    "2": 3,
+    "3": 4,
+    "4": 5,
+    "5": 6
+   },
+   {
+    "0": 1,
+    "1": 2,
+    "2": 3,
+    "3": 4,
+    "4": 5,
+    "5": 6
+   },
+   {
+    "0": 1,
+    "1": 2,
+    "2": 3,
+    "3": 4,
+    "4": 5,
+    "5": 6
+   },
+   {
+    "0": 1,
+    "1": 2,
+    "2": 3,
+    "3": 4,
+    "4": 5,
+    "5": 6
+   },
+   {
+    "0": 1,
+    "1": 2,
+    "2": 3,
+    "3": 4,
+    "4": 5,
+    "5": 6
+   }
+  ]
+ }
+}

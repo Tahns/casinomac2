@@ -103,14 +103,13 @@ export function createStorage(env = {}) {
       if (!wl.has(key)) return false;
       const v = String(value);
       mem.set(key, v);
-      try { const s = get(); if (s) s.setItem(key, v); } catch (e) { return false; } // memory copy keeps working
-      return true;
+      try { const s = get(); if (!s) return false; s.setItem(key, v); return true; } catch (e) { return false; } // memory copy keeps working
+    
     },
     remove(key) {
       if (!wl.has(key)) return false;
       mem.delete(key);
-      try { const s = get(); if (s) s.removeItem(key); } catch (e) { return false; }
-      return true;
+      try { const s = get(); if (!s) return false; s.removeItem(key); return true; } catch (e) { return false; }
     },
   };
 }
@@ -137,8 +136,11 @@ function coerce(key, value) {
 }
 
 // ---------------------------------------------------------------- the store
+// the only place the browser storage is named; blocked storage (a throwing getter) gives null = memory only
+function browserStorage() { try { return globalThis.localStorage || null; } catch (e) { return null; } }
+
 export function createSettings(env = {}) {
-  const storage = createStorage({ storage: env.storage !== undefined ? env.storage : () => globalThis.localStorage });
+  const storage = createStorage({ storage: env.storage !== undefined ? env.storage : browserStorage });
   const mm = typeof env.matchMedia === 'function' ? env.matchMedia : (typeof globalThis.matchMedia === 'function' ? globalThis.matchMedia.bind(globalThis) : null);
   const doc = env.document !== undefined ? env.document : (typeof document !== 'undefined' ? document : null);
   const win = env.window !== undefined ? env.window : (typeof window !== 'undefined' ? window : null);
