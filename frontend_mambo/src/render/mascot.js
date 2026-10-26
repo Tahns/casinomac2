@@ -1,20 +1,21 @@
-// "Old Gus" - the adult prospector mascot of The Unleashed Mine.
-// 100% hand-authored SVG + CSS (no raster art, no generative AI). 1960s cartoon style:
-// flat fills, offset-print misregistration, thick #2B1A12 outlines, halftone shadows.
-// Animations live in mascot.css (steps() keyframes, squash & stretch, reduced-motion safe).
+// "Mambo" (Mabel Fontaine) - the deadpan adult spy mascot of Agent Mambo.
+// 100% hand-authored SVG + CSS (no raster art, no generative AI). 1962 cut-paper cartoon style:
+// flat fills with offset print misregistration, thick ink outlines, lilac halftone shadows.
+// Animations live in mascot.css (steps() keyframes, squash and stretch, reduced-motion safe).
+// Public API is unchanged from Old Gus: POSES, createMascot(host,{size,variant,bubble,pose}).
+// Class hooks kept for page CSS: .gus-wrap, svg.gus, .gus-bubble (aliases .mambo-wrap/.mambo-bubble).
 
 const C = {
-  cream: '#F4E8C8', mustard: '#E8A92B', orange: '#D9622B', red: '#B8352A', teal: '#2E8C8C',
-  navy: '#1E2F4A', ink: '#2B1A12', olive: '#7A8B3A', plum: '#6A3D6E',
-  skin: '#F0C39A', grey: '#D2CEC4', boot: '#8A4F2A', wood: '#B5733A', steel: '#5F7F8C',
-  hatDark: '#CF8E1E', nose: '#E2845B', drop: '#9ED8D8',
+  ink: '#14102B', indigo: '#2B2A6B', teal: '#1FB5A3', coral: '#F0472F', flamingo: '#F5799F',
+  lemon: '#FFD23F', cream: '#FBF1D9', lilac: '#9A7BD0', lime: '#A5D63B', steel: '#6FA7D9',
+  aub: '#3B1F52', skin: '#D9A074', lip: '#E03A3E', grey: '#CFCADB', glass: '#E4F3F6',
 };
 
 export const POSES = ['idle', 'think', 'happy', 'bigwin', 'shock', 'plunger', 'shrug', 'dance', 'celebrate'];
 
 const ell = (cx, cy, rx, ry) =>
   `M${cx - rx},${cy}A${rx},${ry} 0 1 0 ${cx + rx},${cy}A${rx},${ry} 0 1 0 ${cx - rx},${cy}Z`;
-const mirror = (s) => `<g transform="matrix(-1 0 0 1 200 0)">${s}</g>`;
+const mirror = (s) => `<g class="mir" transform="matrix(-1 0 0 1 200 0)">${s}</g>`;
 const part = (name, inner) => `<g class="${name}"><g class="${name}-a">${inner}</g></g>`;
 const star4 = (cx, cy, r) =>
   `M${cx},${cy - r}Q${cx},${cy} ${cx + r},${cy}Q${cx},${cy} ${cx},${cy + r}Q${cx},${cy} ${cx - r},${cy}Q${cx},${cy} ${cx},${cy - r}Z`;
@@ -31,198 +32,275 @@ let UID = 0;
 
 function buildSVG(uid) {
   let n = 0;
-  // shape = offset fill (+ optional halftone shadow clipped to the shape) + crisp outline
-  const sh = (d, fill, ht, cls = '') => {
+  // shape = offset fill (+ optional halftone shadow and extra detail clipped to the shape) + crisp outline.
+  // od = optional custom outline path (open paths hide seams).
+  const sh = (d, fill, ht, cls = '', extra = '', od) => {
     const id = `${uid}c${n++}`;
+    const clipped = (ht ? `<g class="ht"><path d="${ht}" fill="url(#${uid}ht)"/></g>` : '') + extra;
     return `<g class="sh ${cls}"><g class="fill"><path d="${d}" fill="${fill}"/>` +
-      (ht ? `<clipPath id="${id}"><path d="${d}"/></clipPath><g clip-path="url(#${id})" class="ht"><path d="${ht}" fill="url(#${uid}ht)"/></g>` : '') +
-      `</g><path class="o" d="${d}"/></g>`;
+      (clipped ? `<clipPath id="${id}"><path d="${d}"/></clipPath><g clip-path="url(#${id})">${clipped}</g>` : '') +
+      `</g><path class="o" d="${od || d}"/></g>`;
   };
   const ln = (d, cls = 'fine') => `<path class="o ${cls}" d="${d}"/>`;
+  const inkFill = (d, fill) => `<path d="${d}" fill="${fill}" stroke="${C.ink}" stroke-width="3" stroke-linejoin="round"/>`;
 
-  const mouthTongue = '#D9622B';
+  // ---------------------------------------------------------------- legs (left drawn, right mirrored)
+  const leg =
+    sh('M78,200L88,200L87,228L79,228Z', C.cream, 'M84,196L96,196L96,236L84,236Z') +
+    sh('M92,221C92,225 91.5,229 90.5,232L87,232L87.4,228.4C80,229.6 72,229.4 68,227.6C65.6,226.5 66.4,223.8 69.6,223.8C75,223.8 79.6,222.6 84,220.6Z', C.teal, 'M70,229L96,229L96,236L70,236Z');
+  const legL = leg;
+  const legR = mirror(leg);
 
-  // ---- legs
-  const leg = mirror(
-    sh('M66,196L95,196L95,228L64,228Z', C.red) +
-    sh('M48,248C44,236 52,224 68,222L94,222L96,248Z', C.boot, 'M40,240L110,240L110,252L40,252Z') +
-    ln('M60,232Q76,228 94,232', 'fine') + ln('M52,244L98,244', 'fine'));
+  // ---------------------------------------------------------------- skirt + bodice
+  const dots = [[68, 196], [100, 202], [132, 196], [82, 180], [118, 180], [100, 176], [56, 203], [144, 203]]
+    .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3" fill="${C.cream}"/>`).join('');
+  const skirtD = 'M85,156L115,156C122,176 138,194 152,207Q100,222 48,207C62,194 78,176 85,156Z';
+  const skirt = part('skirt',
+    sh(skirtD, C.coral, 'M104,150L160,150L160,230L110,230Q118,200 104,150Z', 'dress', dots) +
+    ln('M60,206Q100,217 140,206', 'fine'));
+  const bodiceD = 'M76,139C84,131 116,131 124,139L115,158L85,158Z';
+  const torso = part('torso',
+    sh(bodiceD, C.coral, 'M106,130L130,130L130,160L110,160Z', 'dress') +
+    // scoop neckline: skin chest
+    `<g class="sh"><g class="fill"><path d="M88,133Q100,152 112,133Z" fill="${C.skin}"/></g><path class="o thin" d="M88,133Q100,152 112,133"/></g>` +
+    // belt + 8-point buckle
+    sh('M85,155L115,155L114.4,164L85.6,164Z', C.lemon) +
+    sh(burstPath(100, 159.5, 8, 4.4, 8), C.cream, '', 'buckle') +
+    `<circle cx="100" cy="159.5" r="1.8" fill="${C.ink}"/>`);
 
-  // ---- torso
-  const torso =
-    sh(ell(100, 172, 56, 50), C.cream, 'M128,100L170,100L170,230L128,230Z') +
-    sh('M47,178C49,206 70,222 100,223C130,222 151,206 153,178L128,178L128,152L72,152L72,178Z', C.red,
-       'M118,150L170,150L170,240L118,240Z') +
-    sh('M69,154L84,154L79,124L61,130Z', C.red) +
-    sh('M131,154L116,154L121,124L139,130Z', C.red) +
-    `<circle class="fine" cx="76" cy="160" r="4.2" fill="${C.mustard}" stroke="${C.ink}" stroke-width="2.5"/>` +
-    `<circle class="fine" cx="124" cy="160" r="4.2" fill="${C.mustard}" stroke="${C.ink}" stroke-width="2.5"/>` +
-    ln('M88,172L112,172L112,190L88,190Z') + ln('M100,198L100,222');
+  // ---------------------------------------------------------------- arms (two-segment, pivots at shoulder + elbow)
+  const T = (x, y, s) => `translate(${x} ${y}) scale(${s} 1)`;
+  const upperD = 'M-5.5,0Q-5.5,-5.5 0,-5.5Q5.5,-5.5 5.5,0L5,25L-5,25Z';
+  const upperO = 'M-5,25L-5.5,0Q-5.5,-5.5 0,-5.5Q5.5,-5.5 5.5,0L5,25';
+  const foreD = 'M-5,-1Q-5,-5 0,-5Q5,-5 5,-1L4.6,22L-4.6,22Z';
+  const hand = sh(ell(0, 27, 6.4, 6.8), C.cream) +
+    sh('M3.8,21.5Q10.5,22.5 9.4,29Q5.4,29.4 3.8,26Z', C.cream, '', 'thumb') +
+    `<path class="o thin fing" d="M-3.6,32L-4.4,36.4M0,33.4L0,38M3.6,32L4.4,36.4"/>`;
+  const cuff = `<path d="M-4.9,12L4.9,12" stroke="${C.lemon}" stroke-width="3" stroke-linecap="round" class="fine"/>`;
+  const caseHold =
+    // drum-shaped attache case hanging from the hand (counter-rotated by CSS to hang upright)
+    `<g class="hold"><g class="case">` +
+    `<path class="o thick" d="M-6,40Q0,28 6,40"/>` +
+    sh('M-13,45L13,45L13,62Q0,67.5 -13,62Z', C.indigo, 'M3,40L18,40L18,70L3,70Z', 'drum',
+       `<path d="M-1.6,45L1.6,45L1.6,64L-1.6,64Z" fill="${C.lemon}"/><path d="M-13,51L13,51" stroke="${C.lemon}" stroke-width="2"/>`) +
+    sh(ell(0, 45, 13, 5.2), C.flamingo, '', 'lid') +
+    `<rect x="-2.6" y="52" width="5.2" height="4.4" rx="1" fill="${C.lemon}" stroke="${C.ink}" stroke-width="1.6"/>` +
+    `</g>` +
+    // seltzer glass with lime fizz (raised in celebrate)
+    `<g class="glass">` +
+    sh('M-6.4,30L6.4,30L8.6,2L-8.6,2Z', C.glass, '', 'gl') +
+    `<path d="M-5.2,27L5.2,27L6.8,8L-6.8,8Z" fill="${C.lime}"/>` +
+    `<path d="M-6.8,8Q0,5 6.8,8" fill="none" stroke="${C.cream}" stroke-width="1.6"/>` +
+    `<circle cx="-2" cy="20" r="1.5" fill="${C.cream}"/><circle cx="2.4" cy="14" r="1.2" fill="${C.cream}"/><circle cx="-1.4" cy="11" r="1" fill="${C.cream}"/>` +
+    `<path class="o" d="M-6.4,30L6.4,30L8.6,2L-8.6,2Z"/>` +
+    `<g class="fizz"><circle cx="-3" cy="-4" r="1.6" fill="${C.cream}"/><circle cx="3" cy="-8" r="1.3" fill="${C.cream}"/><circle cx="0" cy="-12" r="1.1" fill="${C.cream}"/></g>` +
+    `<circle cx="8.6" cy="3" r="5.4" fill="${C.lime}" stroke="${C.ink}" stroke-width="2.6"/><path d="M8.6,3L12,1M8.6,3L5,0.5M8.6,3L8.6,8" stroke="${C.ink}" stroke-width="1.2" fill="none"/>` +
+    `</g></g>`;
 
-  // ---- arm (drawn for left; right is mirrored, hand/pickaxe added separately)
-  const arm = sh('M38,152A11,11 0 0 1 60,152L60,196A11,11 0 0 1 38,196Z', C.cream, 'M52,140L70,140L70,210L52,210Z') +
-    ln('M38,190L60,190', 'fine') +
-    sh(ell(49, 207, 10.5, 10), C.skin);
-  const handR = ''; // hand is part of mirrored arm
-  const pick =
-    `<g class="pick">` +
-    sh('M146.5,240L156,240L156,108L146.5,108Z', C.wood) +
-    sh('M108,128C120,90 182,90 194,128C182,113 166,111 151,114C136,111 120,113 108,128Z', C.steel, 'M150,90L200,90L200,130L150,130Z') +
-    sh('M143,104L159,104L159,118L143,118Z', C.navy) +
-    `</g>`;
-  const armR = part('armR', pick + mirror(arm));
-  // redraw the right hand on top of the pickaxe handle so it grips it
-  const gripR = '';
+  const arm = (side, px, withProp) => {
+    const s = side === 'L' ? 1 : -1, N = 'arm' + side, F = 'fore' + side;
+    return `<g class="${N} mir${side}"><g class="${N}-a">` +
+      `<g transform="${T(px, 138, s)}">` + sh(upperD, C.cream, 'M2,-6L9,-6L9,26L2,26Z', '', '', upperO) + `</g>` +
+      `<g class="${F}"><g class="${F}-a"><g transform="${T(px, 162, s)}" class="mir${side}">` +
+        sh(foreD, C.cream, 'M2,-6L9,-6L9,24L2,24Z') + cuff + hand + (withProp ? caseHold : '') +
+      `</g></g></g>` +
+      `</g></g>`;
+  };
+  // order: forearm under the upper arm is handled by the DOM order inside arm() (upper first, forearm after, so
+  // the round elbow cap shows); the upper outline is open so no seam shows.
 
-  // ---- plunger (TNT box stands beside him so legs + rod stay visible)
+  // ---------------------------------------------------------------- plunger (DEFUSE box)
   const plunger =
     `<g class="plunger">` +
-    part('plbar',
-      sh('M179.5,190L184.5,190L184.5,224L179.5,224Z', C.steel) +
-      sh('M162,176A5,5 0 0 1 167,171L197,171A5,5 0 0 1 202,176A5,5 0 0 1 197,181L167,181A5,5 0 0 1 162,176Z', C.wood)) +
-    sh('M158,224L206,224L206,250L158,250Z', C.red, 'M190,224L208,224L208,252L190,252Z') +
-    `<path class="fine" d="M158,230L206,230M158,244L206,244" stroke="${C.ink}" stroke-width="1.8" fill="none"/>` +
-    `<text x="182" y="241.5" text-anchor="middle" font-family="Impact,'Arial Black',sans-serif" font-size="11" font-weight="900" fill="${C.cream}" stroke="${C.ink}" stroke-width=".9" letter-spacing=".6">TNT</text>` +
+    sh('M140,204L190,204L190,232L140,232Z', C.cream, 'M176,200L196,200L196,236L176,236Z') +
+    `<path class="o thin" d="M140,210L190,210"/>` +
+    `<text x="165" y="224.6" text-anchor="middle" font-family="Impact,'Arial Black',sans-serif" font-size="9.4" font-weight="900" fill="${C.coral}" stroke="${C.ink}" stroke-width=".7" paint-order="stroke" letter-spacing=".5">DEFUSE</text>` +
+    part('plbtn',
+      sh('M150,205Q150,203 152,203L178,203Q180,203 180,205Q180,208 178,208L152,208Q150,208 150,205Z', C.steel) +
+      sh('M152.6,203Q152.6,189 165,189Q177.4,189 177.4,203Z', C.coral, 'M166,186L180,186L180,205L170,205Z') +
+      `<path d="M158,198Q158,193 163,192" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>`) +
     `</g>`;
 
-  // ---- pickaxe resting behind his shoulder (poses where the hand is busy)
-  const pickBack = `<g class="pickBack">` +
-    sh('M122,214L131,218L176,98L167,94Z', C.wood) +
-    sh('M138,98C154,56 214,66 222,112C206,92 188,88 171,94C156,90 142,92 138,98Z', C.steel, 'M170,60L226,60L226,112L170,112Z') +
-    sh('M162,84L180,92L174,106L156,98Z', C.navy) + `</g>`;
+  // ---------------------------------------------------------------- head
+  // hair (behind face): beehive, stripes, highlight, antenna, hinged lid
+  const hairD = 'M64,96C52,58 70,12 100,8C130,12 148,58 136,96Z';
+  const stripes =
+    `<path d="M62,32Q100,46 138,32M54,50Q100,66 146,50M54,68Q100,84 146,68" fill="none" stroke="${C.cream}" stroke-width="3.2" stroke-linecap="round" opacity=".95"/>`;
+  const lidO =
+    // slot + speaker grille under the lid
+    `<g class="lidslot"><rect x="124" y="43" width="17" height="13" rx="3" fill="${C.ink}"/><path d="M127,47.5L138,47.5M127,51.5L138,51.5" stroke="${C.lemon}" stroke-width="1.8"/></g>` +
+    part('lid',
+      sh('M123,43.6Q123,41.6 125,41.6L138,41.6Q140,41.6 140,43.6L140,54Q140,56 138,56L125,56Q123,56 123,54Z', C.flamingo, '', 'lidp') +
+      `<circle cx="127.4" cy="49" r="1.7" fill="${C.ink}"/><circle cx="133" cy="49" r="1.7" fill="${C.ink}"/>`);
+  const hair = part('hair',
+    sh(hairD, C.aub, 'M104,0L170,0L170,100L112,100Q122,50 104,0Z', 'hairs', stripes) +
+    `<path class="o thin hl" d="M76,44Q80,28 92,17" style="stroke:#fff"/>` +
+    lidO);
+  const antenna =
+    `<g class="ant"><g class="ant-a">` +
+      `<path class="shaft" d="M100,13L100,-19" stroke="${C.ink}" stroke-width="4.6" stroke-linecap="round" fill="none"/>` +
+      `<g class="anttop">` +
+        `<g class="fins"><path d="M86,-4Q100,-9 114,-4Q100,1 86,-4Z" fill="${C.lemon}" stroke="${C.ink}" stroke-width="2.4" stroke-linejoin="round"/></g>` +
+        sh(ell(100, -4, 6, 6), C.lemon, '', 'ball') +
+        `<path d="M97,-7.4Q98.6,-9 100.6,-8.6" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round"/>` +
+        `<g class="qstar">` +
+          `<path d="${burstPath(122, -22, 13, 7.4, 8)}" fill="${C.lemon}" stroke="${C.ink}" stroke-width="2.6" stroke-linejoin="round"/>` +
+          `<path d="M117.4,-26Q117.4,-30.4 122,-30.4Q126.6,-30.4 126.6,-26Q126.6,-22.6 122,-21.4L122,-18" fill="none" stroke="${C.ink}" stroke-width="2.6" stroke-linecap="round"/>` +
+          `<circle cx="122" cy="-14.4" r="1.7" fill="${C.ink}"/>` +
+        `</g>` +
+      `</g>` +
+    `</g></g>`;
 
-  // ---- eyes
-  const eyeShape =
-    sh(ell(79, 82, 10.5, 12.5), '#FFFDF4') +
-    `<g class="pup"><circle cx="79" cy="83" r="5.6" fill="${C.ink}"/><circle cx="77" cy="80.5" r="1.9" fill="#fff"/></g>` +
-    `<clipPath id="${uid}ecl"><path d="${ell(79, 82, 10.5, 12.5)}"/></clipPath>` +
-    `<g clip-path="url(#${uid}ecl)">%LID%</g>` +
-    `<path class="o" d="${ell(79, 82, 10.5, 12.5)}"/>`;
-  const lid = (nm) => part(nm, `<path d="M64,56L96,56L96,93L64,93Z" fill="${C.skin}"/><path class="o" d="M64,93L96,93"/>`);
-  const eyeL = `<g class="eyeL"><g class="eyeL-a">${eyeShape.replace('%LID%', lid('lidL'))}</g></g>`;
-  const eyeR = `<g class="eyeR"><g class="eyeR-a">${mirror(eyeShape.replace('%LID%', lid('lidR')).replace(new RegExp(uid + 'ecl', 'g'), uid + 'ecr'))}</g></g>`;
-  const eyesHappy =
-    `<path class="o thick" d="M67,87Q79,68 91,87"/><path class="o thick" d="M109,87Q121,68 133,87"/>`;
+  const faceD = ell(100, 108, 26, 26);
+  const ears = `<g class="ears">${sh(ell(74.4, 112, 4.4, 6.6), C.skin)}${sh(ell(125.6, 112, 4.4, 6.6), C.skin)}</g>`;
+  const neck = `<g class="neck"><path d="M91,124L91,138L109,138L109,124Z" fill="${C.skin}"/><path d="M91,124L91,137M109,124L109,137" class="o" fill="none"/>` +
+    `<path d="M91,128Q100,136 109,128L109,138L91,138Z" fill="${C.ink}" opacity=".22"/></g>`;
+  const face = sh(faceD, C.skin, 'M110,80L136,80L136,140L116,140Q122,112 110,80Z', 'face') +
+    `<ellipse class="fine" cx="82.6" cy="119" rx="5.4" ry="3.2" fill="${C.flamingo}" opacity=".55"/><ellipse class="fine" cx="117.4" cy="119" rx="5.4" ry="3.2" fill="${C.flamingo}" opacity=".55"/>`;
 
-  // ---- brows
-  const browD = 'M59,69C60,58 78,53 98,62C92,69 84,66 72,71C67,73 61,73 59,69Z';
-  const browL = `<g class="browL"><g class="browL-a">${sh(browD, C.grey, 'M50,64L110,64L110,80L50,80Z')}</g></g>`;
-  const browR = `<g class="browR"><g class="browR-a">${mirror(sh(browD, C.grey, 'M50,64L110,64L110,80L50,80Z'))}</g></g>`;
+  // earrings: lemon atoms
+  const atom = (x) => `<g class="fine"><ellipse cx="${x}" cy="124" rx="7" ry="2.6" fill="none" stroke="${C.ink}" stroke-width="1.6" transform="rotate(-24 ${x} 124)"/><ellipse cx="${x}" cy="124" rx="7" ry="2.6" fill="none" stroke="${C.ink}" stroke-width="1.6" transform="rotate(24 ${x} 124)"/></g>` +
+    `<circle cx="${x}" cy="124" r="3.4" fill="${C.lemon}" stroke="${C.ink}" stroke-width="2.2"/>`;
+  const earrings = `<g class="earr"><path class="fine" d="M74.5,118L74.5,121M125.5,118L125.5,121" stroke="${C.ink}" stroke-width="1.6"/>${atom(74.5)}${atom(125.5)}</g>`;
 
-  // ---- mouths (behind the moustache)
+  // eyes: big white ovals, ink pupils, winged liner. Lids are skin-coloured, clipped to the eye (blink).
+  const EL = 91, ER = 109, EY = 106;
+  const eyeOval = (cx) => ell(cx, EY, 8, 10);
+  const mkEye = (cx, side, cid) => {
+    const w = side === 'L' ? -1 : 1;
+    return `<g class="eye${side}"><g class="eye${side}-a">` +
+      sh(eyeOval(cx), '#FFFEF8') +
+      `<g class="pup"><circle cx="${cx - w * 0.6}" cy="${EY + 0.6}" r="4.2" fill="${C.ink}"/><circle cx="${cx - w * 0.6 - 1.4}" cy="${EY - 1.4}" r="1.4" fill="#fff"/></g>` +
+      `<clipPath id="${uid}${cid}"><path d="${eyeOval(cx)}"/></clipPath>` +
+      `<g clip-path="url(#${uid}${cid})">${part('lid' + side, `<path d="M${cx - 10},${EY - 14}L${cx + 10},${EY - 14}L${cx + 10},${EY + 1}L${cx - 10},${EY + 1}Z" fill="${C.skin}"/><path class="o" d="M${cx - 10},${EY + 1}L${cx + 10},${EY + 1}"/>`)}</g>` +
+      `<path class="o" d="${eyeOval(cx)}"/>` +
+      // upper liner + wing flick
+      `<path class="o thick liner" d="M${cx + w * 8},${EY - 1.5}Q${cx + w * 1},${EY - 12.4} ${cx - w * 8.2},${EY - 3}"/>` +
+      `<path class="o thick wing" d="M${cx + w * 8},${EY - 1.5}L${cx + w * 14},${EY - 6}"/>` +
+      `</g></g>`;
+  };
+  const eyes = mkEye(EL, 'L', 'ecl') + mkEye(ER, 'R', 'ecr');
+  // closed happy eyes (arcs) + wink
+  const arcL = `M${EL - 8},${EY + 3}Q${EL},${EY - 9} ${EL + 8},${EY + 3}`;
+  const arcR = `M${ER - 8},${EY + 3}Q${ER},${EY - 9} ${ER + 8},${EY + 3}`;
+  const eyesHappy = `<g class="eyesHappy"><path class="o thick" d="${arcL}"/><path class="o thick" d="${arcR}"/>` +
+    `<path class="o thick wing" d="M${EL - 8},${EY + 3}L${EL - 13},${EY - 1}M${ER + 8},${EY + 3}L${ER + 13},${EY - 1}"/></g>`;
+  const winkR = `<g class="winkR"><path class="o thick" d="${arcR}"/><path class="o thick wing" d="M${ER + 8},${EY + 3}L${ER + 13},${EY - 1}"/></g>`;
+
+  // brows: thin 3 px arcs
+  const browL = `<g class="browL"><g class="browL-a"><path class="o brow" d="M82,92.4Q90,87 99,91.4"/></g></g>`;
+  const browR = `<g class="browR"><g class="browR-a"><path class="o brow" d="M101,91.4Q110,87 118,92.4"/></g></g>`;
+
+  const nose = `<path class="o thin nose" d="M101.6,112Q106.4,116.4 101.8,118.6"/>`;
+
+  // mouths (coral lips, no teeth)
+  const lipsD = 'M90.6,124.4Q95,120.8 100,123Q105,120.8 109.4,124.4Q105,131.4 100,131.4Q95,131.4 90.6,124.4Z';
   const mouths =
-    `<g class="m m-smile"><path class="o thick" d="M88,134Q100,143 112,134"/></g>` +
-    `<g class="m m-open">${sh(ell(100, 136, 12, 9), C.ink)}<path d="M92,141Q100,137 108,141Q100,146 92,141Z" fill="${mouthTongue}"/></g>` +
-    `<g class="m m-wide">${sh('M78,128Q100,126 122,128Q122,150 100,150Q78,150 78,128Z', C.ink)}` +
-      `<path d="M88,145Q100,138 112,145Q100,150 88,145Z" fill="${mouthTongue}"/><path d="M82,129L118,129L116,134L84,134Z" fill="${C.cream}"/></g>` +
-    `<g class="m m-o">${sh(ell(100, 137, 8, 10), C.ink)}</g>` +
-    `<g class="m m-frown"><path class="o thick" d="M87,141Q100,129 113,141"/></g>` +
-    `<g class="m m-side"><path class="o thick" d="M90,136Q99,131 112,137"/></g>`;
+    `<g class="m m-smile">${inkFill(lipsD, C.lip)}<path class="fine" d="M95,126.6Q100,128.6 105,126.6" stroke="${C.ink}" stroke-width="1.4" fill="none" opacity=".7"/></g>` +
+    `<g class="m m-grin">${inkFill('M89.6,122.6Q100,128.6 110.4,122.6Q108.6,134 100,134Q91.4,134 89.6,122.6Z', C.ink)}` +
+      `<path d="M94,131.2Q100,128.4 106,131.2Q100,134 94,131.2Z" fill="${C.flamingo}"/>` +
+      `<path d="M89.6,122.6Q100,128.6 110.4,122.6" fill="none" stroke="${C.lip}" stroke-width="2.6" stroke-linecap="round"/></g>` +
+    `<g class="m m-o"><ellipse cx="100" cy="128.4" rx="6.6" ry="8" fill="${C.ink}" stroke="${C.lip}" stroke-width="3.6"/><ellipse cx="100" cy="128.4" rx="8.4" ry="9.8" fill="none" stroke="${C.ink}" stroke-width="2.4"/><path d="M96,132.4Q100,129.8 104,132.4Q100,135 96,132.4Z" fill="${C.flamingo}"/></g>` +
+    `<g class="m m-gasp"><ellipse cx="100" cy="129.6" rx="3.8" ry="4.8" fill="${C.ink}" stroke="${C.lip}" stroke-width="2.6"/><ellipse cx="100" cy="129.6" rx="5.4" ry="6.4" fill="none" stroke="${C.ink}" stroke-width="2"/></g>` +
+    `<g class="m m-flat"><path d="M92.4,127.6L107.6,127.6" stroke="${C.ink}" stroke-width="6.6" stroke-linecap="round"/><path d="M92.4,127.6L107.6,127.6" stroke="${C.lip}" stroke-width="3" stroke-linecap="round"/></g>` +
+    `<g class="m m-side"><path d="M92.6,128.4Q100,129.8 108.4,124.8" stroke="${C.ink}" stroke-width="6.6" stroke-linecap="round" fill="none"/><path d="M92.6,128.4Q100,129.8 108.4,124.8" stroke="${C.lip}" stroke-width="3" stroke-linecap="round" fill="none"/></g>` +
+    `<circle class="fine" cx="113" cy="121" r="1.4" fill="${C.ink}"/>`;
 
-  // ---- moustache
-  const mN = 'M100,110C86,104 62,104 48,112C38,118 40,136 56,136C70,136 84,130 100,128C116,130 130,136 144,136C160,136 162,118 152,112C138,104 114,104 100,110Z';
-  const mS = 'M100,108L88,100L80,106L68,100L62,110L48,108L50,120L38,124L48,132L40,140L56,138L64,146L74,136L86,138L92,130L100,132L108,130L114,138L126,136L136,146L144,138L160,140L152,132L162,124L150,120L152,108L138,110L132,100L120,106L112,100Z';
-  const must = part('must',
-    `<g class="must-n">${sh(mN, C.grey, 'M30,126L170,126L170,150L30,150Z')}${ln('M56,119Q70,128 90,125')}${ln('M144,119Q130,128 110,125')}${ln('M60,128Q72,132 84,129')}${ln('M140,128Q128,132 116,129')}</g>` +
-    `<g class="must-s">${sh(mS, C.grey)}${ln('M60,120L74,126')}${ln('M140,120L126,126')}</g>`);
+  // fringe + headband in front of the face
+  const fringe =
+    part('bangs',
+      sh('M73,106C68,86 82,73 100,73C118,73 132,86 127,106C126,98 121,92 113,90C104,95 92,95 82,99C77,101 75,103 73,106Z', C.aub, 'M104,70L136,70L136,110L120,110Q120,86 104,70Z', 'fringe') +
+      sh('M71.4,96C76,80 124,80 128.6,96L126,101C119,89 81,89 74,101Z', C.teal, '', 'band') +
+      `<path class="o thin hl2" d="M90,78Q97,75 106,76" style="stroke:#fff"/>`);
 
-  // ---- nose, cheeks, face
-  const nose = sh(ell(100, 102, 14, 13), C.nose, 'M104,90L120,90L120,120L104,120Z') +
-    `<path d="M92,96Q95,92 99,92" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>`;
-  const face =
-    `<g class="ears">${sh(ell(52, 98, 9, 10), C.skin)}${sh(ell(148, 98, 9, 10), C.skin)}</g>` +
-    sh(ell(100, 94, 48, 50), C.skin, 'M132,40L160,40L160,150L132,150Z M44,50L160,50L160,66Q100,74 44,66Z') +
-    `<circle class="fine" cx="62" cy="106" r="7" fill="${C.orange}" opacity=".45"/><circle class="fine" cx="138" cy="106" r="7" fill="${C.orange}" opacity=".45"/>`;
+  // hand-on-chin glove for think (sits on the head so it follows its tilt)
+  const head = part('head', neck + ears + face + earrings + eyes + eyesHappy + winkR + browL + browR + nose + mouths + fringe);
 
-  // ---- hat
-  const hat = part('hat',
-    sh('M54,46C54,8 146,8 146,46Z', C.mustard, 'M112,0L160,0L160,60L112,60Z') +
-    sh('M91,12L109,12L111,46L89,46Z', C.hatDark) +
-    sh('M42,50A6,6 0 0 1 48,44L152,44A6,6 0 0 1 158,50A6,6 0 0 1 152,56L48,56A6,6 0 0 1 42,50Z', C.mustard, 'M40,52L160,52L160,60L40,60Z') +
-    `<g class="lamp-rays"><path class="o thin" d="M100,10L100,-2M84,16L76,8M116,16L124,8M72,28L62,26M128,28L138,26"/></g>` +
-    sh(ell(100, 31, 11, 11), C.grey) +
-    `<circle cx="100" cy="31" r="6.2" fill="#FFF3B0" stroke="${C.ink}" stroke-width="2.4"/>` +
-    `<path d="M97,28L99,26" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`);
-
-  const handThink = `<g class="handThink">${sh(ell(84, 150, 11, 10), C.skin)}${ln('M78,146Q84,142 90,146', 'fine')}</g>`;
-
-  const head = part('head', face + mouths + eyeL + eyeR + `<g class="eyesHappy">${eyesHappy}</g>` + must + nose + browL + browR + handThink + hat);
-
-  // ---- fx
-  const fxBurst = `<g class="burst">${sh(burstPath(100, 112, 104, 66, 12), C.mustard)}${`<path d="${burstPath(100, 112, 70, 44, 12)}" fill="${C.cream}" stroke="${C.ink}" stroke-width="3" stroke-linejoin="round" opacity=".95"/>`}</g>`;
-  const fxBurst2 = `<g class="burst2">${sh(burstPath(100, 92, 128, 86, 14), C.orange, 'M100,-50L240,-50L240,230L100,230Z')}</g>`;
-  const cfCols = [C.red, C.teal, C.mustard, C.orange, C.cream, C.plum, C.olive];
-  const cfPos = [[-12,24],[20,-16],[52,-24],[148,-22],[182,-10],[210,22],[-16,76],[216,80],[-6,126],[206,128],[-4,176],[204,176]];
+  // ---------------------------------------------------------------- fx
+  const fxBurst = `<g class="burst">${sh(burstPath(100, 130, 120, 76, 12), C.lemon)}<path d="${burstPath(100, 130, 80, 50, 12)}" fill="${C.cream}" stroke="${C.ink}" stroke-width="3" stroke-linejoin="round" opacity=".96"/></g>`;
+  const fxBurst2 = `<g class="burst2">${sh(burstPath(100, 110, 140, 96, 14), C.coral, 'M100,-50L250,-50L250,250L100,250Z')}</g>`;
+  const cfCols = [C.coral, C.teal, C.lemon, C.flamingo, C.cream, C.lilac, C.lime];
+  const cfPos = [[-8, 22], [24, -14], [56, -22], [146, -26], [176, -12], [208, 22], [-14, 74], [214, 78], [-4, 124], [206, 126], [10, 176], [196, 176]];
   const confetti = `<g class="confetti">${cfPos.map(([x, y], i) => {
     const fill = cfCols[i % cfCols.length], k = i % 3;
-    const d = k === 0 ? `M${x-7},${y-4}L${x+7},${y-4}L${x+7},${y+4}L${x-7},${y+4}Z` : k === 1 ? `M${x},${y-9}L${x+7},${y}L${x},${y+9}L${x-7},${y}Z` : star4(x, y, 10);
+    const d = k === 0 ? `M${x - 7},${y - 4}L${x + 7},${y - 4}L${x + 7},${y + 4}L${x - 7},${y + 4}Z` : k === 1 ? `M${x},${y - 9}L${x + 7},${y}L${x},${y + 9}L${x - 7},${y}Z` : star4(x, y, 10);
     return `<g class="cf" style="transform-origin:${x}px ${y}px;animation-delay:${(i % 4) * .13}s"><path d="${d}" fill="${fill}" stroke="${C.ink}" stroke-width="2" stroke-linejoin="round"/></g>`;
   }).join('')}</g>`;
+  const lidConf = `<g class="lidconf">${[[0, C.coral], [1, C.lemon], [2, C.teal], [3, C.flamingo]].map(([i, f]) =>
+    `<g class="lc lc${i}"><path d="M-4,-3L4,-3L4,3L-4,3Z" fill="${f}" stroke="${C.ink}" stroke-width="1.8" stroke-linejoin="round"/></g>`).join('')}</g>`;
   const starAt = (x, y, r, fill, delay) =>
     `<g class="star" style="transform-origin:${x}px ${y}px;animation-delay:${delay}s">${sh(star4(x, y, r), fill)}</g>`;
-  const stars = `<g class="stars">${starAt(18, 40, 17, C.mustard, 0)}${starAt(186, 30, 21, C.cream, .15)}${starAt(8, 150, 14, C.cream, .3)}${starAt(194, 140, 17, C.mustard, .45)}${starAt(150, -8, 12, C.mustard, .2)}</g>`;
+  const stars = `<g class="stars">${starAt(20, 52, 17, C.lemon, 0)}${starAt(184, 40, 21, C.cream, .15)}${starAt(10, 150, 13, C.cream, .3)}${starAt(192, 140, 16, C.lemon, .45)}${starAt(156, -4, 12, C.flamingo, .2)}</g>`;
   const dropAt = (x, y, k) =>
-    `<g transform="translate(${x} ${y}) scale(${k})"><g class="dropA"><path class="o" fill="${C.drop}" d="M0,-9C6,-1 8,3 8,6A8,8 0 0 1 -8,6C-8,3 -6,-1 0,-9Z" style="fill:${C.drop}"/></g></g>`;
-  const sweat = `<g class="sweat">${dropAt(150, 52, 1)}${dropAt(40, 62, .85)}${dropAt(158, 82, .7)}</g>`;
-  const mlh = `<g class="mlh"><path class="o thick" d="M26,56L8,48M24,76L4,76M28,96L10,106M174,56L192,48M176,76L196,76M172,96L190,106"/></g>`;
-  const mlhop = `<g class="mlhop"><path class="o thick" d="M30,214L30,236M18,206L18,230M170,214L170,236M182,206L182,230"/></g>`;
-  const tdots = `<g class="tdots"><circle class="td1" cx="146" cy="30" r="4" fill="${C.cream}" stroke="${C.ink}" stroke-width="2.5"/><circle class="td2" cx="160" cy="14" r="6" fill="${C.cream}" stroke="${C.ink}" stroke-width="2.5"/><circle class="td3" cx="180" cy="-6" r="9" fill="${C.cream}" stroke="${C.ink}" stroke-width="2.5"/></g>`;
+    `<g transform="translate(${x} ${y}) scale(${k})"><g class="dropA"><path class="o" fill="${C.steel}" d="M0,-9C6,-1 8,3 8,6A8,8 0 0 1 -8,6C-8,3 -6,-1 0,-9Z" style="fill:${C.steel}"/></g></g>`;
+  const sweat = `<g class="sweat">${dropAt(146, 66, 1)}${dropAt(54, 76, .85)}${dropAt(152, 100, .7)}</g>`;
+  const mlh = `<g class="mlh"><path class="o thick" d="M48,60L30,52M46,82L26,82M50,102L32,112M152,60L170,52M154,82L174,82M150,102L168,112"/></g>`;
+  const note = `<g class="note"><path d="M0,0L0,-22" stroke="${C.ink}" stroke-width="4.6" stroke-linecap="round"/><ellipse cx="-4.4" cy="1" rx="6.6" ry="5" fill="${C.flamingo}" stroke="${C.ink}" stroke-width="3" transform="rotate(-20 -4.4 1)"/><path d="M0,-22Q10,-20 11,-10" fill="none" stroke="${C.ink}" stroke-width="4.6" stroke-linecap="round"/></g>`;
+  const notes = `<g class="notes"><g transform="translate(172 74)">${note}</g><g class="note2" transform="translate(30 90) scale(.75)">${note}</g></g>`;
+  const puff = `<g class="puff"><circle cx="150" cy="30" r="5" fill="${C.grey}" stroke="${C.ink}" stroke-width="2.4"/><circle cx="160" cy="16" r="7.4" fill="${C.grey}" stroke="${C.ink}" stroke-width="2.4"/><circle cx="174" cy="0" r="10" fill="${C.grey}" stroke="${C.ink}" stroke-width="2.4"/></g>`;
+  const tdots = `<g class="tdots"><circle class="td1" cx="148" cy="86" r="3.6" fill="${C.cream}" stroke="${C.ink}" stroke-width="2.4"/><circle class="td2" cx="160" cy="72" r="5.4" fill="${C.cream}" stroke="${C.ink}" stroke-width="2.4"/></g>`;
+  const spark = `<g class="spark"><path d="${burstPath(168, 192, 17, 7, 8)}" fill="${C.lemon}" stroke="${C.ink}" stroke-width="2.8" stroke-linejoin="round"/></g>`;
 
-  const shadow = `<g class="shadow"><ellipse cx="100" cy="249" rx="64" ry="7" fill="${C.ink}" opacity=".28"/><ellipse cx="100" cy="249" rx="64" ry="7" fill="url(#${uid}ht)"/></g>`;
+  const shadow = `<g class="shadow"><ellipse cx="100" cy="232" rx="58" ry="6.4" fill="${C.ink}" opacity=".3"/><ellipse cx="100" cy="232" rx="58" ry="6.4" fill="url(#${uid}ht)"/></g>`;
 
-  return `<svg class="gus" xmlns="http://www.w3.org/2000/svg" viewBox="-20 -24 240 280" role="img" aria-label="Old Gus the miner">
-<defs><pattern id="${uid}ht" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="2.5" cy="2.5" r="1.35" fill="${C.ink}" opacity=".5"/></pattern></defs>
+  // everything is drawn in a 200x233 box and lifted into the 240x280 viewBox (ground y232 -> 248)
+  return `<svg class="gus mambo" xmlns="http://www.w3.org/2000/svg" viewBox="-20 -24 240 280" role="img" aria-label="Agent Mambo, Mabel Fontaine">
+<defs><pattern id="${uid}ht" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="2.5" cy="2.5" r="1.3" fill="${C.lilac}"/></pattern></defs>
+<g class="fig" transform="translate(-10 -8) scale(1.1)">
 ${shadow}${fxBurst}${fxBurst2}
 <g class="body"><g class="body-a">
-${pickBack}
-${part('legL', leg.replace('matrix(-1 0 0 1 200 0)', 'matrix(1 0 0 1 0 0)'))}${part('legR', leg)}
-${part('torso', torso)}
+${part('legL', legL)}${part('legR', legR)}
+${skirt}
+${torso}
 ${plunger}
-${part('armL', arm)}${armR}${gripR}
+${arm('L', 78, false)}${arm('R', 122, true)}
 ${head}
-${sweat}${mlh}${tdots}
+${antenna}
+${sweat}${mlh}${tdots}${puff}${notes}${lidConf}
 </g></g>
-${mlhop}${stars}${confetti}
+${spark}${stars}${confetti}
+</g>
 </svg>`;
 }
 
 // ---- stylesheet auto-load (once). Callers may also <link> mascot.css themselves.
 function ensureCss() {
   if (typeof document === 'undefined') return;
-  if (document.querySelector('link[data-gus-css]') || document.querySelector('link[href*="mascot.css"]')) return;
+  if (document.querySelector('link[data-mambo-css]') || document.querySelector('link[href*="mascot.css"]')) return;
   try {
     const l = document.createElement('link');
     l.rel = 'stylesheet';
     l.href = new URL('./mascot.css', import.meta.url).href;
-    l.setAttribute('data-gus-css', '');
+    l.setAttribute('data-mambo-css', '');
     document.head.appendChild(l);
   } catch (_) { /* ignore */ }
 }
 
 /**
- * createMascot(hostEl, { size = 240, variant = 'auto', bubble = 'top', pose = 'idle' })
- *   size    : rendered height in px (width follows, ratio 240:280)
- *   variant : 'full' | 'small' | 'auto' (small when size <= 140: fewer parts, thicker outlines)
+ * createMascot(hostEl, { size = 240, variant = 'auto', bubble = 'top', pose = 'idle', reduced })
+ *   size    : rendered height in px (width follows, ratio 6:7)
+ *   variant : 'full' | 'small' | 'auto' (small when size <= 140: no halftone/detail, thicker outlines)
  *   bubble  : speech bubble side: 'top' | 'left' | 'right'
  * returns { el, setPose(name), say(text, ms), hideSay(), getPose(), destroy() }
  */
 export function createMascot(hostEl, opts = {}) {
   ensureCss();
   const size = Math.max(40, opts.size || 240);
-  const uid = 'g' + (++UID) + '_';
+  const uid = 'm' + (++UID) + '_';
   const wrap = document.createElement('div');
-  wrap.className = 'gus-wrap';
+  wrap.className = 'gus-wrap mambo-wrap';
   wrap.style.setProperty('--gus-h', size + 'px');
   wrap.style.height = size + 'px';
-  wrap.style.width = Math.round(size * 240 / 280) + 'px';
+  wrap.style.width = Math.round(size * 6 / 7) + 'px';
   wrap.dataset.bubble = opts.bubble || 'top';
   wrap.innerHTML = buildSVG(uid);
   const svg = wrap.firstElementChild;
   const small = opts.variant === 'small' || (opts.variant !== 'full' && size <= 140);
   if (small) svg.classList.add('small');
+  if (opts.reduced) svg.classList.add('still');
 
   const bub = document.createElement('div');
-  bub.className = 'gus-bubble';
+  bub.className = 'gus-bubble mambo-bubble';
   bub.setAttribute('aria-live', 'polite');
   bub.hidden = true;
   wrap.appendChild(bub);
@@ -239,11 +317,26 @@ export function createMascot(hostEl, opts = {}) {
   };
   setPose(opts.pose || 'idle');
 
+  // keep the bubble inside the viewport (uses layout sizes, so the pop-in scale does not matter)
+  const fit = () => {
+    bub.style.translate = '';
+    try {
+      const vw = document.documentElement.clientWidth || window.innerWidth, vh = document.documentElement.clientHeight || window.innerHeight;
+      const wr = wrap.getBoundingClientRect();
+      const l = wr.left + bub.offsetLeft, t = wr.top + bub.offsetTop, w = bub.offsetWidth, h = bub.offsetHeight, m = 4;
+      let dx = 0, dy = 0;
+      if (l < m) dx = m - l; else if (l + w > vw - m) dx = vw - m - (l + w);
+      if (t < m) dy = m - t; else if (t + h > vh - m) dy = vh - m - (t + h);
+      if (dx || dy) bub.style.translate = `${Math.round(dx)}px ${Math.round(dy)}px`;
+    } catch (_) { /* ignore */ }
+  };
+
   const hideSay = () => { clearTimeout(bubTimer); bub.hidden = true; };
   const say = (text, ms = 2200) => {
     clearTimeout(bubTimer);
     bub.textContent = String(text == null ? '' : text);
     bub.hidden = !bub.textContent;
+    fit();
     // restart pop-in
     bub.classList.remove('pop'); void bub.offsetWidth; bub.classList.add('pop');
     if (ms > 0) bubTimer = setTimeout(hideSay, ms);

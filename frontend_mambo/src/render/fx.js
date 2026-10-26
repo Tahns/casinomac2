@@ -1,9 +1,16 @@
-// Cartoon particle engine on one overlay canvas: dust puffs, 4-point stars, flat coins, comic burst rings.
-// Same API as before (shards/sparks/embers/coins/coinRain/smoke/ring/glow/clear) so index.js keeps working;
-// shapes are flat colour with a thick dark outline and move in ~12 fps steps (limited animation). Counts are capped.
+// AGENT MAMBO cartoon particle engine on one overlay canvas (cut-paper look: flat colour, thick ink outline, ~12 fps steps).
+// Original API kept (shards/sparks/embers/coins/coinRain/smoke/ring/glow/clear/count/resize).
+// Added: stars, burstBubble (comic POW!/BAM!/BOOM! bubble), confetti, breakCell (paper-piece break of a removed cell),
+// pieces, dust, iris (iris wipe, resolves when done; a 'close' holds until iris('open') or clear()), shake.
+// All counts are capped (MAX live particles; every helper clamps its own n).
 import { t } from '../i18n/index.js';
 const TAU = Math.PI * 2;
-const INK = '#2B1A12', PAPER = '#F4E8C8';
+const INK = '#14102B', PAPER = '#FBF1D9';
+export const FX_COLORS = { ink: INK, cream: PAPER, teal: '#1FB5A3', coral: '#F0472F', flamingo: '#F5799F', lemon: '#FFD23F', lilac: '#9A7BD0', lime: '#A5D63B', steel: '#6FA7D9', indigo: '#2B2A6B' };
+const STAR_COLS = [FX_COLORS.lemon, PAPER, FX_COLORS.flamingo, FX_COLORS.teal, FX_COLORS.lilac];
+const CONF_COLS = [FX_COLORS.lemon, FX_COLORS.coral, FX_COLORS.teal, FX_COLORS.flamingo, PAPER, FX_COLORS.lilac, FX_COLORS.lime];
+const DISP = "'Arial Black','Futura','Century Gothic',Impact,sans-serif";
+const safeT = (key, dflt) => { try { const v = t(key); return v && v !== key ? v : dflt; } catch (e) { return dflt; } };
 const rnd = (a, b) => a + Math.random() * (b - a);
 const REDUCE = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const STEP = 1 / 12; // limited-animation frame length
