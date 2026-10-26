@@ -1,4 +1,4 @@
-"""Generate the reel strips for The Unleashed Mine (6 reels, 120 stops each). Deterministic."""
+"""Generate the reel strips for The Agent Mambo (6 reels, 120 stops each). Deterministic."""
 import os
 import random
 
@@ -8,7 +8,7 @@ OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
 
 # symbols per 120 stops
 WEIGHTS = {
-    "BR0": {"H1": 7, "H2": 9, "H3": 11, "H4": 13, "L1": 16, "L2": 17, "L3": 18, "L4": 19, "S": 2, "W": 0},
+    "BR0": {"H1": 7, "H2": 9, "H3": 11, "H4": 13, "L1": 16, "L2": 17, "L3": 18, "L4": 19, "S": 2, "W": int(__import__("os").environ.get("BRW", "3"))},
     "FR0": {"H1": 7, "H2": 9, "H3": 11, "H4": 12, "L1": 15, "L2": 16, "L3": 17, "L4": 17, "S": 3, "W": 4},
     "WCAP": {"H1": 52, "H2": 16, "H3": 10, "H4": 6, "L1": 3, "L2": 2, "L3": 2, "L4": 2, "S": 3, "W": 24},
 }

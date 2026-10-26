@@ -1,0 +1,1 @@
+Step 8: BR0 gets W=3 per reel (make_reels BRW default 3) for a fatter base tail (natural base mean .47 -> .79, p99 2.3 -> 5x). run.py: REWEIGHT=1 default (Rust only base, bonus via reweight_bonus.py). Full run2 started (OPT=1) log /tmp/claude-0/mambo_run2.log pid 18023

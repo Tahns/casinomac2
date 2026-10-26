@@ -14,6 +14,8 @@ import os
 # Experiment knobs (env), defaults = shipped values
 BONUS_M2M = tuple(float(x) for x in os.environ.get("BM2M", "4,8").split(","))
 BONUS_SCALES = [tuple(float(y) for y in x.split(":")) for x in os.environ.get("BSCALE", "0.7:30:40,0.8:1000:2000,1.2:3000:4000").split(",")]
+BONUS_PMB = float(os.environ.get("BPMB", "1.0"))
+BONUS_BIAS = [float(x) for x in os.environ["BBIAS"].split(",")] if os.environ.get("BBIAS") else None
 BONUS_SPINS = [int(x) for x in os.environ.get("BSPINS", "50,100,200").split(",")]
 
 # Bonus (UNLEASH) scatter-tier design: share of purchases and RTP contribution per tier.
@@ -110,12 +112,23 @@ class OptimizationSetup:
                     num_per_fence=10000,
                     min_m2m=BONUS_M2M[0],
                     max_m2m=BONUS_M2M[1],
-                    pmb_rtp=1.0,
+                    pmb_rtp=BONUS_PMB,
                     sim_trials=5000,
                     test_spins=BONUS_SPINS,
                     test_weights=[0.3, 0.4, 0.3],
                     score_type="rtp",
                 ).return_dict(),
+                **(
+                    {
+                        "distribution_bias": ConstructFenceBias(
+                            applied_criteria=["fgfloor4", "fgfloor5", "fgfloor6", "fgfloor7"],
+                            bias_ranges=[(BONUS_BIAS[0], BONUS_BIAS[1])] * 4,
+                            bias_weights=[BONUS_BIAS[2]] * 4,
+                        ).return_dict()
+                    }
+                    if BONUS_BIAS
+                    else {}
+                ),
             },
         }
 

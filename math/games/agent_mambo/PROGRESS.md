@@ -3,3 +3,8 @@ Step 0: copied the_unleashed_mine (no library/). game_id agent_mambo. Veins remo
 Step 1: gm_step 8 cap 100 (natural t4 mean ~100 at step8, 82 at step5). full run1 OPT=1 log /tmp/claude-0/mambo_run1.log pid 2473
 Step 2: run1 done: RTP .96/.96 base hit 29.07 bonus median 44.0, 30-60x = 71%. copy /tmp/claude-0/pub_run1. Next: tiers check, tests, flatten tuning
 Step 3: pytest 18 pass on run1 (tests adapted, tools/analyze.py written).
+Step 4: optimizer knobs via env BM2M/BSCALE/BSPINS in game_optimization.py; m1 (m2m 1.6-3) no change: 70% in 30-60. testing BSPINS large (s1)
+Step 5: BSPINS 1000,5000,20000 far too slow (killed after 22 min); don't.
+Step 6: ANALYSIS: Rust optimizer cannot give a flat buy distribution: its pigs are gaussian mixes + forced "extra dress" (x150 on [min, avg/2], x0.0001 above) tuned for m2m>=4; results always ~70% of purchases at 30-60x whatever BM2M/BSCALE/BBIAS (m1,b1 tried) while the NATURAL pool has ~40% there (natural 60-200x body 49% -> 15% after optimizer). BSPINS 1000+ way too slow. DECISION: bonus weights from tools/reweight_bonus.py (exponential tilt exp(-lam*payout) per scatter tier, pinned tier shares, P(5000x)=1/50000, lam solved so RTP=96.000%); base stays Rust-optimized. Lookup tables remain integer weights; SDK tests rerun via tools/final_checks.py.
+Step 7: reweight_bonus.py applied on run1 books: RTP 96.000, median 64.4, 30-60x 46%, 60-300x 50%, >=300x 3.8%, p(max) 1/50000. Next: base tail tuning (wire strength / BR0), then final pipeline
+Step 9: run2 done (BR0 W=3, bonus reweight): RTP .96/.96 base hit 29.07 bonus median 64.1 30-60x 46%. copy /tmp/claude-0/pub_run2. Next: pytest, analyze, fixtures, report
