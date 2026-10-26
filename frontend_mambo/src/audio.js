@@ -479,6 +479,25 @@ const bed = { cur: 'off', B: null, idx: 0, next: 0, timer: 0 };
 
 try { muted = localStorage.getItem(KEY) === '1'; } catch (e) { muted = false; }
 
+// ---- v2 API skeleton (frozen in step 0, WP2 implements the buses behind it) ----
+// Volumes (0-100 per kind) are kept, persisted (am_vol_*) and announced through onChange, but until WP2 adds the master/music/sfx
+// buses they have NO audible effect: the mix is exactly the v1 mix (which equals the defaults, 75/75/75).
+export const VOLUME_KINDS = Object.freeze(['master', 'music', 'sfx']);
+export const DEFAULT_VOLUME = 75;
+const VOL_KEYS = { master: 'am_vol_master', music: 'am_vol_music', sfx: 'am_vol_sfx' };
+/** Pure: anything -> integer 0..100, or null when it is not a usable number ('', 'abc', NaN, null, undefined, booleans). */
+export function parseVolume(raw) {
+  if (raw == null || typeof raw === 'boolean' || (typeof raw === 'string' && raw.trim() === '')) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.round(clamp(n, 0, 100)) : null;
+}
+const vol = { master: DEFAULT_VOLUME, music: DEFAULT_VOLUME, sfx: DEFAULT_VOLUME };
+for (const k of VOLUME_KINDS) {
+  try { const v = parseVolume(localStorage.getItem(VOL_KEYS[k])); if (v != null) vol[k] = v; } catch (e) { /* default */ }
+}
+const changeFns = new Set();
+function notify(ev) { for (const fn of [...changeFns]) { try { fn({ ...ev, volumes: { ...vol }, muted }); } catch (e) { /* a listener must never break the audio */ } } }
+
 function syncUi() {
   try {
     const apply = () => {
@@ -537,15 +556,20 @@ if (typeof window !== 'undefined') {
 }
 
 export const audio = {
+  /** Play a cue by id. Unknown ids (also ids WP2 has not added yet) are no-ops. Returns true when a cue was started. */
   play(name, opt) {
     try {
-      if (!ctx || muted || !engine) return;
+      if (!ctx || muted || !engine) return false;
+      if (typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(engine.SOUNDS, name)) return false;
       if (ctx.state === 'suspended') { ctx.resume().catch(() => {}); }
       const fn = engine.SOUNDS[name];
-      if (fn) fn(opt || {});
-    } catch (e) { /* audio must never break the game */ }
+      if (typeof fn !== 'function') return false;
+      fn(opt || {});
+      return true;
+    } catch (e) { return false; /* audio must never break the game */ }
   },
   setMuted(b) {
+    const was = muted;
     muted = !!b;
     try { localStorage.setItem(KEY, muted ? '1' : '0'); } catch (e) { /* ignore */ }
     if (master && ctx) {
@@ -554,7 +578,26 @@ export const audio = {
       if (muted) { engine.killAll(); bed.next = 0; bed.B = null; bed.cur = 'off'; } // nothing queued may sound after unmute
     }
     syncUi();
+    if (was !== muted) notify({ type: 'mute' });
   },
+  /** kind 'master' | 'music' | 'sfx', pct 0-100 (rounded, clamped). Returns false for an unknown kind or a non-number. */
+  setVolume(kind, pct) {
+    if (!VOLUME_KINDS.includes(kind)) return false;
+    const v = parseVolume(pct);
+    if (v == null) return false;
+    if (vol[kind] === v) return true;
+    vol[kind] = v;
+    try { localStorage.setItem(VOL_KEYS[kind], String(v)); } catch (e) { /* in-memory value still works */ }
+    notify({ type: 'volume', kind, value: v });
+    return true;
+  },
+  /** Integer 0-100, or null for an unknown kind. */
+  getVolume(kind) { return VOLUME_KINDS.includes(kind) ? vol[kind] : null; },
+  get volumes() { return { ...vol }; },
+  /** Short neutral test sound for a slider (WP2: the 'settingsTest' cue, rate limited). A no-op until that cue exists. */
+  preview(kind) { if (!VOLUME_KINDS.includes(kind)) return false; return audio.play('settingsTest', { kind }); },
+  /** fn({ type: 'volume'|'mute', kind?, value?, volumes, muted }) after every change; returns the unsubscribe function. */
+  onChange(fn) { if (typeof fn !== 'function') return () => {}; changeFns.add(fn); return () => { changeFns.delete(fn); }; },
   get muted() { return muted; },
   set muted(b) { audio.setMuted(b); },
   unlock,

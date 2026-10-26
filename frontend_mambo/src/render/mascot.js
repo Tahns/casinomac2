@@ -281,12 +281,20 @@ function ensureCss() {
   } catch (_) { /* ignore */ }
 }
 
+// v2 reaction vocabulary (frozen in step 0; docs/v2/INTERFACES.md). WP4 sends these kinds, WP3 maps them to rig clips and may
+// only APPEND kinds. An unknown kind is ignored and react() returns false.
+export const REACT_KINDS = Object.freeze([
+  'idle', 'spin', 'anticipate', 'quiet', 'dead', 'win', 'bigwin', 'epic', 'blast', 'fizzle', 'trigger', 'retrigger', 'end', 'outfit',
+]);
+
 /**
  * createMascot(hostEl, { size = 240, variant = 'auto', bubble = 'top', pose = 'idle', reduced })
  *   size    : rendered height in px (width follows, ratio 6:7)
  *   variant : 'full' | 'small' | 'auto' (small when size <= 140: no halftone/detail, thicker outlines)
  *   bubble  : speech bubble side: 'top' | 'left' | 'right'
- * returns { el, setPose(name), say(text, ms), hideSay(), getPose(), destroy() }
+ * returns { el, setPose(name), say(text, ms), hideSay(), getPose(), react(kind, info), destroy() }
+ *   react(kind, info): v2 reaction API (STUB in step 0: does nothing and returns false; WP3 implements it). The legacy
+ *   setPose / say keep working unchanged.
  */
 export function createMascot(hostEl, opts = {}) {
   ensureCss();
@@ -346,8 +354,10 @@ export function createMascot(hostEl, opts = {}) {
     bub.classList.remove('pop'); void bub.offsetWidth; bub.classList.add('pop');
     if (ms > 0) bubTimer = setTimeout(hideSay, ms);
   };
+  // v2 (frozen in step 0): kind in REACT_KINDS, info = free object ({ level, ratio, combo, mission, outfit, ... }). Stub.
+  const react = (kind, info) => false; // eslint-disable-line no-unused-vars
   return {
-    el: wrap, setPose, say, hideSay, getPose: () => pose,
+    el: wrap, setPose, say, hideSay, getPose: () => pose, react,
     destroy() { clearTimeout(bubTimer); wrap.remove(); },
   };
 }
