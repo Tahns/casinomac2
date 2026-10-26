@@ -43,3 +43,12 @@ Language: only English required; `lang` unknown -> English.
 
 ## Règle ajoutée (décision du lead, 2026-10-22)
 Aucune IA générative pour les visuels ni les sons : tout est dessiné/synthétisé en code (SVG, canvas, WebAudio). Les images de soumission (tuile 3:4, cover 16:9) sont des SVG dessinés à la main rendus en PNG. Sauvegarde ton travail dans les fichiers au fil de l'eau (le process peut être redémarré) et tiens à jour `frontend/NOTES_<role>.md` avec ce qui est fait / reste à faire.
+
+## VARIANTE « AGENT MAMBO » (cette copie de travail : frontend_mambo/)
+Ce dossier est une variante du jeu avec un autre thème (espionnage-jazz années 60). Référence unique : `docs/mambo/DESIGN.md` (mascotte Mambo, symboles, palette, meter, mèche, textes, tâches par fichier). Le jeu de mine reste dans `frontend/` et ne doit pas être modifié.
+Changements de mécanique par rapport au jeu de mine (maths : `math/games/agent_mambo`) :
+- Plus de veines par case : un **multiplicateur global** (« Mission Meter ») démarre à x1 en free spins, chaque pas gagnant est payé avec la valeur courante puis la jauge monte de +1 ; elle persiste pendant toute la fonction. Événement `updateGlobalMult` {globalMult}. Aucune jauge en jeu de base.
+- La **mèche (wire)** garde les événements `fusePath`, `fuseBurn`, `fuseFizzle` ; `fuseBlast` ne contient plus `replaced` : les cases brûlées (hors scatter) sont **retirées** puis de nouveaux symboles tombent (événements `tumbleBoard`/`winInfo` normaux ensuite). Aucun wild n'est créé.
+- Le mode à 100x garde ses règles (prix minimum, confirmation du coût) et change de nom d'affichage (voir DESIGN §5.4). Les mots interdits en mode social restent interdits.
+- Plus aucune trace des mots « mine », « Gus », « fuse », « vein » dans les textes visibles (les noms d'événements techniques `fuse*` peuvent rester).
+Règles ajoutées : aucune IA générative, tout est dessiné/synthétisé en code ; ne modifier que les fichiers dont on est propriétaire (voir DESIGN §10) ; ports de test dédiés par agent ; ne jamais utiliser `pkill -f` (ne tuer que ses propres PID) ; ne pas faire de commit.

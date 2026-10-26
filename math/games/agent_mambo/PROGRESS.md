@@ -1,0 +1,2 @@
+# PROGRESS (Agent Mambo math agent)
+Step 0: copied the_unleashed_mine (no library/). game_id agent_mambo. Veins removed; global multiplier meter (gm_start/gm_step/gm_cap in game_config); wire blast removes burnt non-scatter cells (fuseBlast cells w/o replaced, then tumbleBoard with padded rows). Smoke diag: bonus fgfloor4 natural mean (step1 cap50) 49.6, median 42.7 (old mine: 100/70). Next: choose gm_step/cap so that natural mean ~ tier target (~93x), then full run.

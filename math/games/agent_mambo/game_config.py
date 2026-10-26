@@ -1,0 +1,241 @@
+"""Cluster game configuration file/setup"""
+
+import os
+from src.config.config import Config
+from src.config.distributions import Distribution
+from src.config.betmode import BetMode
+
+
+class GameConfig(Config):
+    """Singleton cluster game configuration class."""
+
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        super().__init__()
+        self.game_id = "agent_mambo"
+        self.provider_number = 0
+        self.working_name = "Agent Mambo"
+        self.wincap = 5000.0
+        self.win_type = "cluster"
+        self.rtp = 0.9600
+        self.construct_paths()
+
+        # Game Dimensions
+        self.num_reels = 6
+        # Optionally include variable number of rows per reel
+        self.num_rows = [5] * self.num_reels
+        # Board and Symbol Properties
+        t1, t2, t3, t4 = (5, 5), (6, 8), (9, 12), (13, 36)
+        pay_group = {
+            (t1, "H1"): 5.0,
+            (t2, "H1"): 12.5,
+            (t3, "H1"): 25.0,
+            (t4, "H1"): 60.0,
+            (t1, "H2"): 2.0,
+            (t2, "H2"): 5.0,
+            (t3, "H2"): 10.0,
+            (t4, "H2"): 40.0,
+            (t1, "H3"): 1.3,
+            (t2, "H3"): 3.2,
+            (t3, "H3"): 7.0,
+            (t4, "H3"): 30.0,
+            (t1, "H4"): 1.0,
+            (t2, "H4"): 2.5,
+            (t3, "H4"): 6.0,
+            (t4, "H4"): 20.0,
+            (t1, "L1"): 0.6,
+            (t2, "L1"): 1.5,
+            (t3, "L1"): 4.0,
+            (t4, "L1"): 10.0,
+            (t1, "L2"): 0.4,
+            (t2, "L2"): 1.2,
+            (t3, "L2"): 3.5,
+            (t4, "L2"): 8.0,
+            (t1, "L3"): 0.2,
+            (t2, "L3"): 0.8,
+            (t3, "L3"): 2.5,
+            (t4, "L3"): 5.0,
+            (t1, "L4"): 0.1,
+            (t2, "L4"): 0.5,
+            (t3, "L4"): 1.5,
+            (t4, "L4"): 4.0,
+        }
+        self.paytable = self.convert_range_table(pay_group)
+
+        self.include_padding = True
+        self.special_symbols = {"wild": ["W"], "scatter": ["S"]}
+
+        self.freespin_triggers = {
+            self.basegame_type: {4: 10, 5: 12, 6: 15, 7: 18, 8: 20},
+            self.freegame_type: {3: 5, 4: 8, 5: 10, 6: 12, 7: 15, 8: 18},
+        }
+        self.anticipation_triggers = {
+            self.basegame_type: min(self.freespin_triggers[self.basegame_type].keys()) - 1,
+            self.freegame_type: min(self.freespin_triggers[self.freegame_type].keys()) - 1,
+        }
+
+        self.bonus_floor = 30.0
+        # Global multiplier meter (free spins only): starts at gm_start when the feature starts, every winning
+        # tumble step is paid with the CURRENT value, then it rises by gm_step (capped at gm_cap). It persists
+        # through all spins of the feature (also after retriggers). Base game: always x1.
+        self.gm_start = 1
+        self.gm_step = 1
+        self.gm_cap = 50
+        # Bomb-timer wire (ex Fuse Line; blast REMOVES burnt non-scatter cells, no wild creation): per game type. len=N path cells, b0=cells burnt at reveal,
+        # adv=cells burnt per winning cascade step, detmin=burnt cells needed to detonate. None disables.
+        self.fuse_params = {
+            self.basegame_type: {"len": 8, "b0": 1, "adv": 1, "detmin": 3},
+            self.freegame_type: {"len": 8, "b0": 1, "adv": 1, "detmin": 3},
+        }
+
+        reels = {"BR0": "BR0.csv", "FR0": "FR0.csv", "WCAP": "WCAP.csv"}
+        self.reels = {}
+        for r, f in reels.items():
+            self.reels[r] = self.read_reels_csv(os.path.join(self.reels_path, f))
+        mode_maxwins = {"base": 5000, "bonus": 5000}
+
+        self.bet_modes = [
+            BetMode(
+                name="base",
+                cost=1.0,
+                rtp=self.rtp,
+                max_win=mode_maxwins["base"],
+                auto_close_disabled=False,
+                is_feature=True,
+                is_buybonus=False,
+                distributions=[
+                    Distribution(
+                        criteria="wincap",
+                        quota=0.001,
+                        win_criteria=mode_maxwins["base"],
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"WCAP": 1},
+                            },
+                            "scatter_triggers": {4: 1, 5: 2},
+                            "force_wincap": True,
+                            "force_freegame": True,
+                        },
+                    ),
+                    Distribution(
+                        criteria="freegame",
+                        quota=0.1,
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"FR0": 1},
+                            },
+                            "scatter_triggers": {4: 5, 5: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
+                        },
+                    ),
+                    Distribution(
+                        criteria="0",
+                        quota=0.4,
+                        win_criteria=0.0,
+                        conditions={
+                            "reel_weights": {self.basegame_type: {"BR0": 1}},
+                            "force_wincap": False,
+                            "force_freegame": False,
+                        },
+                    ),
+                    Distribution(
+                        criteria="basegame",
+                        quota=0.5,
+                        conditions={
+                            "reel_weights": {self.basegame_type: {"BR0": 1}},
+                            "force_wincap": False,
+                            "force_freegame": False,
+                        },
+                    ),
+                ],
+            ),
+            BetMode(
+                name="bonus",
+                cost=100,
+                rtp=self.rtp,
+                max_win=mode_maxwins["bonus"],
+                auto_close_disabled=False,
+                is_feature=True,
+                is_buybonus=False,
+                distributions=[
+                    Distribution(
+                        criteria="wincap",
+                        quota=0.001,
+                        win_criteria=mode_maxwins["bonus"],
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"WCAP": 1},
+                            },
+                            "scatter_triggers": {4: 1, 5: 2},
+                            "force_wincap": True,
+                            "force_freegame": True,
+                        },
+                    ),
+                    # Bonus-only criteria: one criterion per scatter tier so the optimizer can pin
+                    # the share of purchases per tier (10 / 12 / 15 / 18-20 starting free spins).
+                    # Natural free games with at least bonus_floor x (rejection filter in check_repeat).
+                    Distribution(
+                        criteria="fgfloor4",
+                        quota=0.55,
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"FR0": 1},
+                            },
+                            "scatter_triggers": {4: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
+                        },
+                    ),
+                    Distribution(
+                        criteria="fgfloor5",
+                        quota=0.25,
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"FR0": 1},
+                            },
+                            "scatter_triggers": {5: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
+                        },
+                    ),
+                    Distribution(
+                        criteria="fgfloor6",
+                        quota=0.12,
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"FR0": 1},
+                            },
+                            "scatter_triggers": {6: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
+                        },
+                    ),
+                    Distribution(
+                        criteria="fgfloor7",
+                        quota=0.079,
+                        conditions={
+                            "reel_weights": {
+                                self.basegame_type: {"BR0": 1},
+                                self.freegame_type: {"FR0": 1},
+                            },
+                            "scatter_triggers": {7: 3, 8: 1},
+                            "force_wincap": False,
+                            "force_freegame": True,
+                        },
+                    ),
+                ],
+            ),
+        ]
