@@ -47,7 +47,7 @@ Owner while it ran: one agent, temporarily on ALL shared front-end files (index.
 
 ## Verification (final state of step 0)
 
-- `cd frontend_mambo && node --test tests/core tests/text`: 60 tests, 60 pass (25 existing + geo 8, celebrate 6, settings 12, layers 2, audio API 4, minus the folder index double count).
+- `cd frontend_mambo && node --test tests/core tests/text`: 60 tests, 60 pass (25 existing + 35 new: geo 9, celebrate 7, settings 13, layers 2, audio API 4).
 - Live smoke on own ports (static server 5800, mock RGS 5801): boot, one spin to idle, `/wallet/play` once, zero console errors or warnings, no external host, no page scroll, at 1024x576, 400x225 and 425x812; the new shells exist and are invisible; the screenshots show the unchanged v1 look.
 - Dispatcher proof in the live renderer: three probe layers (sync, 400 ms slow, throwing) were pushed into `LAYERS`, a forced free-spins book played to the end, every event reached the layers with `ctx` (`geo`, `board`, `wrap`, `T`), `reset()` ran at book start and end, a throwing layer never stopped the book; `renderer.mascot.react` returns false, `pose` and `say` intact.
 - Guideline runner (`tests/guidelines/run.mjs`, run from a scratch copy, own ports 5802/5803): 46 PASS, 0 FAIL, 1 AT RISK; the AT RISK was [275] caused by the word "stake" in two comments and one identifier of this step, fixed, [275] PASS on re-run together with [239] [240] [77] [225] EXT CONSOLE. The static AT RISK lines that remain (dev.html "$", `replay.js` fixed decimals, `MICRO` in replay.js, the `rules_data.json` fetch in render/index.js) are old and not from this step.
