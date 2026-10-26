@@ -20,3 +20,5 @@ for i in range(n):
 wins=wins[:i+1]
 import statistics
 print(mode,crit,"n",len(wins),"time",round(time.time()-t,1),"mean",statistics.mean(wins),"max",max(wins),"median",statistics.median(wins))
+q = sorted(wins); n_ = len(q)
+print("pct", {p: round(q[min(n_-1, int(n_*p/100))], 1) for p in (10, 25, 50, 75, 90, 95, 99)}, "share>=100: %.3f >=200: %.3f >=500: %.4f" % (sum(w >= 100 for w in q)/n_, sum(w >= 200 for w in q)/n_, sum(w >= 500 for w in q)/n_))
