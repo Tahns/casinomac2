@@ -69,7 +69,7 @@ export function t(key, vars) {
   return out;
 }
 
-/** Mode display name; identical in normal and social, base game and UNLEASH. */
+/** Mode display name; identical in normal and social, base game and SECRET ENTRANCE. */
 t.mode = function mode(name) {
   const n = String(name || '').toLowerCase();
   if (n === 'bonus' || n === 'unleash' || n === 'unleashed') return t('mode.bonus');

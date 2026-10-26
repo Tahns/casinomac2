@@ -10,7 +10,7 @@ import { formatMoney } from '../../src/money.js';
 import { findRestricted } from './restricted.mjs';
 
 const data = JSON.parse(fs.readFileSync(new URL('../../data/rules_data.json', import.meta.url), 'utf8'));
-const VARS = { cost: '100.00 SC', n: 10, cur: 3, total: 10, mult: 100, amount: '1.00 SC', mode: 'UNLEASH', real: '100.00 SC' };
+const VARS = { cost: '100.00 SC', n: 10, cur: 3, total: 10, mult: 100, amount: '1.00 SC', mode: 'SECRET ENTRANCE', real: '100.00 SC' };
 
 for (const lang of ['en', 'zz']) {
   for (const soc of [false, true]) {
@@ -47,7 +47,7 @@ test('mode names identical in normal and social', () => {
   setSocial(false); const a = [t.mode('base'), t.mode('bonus')];
   setSocial(true); const b = [t.mode('base'), t.mode('bonus')];
   assert.deepEqual(a, b);
-  assert.deepEqual(a, ['Base Game', 'UNLEASH']);
+  assert.deepEqual(a, ['Base Game', 'SECRET ENTRANCE']);
   assert.ok(!/buy/i.test(a.join()));
 });
 
@@ -70,7 +70,7 @@ test('rules: social has no restricted words, normal has everything required', ()
   for (const s of data.symbols) assert.ok(all.includes(s.name), s.name);
   assert.ok(all.includes(DISCLAIMER.replace(/&/g, '&amp;')));
   assert.ok(/RTP \d+\.\d\d%, max win [\d,]+x/.test(all));
-  for (const w of ['AUTOPLAY', 'TURBO', 'UNLEASH', 'SOUND', 'INFO', 'FULLSCREEN', 'MENU', 'Space']) assert.ok(all.includes(w), w);
+  for (const w of ['AUTOPLAY', 'TURBO', 'SECRET ENTRANCE', 'SKIP', 'SOUND', 'INFO', 'FULLSCREEN', 'MENU', 'Space']) assert.ok(all.includes(w), w);
   assert.ok(/Paytable/.test(all));
   // every payout value appears
   for (const s of data.symbols.filter((x) => x.pays)) for (const p of s.pays) assert.ok(all.includes(`${Math.round(p * 100) / 100}x`));
@@ -79,7 +79,7 @@ test('rules: social has no restricted words, normal has everything required', ()
 test('replay info line', () => {
   setSocial(true);
   const a = buildInfo({ amount: 1000000, costMultiplier: 100, mode: 'bonus', currency: 'XSC', formatMoney });
-  assert.match(a.line, /UNLEASH: 1\.00 SC · 100x · REAL COST: 100\.00 SC/);
+  assert.match(a.line, /SECRET ENTRANCE: 1\.00 SC · 100x · REAL COST: 100\.00 SC/);
   assert.deepEqual(findRestricted(a.line), []);
   const b = buildInfo({ amount: 'x', costMultiplier: 1, mode: 'base', currency: 'XSC', formatMoney });
   assert.match(b.line, /1\.00 SC/);
@@ -89,3 +89,39 @@ test('replay info line', () => {
 });
 
 test('applyI18n tolerates missing document', () => { applyI18n(null); });
+
+test('theme: no leftover mining wording in player-visible text', () => {
+  const BAD = /\b(mines?|miner|gus|fuse|veins?|dynamite|nugget|pickaxe|unleash(ed)?|ruby|sapphire)\b/i;
+  for (const soc of [false, true]) {
+    setSocial(soc);
+    const bad = [];
+    for (const k of allKeys()) { const s = t(k, VARS); if (BAD.test(s)) bad.push(`${k}: ${s}`); }
+    const r = buildRules(data, { social: soc, currency: 'USD', formatMoney });
+    for (const s of r.sections) if (BAD.test(s.title + ' ' + s.html.replace(/<[^>]*>/g, ' '))) bad.push('rules ' + s.id);
+    assert.deepEqual(bad, []);
+  }
+  setSocial(false);
+});
+
+test('theme: title, loading, mascot lines (5 per event), secret entrance cost', () => {
+  setSocial(false);
+  assert.equal(t('game.title'), 'Agent Mambo');
+  assert.equal(t('loading.text'), 'Preparing the mission...');
+  for (const ev of ['idle', 'win', 'big', 'shock', 'fs', 'fsEnd', 'lose', 'wire', 'meter']) {
+    assert.ok(t('mascot.' + ev).length > 0);
+    for (let i = 1; i <= 5; i++) assert.ok(en[`mascot.${ev}.${i}`], `${ev}.${i}`);
+  }
+  assert.match(t('unleash.confirm', { cost: '100.00 SC' }), /100\.00 SC/);
+  assert.match(t('unleash.minPrice', { min: '0.50 SC' }), /0\.50 SC/);
+});
+
+test('rules: meter and wire text generated from data', () => {
+  setSocial(false);
+  const r = buildRules(data, { social: false, currency: 'USD', formatMoney });
+  const all = r.sections.map((s) => s.html).join(' ');
+  assert.ok(all.includes(`starts at x${data.gmStart}`));
+  assert.ok(all.includes(`rises by ${data.gmStep}`));
+  if (data.gmCap) assert.ok(all.includes(`x${data.gmCap}`));
+  assert.ok(all.includes(`${data.fuseLen} connected positions`));
+  for (const m of data.modes) assert.ok(all.includes(`${m.maxWin.toLocaleString('en-US')}x`));
+});

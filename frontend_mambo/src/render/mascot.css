@@ -178,6 +178,7 @@
 .p-bigwin .case, .p-shock .case, .p-shrug .case, .p-plunger .case { display: none; }
 
 /* ---------- animation (limited: few frames, hard steps) ---------- */
+@media (prefers-reduced-motion: reduce) { .gus *, .gus-bubble { transition: none !important; animation: none !important; } }
 /* static drawings: callers may pass {reduced:true} (adds .still) */
 .gus.still *, .gus.still { animation: none !important; transition: none !important; }
 .lc0 { transform: translate(152px, 30px); } .lc1 { transform: translate(166px, 44px); } .lc2 { transform: translate(148px, 12px); } .lc3 { transform: translate(172px, 22px); }
@@ -377,7 +378,7 @@
 }
 .gus-bubble[hidden] { display: none; }
 .gus-bubble::after, .gus-bubble::before { content: ""; position: absolute; width: 0; height: 0; }
-.gus-wrap[data-bubble="top"] .gus-bubble { left: 2%; right: auto; bottom: 78%; translate: none; max-width: 98%; white-space: normal; font-size: max(10px, min(calc(var(--gus-h, 240px) * .1), 7.5cqw)); }
+.gus-wrap[data-bubble="top"] .gus-bubble { left: 2%; right: auto; bottom: 84%; translate: none; max-width: 98%; white-space: normal; font-size: max(10px, min(calc(var(--gus-h, 240px) * .1), 7.5cqw)); }
 .gus-wrap[data-bubble="top"] .gus-bubble::before { left: 28%; top: 100%; margin-left: -6px; border: 9px solid transparent; border-top: 14px solid #14102B; border-bottom: 0; }
 .gus-wrap[data-bubble="top"] .gus-bubble::after { left: 28%; top: 100%; margin: -3px 0 0 -4px; border: 7px solid transparent; border-top: 10px solid #FBF1D9; border-bottom: 0; }
 .gus-wrap[data-bubble="left"] .gus-bubble { right: 88%; top: 6%; }

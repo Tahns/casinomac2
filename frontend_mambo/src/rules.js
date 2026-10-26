@@ -11,7 +11,7 @@ export const DISCLAIMER =
   'Malfunction voids all wins and plays. A consistent internet connection is required. In the event of a disconnection, reload the game to finish any uncompleted rounds. The expected return is calculated over many plays. The game display is not representative of any physical device and is for illustrative purposes only. Winnings are settled according to the amount received from the Remote Game Server and not from events within the web browser. TM and © 2026 Engine.';
 
 const FALLBACK_DATA = {
-  provisional: true, symbols: [], tiers: [], freespinTriggers: [], retrigger: [], modes: [], maxVeinMultiplier: 512, wincap: 5000,
+  provisional: true, symbols: [], tiers: [], freespinTriggers: [], retrigger: [], modes: [], gmStart: 1, gmStep: 1, gmCap: null, wincap: 5000,
 };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -25,9 +25,9 @@ const pct = (r) => (Number.isFinite(Number(r)) ? (Number(r) * 100).toFixed(2) + 
 
 // Tiny inline glyphs (text/colour only, no assets).
 const GLYPH = {
-  H1: ['#e0245e', '◆'], H2: ['#2f6fe0', '◆'], H3: ['#1fae5b', '◆'], H4: ['#f0b429', '◆'],
-  L1: ['#9b59d0', '●'], L2: ['#9aa3ad', '▲'], L3: ['#ffb347', '■'], L4: ['#e8c547', '◗'],
-  W: ['#ffd700', '★'], S: ['#e5533d', '✸'],
+  H1: ['#f4b942', '◆'], H2: ['#3fd0c9', '◆'], H3: ['#9b7bd8', '◆'], H4: ['#ff6b57', '◆'],
+  L1: ['#c9a27a', '●'], L2: ['#e8594f', '▲'], L3: ['#7fb8e0', '■'], L4: ['#f2e8c9', '◗'],
+  W: ['#ffe45e', '★'], S: ['#ff6b57', '✸'],
 };
 const glyph = (id) => {
   const g = GLYPH[id] || ['#ccc', '●'];
@@ -48,11 +48,12 @@ export function buildRules(data, ctx = {}) {
   const bonus = (d.modes || []).find((m) => m.name === 'bonus');
   const unleashCost = bonus ? bonus.cost : 100;
   const wincap = d.wincap || 5000;
-  const maxMult = d.maxVeinMultiplier || 512;
-  const veinStart = d.veinStart || 1;
-  const veinStep = d.veinStep || 1;
+  const gmStart = d.gmStart || 1;
+  const gmStep = d.gmStep || 1;
+  const gmCap = d.gmCap || null;
   const fuseLen = d.fuseLen || 8;
   const fuseDetMin = d.fuseDetMin || 3;
+  const fuseAdv = d.fuseAdv || 1;
   const tiers = d.tiers || [];
   const symbols = d.symbols || [];
   const pays = symbols.filter((s) => Array.isArray(s.pays));
@@ -64,8 +65,8 @@ export function buildRules(data, ctx = {}) {
   const minRetrig = retrig.length ? retrig[0].scatters : 3;
   const minCluster = tiers.length ? tiers[0].min : 5;
   const B = social ? 'play amount' : 'bet';
-  const wildName = wild ? wild.name : 'Gold Nugget';
-  const scatName = scatter ? scatter.name : 'Dynamite';
+  const wildName = wild ? wild.name : 'Mambo Star';
+  const scatName = scatter ? scatter.name : 'Classified Dossier';
 
   let example = '';
   if (typeof fmt === 'function' && pays.length) {
@@ -79,10 +80,10 @@ export function buildRules(data, ctx = {}) {
   const sections = [];
 
   sections.push({ id: 'overview', title: t('rules.tab.overview'), html: `
-    <h3>The Unleashed Mine</h3>
-    <p>The Unleashed Mine is a 6-reel, 5-row cluster game. There are no paylines: wins are formed by groups of ${minCluster} or more matching symbols that touch each other horizontally or vertically.</p>
+    <h3>Agent Mambo</h3>
+    <p>Agent Mambo is a 6-reel, 5-row cluster game. There are no paylines: wins are formed by groups of ${minCluster} or more matching symbols that touch each other horizontally or vertically.</p>
     <p>After every win the winning symbols are removed, the remaining symbols fall down and new symbols drop in from above (tumbles). Tumbles continue as long as new wins are formed, and all wins of a round are added together.</p>
-    <p>Trigger the Unleashed Mine free spins, where every position holds a vein multiplier that grows each time the position takes part in a win.</p>
+    <p>Land ${minTrig} or more ${esc(scatName)} symbols to start the Mission Briefing free spins, where the Mission Meter multiplies every win and keeps rising.</p>
     <p>The maximum win is ${commas(wincap)}x the ${B}. When this limit is reached the round ends immediately and all remaining features are forfeited.</p>
   ` });
 
@@ -126,23 +127,23 @@ export function buildRules(data, ctx = {}) {
   sections.push({ id: 'features', title: t('rules.tab.features'), html: `
     <h3>Tumbles</h3>
     <p>After each win, winning symbols are removed and the remaining symbols drop down. New symbols fill the empty positions. The tumbling continues until no new win is formed.</p>
-    <h3>Fuse Line</h3>
+    <h3>Bomb-timer wire</h3>
     <ul>
-      <li>On every spin of the base game and of the free spins, a fuse is laid along a path of ${fuseLen} connected positions on the board, starting on the first reel. The first position of the path is already lit.</li>
-      <li>Every time a winning tumble step removes winning symbols, the fuse burns one more position along its path, whatever the number of clusters in that step.</li>
-      <li>When no more wins are possible and the fuse has burned ${fuseDetMin} or more positions, it explodes: the burned positions turn into ${esc(wild ? wild.name : 'wild')} wilds, then the board is checked for wins again. ${esc(scatName)} scatter positions are never changed.</li>
-      <li>If the fuse has burned fewer than ${fuseDetMin} positions, it goes out and nothing changes. The fuse is not shown until it starts to burn.</li>
-      <li>The fuse is active in the base game and during the free spins.</li>
+      <li>On every spin of the base game and of the free spins, a bomb-timer wire is laid along a path of ${fuseLen} connected positions on the board, starting on the first reel. The first position of the wire is already lit.</li>
+      <li>Every time a winning tumble step removes winning symbols, the wire lights ${fuseAdv === 1 ? 'one more position' : fuseAdv + ' more positions'} along its path, whatever the number of clusters in that step.</li>
+      <li>When no more wins are possible and ${fuseDetMin} or more positions are lit, the lit positions are blasted: their symbols disappear and new symbols fall in, then the board is checked for wins again. ${esc(scatName)} symbols are never affected. No wild is created.</li>
+      <li>If fewer than ${fuseDetMin} positions are lit, the wire goes out and nothing changes. The wire is shown only once it starts to burn.</li>
+      <li>The wire is active in the base game and during the free spins.</li>
     </ul>
-    <h3>Unleashed Mine free spins</h3>
-    <p>${minTrig} or more ${esc(scatName)} scatters anywhere on the board during a tumble sequence of a round trigger the Unleashed Mine free spins.</p>
+    <h3>Mission Briefing free spins</h3>
+    <p>${minTrig} or more ${esc(scatName)} scatters anywhere on the board during a tumble sequence of a round start the Mission Briefing free spins.</p>
     <table class="rl-table"><thead><tr><th scope="col">Scatters</th><th scope="col">Free spins awarded</th></tr></thead><tbody>${trigRows}</tbody></table>
-    <h3>Veins and multipliers</h3>
+    <h3>Mission Meter</h3>
     <ul>
-      <li>When the free spins begin, every position on the board holds a vein multiplier of ${veinStart}x.</li>
-      <li>Each time a position takes part in a winning cluster, its multiplier grows by ${veinStep}, up to a maximum of ${maxMult}x.</li>
-      <li>Veins stay on the board for the whole free spins feature, even when symbols tumble away from the position.</li>
-      <li>The win of a cluster is its value from the ${esc(social ? 'Win table' : 'Paytable')} multiplied by the sum of the multipliers of all positions in the cluster.</li>
+      <li>The Mission Meter is a global multiplier. It starts at x${gmStart} when the free spins begin and is not used in the base game.</li>
+      <li>Every winning tumble step is won with the current value of the meter. After that step, the meter rises by ${gmStep}.</li>
+      <li>The meter stays for the whole free spins feature, from one free spin to the next, and also after a retrigger.${gmCap ? ` Highest level: x${gmCap}.` : ''}</li>
+      <li>The win of a step is its value from the ${esc(social ? 'Win table' : 'Paytable')} multiplied by the current meter value.</li>
     </ul>
     <h3>Retrigger</h3>
     <p>${minRetrig} or more ${esc(scatName)} scatters during the free spins award extra free spins.</p>
@@ -157,7 +158,7 @@ export function buildRules(data, ctx = {}) {
   sections.push({ id: 'modes', title: t('rules.tab.modes'), html: `
     <h3>Game modes</h3>
     <p><strong>${esc(modeName('base'))}</strong> is the standard game. A round costs the ${B} (1x).</p>
-    <p><strong>${esc(modeName('bonus'))}</strong> starts the Unleashed Mine free spins directly, without having to land scatters. A round in this mode costs ${num(unleashCost)}x the ${B}. A confirmation is shown, stating the total cost, before the round starts. ${esc(modeName('bonus'))} is available from a minimum price of ${esc(fmt(unleashMinPrice(currency), currency))}; below that price the button stays inactive.</p>
+    <p><strong>${esc(modeName('bonus'))}</strong> starts the Mission Briefing free spins directly, without having to land scatters. A round in this mode costs ${num(unleashCost)}x the ${B}. A confirmation is shown, stating the total cost, before the round starts. ${esc(modeName('bonus'))} is available from a minimum price of ${esc(fmt(unleashMinPrice(currency), currency))}; below that price the button stays inactive.</p>
     <p class="rl-rtp">${modeLines}</p>
     <div class="rl-scroll"><table class="rl-table"><thead><tr><th scope="col">Mode</th><th scope="col">Cost</th><th scope="col">RTP</th><th scope="col">Max win</th></tr></thead><tbody>${modeRows}</tbody></table></div>
     <p>The RTP is the expected return over many plays. A maximum win of ${commas(wincap)}x applies to every round, in every mode.</p>
@@ -170,12 +171,13 @@ export function buildRules(data, ctx = {}) {
       <li><strong>Bet - / +</strong>: decreases or increases the ${B}. Disabled while a round is running.</li>
       <li><strong>AUTOPLAY</strong>: opens the autoplay settings. Choose the number of spins and stop conditions, then confirm to start. Press again to stop.</li>
       <li><strong>TURBO</strong>: speeds up the animations.</li>
-      <li><strong>UNLEASH</strong>: starts the Unleashed Mine free spins directly at ${num(unleashCost)}x the ${B}, after you confirm the total cost.</li>
+      <li><strong>SECRET ENTRANCE</strong>: starts the Mission Briefing free spins directly at ${num(unleashCost)}x the ${B}, after you confirm the total cost.</li>
       <li><strong>SOUND</strong>: mutes or unmutes all sounds.</li>
       <li><strong>INFO</strong>: opens these rules.</li>
       <li><strong>FULLSCREEN</strong>: enters or leaves full screen.</li>
       <li><strong>MENU</strong>: opens the game menu.</li>
       <li><strong>Space bar</strong>: same as the SPIN button; it also starts a round while no round is running.</li>
+      <li><strong>SKIP</strong> and <strong>TURBO</strong> (replay screen): SKIP shortens the animation of the round being replayed, TURBO speeds it up. The result is always the same.</li>
     </ul>
     <p>A round cannot be started when the balance is lower than the ${B} multiplied by the cost multiplier of the selected mode.</p>
   ` });

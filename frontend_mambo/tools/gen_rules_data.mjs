@@ -7,11 +7,11 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const feRoot = path.resolve(here, '..');
-const mathGame = path.resolve(feRoot, '../math/games/the_unleashed_mine');
+const mathGame = path.resolve(feRoot, '../math/games/agent_mambo');
 const configPath = path.join(mathGame, 'game_config.py');
 const src = fs.readFileSync(configPath, 'utf8');
 
-const NAMES = { H1: 'Ruby', H2: 'Sapphire', H3: 'Emerald', H4: 'Topaz', L1: 'Amethyst', L2: 'Pickaxe', L3: 'Lantern', L4: 'Hard hat', W: 'Gold Nugget', S: 'Dynamite' };
+const NAMES = { H1: 'Vault Safe', H2: 'Atomic Fizz', H3: 'Hi-Fi Vinyl', H4: 'Bongos', L1: 'Fedora', L2: 'Rotary Phone', L3: 'Magnifier', L4: 'Bow Tie', W: 'Mambo Star', S: 'Classified Dossier' };
 
 // --- tier ranges: "t1, t2, t3, t4 = (5, 5), (6, 8), ..."
 const tierDecl = src.match(/((?:t\d+\s*,\s*)+t\d+)\s*=\s*((?:\(\s*\d+\s*,\s*\d+\s*\)\s*,?\s*)+)/);
@@ -47,11 +47,25 @@ const freeM = fsBlock.match(/freegame_type\s*:\s*\{([^}]*)\}/);
 const toPairs = (s) => [...s.matchAll(/(\d+)\s*:\s*(\d+)/g)].map((m) => ({ scatters: Number(m[1]), spins: Number(m[2]) }));
 const freespinTriggers = baseM ? toPairs(baseM[1]) : [];
 const retrigger = freeM ? toPairs(freeM[1]) : [];
-const maxMult = Number((src.match(/maximum_board_mult\s*=\s*(\d+)/) || [])[1]) || null;
-const veinStart = Number((src.match(/fs_start_mult\s*=\s*(\d+)/) || [])[1]) || 1;
-const fuseLen = Number((src.match(/"len"\s*:\s*(\d+)/) || [])[1]) || 8;
-const fuseDetMin = Number((src.match(/"detmin"\s*:\s*(\d+)/) || [])[1]) || 3;
-const veinStep = Number((src.match(/vein_step\s*=\s*(\d+)/) || [])[1]) || 1;
+const intOf = (re, d) => { const m = src.match(re); return m ? Number(m[1]) : d; };
+const gmStart = intOf(/self\.gm_start\s*=\s*(\d+)/, 1);
+const gmStep = intOf(/self\.gm_step\s*=\s*(\d+)/, 1);
+const gmCap = intOf(/self\.gm_cap\s*=\s*(\d+)/, null);
+// fuse_params (technical name kept; shown to players as the bomb-timer wire)
+const fuseBlock = (src.match(/self\.fuse_params\s*=\s*\{([\s\S]*?)\n\s{8}\}/) || [, ''])[1];
+const fuseOf = (key) => {
+  const m = fuseBlock.match(new RegExp(key + '\\s*:\\s*\\{([^}]*)\\}'));
+  if (!m) return null;
+  const o = {};
+  for (const x of m[1].matchAll(/"(\w+)"\s*:\s*(\d+)/g)) o[x[1]] = Number(x[2]);
+  return o;
+};
+const fuseParams = { base: fuseOf('basegame_type'), free: fuseOf('freegame_type') };
+const fp = fuseParams.base || fuseParams.free || {};
+const fuseLen = fp.len || 8;
+const fuseDetMin = fp.detmin || 3;
+const fuseAdv = fp.adv || 1;
+const fuseB0 = fp.b0 || 1;
 const wincap = Number((src.match(/self\.wincap\s*=\s*([\d.]+)/) || [])[1]) || null;
 const cfgRtp = Number((src.match(/self\.rtp\s*=\s*([\d.]+)/) || [])[1]) || null;
 
@@ -62,47 +76,31 @@ const maxWins = {};
 const mw = src.match(/mode_maxwins\s*=\s*\{([^}]*)\}/);
 if (mw) for (const m of mw[1].matchAll(/"(\w+)"\s*:\s*([\d.]+)/g)) maxWins[m[1]] = Number(m[2]);
 
-// --- locate lookup tables
-const candidates = [
-  path.join(mathGame, 'library/publish_files'),
-  path.join(feRoot, 'fixtures'),
-];
+// --- locate lookup tables: publish_files (preferred), per mode lookUpTable_<mode>_0.csv (3 cols: id,weight,payout*100)
+const pubDir = path.join(mathGame, 'library/publish_files');
 let provisional = false;
 const notes = [];
-let modes = [];
-let generatedFrom = 'game_config.py';
-for (const dir of candidates) {
-  const idx = path.join(dir, 'index.json');
-  if (!fs.existsSync(idx)) continue;
-  try {
-    const manifest = JSON.parse(fs.readFileSync(idx, 'utf8'));
-    const out = [];
-    for (const md of manifest.modes) {
-      const csv = path.join(dir, md.weights);
-      if (!fs.existsSync(csv)) throw new Error('missing ' + md.weights);
-      let sw = 0, swp = 0, max = 0;
-      for (const line of fs.readFileSync(csv, 'utf8').split('\n')) {
-        if (!line.trim()) continue;
-        const [, w, p] = line.split(',').map(Number);
-        sw += w; swp += (w * p) / 100; if (p > max) max = p;
-      }
-      const cost = Number(md.cost);
-      out.push({ name: md.name, cost, rtp: swp / sw / cost, maxWin: max / 100, source: path.relative(path.resolve(feRoot, '..'), csv) });
+const modes = [];
+const sources = [];
+for (const cm of cfgModes) {
+  const csv = path.join(pubDir, `lookUpTable_${cm.name}_0.csv`);
+  if (fs.existsSync(csv)) {
+    let sw = 0, swp = 0, max = 0;
+    for (const line of fs.readFileSync(csv, 'utf8').split('\n')) {
+      if (!line.trim()) continue;
+      const [, w, p] = line.split(',').map(Number);
+      sw += w; swp += (w * p) / 100; if (p > max) max = p;
     }
-    modes = out;
-    generatedFrom = path.relative(path.resolve(feRoot, '..'), dir) + '/index.json + ' + out.map((o) => path.basename(o.source)).join(', ') + ' + game_config.py';
-    break;
-  } catch (e) {
-    notes.push(`skipped ${dir}: ${e.message}`);
+    modes.push({ name: cm.name, cost: cm.cost, rtp: swp / sw / cm.cost, maxWin: max / 100 });
+    sources.push(path.relative(path.resolve(feRoot, '..'), csv));
+  } else {
+    provisional = true;
+    notes.push(`no published lookup table for mode ${cm.name}; values from game_config.py (rtp = configured target)`);
+    modes.push({ name: cm.name, cost: cm.cost, rtp: cfgRtp, maxWin: maxWins[cm.name] ?? wincap });
   }
 }
-if (!modes.length) {
-  provisional = true;
-  notes.push('No published lookup tables found; modes use game_config.py values (rtp = configured target).');
-  modes = cfgModes.map((m) => ({ name: m.name, cost: m.cost, rtp: cfgRtp, maxWin: maxWins[m.name] ?? wincap }));
-}
-
-const data = { provisional, symbols, tiers, freespinTriggers, retrigger, maxVeinMultiplier: maxMult, veinStart, veinStep, fuseLen, fuseDetMin, wincap, modes, generatedFrom };
+const generatedFrom = sources.concat('game_config.py').join(' + ');
+const data = { provisional, symbols, tiers, freespinTriggers, retrigger, gmStart, gmStep, gmCap, fuseLen, fuseDetMin, fuseAdv, fuseB0, fuseParams, wincap, modes, generatedFrom };
 if (notes.length) data.notes = notes;
 fs.mkdirSync(path.join(feRoot, 'data'), { recursive: true });
 fs.writeFileSync(path.join(feRoot, 'data/rules_data.json'), JSON.stringify(data, null, 2) + '\n');

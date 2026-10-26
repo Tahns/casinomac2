@@ -214,10 +214,10 @@ function buildSVG(uid) {
   // hand-on-chin glove for think (sits on the head so it follows its tilt)
   // glove on the chin for think (drawn over the face; the real forearm rises behind it)
   const handThink = `<g class="handThink">` +
-    sh('M89,141L104,141L103,150L90,150Z', C.cream, '', 'ht-wrist') +
-    sh(ell(96.5, 134.4, 8.8, 7.6), C.cream, 'M98,126L108,126L108,142L98,142Z', 'ht-fist') +
-    `<path class="o thin" d="M90,131.6Q96.5,128.4 103,131.6"/>` +
-    sh('M101.4,138Q107,138 107.6,143.4Q103,144 100.4,141Z', C.cream, '', 'ht-thumb') +
+    sh('M89,144L104,144L103,153L90,153Z', C.cream, '', 'ht-wrist') +
+    sh(ell(96.5, 137.4, 8.8, 7.6), C.cream, 'M98,129L108,129L108,145L98,145Z', 'ht-fist') +
+    `<path class="o thin" d="M90,134.6Q96.5,131.4 103,134.6"/>` +
+    sh('M101.4,141Q107,141 107.6,146.4Q103,147 100.4,144Z', C.cream, '', 'ht-thumb') +
     `</g>`;
   const head = part('head', `<g transform="translate(0 -2)">` + hair + antenna + neck + ears + face + earrings + eyes + eyesHappy + winkR + browL + browR + nose + mouths + fringe + handThink + `</g>`);
 

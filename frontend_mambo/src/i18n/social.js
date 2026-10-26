@@ -12,7 +12,7 @@ export const social = {
   'err.limit': 'This amount is outside the allowed limits.',
   'autoplay.stopBelow': 'Stop if balance falls below',
   'fx.kaching': 'WOW!',
-  'unleash.confirm': 'UNLEASH starts the Unleashed Mine free spins directly and uses {cost} for this round. Continue?',
+  'unleash.confirm': 'Take the secret entrance? This starts the free spins right away and uses {cost} for this round. Continue?',
   'unleash.hint': 'Start the free spins directly for {mult}x the play amount.',
   'rules.tab.wins': 'Win table',
   'replay.bet': 'PLAY AMOUNT',
