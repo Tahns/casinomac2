@@ -3,7 +3,7 @@
 //   node frontend/tools/build/build_front.mjs [--allow-missing]
 // Output (git-ignored, repo-root dist/):
 //   dist/front/                                   clean static folder (index.html at its root)
-//   dist/the_unleashed_mine_front_v<version>.zip  same content, index.html at the zip root
+//   dist/agent_mambo_front_v<version>.zip  same content, index.html at the zip root
 //   dist/front_MANIFEST.txt                       size + sha256 of every shipped file
 // What ships = everything reachable from index.html (link/script/src/href, import/import(),
 // fetch('data/..'), CSS url()/@import, string literals './x.js') -- tests, tools, fixtures,
@@ -18,13 +18,13 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FRONT = path.resolve(HERE, '../..');
 const ROOT = path.resolve(FRONT, '..');
-const DIST = path.join(ROOT, 'dist');
+const DIST = path.join(FRONT, 'dist');
 const OUT = path.join(DIST, 'front');
 const ALLOW_MISSING = process.argv.includes('--allow-missing');
 
 const version = fs.readFileSync(path.join(FRONT, 'VERSION'), 'utf8').trim();
 if (!/^\d+\.\d+\.\d+([-+][\w.]+)?$/.test(version)) throw new Error('bad VERSION: ' + version);
-const ZIP = path.join(DIST, `the_unleashed_mine_front_v${version}.zip`);
+const ZIP = path.join(DIST, `agent_mambo_front_v${version}.zip`);
 
 const TEXT_EXT = new Set(['.html', '.js', '.mjs', '.css', '.json', '.svg', '.txt', '.md']);
 const rel = (abs) => path.relative(FRONT, abs).split(path.sep).join('/');
