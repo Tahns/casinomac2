@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><link rel="icon" href="data:,"><title>heroine harness</title>
+<style>html,body{margin:0;background:#181640;overflow:hidden}#app{position:fixed;inset:0}#box{position:absolute;left:20px;top:20px;width:360px;height:540px}</style></head>
+<body><div id="app"><div id="box"></div></div>
+<script type="module">
+// Dev and test harness for the heroine modules (no game, no shell). Pages and scripts reach everything through window.H.
+import * as rig from '../../src/render/heroine/mambo_rig.js';
+import * as clips from '../../src/render/heroine/clips.js';
+import * as gaze from '../../src/render/heroine/gaze.js';
+import { createDirector } from '../../src/render/heroine/director.js';
+import { createHeroineMascot } from '../../src/render/heroine/index.js';
+import { createMascot, mascotOf, REACT_KINDS } from '../../src/render/mascot.js';
+const clock = (t0 = 1000) => { let t = t0, id = 0; const q = new Map();
+  return { now: () => t, setTimer(fn, ms) { const h = ++id; q.set(h, { at: t + ms, fn }); return h; }, clearTimer(h) { q.delete(h); },
+    advance(ms) { const end = t + ms; for (;;) { let b = null; for (const [h, e] of q) if (e.at <= end && (!b || e.at < b[1].at)) b = [h, e]; if (!b) break; q.delete(b[0]); t = Math.max(t, b[1].at); b[1].fn(); } t = end; } }; };
+window.H = { rig, clips, gaze, createDirector, createHeroineMascot, createMascot, mascotOf, REACT_KINDS, clock };
+window.__ready = true;
+</script></body></html>

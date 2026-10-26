@@ -1,9 +1,10 @@
-// "Mambo" (Mabel Fontaine) - the deadpan adult spy mascot of Agent Mambo.
-// 100% hand-authored SVG + CSS (no raster art, no generative AI). 1962 cut-paper cartoon style:
-// flat fills with offset print misregistration, thick ink outlines, lilac halftone shadows.
-// Animations live in mascot.css (steps() keyframes, squash and stretch, reduced-motion safe).
-// Public API is unchanged from Old Gus: POSES, createMascot(host,{size,variant,bubble,pose}).
-// Class hooks kept for page CSS: .gus-wrap, svg.gus, .gus-bubble (aliases .mambo-wrap/.mambo-bubble).
+// "Mambo" (Mabel Fontaine), the deadpan adult spy heroine of Agent Mambo.
+// v2 (WP3 HEROINE): createMascot() now draws the hand-drawn vector rig from ./heroine/ (animated, five costumes, reactions) behind the same
+// API as v1 (setPose / say / hideSay / getPose / destroy) plus react(kind, info). If the rig cannot load it draws a static picture of the same
+// heroine, and only if that fails too the original v1 character below (createMascotV1, 100% hand-authored SVG + CSS, animations in mascot.css).
+// Nothing here is imported statically: this file stays loadable as a classic script (tools/art/bake_mambo.mjs evaluates it that way).
+// No raster art, no generative AI. 1962 cut-paper cartoon style: flat fills with offset print misregistration, thick ink outlines.
+// v1 class hooks kept for page CSS: .gus-wrap, svg.gus, .gus-bubble (aliases .mambo-wrap/.mambo-bubble).
 
 const C = {
   ink: '#14102B', indigo: '#2B2A6B', teal: '#1FB5A3', coral: '#F0472F', flamingo: '#F5799F',
@@ -285,10 +286,11 @@ function ensureCss() {
 // only APPEND kinds. An unknown kind is ignored and react() returns false.
 export const REACT_KINDS = Object.freeze([
   'idle', 'spin', 'anticipate', 'quiet', 'dead', 'win', 'bigwin', 'epic', 'blast', 'fizzle', 'trigger', 'retrigger', 'end', 'outfit',
+  'meter', 'gag',   // appended by WP3: the Clearance Dial milestone (meterMilestone) and a random idle gag
 ]);
 
 /**
- * createMascot(hostEl, { size = 240, variant = 'auto', bubble = 'top', pose = 'idle', reduced })
+ * createMascotV1(hostEl, { size = 240, variant = 'auto', bubble = 'top', pose = 'idle', reduced })   (the v1 character, last-resort fallback)
  *   size    : rendered height in px (width follows, ratio 6:7)
  *   variant : 'full' | 'small' | 'auto' (small when size <= 140: no halftone/detail, thicker outlines)
  *   bubble  : speech bubble side: 'top' | 'left' | 'right'
@@ -296,7 +298,7 @@ export const REACT_KINDS = Object.freeze([
  *   react(kind, info): v2 reaction API (STUB in step 0: does nothing and returns false; WP3 implements it). The legacy
  *   setPose / say keep working unchanged.
  */
-export function createMascot(hostEl, opts = {}) {
+export function createMascotV1(hostEl, opts = {}) {
   ensureCss();
   const size = Math.max(40, opts.size || 240);
   const uid = 'm' + (++UID) + '_';
@@ -361,5 +363,68 @@ export function createMascot(hostEl, opts = {}) {
     destroy() { clearTimeout(bubTimer); wrap.remove(); },
   };
 }
+
+/** Auto-load heroine.css once (callers may also <link> it, as index.html does). */
+function ensureHeroineCss() {
+  if (typeof document === 'undefined') return;
+  if (document.querySelector('link[data-heroine-css]') || document.querySelector('link[href*="heroine.css"]')) return;
+  try {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = new URL('./heroine/heroine.css', import.meta.url).href;
+    l.setAttribute('data-heroine-css', '');
+    document.head.appendChild(l);
+  } catch (_) { /* ignore */ }
+}
+
+/**
+ * createMascot(hostEl, opts) -> { el, setPose(name), say(text, ms), hideSay(), getPose(), react(kind, info), setCrop(c), setOutfit(k), mode(), ready, destroy() }
+ *   The heroine is drawn into #heroine-slot when hostEl is the v1 #mascot-slot and the slot exists (the shell lays it out left of the grid, its
+ *   size comes from CSS and its crop from the shell), otherwise into hostEl itself (size = opts.size px high, crop = opts.crop 'full'|'bust'|'head').
+ *   opts: { size, crop, outfit, reduced, onCue(name, clip), v1: true -> the v1 character, halftone }.
+ *   The rig loads asynchronously: calls made before it is ready are safe (the last setPose is replayed, react/say return false/no-op).
+ *   react(kind, info) returns true when a clip, a static pose or a costume change started. REACT_KINDS lists the kinds, an unknown kind is false.
+ *   mode(): 'pending' | 'rig' | 'static' (picture, rig failed) | 'v1' (last resort) | 'gone'.
+ */
+export function createMascot(hostEl, opts = {}) {
+  if (opts.v1 || typeof document === 'undefined' || !hostEl) return createMascotV1(hostEl, opts);
+  ensureHeroineCss();
+  const slot = hostEl.id === 'mascot-slot' ? document.getElementById('heroine-slot') : null;
+  const target = slot || hostEl;
+  const register = (a) => { REGISTRY.set(target, a); REGISTRY.set(hostEl, a); return a; };
+  let impl = null, v1 = null, gone = false, pendingPose = null;
+  const toV1 = () => {
+    if (gone || v1) return v1;
+    try { if (impl) impl.destroy(); } catch (_) { /* ignore */ }
+    impl = null;
+    v1 = createMascotV1(hostEl, opts);
+    if (pendingPose) v1.setPose(pendingPose);
+    return v1;
+  };
+  const ready = import('./heroine/index.js')
+    .then((mod) => mod.createHeroineMascot(target, { ...opts, onGiveUp: toV1 }))
+    .then((m) => { if (gone) { m.destroy(); return null; } impl = m; if (pendingPose) m.setPose(pendingPose); return m; })
+    .catch((e) => { try { console.error('heroine: not available, using the v1 character', e); } catch (_) { /* ignore */ } toV1(); return null; });
+  const cur = () => impl || v1;
+  const api = {
+    get el() { const c = cur(); return c ? c.el : null; },
+    ready,
+    mode: () => (gone ? 'gone' : impl ? impl.mode() : v1 ? 'v1' : 'pending'),
+    setPose(name) { pendingPose = name; const c = cur(); return c ? c.setPose(name) : name; },
+    getPose() { const c = cur(); return c ? c.getPose() : pendingPose || 'idle'; },
+    say(text, ms) { const c = cur(); if (c) c.say(text, ms); },
+    hideSay() { const c = cur(); if (c) c.hideSay(); },
+    react(kind, info) { return impl ? impl.react(kind, info) : false; },
+    setCrop(c) { if (impl) impl.setCrop(c); },
+    setOutfit(k, o) { return impl ? impl.setOutfit(k, o) : false; },
+    get impl() { return impl; },
+    destroy() { gone = true; try { if (impl) impl.destroy(); if (v1) v1.destroy(); } catch (_) { /* ignore */ } impl = null; v1 = null; REGISTRY.delete(target); REGISTRY.delete(hostEl); },
+  };
+  return register(api);
+}
+
+// host element -> the mascot drawn for it (dev pages and tests reach the live instance through mascotOf(document.getElementById('heroine-slot')))
+const REGISTRY = new WeakMap();
+export const mascotOf = (el) => REGISTRY.get(el) || null;
 
 export default createMascot;

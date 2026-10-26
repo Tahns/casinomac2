@@ -1,1 +1,31 @@
-/* Agent Mambo v2: heroine rig styles (WP3 owns this file). Linked from index.html. Step 0: intentionally empty, v1 look unchanged. */
+/* Agent Mambo v2: the heroine (WP3). The box itself (size, left column, corner, clip) belongs to the shell (src/ui/ui.css, "heroine box");
+   this file styles what is drawn inside it and her speech bubble. Same retro comic look as the v1 bubble (cream plate, ink outline,
+   flamingo offset shadow). Nothing here moves in Still: the pop-in is removed for html[data-motion=still] and prefers-reduced-motion. */
+
+.heroine-stage { position: relative; width: 100%; height: 100%; pointer-events: none; }
+.heroine-stage > svg { display: block; width: 100%; height: 100%; }
+.heroine-stage *, .heroine-wrap * { pointer-events: none !important; }
+/* a free-standing figure (loading screen, dev pages): the host gives the height, the stage fills the aspect-ratio box */
+.heroine-wrap { position: relative; display: block; flex: none; pointer-events: none; }
+.heroine-wrap > .heroine-stage { position: absolute; inset: 0; }
+/* cream die-cut rim (opt-in with data-rim on the stage): readable against the dark city, 4 hard drop-shadows, no blur */
+.heroine-stage[data-rim] { filter: drop-shadow(2px 0 0 #FBF1D9) drop-shadow(-2px 0 0 #FBF1D9) drop-shadow(0 2px 0 #FBF1D9) drop-shadow(0 -2px 0 #FBF1D9); }
+
+/* ---------- speech bubble: a sibling of the slot inside #app (the slot clips its children), placed over her skirt, tail up at her head ---------- */
+.hero-bubble {
+  position: absolute; z-index: 6; box-sizing: border-box; pointer-events: none;
+  font: 900 clamp(11px, 2.2vh, 15px) / 1.1 "Bangers", "Luckiest Guy", Impact, "Arial Black", "Arial Rounded MT Bold", sans-serif;
+  letter-spacing: .04em; text-transform: uppercase; text-align: center; overflow-wrap: anywhere;
+  color: #14102B; background: #FBF1D9; padding: .32em .6em .38em; border: 3px solid #14102B; border-radius: 1.1em;
+  box-shadow: 3px 3px 0 #F5799F, 3px 3px 0 1px #14102B; transform-origin: 50% 0;
+}
+.hero-bubble[hidden] { display: none; }
+.hero-bubble-fixed { position: fixed; z-index: 60; }
+.hero-bubble::before, .hero-bubble::after { content: ""; position: absolute; width: 0; height: 0; left: var(--tail-x, 50%); }
+.hero-bubble::before { bottom: 100%; margin-left: -9px; border: 9px solid transparent; border-bottom: 14px solid #14102B; border-top: 0; }
+.hero-bubble::after { bottom: 100%; margin: 0 0 -3px -6px; border: 7px solid transparent; border-bottom: 11px solid #FBF1D9; border-top: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .hero-bubble.pop { animation: hero-pop .3s steps(3) 1; }
+}
+html[data-motion="still"] .hero-bubble.pop { animation: none; }
+@keyframes hero-pop { 0% { transform: scale(.4, .3); } 40% { transform: scale(1.12, 1.1); } 70% { transform: scale(.96); } 100% { transform: none; } }

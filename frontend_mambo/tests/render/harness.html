@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Agent Mambo - WP4 render harness</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../src/render/mascot.css">
+<link rel="stylesheet" href="../../src/render/wire.css">
+<link rel="stylesheet" href="../../src/render/meter.css">
+<link rel="stylesheet" href="../../src/ui/ui.css">
+<link rel="stylesheet" href="../../src/render/heroine/heroine.css">
+<link rel="stylesheet" href="../../src/render/layers/layers.css">
+</head>
+<body class="state-idle">
+<div id="devmount"></div>
+<script type="module">
+// Test harness of the WP4 render core: mounts the real index.html markup, creates the real renderer, plays any event list and keeps a
+// timeline of every audio call (with its win-like flag), of the hooks and of the mascot, for tests/render/browser.mjs.
+// URL: harness.html?nodev=1&social=1  (social switches the i18n word screen on)
+const q = new URLSearchParams(location.search);
+const html = await (await fetch('../../index.html')).text();
+const doc = new DOMParser().parseFromString(html, 'text/html');
+document.getElementById('devmount').replaceWith(doc.getElementById('app'));
+const { createRenderer } = await import('../../src/render/index.js');
+const { audio } = await import('../../src/audio.js');
+let settings = null;
+try { settings = (await import('../../src/settings.js')).settings; } catch (e) { settings = null; }
+if (q.get('social')) { const i = await import('../../src/i18n/index.js'); i.setSocial(true); }
+const $ = (id) => document.getElementById(id);
+const log = [];             // { t, kind, ... } in ms since the book started
+let t0 = 0;
+const now = () => Math.round(performance.now() - t0);
+// audio spy: every call, with the winLike flag of the cue and the options (quiet) it was called with
+const realPlay = audio.play.bind(audio);
+audio.play = (id, opt) => {
+  let win = null;
+  try { win = typeof audio.isWinLike === 'function' ? audio.isWinLike(id) : null; } catch (e) { win = null; }
+  let ret = null;
+  try { ret = realPlay(id, opt); } catch (e) { ret = 'threw'; }
+  log.push({ t: now(), kind: 'audio', id, winLike: win, quiet: !!(opt && opt.quiet), ret });
+  return ret;
+};
+const renderer = createRenderer($('game'));
+let bet = 1000000;
+renderer.setFormat((x) => `$${(x * bet / 1e6).toFixed(2)}`);
+const hooks = {
+  onTotal: (x) => { log.push({ t: now(), kind: 'total', x }); $('win').textContent = (x * bet / 1e6).toFixed(2); },
+  onWin: (x) => { log.push({ t: now(), kind: 'win', x }); $('win').textContent = (x * bet / 1e6).toFixed(2); },
+  onFreeSpinCounter: (c, t) => { log.push({ t: now(), kind: 'fs', c, tot: t }); $('freespin-counter').textContent = t ? `${c}/${t}` : ''; },
+};
+$('balance').textContent = '1000.00'; $('bet').textContent = '1.00'; $('win').textContent = '0.00';
+// mascot spy (installed as soon as the mascot exists)
+let mascotSpy = false;
+function spyMascot() {
+  if (mascotSpy || typeof renderer._mascot !== 'function') return;
+  const m = renderer._mascot(); if (!m) return;
+  mascotSpy = true;
+  for (const name of ['setPose', 'react', 'say']) {
+    const f = m[name]; if (typeof f !== 'function') continue;
+    m[name] = (...a) => { log.push({ t: now(), kind: 'mascot', fn: name, args: a.map((x) => (typeof x === 'object' ? JSON.parse(JSON.stringify(x)) : x)) }); return f.apply(m, a); };
+  }
+}
+setInterval(spyMascot, 50);
+// DOM watcher: records when a banner, a popup, a win class, sparks (fx) appear
+const watch = new MutationObserver((muts) => {
+  for (const m of muts) {
+    m.addedNodes.forEach((n) => {
+      if (n.nodeType !== 1) return;
+      if (n.classList.contains('banner')) log.push({ t: now(), kind: 'dom', what: 'banner', cls: n.className });
+      if (n.classList.contains('pop')) log.push({ t: now(), kind: 'dom', what: 'pop', cls: n.className, text: n.textContent });
+      if (n.classList.contains('rays')) log.push({ t: now(), kind: 'dom', what: 'rays' });
+    });
+    if (m.type === 'attributes' && m.target.classList && m.attributeName === 'class') {
+      const c = m.target.classList;
+      if (c.contains('win') && c.contains('cell')) log.push({ t: now(), kind: 'dom', what: 'cell.win' });
+    }
+  }
+});
+watch.observe(document.getElementById('app'), { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+window.H = {
+  renderer, audio, settings, log, hooks,
+  setBet(b) { bet = b; },
+  async play(events, o = {}) {
+    log.length = 0; t0 = performance.now();
+    if (o.cost != null) renderer.setCost(o.cost);
+    if (o.turbo != null) renderer.setTurbo(!!o.turbo);
+    if (o.bet) bet = o.bet;
+    document.body.className = document.body.className.replace(/state-\w+/, 'state-playing');
+    try { await renderer.playBook(events, hooks); } finally { document.body.className = document.body.className.replace(/state-\w+/, 'state-idle'); }
+    log.push({ t: now(), kind: 'end' });
+    return log.slice();
+  },
+  now,
+};
+window.__ready = true;
+</script>
+</body>
+</html>

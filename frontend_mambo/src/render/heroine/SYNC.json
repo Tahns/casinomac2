@@ -1,0 +1,34 @@
+{
+  "note": "written by tools/sync_heroine.mjs; do not edit the synced files by hand",
+  "source": "docs/research2/art",
+  "files": {
+    "mambo_art.js": {
+      "source": "mambo_art.mjs",
+      "sourceSha": "5a32674ea3fa4bb0",
+      "shippedSha": "5a32674ea3fa4bb0",
+      "patches": []
+    },
+    "mambo_outfits.js": {
+      "source": "mambo_outfits.mjs",
+      "sourceSha": "52af91ae7e60e0c9",
+      "shippedSha": "cb139ddb7449373e",
+      "patches": []
+    },
+    "mambo_rig.js": {
+      "source": "mambo_rig.mjs",
+      "sourceSha": "a0024e4c30d839ad",
+      "shippedSha": "23570d156a86665a",
+      "patches": [
+        "osFollow",
+        "frameGuard",
+        "tightFull"
+      ]
+    },
+    "mambo_compat.js": {
+      "source": "mambo_compat.mjs",
+      "sourceSha": "918af5b7a2decd1d",
+      "shippedSha": "24f2098b9d6e275d",
+      "patches": []
+    }
+  }
+}
