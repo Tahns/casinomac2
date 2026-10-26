@@ -1,0 +1,41 @@
+/* Fuse Line overlay (loaded at runtime by fuse.js). Cream rope, brown outline, charcoal when burnt. */
+.fz-layer{position:absolute;inset:0;pointer-events:none;z-index:5;--u:80px;overflow:visible}
+.fz-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.fz-svg line{stroke-linecap:round;fill:none}
+.fz-out{stroke:#4a2c14;stroke-width:.17}
+.fz-cream{stroke:#f3e3b8;stroke-width:.105;stroke-dasharray:.14 .085}
+.fz-char{stroke:#2a2522;stroke-width:.12}
+.fz-seg.burnt .fz-out{stroke:#17110d}
+.fz-dot-out{fill:#4a2c14}
+.fz-dot{fill:#fff4d0}
+.fz-node.burnt .fz-dot-out{fill:#17110d}
+.fz-node.burnt .fz-dot{fill:#4a4039}
+.fz-scorch{fill:#1c120a;opacity:0;stroke:#ff9a2e;stroke-width:.03;stroke-opacity:.0;transition:opacity .35s}
+.fz-scorch.on{opacity:.34;stroke-opacity:.55}
+.fz-puff{stroke:#3b2f26;stroke-width:.03}
+/* match */
+.fz-stick-out{fill:#4a2c14}.fz-stick{fill:#e3b86a}
+.fz-head-out{fill:#4a2c14}.fz-head{fill:#d63a2a}
+/* spark star */
+.fz-star-out{fill:#4a2c14}
+.fz-star{fill:#ffd24a}
+.fz-star-core{fill:#fffbe8}
+.fz-spark-in{transform-box:fill-box;transform-origin:center;animation:fzspin .5s steps(4,end) infinite}
+.fz-spark.hot .fz-spark-in{animation-duration:.18s;transform:scale(1.5)}
+.fz-spark.hot .fz-star{fill:#ff8a2a}
+.fz-spark.dying .fz-star{fill:#9a8a70}
+@keyframes fzspin{from{transform:rotate(0) scale(1)}50%{transform:rotate(45deg) scale(1.2)}to{transform:rotate(90deg) scale(1)}}
+/* nugget pop: the cell being swapped */
+.cell.fz-nugget{z-index:4}
+/* BOOM */
+.fz-boom{position:absolute;width:calc(var(--u)*3.4);height:calc(var(--u)*3.4);transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;z-index:7}
+.fz-burst{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.fz-burst-out{fill:#4a2c14;stroke:#4a2c14;stroke-width:.08;stroke-linejoin:round}
+.fz-burst-mid{fill:#ff6a2a}
+.fz-burst-in{fill:#ffd24a}
+.fz-boom-text{position:relative;font:900 calc(var(--u)*.78)/1 Impact,"Arial Black","Haettenschweiler",sans-serif;letter-spacing:.02em;color:#fff3b0;-webkit-text-stroke:calc(var(--u)*.075) #2a1409;paint-order:stroke fill;text-shadow:calc(var(--u)*.05) calc(var(--u)*.06) 0 #c2381f;transform:rotate(-6deg)}
+@media (prefers-reduced-motion:reduce){.fz-spark-in{animation:none!important}.fz-spark.hot .fz-spark-in{transform:scale(1.3)}}
+
+.fz-cap{position:absolute;left:50%;top:3%;transform:translateX(-50%);z-index:5;pointer-events:none;padding:.15em .6em;border:3px solid #2B1A12;border-radius:.5em;background:#E8A92B;color:#2B1A12;font:900 clamp(11px,3.4vmin,26px)/1.1 "Bangers","Luckiest Guy",Impact,"Arial Black",sans-serif;letter-spacing:.06em;box-shadow:3px 3px 0 #2B1A12;animation:fzcap 2.1s steps(8,end) 1 forwards}
+@keyframes fzcap{0%{opacity:0;transform:translateX(-50%) scale(.4) rotate(-6deg)}15%{opacity:1;transform:translateX(-50%) scale(1.15) rotate(3deg)}25%,80%{opacity:1;transform:translateX(-50%) scale(1) rotate(-2deg)}100%{opacity:0;transform:translateX(-50%) scale(1) rotate(0)}}
+@media (prefers-reduced-motion:reduce){.fz-cap{display:none}}

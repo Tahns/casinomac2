@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b0705">
+<title>The Unleashed Mine</title>
+<style id="mascot-slot-base">:where(#mascot-slot){position:absolute;pointer-events:none;z-index:2;left:0;bottom:0;width:var(--side,120px);aspect-ratio:1;max-height:28%}:where(#mascot-slot) *{pointer-events:none!important}</style>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="src/render/mascot.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3l10 8-10 18L6 11z' fill='%23ff3b57' stroke='%23ffd54a' stroke-width='2'/%3E%3C/svg%3E">
+</head>
+<body class="state-booting">
+<div id="app">
+  <div id="scene" aria-hidden="true"></div>
+
+  <header id="logo-area">
+    <h1 id="logo" class="logo" data-i18n-aria-label="game.title"><span class="sr-only" data-i18n="game.title">The Unleashed Mine</span></h1>
+  </header>
+
+  <div id="mascot-slot" aria-hidden="true"></div>
+
+  <main id="game" class="game-surface" aria-live="off"></main>
+
+  <section id="hud-info" class="hud-info" aria-label="Status">
+    <div class="stat hud-bal"><span class="lbl" data-i18n="label.balance">BALANCE</span><b id="balance" class="val">0.00</b></div>
+    <div class="stat hud-bet">
+      <span class="lbl" data-i18n="label.bet">BET</span>
+      <div class="betrow bet-controls">
+        <button id="btn-bet-minus" class="mini only-play" type="button" data-i18n-title="btn.betMinus"><svg viewBox="0 0 24 24"><path d="M5 12h14" /></svg></button>
+        <b id="bet" class="val">0.00</b>
+        <button id="btn-bet-plus" class="mini only-play" type="button" data-i18n-title="btn.betPlus"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" /></svg></button>
+      </div>
+    </div>
+    <div class="stat hud-win"><span class="lbl" data-i18n="label.win">WIN</span><b id="win" class="val">0.00</b></div>
+    <div id="freespin-box" class="stat fsbox"><span class="lbl" data-i18n="label.freeSpins">FREE SPINS</span><b id="freespin-counter" class="val"></b></div>
+  </section>
+
+  <nav id="hud-ctrl" class="hud-ctrl" aria-label="Controls">
+    <button id="btn-bet" class="spin only-play" type="button" data-i18n-title="btn.spin">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path class="arr" d="M34 14a14 14 0 1 0 4 11" /><path class="head" d="M36 5v12H24z" /></svg>
+      <span class="spin-lbl" data-i18n="btn.spin">SPIN</span>
+    </button>
+    <button id="btn-unleash" class="unleash only-play" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2l-1 4 3 2-1 3M8 22V10h8v12z" /></svg>
+      <span class="u-txt"><span data-i18n="btn.unleash">UNLEASH</span><small id="unleash-cost"></small></span>
+    </button>
+    <button id="btn-autoplay" class="tbtn only-play" type="button" data-i18n-title="btn.autoplay" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3" /><path class="f" d="M19 2v6h-6zM5 22v-6h6z" /></svg>
+      <span id="autoplay-left" class="badge"></span>
+    </button>
+    <button id="btn-turbo" class="tbtn only-play" type="button" data-i18n-title="btn.turbo" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M13 2L5 14h6l-1 8 8-12h-6z" /></svg>
+    </button>
+    <button id="btn-menu" class="tbtn" type="button" data-i18n-title="btn.menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+    </button>
+    <div class="tools">
+      <button id="btn-sound" class="tbtn" type="button" data-i18n-title="btn.sound" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M4 9h4l5-4v14l-5-4H4z" /><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /><path class="x" d="M16 9l5 6M21 9l-5 6" /></svg>
+      </button>
+      <button id="btn-info" class="tbtn" type="button" data-i18n-title="btn.info">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6" /><circle class="f" cx="12" cy="7.5" r="1.2" /></svg>
+      </button>
+      <button id="btn-fullscreen" class="tbtn" type="button" data-i18n-title="btn.fullscreen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+      </button>
+    </div>
+  </nav>
+
+  <div id="replay-bar" hidden><div id="replay-info"></div></div>
+
+  <!-- Modals: CORE toggles [hidden] + .open -->
+  <div id="modal-autoplay" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="ap-title">
+    <div class="modal-box">
+      <h2 id="ap-title" data-i18n="autoplay.title">AUTOPLAY</h2>
+      <label class="fld"><span data-i18n="autoplay.spins">Number of spins</span>
+        <select id="ap-count"><option>10</option><option>25</option><option>50</option><option>75</option><option>100</option><option>250</option><option>500</option></select></label>
+      <label class="chk"><input type="checkbox" id="ap-stop-bigwin" checked><i></i><span data-i18n="autoplay.stopBigWin">Stop on a big win</span></label>
+      <label class="chk"><input type="checkbox" id="ap-stop-feature" checked><i></i><span data-i18n="autoplay.stopFeature">Stop when free spins start</span></label>
+      <label class="fld"><span data-i18n="autoplay.stopBelow">Stop if balance falls below</span>
+        <input type="number" id="ap-stop-below" min="0" step="1" value="0" inputmode="decimal"></label>
+      <div class="modal-actions">
+        <button id="ap-cancel" class="mbtn ghost" type="button" data-i18n="btn.cancel">CANCEL</button>
+        <button id="ap-confirm" class="mbtn" type="button" data-i18n="autoplay.start">START AUTOPLAY</button>
+      </div>
+    </div>
+  </div>
+  <div id="modal-confirm" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal-box">
+      <h2 id="confirm-title">UNLEASH</h2>
+      <p id="confirm-text"></p>
+      <div class="modal-actions">
+        <button id="confirm-cancel" class="mbtn ghost" type="button" data-i18n="btn.cancel">CANCEL</button>
+        <button id="confirm-ok" class="mbtn" type="button" data-i18n="btn.confirm">CONFIRM</button>
+      </div>
+    </div>
+  </div>
+  <div id="modal-message" class="modal" hidden role="alertdialog" aria-modal="true">
+    <div class="modal-box">
+      <p id="message-text"></p>
+      <div class="modal-actions"><button id="message-ok" class="mbtn" type="button" data-i18n="btn.ok">OK</button></div>
+    </div>
+  </div>
+  <div id="modal-info" class="modal modal-wide" hidden role="dialog" aria-modal="true"></div>
+
+  <div id="loading" role="status">
+    <div class="ld-inner">
+      <div class="ld-title">THE UNLEASHED MINE</div>
+      <div class="ld-gem"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l22 16-22 40L10 20z" fill="#ff3b57" stroke="#ffd54a" stroke-width="3" stroke-linejoin="round"/><path d="M10 20h44M32 4l-9 16 9 40 9-40z" fill="none" stroke="#ffd54a" stroke-width="1.5" opacity=".7"/></svg></div>
+      <div class="ld-bar"><i></i></div>
+      <div class="ld-text" data-i18n="loading.text">Loading...</div>
+    </div>
+  </div>
+</div>
+<noscript><p style="color:#fff;padding:1em">JavaScript is required.</p></noscript>
+<script type="module">
+  // The renderer is created by src/main.js (CORE); this tiny boot only prepares static visuals so the loading screen can leave.
+  import { prepareStatic } from './src/render/index.js';
+  try { prepareStatic(document.getElementById('app')); } catch (e) { console.error(e); }
+</script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
