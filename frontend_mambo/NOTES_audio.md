@@ -1,18 +1,19 @@
-# NOTES_audio (AUDIO agent)
+# NOTES_audio (AUDIO agent) - Agent Mambo
 
-1960s cartoon sound, 100% WebAudio synthesis (no samples/files/AI). `src/audio.js` exports `audio` (default too) and `createEngine(ctx, {muted, noLimit, bedVol})` (same synthesis renders offline in tests).
+Spy-jazz, 100% WebAudio synthesis (no samples/files/AI). `src/audio.js` exports `audio` (default too) and `createEngine(ctx, {muted, noLimit, bedVol})` (same synthesis renders offline in tests). Mute key in localStorage: `am_muted` (not the mining game's `tum_muted`). I could not listen to it: levels/timbres are verified by numbers only (peak, RMS, seam), not by ear.
 
 ## API (all previous names kept)
-`audio.play(id, opt)`, `setMuted`, `muted` (get/set), `unlock`, `setBonus(b)` (legacy: switches bed base/freespins), `ready`, `bonus`, `_stop`, `_sounds`.
-New: `audio.setMood('base'|'freespins'|'off')`, `audio.mood`, `audio._engine`.
-WIRING: call `audio.setMood('freespins')` when free spins start (under the explosion flash), `setMood('base')` at free-spins end, `setMood('off')` only if the bed must stop. Optional: `play('nearmiss')` (short sad trombone), `play('kaching')`, `play('tada')`, `play('mascot_hop'|'mascot_gasp')`, `play('win', {combo, size})` (size = cluster symbols; longer xylophone gliss).
+`audio.play(id, opt)`, `setMuted`, `muted`, `unlock`, `setBonus(b)`, `setMood('base'|'freespins'|'off')`, `mood`, `ready`, `bonus`, `_stop`, `_sounds`, `_engine`.
+New optional: `audio.setMeter(level)` (Mission Meter: free-spins vibraphone arpeggio +1 semitone per 5 levels, cap +5; riser plays when passing x10). `play('mult')` pitch follows the meter (or `{level}`).
 
 ## Sound ids
-click error nearmiss(wahwah) spin whoosh land pop win(xylo) scatter antic fuse explosion mult fsStart retrigger fsEnd tada bigwin kaching coin count heart rumble crack shower stinger tick drip mascot_hop mascot_gasp.
+Old: click error nearmiss wahwah spin whoosh land pop win xylo scatter antic fuse explosion mult fsStart retrigger fsEnd tada bigwin kaching coin count heart rumble crack shower stinger tick drip mascot_hop mascot_gasp.
+New: dossier (=scatter) wire{i} (relay click + beep, +1 semitone/node, auto-steps if no i; `fuse` = wire) tick{p|burn,total} (tick/tock) ticks{burn,total,dur} (accelerating run) defuse snip blast(=explosion) stamp metermax meterTick/meter(=mult) meterRise/riser vault phone shutter.
 
 ## Design
-- Bed: lookahead scheduler (setTimeout wakes every 80 ms, all timing from the audio clock, 350 ms lookahead; paused when muted/hidden/not running; restarts on a bar line). Base = 110 bpm swing, 8-bar loop (17.45 s): walking upright bass, brush swish/ride/foot hat/feathered kick, vibes comp with beat-locked tremolo, muted trumpet stabs. Free spins = 125 bpm, 12-bar blues (23.04 s), brass stabs, xylophone runs. One bus per mood, faded on change.
-- One master gain -> compressor -> transparent soft limiter (<= 0.97). Mute: master 0 and every live voice is stopped, nothing is queued; unmute restarts the bed. Voice cap 56 (bed exempt). Shared deterministic noise buffer, 1.3 s shared reverb.
+- Base bed 118 bpm D dorian, 8 bars, 16.27 s; free spins 132 bpm E dorian, 14.55 s (DESIGN 6.1/6.2 note by note): walking triangle bass, bongos (pitch-drop sine + noise click, panned) + conga, brush hat, vibraphone (sine + detuned 4th partial, bar-locked tremolo), surf guitar (saw through 1.2 kHz band-pass, 7 Hz vibrato, feedback-delay spring), brass stabs (detuned saws).
+- Lookahead scheduler (80 ms wake, 350 ms lookahead, audio-clock timing); stops when muted/hidden/not running; tab hidden also suspends the context.
+- One master -> compressor -> soft limiter (<= 0.97). Mute: master 0, all live voices and bus springs stopped, nothing queued. Voice cap 56 (bed exempt), shared noise buffer, 0.35 s shared room reverb.
 
 ## Tests
-`PORT=5204 PW_DIR=<dir with node_modules/playwright-core> node frontend/tests/audio/audio.test.mjs` (spawns serve.mjs if needed): offline render of every sound (not silent, no NaN, pre-limiter peak < 0 dBFS), win length scales, pop pitch climbs, voice cap, both beds (loop periodicity, seam step, clean tail), live mute (graph introspection like guideline 107, localStorage, body.muted, aria-pressed). Guideline 107 still PASSES.
+`PORT=5405 node frontend_mambo/tests/audio/audio.test.mjs` (spawns serve.mjs if needed): every id rendered offline (not silent, no NaN, peak < 0 dBFS), win length scales, pop climbs, clock accelerates, voice cap, both beds (periodicity, seam, tail), live mute (graph introspection, am_muted, body.muted, aria-pressed).

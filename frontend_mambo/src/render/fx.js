@@ -28,6 +28,8 @@ export function createFx(app) {
   const parts = [];
   let raf = 0, last = 0, ema = 16, lite = false; // lite: drop half the particles when frames are slow
   const MAX = 240;
+  const DUST = '#E4DAEE';
+  let irisP = null, irisTimer = 0;
 
   function resize() {
     const r = app.getBoundingClientRect();
@@ -50,7 +52,7 @@ export function createFx(app) {
     const m = Math.min(5, 2 + Math.round(n / 4));
     for (let i = 0; i < m; i++) {
       const a = rnd(0, TAU), sp = rnd(size * .6, size * 2);
-      add({ t: 'puff', x: x + Math.cos(a) * size * .25, y: y + Math.sin(a) * size * .25, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - size * .5, drag: 2.2, life: rnd(.45, .75), age: 0, r: rnd(.18, .3) * size, color: i % 2 ? PAPER : '#E6D3A8' });
+      add({ t: 'puff', x: x + Math.cos(a) * size * .25, y: y + Math.sin(a) * size * .25, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - size * .5, drag: 2.2, life: rnd(.45, .75), age: 0, r: rnd(.18, .3) * size, color: i % 2 ? PAPER : DUST });
     }
     for (let i = 0; i < Math.min(3, 1 + (n >> 2)); i++) {
       const a = rnd(0, TAU), sp = rnd(size * 2, size * 4.5);
@@ -61,13 +63,79 @@ export function createFx(app) {
     const m = Math.min(5, Math.ceil(n / 2));
     for (let i = 0; i < m; i++) {
       const a = rnd(0, TAU), sp = rnd(size * 1.5, size * speed);
-      add({ t: 'star', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 4, drag: 1.8, rot: rnd(0, TAU), vr: rnd(-5, 5), life: rnd(.35, .7), age: 0, color, r: rnd(.12, .2) * size + 3 });
+      add({ t: 'star', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 4, drag: 1.8, rot: rnd(0, TAU), vr: rnd(-5, 5), life: rnd(.35, .7), age: 0, color: color || STAR_COLS[i % STAR_COLS.length], r: rnd(.12, .2) * size + 3 });
     }
+  }
+  // new-palette stars: no colour needed, cycles lemon/cream/flamingo/teal/lilac (pass opts.colors to override)
+  function stars(x, y, size, n = 8, opts = {}) {
+    const cols = opts.colors || STAR_COLS, m = Math.min(12, n), speed = opts.speed || 5;
+    for (let i = 0; i < m; i++) {
+      const a = rnd(0, TAU), sp = rnd(size * 1.5, size * speed);
+      add({ t: 'star', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 3, drag: 1.8, rot: rnd(0, TAU), vr: rnd(-5, 5), life: rnd(.4, .8), age: 0, color: cols[i % cols.length], r: rnd(.12, .22) * size + 3 });
+    }
+  }
+  // comic burst bubble: spiky cream starburst with ink outline and a coral word that pops in (steps) and floats up a little
+  function burstBubble(x, y, size, word, opts = {}) {
+    const txt = word != null ? word : safeT(['fx.pow', 'fx.boom', 'fx.wow'][Math.floor(Math.random() * 3)], 'POW!');
+    add({ t: 'bubble', x, y, r: size, text: txt, rot: opts.rot != null ? opts.rot : rnd(-.25, .25), life: opts.life || .75, age: 0, fill: opts.fill || PAPER, ink: opts.color || FX_COLORS.coral, spikes: 11 + Math.floor(rnd(0, 4)) });
+  }
+  // confetti: little flat paper rectangles that flutter (stepped x-scale) down with the new palette
+  function confetti(x, y, size, n = 24, opts = {}) {
+    const m = Math.min(30, n), cols = opts.colors || CONF_COLS, spread = opts.spread == null ? Math.PI : opts.spread, ang = opts.angle == null ? -Math.PI / 2 : opts.angle;
+    for (let i = 0; i < m; i++) {
+      const a = ang + rnd(-1, 1) * spread * .5, sp = rnd(size * .8, size * 3.2) * (opts.power || 1);
+      add({ t: 'conf', x: opts.w ? x + rnd(0, opts.w) : x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 2.2, drag: .9, rot: rnd(0, TAU), vr: rnd(-7, 7), fl: rnd(0, TAU), life: rnd(1.3, 2.3), age: 0, color: cols[i % cols.length], r: rnd(.03, .055) * size + 3 });
+    }
+  }
+  // dust cloud (e.g. on the removed, now empty cell): big lingering puffs that rise a little
+  function dust(x, y, size, n = 3) {
+    const m = Math.min(5, n);
+    for (let i = 0; i < m; i++) {
+      const a = rnd(0, TAU), sp = rnd(size * .15, size * .7);
+      add({ t: 'puff', x: x + Math.cos(a) * size * .15, y: y + Math.sin(a) * size * .15, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - size * .25, drag: 1.6, life: rnd(.8, 1.2), age: 0, r: rnd(.28, .42) * size, color: i % 2 ? PAPER : DUST });
+    }
+  }
+  // paper pieces: irregular cut-paper chunks (face colour on one side, cream back on the other) that tumble out and fall
+  function pieces(x, y, color, size, n = 3) {
+    const m = Math.min(6, n);
+    for (let i = 0; i < m; i++) {
+      const base = (i / m) * TAU + rnd(-.5, .5), sp = rnd(size * 2.2, size * 4.2);
+      const k = 3 + (i % 2), pts = [];
+      for (let j = 0; j < k; j++) { const a = (j / k) * TAU + rnd(-.35, .35), rr = rnd(.7, 1.15); pts.push([Math.cos(a) * rr, Math.sin(a) * rr]); }
+      add({ t: 'piece', x, y, vx: Math.cos(base) * sp, vy: Math.sin(base) * sp - size * 1.6, g: size * 7, drag: .6, rot: rnd(0, TAU), vr: rnd(-9, 9), fl: rnd(0, TAU), life: rnd(.75, 1.15), age: 0, r: rnd(.2, .3) * size + 3, pts, color, back: PAPER });
+    }
+  }
+  // breakCell(x, y, size, color, opts): the whole "removed cell" effect for the wire blast: 80 ms cream flash, comic bubble,
+  // 3 paper pieces in the symbol colour, dust on the now empty cell. opts: {word, bubble:false, dust:false, pieces:n}
+  function breakCell(x, y, size, color = FX_COLORS.flamingo, opts = {}) {
+    add({ t: 'flash', x, y, r: size * .48, life: .08, age: 0 });
+    pieces(x, y, color, size * .8, opts.pieces || 3);
+    if (opts.bubble !== false) burstBubble(x, y - size * .05, size * .62, opts.word);
+    if (opts.dust !== false) dust(x, y, size, 2);
+    stars(x, y, size * .4, 3);
+  }
+  // iris wipe: a flat colour covers the screen except a circle. dir 'close' shrinks the hole (holds closed until 'open'/clear),
+  // 'open' grows it. Returns a promise resolved when the wipe finished. x,y default to the centre.
+  function iris(x, y, o = {}) {
+    const dir = o.dir === 'open' ? 'open' : 'close', ms = Math.max(120, o.ms || 700);
+    const cx = x == null ? W / 2 : x, cy = y == null ? H / 2 : y;
+    clearTimeout(irisTimer);
+    irisP = { x: cx, y: cy, dir, life: ms / 1000, age: 0, color: o.color || INK, R: Math.max(Math.hypot(cx, cy), Math.hypot(W - cx, cy), Math.hypot(cx, H - cy), Math.hypot(W - cx, H - cy)) + 4 };
+    if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); }
+    return new Promise((res) => { irisTimer = setTimeout(() => { if (irisP && irisP.dir === 'open') irisP = null; res(); }, ms + 30); });
+  }
+  // screen shake: shakes #game and the scene (px amplitude scales with the viewport, amp 1 ~ 6 px at 500 px)
+  function shake(amp = 1, ms = 250) {
+    if (REDUCE) amp *= .25;
+    const els = [app.querySelector('#game'), app.querySelector('#scene')].filter(Boolean);
+    const n = 10; const px = Math.min(app.clientWidth || 500, app.clientHeight || 500) * .012 * amp;
+    const frames = Array.from({ length: n + 1 }, (_, i) => { const k = 1 - i / n; return { transform: i === n ? 'none' : `translate(${((Math.random() - .5) * 2 * px * k).toFixed(1)}px,${((Math.random() - .5) * 2 * px * k).toFixed(1)}px)` }; });
+    els.forEach((e) => { try { e.animate(frames, { duration: ms, easing: 'steps(10,end)' }); } catch (x) { /* ignore */ } });
   }
   function embers(x, y, w, h, n, size) {
     const m = Math.min(18, n >> 1);
     for (let i = 0; i < m; i++) {
-      add({ t: 'diamond', x: x + rnd(0, w), y: y + rnd(0, h), vx: rnd(-.5, .5) * size, vy: -rnd(1, 3.5) * size, g: -size * .3, drag: .5, life: rnd(.8, 1.6), age: 0, color: Math.random() < .5 ? '#E8A92B' : '#D9622B', r: rnd(.03, .06) * size + 2 });
+      add({ t: 'diamond', x: x + rnd(0, w), y: y + rnd(0, h), vx: rnd(-.5, .5) * size, vy: -rnd(1, 3.5) * size, g: -size * .3, drag: .5, life: rnd(.8, 1.6), age: 0, color: Math.random() < .5 ? FX_COLORS.lemon : FX_COLORS.coral, r: rnd(.03, .06) * size + 2 });
     }
   }
   function coins(x, y, size, n = 30, spread = 1, angle = -Math.PI / 2, power = 1) {
@@ -87,7 +155,7 @@ export function createFx(app) {
     const m = Math.min(n, 6);
     for (let i = 0; i < m; i++) {
       const a = rnd(0, TAU), sp = rnd(0, size * 1.4);
-      add({ t: 'puff', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - size * .5, drag: 1.4, life: rnd(.7, 1.2), age: 0, r: rnd(.3, .55) * size, color: i % 2 ? '#CDB48C' : '#E6D3A8' });
+      add({ t: 'puff', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - size * .5, drag: 1.4, life: rnd(.7, 1.2), age: 0, r: rnd(.3, .55) * size, color: i % 2 ? '#CFC3E6' : DUST });
     }
   }
   function ring(x, y, r1, color = '255,220,140', life = .6, lw = 6) {
@@ -132,6 +200,20 @@ export function createFx(app) {
         ctx.fillStyle = `rgb(${p.color})`; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, rr * .06); ctx.stroke();
         ctx.restore(); continue;
       }
+      if (p.t === 'flash') {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.globalAlpha = 1 - k * .5; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff';
+        ctx.beginPath(); ctx.rect(-p.r, -p.r, p.r * 2, p.r * 2); ctx.fill(); ctx.restore(); continue;
+      }
+      if (p.t === 'bubble') {
+        const pop = k < .18 ? .45 + k / .18 * .75 : k < .3 ? 1.2 - (k - .18) / .12 * .2 : 1; // pop in, settle (stepped by q)
+        const rr = p.r * pop, yy = p.y - k * p.r * .35;
+        ctx.save(); ctx.translate(p.x, yy); ctx.rotate(p.rot); ctx.globalAlpha = k > .8 ? Math.max(0, 1 - (k - .8) / .2) : 1;
+        ctx.save(); ctx.translate(rr * .09, rr * .1); spiky(rr, p.spikes, .72); ctx.fillStyle = INK; ctx.fill(); ctx.restore(); // offset shadow
+        spiky(rr, p.spikes, .72); ctx.fillStyle = p.fill; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, rr * .09); ctx.fill(); ctx.stroke();
+        const fs = Math.max(8, rr * (p.text.length > 4 ? .5 : .62)); ctx.font = `900 ${fs}px ${DISP}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = Math.max(2, fs * .2); ctx.strokeStyle = INK; ctx.strokeText(p.text, 0, rr * .04); ctx.fillStyle = p.ink; ctx.fillText(p.text, 0, rr * .04);
+        ctx.restore(); continue;
+      }
       if (p.drag) { const d = Math.exp(-p.drag * dt); p.vx *= d; p.vy *= d; }
       p.vy += (p.g || 0) * dt;
       p.x += p.vx * dt; p.y += p.vy * dt;
@@ -151,17 +233,35 @@ export function createFx(app) {
         ctx.rotate(p.rot || .6); const r = p.r;
         ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(r * .65, 0); ctx.lineTo(0, r); ctx.lineTo(-r * .65, 0); ctx.closePath();
         ctx.fillStyle = p.color; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, r * .24); ctx.stroke(); ctx.fill();
+      } else if (p.t === 'conf') {
+        ctx.rotate(p.rot); const sx = Math.max(.15, Math.abs(Math.cos(Math.floor((p.fl + p.age * 9) * 1.5) / 1.5))), r = p.r;
+        ctx.fillStyle = p.color; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, r * .3);
+        ctx.beginPath(); ctx.rect(-r, -r * .5 * sx, r * 2, r * sx); ctx.stroke(); ctx.fill();
+      } else if (p.t === 'piece') {
+        ctx.rotate(Math.floor(p.rot * 2) / 2); const sx = Math.cos(Math.floor((p.fl + p.age * 8) * 1.5) / 1.5), r = p.r;
+        ctx.scale(Math.abs(sx) < .18 ? .18 : sx, 1);
+        ctx.beginPath(); p.pts.forEach(([px, py], i) => (i ? ctx.lineTo(px * r, py * r) : ctx.moveTo(px * r, py * r))); ctx.closePath();
+        ctx.fillStyle = sx >= 0 ? p.color : p.back; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, r * .26); ctx.stroke(); ctx.fill();
       } else if (p.t === 'coin') {
         const sx = Math.max(.12, Math.abs(Math.cos(Math.floor(p.rot * 1.2) / 1.2))); // stepped spin
         const r = p.r;
-        ctx.fillStyle = '#F2B52E'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, r * .26);
+        ctx.fillStyle = FX_COLORS.lemon; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, r * .26);
         ctx.beginPath(); ctx.ellipse(0, 0, Math.max(1, r * sx), r, 0, 0, TAU); ctx.stroke(); ctx.fill();
-        if (sx > .4) { ctx.strokeStyle = '#B87A14'; ctx.lineWidth = Math.max(1.2, r * .16); ctx.beginPath(); ctx.ellipse(0, 0, Math.max(.6, r * sx * .6), r * .6, 0, 0, TAU); ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.2, r * .16); ctx.beginPath(); ctx.moveTo(-r * sx * .5, -r * .55); ctx.lineTo(-r * sx * .15, -r * .8); ctx.stroke(); }
+        if (sx > .4) { ctx.strokeStyle = FX_COLORS.coral; ctx.lineWidth = Math.max(1.2, r * .16); ctx.beginPath(); ctx.ellipse(0, 0, Math.max(.6, r * sx * .6), r * .6, 0, 0, TAU); ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.2, r * .16); ctx.beginPath(); ctx.moveTo(-r * sx * .5, -r * .55); ctx.lineTo(-r * sx * .15, -r * .8); ctx.stroke(); }
       }
       ctx.restore();
     }
     ctx.globalAlpha = 1;
-    if (parts.length) raf = requestAnimationFrame(tick);
+    if (irisP) {
+      irisP.age = Math.min(irisP.life, irisP.age + dt);
+      const k = q(irisP.age) / irisP.life, e = irisP.dir === 'close' ? 1 - k : k; // stepped
+      const rr = Math.max(0, irisP.R * e * e * (3 - 2 * e));
+      ctx.fillStyle = irisP.color; ctx.beginPath(); ctx.rect(0, 0, W, H); if (rr > 0.5) { ctx.moveTo(irisP.x + rr, irisP.y); ctx.arc(irisP.x, irisP.y, rr, 0, TAU, true); }
+      ctx.fill('evenodd');
+      if (rr > 0.5 && rr < irisP.R * .98) { ctx.strokeStyle = INK; ctx.lineWidth = Math.max(3, Math.min(W, H) * .012); ctx.beginPath(); ctx.arc(irisP.x, irisP.y, rr, 0, TAU); ctx.stroke(); }
+      if (irisP.dir === 'open' && irisP.age >= irisP.life) irisP = null;
+    }
+    if (parts.length || irisP) raf = requestAnimationFrame(tick);
     else { raf = 0; ctx.clearRect(0, 0, W, H); }
   }
 
@@ -189,5 +289,5 @@ export function createFx(app) {
     hook();
   }
 
-  return { resize, shards, sparks, embers, coins, coinRain, smoke, ring, glow, clear() { parts.length = 0; }, get count() { return parts.length; } };
+  return { resize, shards, sparks, stars, burstBubble, confetti, breakCell, pieces, dust, iris, shake, embers, coins, coinRain, smoke, ring, glow, clear() { parts.length = 0; irisP = null; clearTimeout(irisTimer); }, get count() { return parts.length; } };
 }

@@ -1,297 +1,362 @@
-/* Old Gus - styles + limited-animation keyframes (steps()). Pose class: .p-<name> on svg.gus */
+/* Mambo (Mabel Fontaine) - styles + limited-animation keyframes (steps()). Pose class: .p-<name> on svg.gus
+   Class names .gus-wrap / .gus / .gus-bubble are kept as hooks for the page CSS. */
 .gus-wrap { position: relative; display: inline-block; line-height: 0; flex: none; }
-.gus { display: block; width: 100%; height: 100%; overflow: visible; --sw: 4.5; --lx: 0; --ly: 0; --lid: -34; }
+.gus { display: block; width: 100%; height: 100%; overflow: visible; --sw: 4; --lx: 0; --ly: 0; --lid: -12; --fo: -2px; }
 .gus * { transform-box: view-box; }
-.gus .o { fill: none; stroke: #2B1A12; stroke-width: var(--sw); stroke-linejoin: round; stroke-linecap: round; }
-.gus .o.thick { stroke-width: calc(var(--sw) * 1.25); }
-.gus .o.thin { stroke-width: calc(var(--sw) * .7); }
-.gus .fill { transform: translate(3px, 2.2px); }
-.gus.small { --sw: 6.8; }
+.gus .o { fill: none; stroke: #14102B; stroke-width: var(--sw); stroke-linejoin: round; stroke-linecap: round; }
+.gus .o.thick { stroke-width: calc(var(--sw) * 1.2); }
+.gus .o.thin { stroke-width: calc(var(--sw) * .66); }
+.gus .o.brow { stroke-width: calc(var(--sw) * .78); }
+.gus .fill { transform: translate(var(--fo), var(--fo)); }
+.gus .mir .fill, .gus .mirL .fill, .gus .mirR .fill { transform: translate(calc(var(--fo) * -1), var(--fo)); }
+.gus .mirR .mirR .fill { transform: translate(var(--fo), var(--fo)); }
+.gus.small { --sw: 5.6; --fo: -2.4px; }
 .gus.small .fine, .gus.small .ht { display: none; }
-.gus.small .fill { transform: translate(3.6px, 2.6px); }
 
-/* origins (user units of the viewBox) */
-.body, .body-a { transform-origin: 100px 248px; }
-.torso, .torso-a { transform-origin: 100px 222px; }
-.head, .head-a { transform-origin: 100px 142px; }
-.hat, .hat-a { transform-origin: 100px 52px; }
-.armL, .armL-a { transform-origin: 49px 152px; }
-.armR, .armR-a { transform-origin: 151px 152px; }
-.legL, .legL-a { transform-origin: 80px 235px; }
-.legR, .legR-a { transform-origin: 120px 235px; }
-.pick { transform-origin: 151px 207px; transform: rotate(13deg); }
-.eyeL, .eyeL-a { transform-origin: 79px 82px; }
-.eyeR, .eyeR-a { transform-origin: 121px 82px; }
-.browL, .browL-a { transform-origin: 79px 66px; }
-.browR, .browR-a { transform-origin: 121px 66px; }
-.must, .must-a { transform-origin: 100px 118px; }
-.plbar, .plbar-a { transform-origin: 100px 170px; }
-.burst { transform-origin: 100px 112px; }
-.burst2 { transform-origin: 100px 92px; }
-.plbar, .plbar-a { transform-origin: 182px 176px; }
-.shadow { transform-origin: 100px 249px; }
-.lamp-rays { transform-origin: 100px 31px; }
+/* origins (user units of the 200x233 drawing box) */
+.body, .body-a { transform-origin: 100px 232px; }
+.torso, .torso-a { transform-origin: 100px 160px; }
+.skirt, .skirt-a { transform-origin: 100px 156px; }
+.head, .head-a { transform-origin: 100px 136px; }
+.hair, .hair-a, .bangs, .bangs-a { transform-origin: 100px 96px; }
+.ant, .ant-a, .shaft { transform-origin: 100px 13px; }
+.anttop, .fins, .qstar { transform-origin: 100px -4px; }
+.lid, .lid-a { transform-origin: 140px 49px; }
+.armL, .armL-a { transform-origin: 78px 138px; }
+.foreL, .foreL-a { transform-origin: 78px 162px; }
+.armR, .armR-a { transform-origin: 122px 138px; }
+.foreR, .foreR-a { transform-origin: 122px 162px; }
+.hold { transform-origin: 0px 30px; }
+.legL, .legL-a { transform-origin: 83px 206px; }
+.legR, .legR-a { transform-origin: 117px 206px; }
+.eyeL, .eyeL-a { transform-origin: 91px 106px; }
+.eyeR, .eyeR-a { transform-origin: 109px 106px; }
+.browL, .browL-a { transform-origin: 90px 90px; }
+.browR, .browR-a { transform-origin: 110px 90px; }
+.burst { transform-origin: 100px 130px; }
+.burst2 { transform-origin: 100px 110px; }
+.shadow { transform-origin: 100px 232px; }
+.plbtn, .plbtn-a { transform-origin: 165px 205px; }
+.plunger { transform-origin: 165px 232px; }
+.spark { transform-origin: 168px 192px; }
 
-/* default static pose */
-.armL { transform: rotate(5deg); }
-.armR { transform: rotate(-4deg); }
-.lidL, .lidR { transform: translateY(calc(var(--lid) * 1px)); }
+/* defaults */
+.m, .eyesHappy, .winkR, .burst, .burst2, .confetti, .lidconf, .stars, .sweat, .mlh, .tdots, .puff, .notes, .plunger, .spark, .qstar, .glass, .fing, .fins { display: none; }
+.hold { transform: rotate(-8deg); }
+.shaft { transform: scaleY(.5); }
 .pup { transform: translate(calc(var(--lx) * 1px), calc(var(--ly) * 1px)); }
-.eyeR .pup { transform: translate(calc(var(--lx) * -1px), calc(var(--ly) * 1px)); }
-.m, .eyesHappy, .burst, .burst2, .confetti, .pickBack, .stars, .sweat, .mlh, .mlhop, .tdots, .handThink, .plunger, .must-s { display: none; }
-.must-n { display: inline; }
+.lidL, .lidR { transform: translateY(calc(var(--lid) * 1px)); }
+.armL { transform: rotate(28deg); }
+.foreL { transform: rotate(-115deg); }
+.armR { transform: rotate(-8deg); }
+.skirt { transform: skewX(-2deg); }
 
-.armL, .armR, .head, .hat, .browL, .browR, .lidL, .lidR, .eyeL, .eyeR, .must, .body, .torso { transition: transform .14s steps(3); }
+.armL, .armR, .foreL, .foreR, .head, .hair, .bangs, .browL, .browR, .lidL, .lidR, .eyeL, .eyeR, .body, .torso, .skirt, .shaft, .anttop, .lid, .hold { transition: transform .12s steps(3); }
 
-/* ---------- poses: static values ---------- */
+/* ---------- poses: static drawings ---------- */
 .p-idle .m-smile { display: inline; }
 
-.p-think { --lx: 4; --ly: -4; --lid: -22; }
+.p-think { --lx: -3.4; --ly: -4; --lid: -9; }
 .p-think .m-side { display: inline; }
-.p-think .head { transform: rotate(-6deg) translateX(-2px); }
-.p-think .browL { transform: translateY(3px) rotate(8deg); }
-.p-think .browR { transform: translateY(-6px) rotate(-8deg); }
-.p-think .armL { transform: rotate(-102deg) scaleY(.66); }
-.p-think .handThink, .p-think .tdots { display: inline; }
+.p-think .head { transform: rotate(-7deg) translateX(-1px); }
+.p-think .browL { transform: translateY(2px) rotate(6deg); }
+.p-think .browR { transform: translateY(-4px) rotate(-10deg); }
+.p-think .armL { transform: rotate(-20deg); }
+.p-think .foreL { transform: rotate(-141deg); }
+.p-think .shaft { transform: scaleY(.83); }
+.p-think .anttop { transform: translateY(-10px); }
+.p-think .qstar, .p-think .tdots { display: inline; }
+.p-think .skirt { transform: skewX(-2deg); }
 
-.p-happy .m-open { display: inline; }
-.p-happy .eyesHappy { display: inline; }
-.p-happy .eyeL, .p-happy .eyeR { display: none; }
-.p-happy .browL { transform: translateY(-4px) rotate(-6deg); }
-.p-happy .browR { transform: translateY(-4px) rotate(6deg); }
-.p-happy .armL { transform: rotate(38deg); }
-.p-happy .armR { transform: rotate(-38deg); }
-.p-happy .mlhop, .p-happy .pickBack, .p-shrug .pickBack, .p-dance .pickBack { display: inline; }
-.p-happy .pick, .p-shrug .pick { display: none; }
+.p-happy .m-grin, .p-happy .winkR { display: inline; }
+.p-happy .eyeR { display: none; }
+.p-happy { --lid: -12; }
+.p-happy .browL { transform: translateY(-3px) rotate(-5deg); }
+.p-happy .browR { transform: translateY(-5px) rotate(-8deg); }
+.p-happy .armR { transform: rotate(-100deg); }
+.p-happy .foreR { transform: rotate(-50deg); }
+.p-happy .hold { transform: rotate(-150deg); }
+.p-happy .notes { display: inline; }
+.p-happy .head { transform: rotate(3deg); }
 
-.p-bigwin .m-wide { display: inline; }
-.p-bigwin .must { transform: translateY(-6px); }
-.p-bigwin .browL { transform: translateY(-7px) rotate(-8deg); }
-.p-bigwin .browR { transform: translateY(-7px) rotate(8deg); }
-.p-bigwin .armL { transform: rotate(158deg); }
-.p-bigwin .armR { transform: rotate(-158deg); }
-.p-bigwin .pick { transform: rotate(168deg); }
-.p-bigwin .burst, .p-bigwin .stars, .p-bigwin .mlh { display: inline; }
-.p-bigwin { --ly: -1; }
+.p-bigwin .m-o, .p-bigwin .eyesHappy { display: inline; }
+.p-bigwin .eyeL, .p-bigwin .eyeR { display: none; }
+.p-bigwin .browL { transform: translateY(-6px) rotate(-8deg); }
+.p-bigwin .browR { transform: translateY(-6px) rotate(8deg); }
+.p-bigwin .armL { transform: rotate(150deg); }
+.p-bigwin .foreL { transform: rotate(14deg); }
+.p-bigwin .armR { transform: rotate(-150deg); }
+.p-bigwin .foreR { transform: rotate(-14deg); }
+.p-bigwin .fing, .p-shock .fing, .p-shrug .fing, .p-dance .fing { display: inline; }
+.p-bigwin .burst, .p-bigwin .stars, .p-bigwin .mlh, .p-bigwin .lidconf, .p-bigwin .fins { display: inline; }
+.p-bigwin .lid { transform: rotate(-78deg); }
+.p-bigwin .shaft { transform: scaleY(.7); }
+.p-bigwin .anttop { transform: translateY(-7px); }
+.p-bigwin .skirt { transform: skewX(0deg); }
 
-.p-shock .m-o { display: inline; }
-.p-shock .must-n { display: none; }
-.p-shock .must-s { display: inline; }
-.p-shock .eyeL, .p-shock .eyeR { transform: scale(1.5); }
-.p-shock { --ly: 0; }
-.p-shock .pup { transform: scale(.55); transform-origin: 79px 83px; }
-.p-shock .eyeR .pup { transform-origin: 79px 83px; }
-.p-shock .browL { transform: translateY(-12px) rotate(-12deg); }
-.p-shock .browR { transform: translateY(-12px) rotate(12deg); }
-.p-shock .hat { transform: translateY(-26px) rotate(12deg); }
-.p-shock .armL { transform: rotate(32deg); }
-.p-shock .armR { transform: rotate(-32deg); }
+.p-shock { --lid: -14; --ly: 0; }
+.p-shock .m-gasp { display: inline; }
+.p-shock .eyeL, .p-shock .eyeR { transform: scale(1.3); }
+.p-shock .pup { transform: scale(.5); transform-origin: center; transform-box: fill-box; }
+.p-shock .browL { transform: translateY(-9px) rotate(-12deg); }
+.p-shock .browR { transform: translateY(-9px) rotate(12deg); }
+.p-shock .hair { transform: scale(.97, 1.09); }
+.p-shock .bangs { transform: scale(.97, 1.04); }
+.p-shock .armL { transform: rotate(72deg); }
+.p-shock .foreL { transform: rotate(102deg); }
+.p-shock .armR { transform: rotate(-72deg); }
+.p-shock .foreR { transform: rotate(-102deg); }
+.p-shock .shaft { transform: scaleY(1); }
+.p-shock .anttop { transform: translateY(-15px); }
 .p-shock .sweat, .p-shock .mlh { display: inline; }
-.p-shock .body { transform: scale(1.06, .95); }
+.p-shock .body { transform: scale(1.04, .97); }
+.p-shock .skirt { transform: skewX(0deg); }
 
-.p-plunger { --lid: -11; --ly: 1; --lx: 3; }
-.p-plunger .m-open { display: inline; }
+.p-plunger { --lid: -7; --ly: 1; --lx: 3; }
+.p-plunger .m-flat { display: inline; }
 .p-plunger .plunger { display: inline; }
-.p-plunger .pick { display: none; }
-.p-plunger .armL { transform: rotate(150deg) scaleY(.9); }
-.p-plunger .armR { transform: rotate(-52deg) scaleY(.71); }
-.p-plunger .browL { transform: translateY(5px) rotate(14deg); }
-.p-plunger .browR { transform: translateY(5px) rotate(-14deg); }
-.p-plunger .head { transform: translateY(1px) rotate(-3deg); }
+.p-plunger .body { transform: rotate(6deg); }
+.p-plunger .head { transform: rotate(-3deg) translateY(1px); }
+.p-plunger .browL { transform: translateY(3px) rotate(10deg); }
+.p-plunger .browR { transform: translateY(3px) rotate(-10deg); }
+.p-plunger .armR { transform: rotate(-24deg) scaleY(1.04); }
+.p-plunger .foreR { transform: rotate(-24deg) scaleY(1.04); }
+.p-plunger .armL { transform: rotate(28deg); }
+.p-plunger .foreL { transform: rotate(-115deg); }
+.p-plunger .skirt { transform: skewX(4deg); }
 
-.p-shrug { --lid: -14; --ly: 4; }
-.p-shrug .m-frown { display: inline; }
-.p-shrug .head { transform: translateY(6px) rotate(-3deg) scale(1, .96); }
-.p-shrug .hat { transform: rotate(-7deg) translateY(2px); }
-.p-shrug .browL { transform: translateY(2px) rotate(-18deg); }
-.p-shrug .browR { transform: translateY(2px) rotate(18deg); }
-.p-shrug .armL { transform: rotate(84deg) scaleY(.82); }
-.p-shrug .armR { transform: rotate(-84deg) scaleY(.82); }
-.p-shrug .sweat { display: inline; }
+.p-shrug { --lid: -6; --lx: -3; --ly: 3; }
+.p-shrug .m-flat { display: inline; }
+.p-shrug .head { transform: translateY(5px) rotate(-4deg); }
+.p-shrug .torso { transform: translateY(-2px); }
+.p-shrug .browL { transform: translateY(0) rotate(-14deg); }
+.p-shrug .browR { transform: translateY(-1px) rotate(14deg); }
+.p-shrug .armL { transform: rotate(24deg); }
+.p-shrug .foreL { transform: rotate(98deg); }
+.p-shrug .armR { transform: rotate(-24deg); }
+.p-shrug .foreR { transform: rotate(-98deg); }
+.p-shrug .lid { transform: rotate(-68deg); }
+.p-shrug .puff { display: inline; }
+.p-shrug .skirt { transform: skewX(0deg); }
 
-.p-dance .m-open { display: inline; }
-.p-dance .eyesHappy { display: inline; }
-.p-dance .eyeL, .p-dance .eyeR { display: none; }
-.p-dance .browL { transform: translateY(-5px) rotate(-6deg); }
-.p-dance .browR { transform: translateY(-5px) rotate(6deg); }
-.p-dance .armL { transform: rotate(120deg); }
-.p-dance .armR { transform: rotate(-30deg); }
-.p-dance .stars, .p-dance .mlhop { display: inline; }
-.p-dance .pick { display: none; }
+.p-dance .m-grin { display: inline; }
+.p-dance .browL { transform: translateY(-4px) rotate(-6deg); }
+.p-dance .browR { transform: translateY(-5px) rotate(-8deg); }
+.p-dance .armL { transform: rotate(118deg); }
+.p-dance .foreL { transform: rotate(24deg); }
+.p-dance .armR { transform: rotate(-52deg); }
+.p-dance .foreR { transform: rotate(-70deg); }
+.p-dance .hold { transform: rotate(-122deg); }
+.p-dance .stars, .p-dance .notes { display: inline; }
+.p-dance .skirt { transform: skewX(6deg); }
 
-.p-celebrate .m-wide { display: inline; }
-.p-celebrate .eyesHappy { display: inline; }
+.p-celebrate .m-grin, .p-celebrate .eyesHappy { display: inline; }
 .p-celebrate .eyeL, .p-celebrate .eyeR { display: none; }
-.p-celebrate .must { transform: translateY(-11px); }
-.p-celebrate .browL { transform: translateY(-8px) rotate(-8deg); }
-.p-celebrate .browR { transform: translateY(-8px) rotate(8deg); }
-.p-celebrate .armL { transform: rotate(160deg); }
-.p-celebrate .armR { transform: rotate(-160deg); }
-.p-celebrate .hat { transform: translateY(-52px) rotate(-16deg); }
-.p-celebrate .pick { display: none; }
-.p-celebrate .burst2, .p-celebrate .confetti, .p-celebrate .stars, .p-celebrate .mlh { display: inline; }
+.p-celebrate .browL { transform: translateY(-6px) rotate(-8deg); }
+.p-celebrate .browR { transform: translateY(-6px) rotate(8deg); }
+.p-celebrate .armL { transform: rotate(150deg); }
+.p-celebrate .foreL { transform: rotate(14deg); }
+.p-celebrate .armR { transform: rotate(-148deg); }
+.p-celebrate .foreR { transform: rotate(-32deg); }
+.p-celebrate .hold { transform: rotate(-180deg); }
+.p-celebrate .case { display: none; }
+.p-celebrate .glass, .p-celebrate .fizz { display: inline; }
+.p-celebrate .burst2, .p-celebrate .confetti, .p-celebrate .stars, .p-celebrate .lidconf { display: inline; }
+.p-celebrate .lid { transform: rotate(-78deg); }
+.p-celebrate .shaft { transform: scaleY(.7); }
+.p-celebrate .anttop { transform: translateY(-7px); }
+.p-celebrate .fins { display: inline; }
+.p-celebrate .skirt { transform: skewX(0deg); }
+
+/* the case only shows when it hangs from the hand; the glass only in celebrate */
+.p-bigwin .case, .p-shock .case, .p-shrug .case, .p-plunger .case { display: none; }
 
 /* ---------- animation (limited: few frames, hard steps) ---------- */
+/* static drawings: callers may pass {reduced:true} (adds .still) */
+.gus.still *, .gus.still { animation: none !important; transition: none !important; }
+.lc0 { transform: translate(152px, 30px); } .lc1 { transform: translate(166px, 44px); } .lc2 { transform: translate(148px, 12px); } .lc3 { transform: translate(172px, 22px); }
 @media (prefers-reduced-motion: no-preference) {
-  /* idle */
-  .p-idle .torso-a { animation: g-breathe 2.8s steps(1) infinite; }
-  .p-idle .head-a { animation: g-bob 2.8s steps(1) infinite; }
-  .p-idle .lidL-a, .p-idle .lidR-a, .p-think .lidL-a, .p-think .lidR-a { animation: g-blink 4.6s steps(1) infinite; }
-  .p-idle .legR-a { animation: g-tap 3.2s steps(1) infinite; }
-  .p-idle .lamp-rays { animation: g-flick 1.6s steps(1) infinite; }
-  .p-idle .must-a { animation: g-mwig 5.6s steps(1) infinite; }
-  .p-think .lamp-rays, .p-happy .lamp-rays { animation: g-flick 1.6s steps(1) infinite; }
+  /* idle: 118 bpm (beat 0.508 s) */
+  .p-idle .torso-a { animation: m-breathe 2.032s steps(1) infinite; }
+  .p-idle .head-a { animation: m-bob 2.032s steps(1) infinite; }
+  .p-idle .lidL-a, .p-idle .lidR-a, .p-think .lidL-a, .p-think .lidR-a, .p-shrug .lidL-a, .p-shrug .lidR-a { animation: m-blink 3.0s steps(1) infinite; }
+  .p-idle .legR-a { animation: m-tap 2.032s steps(1) infinite; }
+  .p-idle .ant-a, .p-think .ant-a { animation: m-wobble 1.016s steps(1) infinite; }
+  .p-idle .skirt-a { animation: m-skirt 2.032s steps(1) infinite; }
+  .p-idle .armR-a { animation: m-casesw 4.064s steps(1) infinite; }
 
   /* think */
-  .p-think .head-a { animation: g-thinkhead 2.4s steps(1) infinite; }
-  .p-think .pup { animation: g-look 3.2s steps(1) infinite; }
-  .p-think .td1 { animation: g-dot 1.8s steps(1) infinite; }
-  .p-think .td2 { animation: g-dot 1.8s steps(1) .3s infinite; }
-  .p-think .td3 { animation: g-dot 1.8s steps(1) .6s infinite; }
+  .p-think .head-a { animation: m-thinkhead 2.4s steps(1) infinite; }
+  .p-think .pup { animation: m-look 3.2s steps(1) infinite; }
+  .p-think .td1 { animation: m-dot 1.8s steps(1) infinite; }
+  .p-think .td2 { animation: m-dot 1.8s steps(1) .3s infinite; }
+  .p-think .qstar { animation: m-twinkle .8s steps(1) infinite; }
 
-  /* happy */
-  .p-happy .body-a { animation: g-hop 1s steps(1) infinite; }
-  .p-happy .shadow { animation: g-shadow 1s steps(1) infinite; }
-  .p-happy .mlhop { animation: g-blinkfx 1s steps(1) infinite; }
+  /* happy: hop with squash */
+  .p-happy .body-a { animation: m-hop 1.016s steps(1) infinite; }
+  .p-happy .shadow { animation: m-shadow 1.016s steps(1) infinite; }
+  .p-happy .hair-a, .p-happy .bangs-a { animation: m-hairhop 1.016s steps(1) infinite; }
+  .p-happy .note { animation: m-note 1.016s steps(1) infinite; }
+  .p-happy .note2 { animation: m-note 1.016s steps(1) .5s infinite; }
+  .p-happy .ant-a { animation: m-wobble 1.016s steps(1) infinite; }
 
-  /* bigwin */
-  .p-bigwin .body-a { animation: g-hop2 .72s steps(1) infinite; }
-  .p-bigwin .shadow { animation: g-shadow .72s steps(1) infinite; }
-  .p-bigwin .hat-a { animation: g-hatbounce .72s steps(1) infinite; }
-  .p-bigwin .armL-a { animation: g-wavea .36s steps(1) infinite; }
-  .p-bigwin .armR-a { animation: g-waveb .36s steps(1) infinite; }
-  .p-bigwin .burst, .p-celebrate .burst2 { animation: g-spin 1s steps(3) infinite; }
-  .p-celebrate .cf { animation: g-cfall 1.2s steps(1) infinite; }
-  .p-bigwin .star, .p-celebrate .star, .p-dance .star { animation: g-twinkle .6s steps(1) infinite; }
-  .p-bigwin .mlh { animation: g-blinkfx .36s steps(1) infinite; }
-  .p-bigwin .lamp-rays, .p-celebrate .lamp-rays { animation: g-flick .3s steps(1) infinite; }
+  /* bigwin: beehive bounce 1.06 steps(2), antenna propeller, lid confetti */
+  .p-bigwin .body-a { animation: m-hop2 .762s steps(1) infinite; }
+  .p-bigwin .shadow { animation: m-shadow .762s steps(1) infinite; }
+  .p-bigwin .hair-a, .p-bigwin .bangs-a { animation: m-hairb .508s steps(2) infinite; }
+  .p-bigwin .armL-a { animation: m-wavea .508s steps(1) infinite; }
+  .p-bigwin .armR-a { animation: m-waveb .508s steps(1) infinite; }
+  .p-bigwin .burst, .p-celebrate .burst2 { animation: m-spin 1.2s steps(3) infinite; }
+  .p-bigwin .fins, .p-celebrate .fins { animation: m-prop .32s steps(1) infinite; }
+  .p-bigwin .star, .p-celebrate .star, .p-dance .star { animation: m-twinkle .6s steps(1) infinite; }
+  .p-bigwin .mlh { animation: m-blinkfx .36s steps(1) infinite; }
+  .p-bigwin .lc, .p-celebrate .lc { animation: m-lc 1s steps(5) infinite; }
+  .p-bigwin .lc1, .p-celebrate .lc1 { animation-delay: .2s; animation-name: m-lc2; }
+  .p-bigwin .lc2, .p-celebrate .lc2 { animation-delay: .4s; animation-name: m-lc3; }
+  .p-bigwin .lc3, .p-celebrate .lc3 { animation-delay: .6s; animation-name: m-lc4; }
+  .p-celebrate .cf { animation: m-cfall 1.2s steps(1) infinite; }
 
   /* shock */
-  .p-shock .body { animation: g-jolt .4s steps(1) 1 forwards; }
-  .p-shock .body-a { animation: g-shake .16s steps(1) .4s infinite; }
-  .p-shock .hat-a { animation: g-hatbob .5s steps(1) infinite; }
-  .p-shock .must-a { animation: g-bristle .2s steps(1) infinite; }
-  .p-shock .dropA { animation: g-drop .9s steps(4) infinite; }
-  .p-shock .mlh { animation: g-blinkfx .2s steps(1) infinite; }
+  .p-shock .body { animation: m-jolt .4s steps(1) 1 forwards; }
+  .p-shock .body-a { animation: m-shake .16s steps(1) .4s infinite; }
+  .p-shock .ant-a { animation: m-boing .5s steps(1) infinite; }
+  .p-shock .dropA { animation: m-drop .9s steps(4) infinite; }
+  .p-shock .mlh { animation: m-blinkfx .2s steps(1) infinite; }
+  .p-shock .hair-a { animation: m-hairshock .5s steps(1) infinite; }
 
-  /* plunger: 3.2s cycle: grip, push (50%), recoil, settle */
-  .p-plunger .plbar-a { animation: g-pl-bar 3.2s steps(1) infinite; }
-  .p-plunger .armL { animation: g-pl-armL 3.2s steps(1) infinite; }
-  .p-plunger .armR { animation: g-pl-armR 3.2s steps(1) infinite; }
-  .p-plunger .body-a { animation: g-pl-body 3.2s steps(1) infinite; }
-  .p-plunger .head-a { animation: g-pl-head 3.2s steps(1) infinite; }
-  .p-plunger .m-open { animation: g-pl-mopen 3.2s steps(1) infinite; }
-  .p-plunger .m-wide { display: inline; animation: g-pl-mwide 3.2s steps(1) infinite; }
-  .p-plunger .burst { display: inline; animation: g-pl-burst 3.2s steps(1) infinite; }
-  .p-plunger .stars { display: inline; animation: g-pl-burst 3.2s steps(1) infinite; }
-  .p-plunger .mlh { display: inline; animation: g-pl-burst 3.2s steps(1) infinite; }
-  .p-plunger .hat-a { animation: g-pl-hat 3.2s steps(1) infinite; }
-  .p-plunger .sweat { display: inline; animation: g-pl-sweat 3.2s steps(1) infinite; }
-  .p-plunger .dropA { animation: g-drop 1s steps(4) infinite; }
+  /* plunger: 3.04 s = 6 beats: lean, hover, slam on the beat (50%), recoil, settle */
+  .p-plunger .plbtn-a { animation: m-pl-btn 3.04s steps(1) infinite; }
+  .p-plunger .armR-a { animation: m-pl-arm 3.04s steps(1) infinite; }
+  .p-plunger .foreR-a { animation: m-pl-fore 3.04s steps(1) infinite; }
+  .p-plunger .body-a { animation: m-pl-body 3.04s steps(1) infinite; }
+  .p-plunger .head-a { animation: m-pl-head 3.04s steps(1) infinite; }
+  .p-plunger .plunger { animation: m-pl-box 3.04s steps(1) infinite; }
+  .p-plunger .spark { display: inline; animation: m-pl-spark 3.04s steps(1) infinite; }
+  .p-plunger .stars { display: inline; animation: m-pl-spark 3.04s steps(1) infinite; }
+  .p-plunger .mlh { display: inline; animation: m-pl-spark 3.04s steps(1) infinite; }
+  .p-plunger .hair-a, .p-plunger .bangs-a { animation: m-pl-hair 3.04s steps(1) infinite; }
+  .p-plunger .ant-a { animation: m-pl-ant 3.04s steps(1) infinite; }
 
   /* shrug */
-  .p-shrug .armL-a { animation: g-shruga 2.6s steps(1) infinite; }
-  .p-shrug .armR-a { animation: g-shruga 2.6s steps(1) infinite; }
-  .p-shrug .torso-a { animation: g-shrugt 2.6s steps(1) infinite; }
-  .p-shrug .head-a { animation: g-shrugh 2.6s steps(1) infinite; }
-  .p-shrug .lidL-a, .p-shrug .lidR-a { animation: g-blink 3.4s steps(1) infinite; }
-  .p-shrug .dropA { animation: g-drop 1.6s steps(4) infinite; }
+  .p-shrug .armL-a, .p-shrug .armR-a { animation: m-shruga 2.6s steps(1) infinite; }
+  .p-shrug .torso-a { animation: m-shrugt 2.6s steps(1) infinite; }
+  .p-shrug .head-a { animation: m-shrugh 2.6s steps(1) infinite; }
+  .p-shrug .legR-a { animation: m-kick 2.6s steps(1) infinite; }
+  .p-shrug .lid-a { animation: m-lidpop 2.6s steps(1) infinite; }
+  .p-shrug .puff { animation: m-puff 2.6s steps(1) infinite; }
 
-  /* dance */
-  .p-dance .body-a { animation: g-sway .8s steps(1) infinite; }
-  .p-dance .shadow { animation: g-shadow .8s steps(1) infinite; }
-  .p-dance .legL-a { animation: g-kickL .8s steps(1) infinite; }
-  .p-dance .legR-a { animation: g-kickR .8s steps(1) infinite; }
-  .p-dance .armL { animation: g-danceL .8s steps(1) infinite; }
-  .p-dance .armR { animation: g-danceR .8s steps(1) infinite; }
-  .p-dance .hat-a { animation: g-hatswing .8s steps(1) infinite; }
-  .p-dance .must-a { animation: g-mwig .4s steps(1) infinite; }
-  .p-dance .mlhop { animation: g-blinkfx .4s steps(1) infinite; }
+  /* dance: 132 bpm (beat 0.4545 s), 2 beats per step cycle */
+  .p-dance .body-a { animation: m-sway .909s steps(1) infinite; }
+  .p-dance .shadow { animation: m-shadow .909s steps(1) infinite; }
+  .p-dance .skirt-a { animation: m-skirtd .909s steps(1) infinite; }
+  .p-dance .legL-a { animation: m-kickL .909s steps(1) infinite; }
+  .p-dance .legR-a { animation: m-kickR .909s steps(1) infinite; }
+  .p-dance .armL-a { animation: m-danceL .909s steps(1) infinite; }
+  .p-dance .foreL-a { animation: m-danceLf .909s steps(1) infinite; }
+  .p-dance .armR-a { animation: m-danceR .909s steps(1) infinite; }
+  .p-dance .foreR-a { animation: m-danceRf .909s steps(1) infinite; }
+  .p-dance .hair-a, .p-dance .bangs-a { animation: m-hairsw .909s steps(1) infinite; }
+  .p-dance .ant-a { animation: m-wobble .4545s steps(1) infinite; }
+  .p-dance .notes { animation: m-blinkfx .909s steps(1) infinite; }
 
-  /* celebrate: long fanfare loop with a hat toss */
-  .p-celebrate .body-a { animation: g-hop3 1.6s steps(1) infinite; }
-  .p-celebrate .shadow { animation: g-shadow 1.6s steps(1) infinite; }
-  .p-celebrate .hat { transform: none; }
-  .p-celebrate .hat-a { animation: g-toss 3.2s steps(1) infinite; }
-  .p-celebrate .armL-a { animation: g-wavea .4s steps(1) infinite; }
-  .p-celebrate .armR-a { animation: g-waveb .4s steps(1) infinite; }
-  .p-celebrate .mlh { animation: g-blinkfx .4s steps(1) infinite; }
-  .p-celebrate .must-a { animation: g-mwig .4s steps(1) infinite; }
+  /* celebrate: 3.6 s: heel spin (first 36%), then hold with the raised glass */
+  .p-celebrate .body { animation: m-spin360 3.6s steps(1) infinite; }
+  .p-celebrate .body-a { animation: m-hop3 3.6s steps(1) infinite; }
+  .p-celebrate .shadow { animation: m-shadow 1.8s steps(1) infinite; }
+  .p-celebrate .armL-a { animation: m-wavea .45s steps(1) infinite; }
+  .p-celebrate .armR-a { animation: m-waveb .9s steps(1) infinite; }
+  .p-celebrate .glass .fizz { animation: m-fizz .45s steps(1) infinite; }
+  .p-celebrate .hair-a, .p-celebrate .bangs-a { animation: m-hairb .45s steps(2) infinite; }
+  .p-celebrate .skirt-a { animation: m-skirt .45s steps(1) infinite; }
 }
 
 /* ---------- keyframes ---------- */
-@keyframes g-breathe { 0% { transform: scale(1, 1); } 50% { transform: scale(1.025, 1.035); } }
-@keyframes g-bob { 0% { transform: translateY(0); } 50% { transform: translateY(-1.8px); } }
-@keyframes g-blink { 0%, 88% { transform: translateY(0); } 90% { transform: translateY(24px); } 94% { transform: translateY(40px); } 97%, 100% { transform: translateY(0); } }
-@keyframes g-tap { 0%, 100% { transform: none; } 6% { transform: translateY(-5px) rotate(-6deg); } 12% { transform: none; } 18% { transform: translateY(-5px) rotate(-6deg); } 24% { transform: none; } }
-@keyframes g-flick { 0% { opacity: 1; } 50% { opacity: .15; } }
-@keyframes g-mwig { 0%, 90% { transform: none; } 92% { transform: translateY(1.5px) scale(1.02); } 96% { transform: translateY(-1px); } }
-@keyframes g-thinkhead { 0% { transform: rotate(0); } 50% { transform: rotate(-3deg) translateY(1px); } }
-@keyframes g-look { 0% { transform: translate(4px, -4px); } 34% { transform: translate(-3px, -5px); } 67% { transform: translate(3px, -1px); } }
-@keyframes g-dot { 0%, 100% { opacity: 0; } 20%, 85% { opacity: 1; } }
+@keyframes m-breathe { 0% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.02); } }
+@keyframes m-bob { 0% { transform: translateY(0); } 50% { transform: translateY(-1.4px); } }
+@keyframes m-blink { 0%, 90% { transform: translateY(0); } 92% { transform: translateY(12px); } 96% { transform: translateY(20px); } 98%, 100% { transform: translateY(0); } }
+@keyframes m-tap { 0%, 100% { transform: none; } 3% { transform: translateY(-3px) rotate(-5deg); } 8% { transform: none; } 25% { transform: translateY(-3px) rotate(-5deg); } 30% { transform: none; } 50% { transform: translateY(-3px) rotate(-5deg); } 55% { transform: none; } 75% { transform: translateY(-3px) rotate(-5deg); } 80% { transform: none; } }
+@keyframes m-wobble { 0% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes m-skirt { 0% { transform: skewX(0); } 50% { transform: skewX(1.5deg); } }
+@keyframes m-casesw { 0%, 100% { transform: none; } 12% { transform: rotate(1.5deg); } 50% { transform: rotate(-1.5deg); } 62% { transform: none; } }
+@keyframes m-thinkhead { 0% { transform: rotate(0); } 50% { transform: rotate(-3deg) translateY(1px); } }
+@keyframes m-look { 0% { transform: translate(-3.4px, -4px); } 34% { transform: translate(2px, -5px); } 67% { transform: translate(-1px, -2px); } }
+@keyframes m-dot { 0%, 100% { opacity: 0; } 20%, 85% { opacity: 1; } }
+@keyframes m-twinkle { 0% { transform: scale(1) rotate(0); } 50% { transform: scale(.6) rotate(45deg); } }
+@keyframes m-blinkfx { 0% { opacity: 1; } 50% { opacity: 0; } }
 
-@keyframes g-hop {
+@keyframes m-hop {
   0% { transform: translateY(0) scale(1.1, .88); }
-  14% { transform: translateY(-20px) scale(.93, 1.1); }
-  30% { transform: translateY(-26px) scale(1, 1); }
-  46% { transform: translateY(-10px) scale(.97, 1.05); }
-  60% { transform: translateY(0) scale(1.12, .86); }
+  14% { transform: translateY(-14px) scale(.94, 1.1); }
+  30% { transform: translateY(-18px) scale(1, 1); }
+  46% { transform: translateY(-7px) scale(.97, 1.05); }
+  60% { transform: translateY(0) scale(1.1, .88); }
   72% { transform: translateY(0) scale(.98, 1.02); }
   84%, 100% { transform: none; }
 }
-@keyframes g-shadow { 0%, 60% { transform: scale(1.05, 1); } 14%, 30%, 46% { transform: scale(.78, .8); } 72%, 100% { transform: none; } }
-@keyframes g-blinkfx { 0% { opacity: 1; } 50% { opacity: 0; } }
-@keyframes g-hop2 {
-  0% { transform: translateY(0) scale(1.14, .85); }
-  20% { transform: translateY(-32px) scale(.9, 1.14); }
-  45% { transform: translateY(-40px) scale(1, 1); }
-  70% { transform: translateY(-12px) scale(.95, 1.06); }
-  88% { transform: translateY(0) scale(1.16, .84); }
+@keyframes m-shadow { 0%, 60% { transform: scale(1.05, 1); } 14%, 30%, 46% { transform: scale(.78, .8); } 72%, 100% { transform: none; } }
+@keyframes m-hairhop { 0%, 60% { transform: scale(1.04, .94); } 14%, 30% { transform: scale(.97, 1.05); } 72%, 100% { transform: none; } }
+@keyframes m-note { 0% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(-8px); opacity: 1; } 75% { transform: translateY(-14px); opacity: 0; } 100% { opacity: 0; } }
+@keyframes m-hop2 {
+  0% { transform: translateY(0) scale(1.12, .87); }
+  20% { transform: translateY(-22px) scale(.92, 1.12); }
+  45% { transform: translateY(-28px) scale(1, 1); }
+  70% { transform: translateY(-9px) scale(.96, 1.05); }
+  88% { transform: translateY(0) scale(1.14, .85); }
 }
-@keyframes g-hatbounce { 0% { transform: translateY(0); } 20% { transform: translateY(-9px) rotate(-6deg); } 45% { transform: translateY(-20px) rotate(5deg); } 70% { transform: translateY(-6px) rotate(-3deg); } 88% { transform: translateY(2px); } }
-@keyframes g-wavea { 0% { transform: rotate(0); } 50% { transform: rotate(-14deg); } }
-@keyframes g-waveb { 0% { transform: rotate(0); } 50% { transform: rotate(14deg); } }
-@keyframes g-spin { to { transform: rotate(30deg); } }
-@keyframes g-twinkle { 0% { transform: scale(1) rotate(0); } 50% { transform: scale(.55) rotate(45deg); } }
-@keyframes g-jolt { 0% { transform: scale(1.18, .8); } 25% { transform: translateY(-16px) scale(.88, 1.18); } 55% { transform: translateY(-4px) scale(1, 1.05); } 100% { transform: scale(1.04, .97); } }
-@keyframes g-shake { 0% { transform: translateX(-2.5px); } 50% { transform: translateX(2.5px); } }
-@keyframes g-hatbob { 0% { transform: translateY(0); } 50% { transform: translateY(-5px) rotate(4deg); } }
-@keyframes g-bristle { 0% { transform: scale(1, 1); } 50% { transform: scale(1.07, 1.1) rotate(1.5deg); } }
-@keyframes g-drop { 0% { transform: translateY(-4px); opacity: 1; } 75% { transform: translateY(16px); opacity: 1; } 100% { transform: translateY(20px); opacity: 0; } }
+@keyframes m-hairb { 0% { transform: scale(1, 1); } 50% { transform: scale(1.06, 1.06); } }
+@keyframes m-wavea { 0% { transform: rotate(0); } 50% { transform: rotate(-12deg); } }
+@keyframes m-waveb { 0% { transform: rotate(0); } 50% { transform: rotate(12deg); } }
+@keyframes m-spin { to { transform: rotate(30deg); } }
+@keyframes m-prop { 0% { transform: scaleX(1); } 25% { transform: scaleX(.3); } 50% { transform: scaleX(-1); } 75% { transform: scaleX(-.3); } }
+@keyframes m-lc { 0% { transform: translate(138px, 46px) rotate(0); opacity: 1; } 100% { transform: translate(168px, -8px) rotate(300deg); opacity: 0; } }
+@keyframes m-lc2 { 0% { transform: translate(140px, 46px) rotate(0); opacity: 1; } 100% { transform: translate(186px, 22px) rotate(-260deg); opacity: 0; } }
+@keyframes m-lc3 { 0% { transform: translate(140px, 46px) rotate(0); opacity: 1; } 100% { transform: translate(150px, -24px) rotate(220deg); opacity: 0; } }
+@keyframes m-lc4 { 0% { transform: translate(140px, 46px) rotate(0); opacity: 1; } 100% { transform: translate(196px, 0px) rotate(-200deg); opacity: 0; } }
+@keyframes m-cfall { 0% { transform: translateY(0) rotate(0); } 25% { transform: translateY(7px) rotate(40deg); } 50% { transform: translateY(14px) rotate(90deg); } 75% { transform: translateY(21px) rotate(140deg); } }
 
-@keyframes g-pl-bar { 0%, 44% { transform: none; } 46% { transform: translateY(-8px); } 50%, 82% { transform: translateY(26px); } 90%, 100% { transform: none; } }
-@keyframes g-pl-armL { 0%, 44% { transform: rotate(150deg) scaleY(.9); } 46% { transform: rotate(138deg) scaleY(.9); } 50%, 82% { transform: rotate(170deg) scaleY(.9); } 90%, 100% { transform: rotate(150deg) scaleY(.9); } }
-@keyframes g-pl-armR { 0%, 44% { transform: rotate(-52deg) scaleY(.71); } 46% { transform: rotate(-63deg) scaleY(.64); } 50%, 82% { transform: rotate(-32deg) scaleY(1.05); } 90%, 100% { transform: rotate(-52deg) scaleY(.71); } }
-@keyframes g-pl-body { 0%, 30% { transform: none; } 38% { transform: translateY(2px) scale(1.04, .96) rotate(-2deg); } 46% { transform: translateY(-4px) scale(.97, 1.05); } 50% { transform: translateY(6px) scale(1.12, .86); } 54% { transform: translate(-10px, -12px) scale(.92, 1.12) rotate(-9deg); } 62% { transform: translate(-6px, -4px) rotate(-6deg); } 74% { transform: translate(-2px, 0) rotate(-2deg); } 86%, 100% { transform: none; } }
-@keyframes g-pl-head { 0%, 46% { transform: none; } 54% { transform: translateY(-3px) rotate(-8deg); } 74% { transform: rotate(-3deg); } 86%, 100% { transform: none; } }
-@keyframes g-pl-mopen { 0%, 49% { opacity: 1; } 50%, 86% { opacity: 0; } 90%, 100% { opacity: 1; } }
-@keyframes g-pl-mwide { 0%, 49% { opacity: 0; } 50%, 86% { opacity: 1; } 90%, 100% { opacity: 0; } }
-@keyframes g-pl-burst { 0%, 49% { opacity: 0; } 50%, 66% { opacity: 1; } 67%, 100% { opacity: 0; } }
-@keyframes g-pl-hat { 0%, 49% { transform: none; } 54% { transform: translateY(-22px) rotate(14deg); } 62% { transform: translateY(-12px) rotate(8deg); } 74% { transform: translateY(-2px) rotate(2deg); } 86%, 100% { transform: none; } }
-@keyframes g-pl-sweat { 0%, 20% { opacity: 0; } 22%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes m-jolt { 0% { transform: scale(1.14, .84); } 25% { transform: translateY(-12px) scale(.9, 1.14); } 55% { transform: translateY(-3px) scale(1, 1.04); } 100% { transform: scale(1.04, .97); } }
+@keyframes m-shake { 0% { transform: translateX(-2px); } 50% { transform: translateX(2px); } }
+@keyframes m-boing { 0% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+@keyframes m-hairshock { 0% { transform: scale(.97, 1.09); } 50% { transform: scale(1.0, 1.05); } }
+@keyframes m-drop { 0% { transform: translateY(-4px); opacity: 1; } 75% { transform: translateY(16px); opacity: 1; } 100% { transform: translateY(20px); opacity: 0; } }
 
-@keyframes g-shruga { 0%, 100% { transform: none; } 12%, 70% { transform: translateY(-4px); } }
-@keyframes g-shrugt { 0%, 100% { transform: none; } 12%, 70% { transform: translateY(-3px) scale(1.02, .98); } }
-@keyframes g-shrugh { 0%, 100% { transform: none; } 12%, 70% { transform: translateY(3px); } }
+/* plunger cycle: 0-30 lean in, 30-46 hover/anticipate, 50 SLAM, 50-86 recoil, 90+ settle */
+@keyframes m-pl-btn { 0%, 49% { transform: none; } 50%, 82% { transform: translateY(6px) scale(1, .55); } 90%, 100% { transform: none; } }
+@keyframes m-pl-arm { 0%, 30% { transform: rotate(-12deg); } 38% { transform: rotate(-16deg); } 46% { transform: rotate(-32deg); } 50%, 82% { transform: rotate(-22deg); } 90%, 100% { transform: rotate(-12deg); } }
+@keyframes m-pl-fore { 0%, 30% { transform: rotate(-12deg); } 38% { transform: rotate(-20deg); } 46% { transform: rotate(-4deg); } 50%, 82% { transform: rotate(-30deg) scaleY(1.08); } 90%, 100% { transform: rotate(-12deg); } }
+@keyframes m-pl-body { 0%, 30% { transform: none; } 38% { transform: translateY(2px) scale(1.04, .96); } 46% { transform: translateY(-3px) scale(.97, 1.04); } 50% { transform: translateY(5px) scale(1.1, .88); } 54% { transform: translate(-8px, -9px) scale(.94, 1.1) rotate(-7deg); } 62% { transform: translate(-5px, -3px) rotate(-5deg); } 74% { transform: translate(-2px, 0) rotate(-2deg); } 86%, 100% { transform: none; } }
+@keyframes m-pl-head { 0%, 46% { transform: none; } 54% { transform: translateY(-3px) rotate(-8deg); } 74% { transform: rotate(-3deg); } 86%, 100% { transform: none; } }
+@keyframes m-pl-box { 0%, 49% { transform: none; } 50%, 60% { transform: scale(1.06, .92); } 62%, 100% { transform: none; } }
+@keyframes m-pl-spark { 0%, 49% { opacity: 0; } 50%, 66% { opacity: 1; } 67%, 100% { opacity: 0; } }
+@keyframes m-pl-hair { 0%, 49% { transform: none; } 54% { transform: scale(1.05, 1.1) rotate(-3deg); } 66% { transform: scale(.98, 1.03); } 80%, 100% { transform: none; } }
+@keyframes m-pl-ant { 0%, 49% { transform: none; } 54% { transform: rotate(14deg); } 62% { transform: rotate(-9deg); } 74% { transform: rotate(5deg); } 86%, 100% { transform: none; } }
 
-@keyframes g-sway { 0% { transform: translateX(-5px) rotate(-5deg); } 25% { transform: translate(0, -9px) scale(.97, 1.05); } 50% { transform: translateX(5px) rotate(5deg); } 75% { transform: translate(0, -9px) scale(.97, 1.05); } }
-@keyframes g-kickL { 0% { transform: translateY(0); } 25% { transform: translateY(-8px) rotate(8deg); } 50% { transform: translateY(0); } 75% { transform: translateY(-2px); } }
-@keyframes g-kickR { 0% { transform: translateY(0); } 25% { transform: translateY(-2px); } 50% { transform: translateY(0); } 75% { transform: translateY(-8px) rotate(-8deg); } }
-@keyframes g-danceL { 0% { transform: rotate(120deg); } 50% { transform: rotate(30deg); } }
-@keyframes g-danceR { 0% { transform: rotate(-30deg); } 50% { transform: rotate(-100deg); } }
-@keyframes g-hatswing { 0% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
-@keyframes g-hop3 {
-  0% { transform: translateY(0) scale(1.14, .85); }
-  15% { transform: translateY(-34px) scale(.9, 1.14); }
-  30% { transform: translateY(-44px); }
-  45% { transform: translateY(-14px) scale(.96, 1.06); }
-  58% { transform: translateY(0) scale(1.15, .85); }
-  66% { transform: none; }
-  76% { transform: translateY(-10px) scale(.96, 1.05); }
-  88%, 100% { transform: none; }
+@keyframes m-shruga { 0%, 100% { transform: translateY(0); } 12%, 70% { transform: translateY(-4px); } }
+@keyframes m-shrugt { 0%, 100% { transform: none; } 12%, 70% { transform: translateY(-3px); } }
+@keyframes m-shrugh { 0%, 100% { transform: none; } 12%, 70% { transform: translateY(3px); } }
+@keyframes m-kick { 0%, 100% { transform: none; } 40% { transform: translateY(-3px) rotate(10deg); } 46% { transform: translateY(-5px) rotate(18deg); } 56% { transform: none; } }
+@keyframes m-lidpop { 0%, 18% { transform: rotate(0deg); } 22%, 60% { transform: rotate(-4deg); } 64%, 100% { transform: rotate(0); } }
+@keyframes m-puff { 0%, 20% { opacity: 0; transform: translate(-6px, 10px) scale(.4); } 28% { opacity: 1; transform: none; } 55% { opacity: 1; transform: translate(6px, -6px) scale(1.15); } 70%, 100% { opacity: 0; transform: translate(10px, -12px) scale(1.2); } }
+
+@keyframes m-sway { 0% { transform: translateX(-4px) rotate(-3deg); } 25% { transform: translate(0, -7px) scale(.98, 1.04); } 50% { transform: translateX(4px) rotate(3deg); } 75% { transform: translate(0, -7px) scale(.98, 1.04); } }
+@keyframes m-skirtd { 0% { transform: skewX(6deg); } 25% { transform: skewX(0); } 50% { transform: skewX(-6deg); } 75% { transform: skewX(0); } }
+@keyframes m-kickL { 0% { transform: translateY(0); } 25% { transform: translateY(-6px) rotate(8deg); } 50% { transform: translateY(0); } 75% { transform: translateY(-1px); } }
+@keyframes m-kickR { 0% { transform: translateY(0); } 25% { transform: translateY(-1px); } 50% { transform: translateY(0); } 75% { transform: translateY(-6px) rotate(-8deg); } }
+@keyframes m-danceL { 0% { transform: rotate(118deg); } 50% { transform: rotate(40deg); } }
+@keyframes m-danceLf { 0% { transform: rotate(24deg); } 50% { transform: rotate(-60deg); } }
+@keyframes m-danceR { 0% { transform: rotate(-52deg); } 25% { transform: rotate(-62deg); } 50% { transform: rotate(-110deg); } 75% { transform: rotate(-62deg); } }
+@keyframes m-danceRf { 0% { transform: rotate(-70deg); } 25% { transform: rotate(-30deg); } 50% { transform: rotate(-90deg); } 75% { transform: rotate(-30deg); } }
+@keyframes m-hairsw { 0% { transform: rotate(4deg); } 50% { transform: rotate(-4deg); } }
+@keyframes m-hop3 {
+  0% { transform: translateY(0) scale(1.12, .87); }
+  4% { transform: translateY(-20px) scale(.92, 1.12); }
+  8% { transform: translateY(-26px); }
+  14% { transform: translateY(-4px) scale(.98, 1.04); }
+  18% { transform: translateY(0) scale(1.1, .9); }
+  36%, 100% { transform: none; }
 }
-@keyframes g-toss { 0%, 6% { transform: none; } 10% { transform: translateY(-3px) scale(1.04, .92); } 18% { transform: translateY(-36px) rotate(-30deg); } 30% { transform: translateY(-64px) rotate(-150deg); } 42% { transform: translateY(-58px) rotate(-260deg); } 54% { transform: translateY(-30px) rotate(-330deg); } 62% { transform: translateY(-6px) rotate(-360deg); } 68% { transform: translateY(3px) scale(1.05, .9); } 74%, 100% { transform: none; } }
-@keyframes g-cfall { 0% { transform: translateY(0) rotate(0); } 25% { transform: translateY(7px) rotate(40deg); } 50% { transform: translateY(14px) rotate(90deg); } 75% { transform: translateY(21px) rotate(140deg); } }
+@keyframes m-spin360 { 0% { transform: scaleX(1); } 6% { transform: scaleX(.55); } 12% { transform: scaleX(.05); } 18% { transform: scaleX(-.55); } 24% { transform: scaleX(-1); } 30% { transform: scaleX(-.55); } 34% { transform: scaleX(.05); } 36% { transform: scaleX(.55); } 38%, 100% { transform: scaleX(1); } }
+@keyframes m-fizz { 0% { opacity: 1; transform: translateY(0); } 50% { opacity: .2; transform: translateY(-3px); } }
 
 /* ---------- speech bubble (retro comic) ---------- */
 .gus-bubble {
@@ -299,35 +364,35 @@
   font: 900 calc(var(--gus-h, 240px) * .1) / 1.1 "Bangers", "Luckiest Guy", Impact, "Arial Black", "Arial Rounded MT Bold", sans-serif;
   font-size: max(11px, calc(var(--gus-h, 240px) * .1));
   letter-spacing: .04em; text-transform: uppercase; text-align: center;
-  color: #2B1A12; background: #F4E8C8; white-space: nowrap;
-  padding: .32em .7em .38em; border: 3px solid #2B1A12; border-radius: 1.1em;
-  box-shadow: 3px 3px 0 #E8A92B, 3px 3px 0 1px #2B1A12;
+  color: #14102B; background: #FBF1D9; white-space: nowrap;
+  padding: .32em .7em .38em; border: 3px solid #14102B; border-radius: 1.1em;
+  box-shadow: 3px 3px 0 #F5799F, 3px 3px 0 1px #14102B;
   transform-origin: 50% 100%;
 }
 .gus-bubble[hidden] { display: none; }
 .gus-bubble::after, .gus-bubble::before { content: ""; position: absolute; width: 0; height: 0; }
 .gus-wrap[data-bubble="top"] .gus-bubble { left: 2%; right: auto; bottom: 78%; translate: none; max-width: 98%; white-space: normal; font-size: max(10px, min(calc(var(--gus-h, 240px) * .1), 7.5cqw)); }
-.gus-wrap[data-bubble="top"] .gus-bubble::before { left: 28%; top: 100%; margin-left: -6px; border: 9px solid transparent; border-top: 14px solid #2B1A12; border-bottom: 0; }
-.gus-wrap[data-bubble="top"] .gus-bubble::after { left: 28%; top: 100%; margin: -3px 0 0 -4px; border: 7px solid transparent; border-top: 10px solid #F4E8C8; border-bottom: 0; }
+.gus-wrap[data-bubble="top"] .gus-bubble::before { left: 28%; top: 100%; margin-left: -6px; border: 9px solid transparent; border-top: 14px solid #14102B; border-bottom: 0; }
+.gus-wrap[data-bubble="top"] .gus-bubble::after { left: 28%; top: 100%; margin: -3px 0 0 -4px; border: 7px solid transparent; border-top: 10px solid #FBF1D9; border-bottom: 0; }
 .gus-wrap[data-bubble="left"] .gus-bubble { right: 88%; top: 6%; }
-.gus-wrap[data-bubble="left"] .gus-bubble::before { left: 100%; top: 50%; margin-top: -8px; border: 9px solid transparent; border-left: 14px solid #2B1A12; border-right: 0; }
-.gus-wrap[data-bubble="left"] .gus-bubble::after { left: 100%; top: 50%; margin: -5px 0 0 -3px; border: 7px solid transparent; border-left: 10px solid #F4E8C8; border-right: 0; }
+.gus-wrap[data-bubble="left"] .gus-bubble::before { left: 100%; top: 50%; margin-top: -8px; border: 9px solid transparent; border-left: 14px solid #14102B; border-right: 0; }
+.gus-wrap[data-bubble="left"] .gus-bubble::after { left: 100%; top: 50%; margin: -5px 0 0 -3px; border: 7px solid transparent; border-left: 10px solid #FBF1D9; border-right: 0; }
 .gus-wrap[data-bubble="right"] .gus-bubble { left: 88%; top: 6%; }
-.gus-wrap[data-bubble="right"] .gus-bubble::before { right: 100%; top: 50%; margin-top: -8px; border: 9px solid transparent; border-right: 14px solid #2B1A12; border-left: 0; }
-.gus-wrap[data-bubble="right"] .gus-bubble::after { right: 100%; top: 50%; margin: -5px -3px 0 0; border: 7px solid transparent; border-right: 10px solid #F4E8C8; border-left: 0; }
+.gus-wrap[data-bubble="right"] .gus-bubble::before { right: 100%; top: 50%; margin-top: -8px; border: 9px solid transparent; border-right: 14px solid #14102B; border-left: 0; }
+.gus-wrap[data-bubble="right"] .gus-bubble::after { right: 100%; top: 50%; margin: -5px -3px 0 0; border: 7px solid transparent; border-right: 10px solid #FBF1D9; border-left: 0; }
 @media (prefers-reduced-motion: no-preference) {
-  .gus-bubble.pop { animation: g-bpop .3s steps(3) 1; }
+  .gus-bubble.pop { animation: m-bpop .3s steps(3) 1; }
 }
-@keyframes g-bpop { 0% { transform: scale(.4, .3); } 40% { transform: scale(1.18, 1.12); } 70% { transform: scale(.94); } 100% { transform: none; } }
+@keyframes m-bpop { 0% { transform: scale(.4, .3); } 40% { transform: scale(1.18, 1.12); } 70% { transform: scale(.94); } 100% { transform: none; } }
 
-/* portrait: Gus sits bottom-left, the bubble goes to his right over free space (never over the grid) */
+/* portrait: Mambo sits bottom-left, the bubble goes to her right over free space (never over the grid) */
 @media (max-aspect-ratio: 11/10) {
   .gus-wrap[data-bubble="top"] .gus-bubble { left: 96%; bottom: 14%; max-width: 62vw; white-space: nowrap; font-size: max(11px, 3.6vh); }
-  .gus-wrap[data-bubble="top"] .gus-bubble::before { left: auto; right: 100%; top: 50%; margin: -8px 0 0; border: 9px solid transparent; border-right: 14px solid #2B1A12; border-left: 0; border-top-color: transparent; }
-  .gus-wrap[data-bubble="top"] .gus-bubble::after { left: auto; right: 100%; top: 50%; margin: -5px -3px 0 0; border: 7px solid transparent; border-right: 10px solid #F4E8C8; border-left: 0; border-top-color: transparent; }
+  .gus-wrap[data-bubble="top"] .gus-bubble::before { left: auto; right: 100%; top: 50%; margin: -8px 0 0; border: 9px solid transparent; border-right: 14px solid #14102B; border-left: 0; border-top-color: transparent; }
+  .gus-wrap[data-bubble="top"] .gus-bubble::after { left: auto; right: 100%; top: 50%; margin: -5px -3px 0 0; border: 7px solid transparent; border-right: 10px solid #FBF1D9; border-left: 0; border-top-color: transparent; }
 }
 
-/* very small landscape (400x225): keep the bubble over Gus's body, never over the WIN panel */
+/* very small landscape (400x225): keep the bubble over Mambo's body, never over the WIN panel */
 @media (orientation: landscape) and (max-height: 360px) {
   .gus-wrap[data-bubble="top"] .gus-bubble { bottom: 14%; font-size: 9px; padding: .25em .5em .3em; border-width: 2px; }
   .gus-wrap[data-bubble="top"] .gus-bubble::before, .gus-wrap[data-bubble="top"] .gus-bubble::after { display: none; }

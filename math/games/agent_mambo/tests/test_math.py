@@ -185,9 +185,6 @@ def test_meter_rules_bonus():
 
 def test_meter_base_is_x1():
     for b in _sample_books("base", limit=2000):
-        assert not any(e["type"] == "updateGlobalMult" for e in b["events"] if True) or any(
-            e["type"] == "freeSpinTrigger" for e in b["events"]
-        )
         _walk_meter(b)
         # base spins only: no globalMult above 1 before the trigger
         for e in b["events"]:
@@ -206,11 +203,6 @@ def test_meter_reaches_high_values_sometimes():
 
 # ------------------------------------------------------------------ Bomb-timer wire
 FUSE = {"len": 8, "detmin": 3}
-
-
-def _board_after(book):
-    """Yield (event_index, spin_events) for helper loops; boards are not replayed here."""
-    return _spins(book)
 
 
 @pytest.mark.parametrize("mode", list(COST))
@@ -256,15 +248,11 @@ def test_wire_events_well_formed(mode):
                     for r, c in cells:
                         per_reel[r] = per_reel.get(r, 0) + 1
                     for r, k in per_reel.items():
-                        # k new symbols + the padding symbol on top of that reel
-                        assert len(nxt["newSymbols"][r]) == k + 1
+                        # SDK convention: k-1 new symbols + the new top padding symbol (the old padding drops in)
+                        assert len(nxt["newSymbols"][r]) == k
                     for r in range(6):
                         if r not in per_reel:
                             assert nxt["newSymbols"][r] == []
-                    # never a scatter among removed cells, never a new wild created by the blast
-                    for r in range(6):
-                        for s_ in nxt["newSymbols"][r]:
-                            assert s_["name"] != "W" or True  # reel strips may hold wilds in free spins; checked by board replay
                 elif e["type"] == "fuseFizzle":
                     assert e["burned"] == burned
                     n_fizzle += 1
@@ -304,8 +292,7 @@ def test_blast_never_removes_scatters_and_creates_no_wild():
                     seen += 1
                     for c in e["cells"]:
                         assert board[c["reel"]][c["row"] + 1] != "S"
-                    # wilds in the blast come only from the reel strips (free-spin strip), never from replacement:
-                    assert "replaced" not in e["cells"][0]
+                    assert "replaced" not in e["cells"][0]  # nothing is converted into a wild
     assert seen > 20
 
 

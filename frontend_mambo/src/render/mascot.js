@@ -100,7 +100,7 @@ function buildSVG(uid) {
   const arm = (side, px, withProp) => {
     const s = side === 'L' ? 1 : -1, N = 'arm' + side, F = 'fore' + side;
     return `<g class="${N} mir${side}"><g class="${N}-a">` +
-      `<g transform="${T(px, 138, s)}">` + sh(upperD, C.cream, 'M2,-6L9,-6L9,26L2,26Z', '', '', upperO) + `</g>` +
+      `<g class="mir${side}" transform="${T(px, 138, s)}">` + sh(upperD, C.cream, 'M2,-6L9,-6L9,26L2,26Z', '', '', upperO) + `</g>` +
       `<g class="${F}"><g class="${F}-a"><g transform="${T(px, 162, s)}" class="mir${side}">` +
         sh(foreD, C.cream, 'M2,-6L9,-6L9,24L2,24Z') + cuff + hand + (withProp ? caseHold : '') +
       `</g></g></g>` +
@@ -144,9 +144,9 @@ function buildSVG(uid) {
         sh(ell(100, -4, 6, 6), C.lemon, '', 'ball') +
         `<path d="M97,-7.4Q98.6,-9 100.6,-8.6" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round"/>` +
         `<g class="qstar">` +
-          `<path d="${burstPath(122, -22, 13, 7.4, 8)}" fill="${C.lemon}" stroke="${C.ink}" stroke-width="2.6" stroke-linejoin="round"/>` +
-          `<path d="M117.4,-26Q117.4,-30.4 122,-30.4Q126.6,-30.4 126.6,-26Q126.6,-22.6 122,-21.4L122,-18" fill="none" stroke="${C.ink}" stroke-width="2.6" stroke-linecap="round"/>` +
-          `<circle cx="122" cy="-14.4" r="1.7" fill="${C.ink}"/>` +
+          `<path d="${burstPath(124, -6, 12, 6.8, 8)}" fill="${C.lemon}" stroke="${C.ink}" stroke-width="2.6" stroke-linejoin="round"/>` +
+          `<path d="M119.8,-9.6Q119.8,-13.6 124,-13.6Q128.2,-13.6 128.2,-9.6Q128.2,-6.6 124,-5.6L124,-3" fill="none" stroke="${C.ink}" stroke-width="2.6" stroke-linecap="round"/>` +
+          `<circle cx="124" cy="0.2" r="1.6" fill="${C.ink}"/>` +
         `</g>` +
       `</g>` +
     `</g></g>`;
@@ -248,11 +248,11 @@ function buildSVG(uid) {
 <defs><pattern id="${uid}ht" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="2.5" cy="2.5" r="1.3" fill="${C.lilac}"/></pattern></defs>
 <g class="fig" transform="translate(-10 -8) scale(1.1)">
 ${shadow}${fxBurst}${fxBurst2}
+${plunger}
 <g class="body"><g class="body-a">
 ${part('legL', legL)}${part('legR', legR)}
 ${skirt}
 ${torso}
-${plunger}
 ${arm('L', 78, false)}${arm('R', 122, true)}
 ${head}
 ${antenna}

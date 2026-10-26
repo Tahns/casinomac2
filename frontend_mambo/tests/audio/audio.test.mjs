@@ -72,6 +72,13 @@ const INIT = `(() => { // same graph introspection as tests/guidelines/lib.mjs (
   });
   ok(pit[1] > pit[0] * 1.25, `pop pitch climbs with combo (zero crossings ${pit[0]} -> ${pit[1]})`);
 
+  // bomb clock speeds up with the burn count
+  const clk = await page.evaluate(async () => {
+    const f = async (burn) => { const oc = new OfflineAudioContext(1, 44100 * 1.5, 44100); const e = window.A.createEngine(oc); e.SOUNDS.ticks({ burn, total: 8, dur: 1.2 }); const d = (await oc.startRendering()).getChannelData(0); let n = 0, quiet = 0; for (let i = 0; i < d.length; i++) { if (Math.abs(d[i]) > 0.02) { if (quiet > 1500) n++; quiet = 0; } else quiet++; } return n; };
+    return [await f(0), await f(7)];
+  });
+  ok(clk[1] > clk[0], `bomb-clock ticks get denser with burn count (${clk[0]} -> ${clk[1]} ticks in 1.2 s)`);
+
   // worst case pile-up: voice cap + peak
   const pile = await page.evaluate(async () => {
     const oc = new OfflineAudioContext(2, 44100 * 3, 44100); const e = window.A.createEngine(oc, { noLimit: true });
