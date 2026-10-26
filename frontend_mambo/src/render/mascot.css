@@ -13,6 +13,10 @@
 .gus.small { --sw: 5.6; --fo: -2.4px; }
 .gus.small .fine, .gus.small .ht { display: none; }
 
+/* die-cut sticker rim: keeps the aubergine hair and ink outlines legible on the dark indigo scene */
+.gus .fig { filter: drop-shadow(2.2px 0 0 #FBF1D9) drop-shadow(-2.2px 0 0 #FBF1D9) drop-shadow(0 2.2px 0 #FBF1D9) drop-shadow(0 -2.2px 0 #FBF1D9); }
+.gus.small .fig { filter: drop-shadow(2.8px 0 0 #FBF1D9) drop-shadow(-2.8px 0 0 #FBF1D9) drop-shadow(0 2.8px 0 #FBF1D9) drop-shadow(0 -2.8px 0 #FBF1D9); }
+
 /* origins (user units of the 200x233 drawing box) */
 .body, .body-a { transform-origin: 100px 232px; }
 .torso, .torso-a { transform-origin: 100px 160px; }
