@@ -1,7 +1,40 @@
 <!doctype html><meta charset="utf-8"><title>audio harness</title><body>
 <button id="btn-sound" aria-pressed="false">sound</button>
 <script type="module">
-import { createEngine, audio } from '/src/audio.js';
-window.A = { createEngine, audio };
+import * as M from '/src/audio.js';
+const { createEngine, audio } = M;
+window.A = { ...M };
+
+// data-driven offline scene, used by tests/audio/audio.test.mjs (A1-A5, duck, cues). spec:
+//   secs, eo (createEngine options), noLimit, bed ('base'|'freespins'), beats, cues [{id, o, cue}], poke {node: gain}, reads [{t, node}], windows [[t0, t1]]
+window.H = {
+  async scene(s) {
+    const sr = 44100, oc = new OfflineAudioContext(2, Math.ceil(sr * s.secs), sr);
+    const e = createEngine(oc, Object.assign({}, s.eo || {}, s.noLimit ? { noLimit: true } : {}));
+    if (s.poke) for (const [k, v] of Object.entries(s.poke)) e[k].gain.value = v;
+    const reads = [];
+    for (const r of (s.reads || [])) oc.suspend(r.t).then(() => { reads.push({ t: r.t, v: e[r.node].gain.value }); oc.resume(); });
+    if (s.bed) { const info = e.bedInfo(s.bed), B = e.newBus(s.bed), n = s.beats || info.loopBeats; for (let i = 0; i < n; i++) e.bedBeat(s.bed, i, 0.05 + i * info.beat, B); }
+    // inject a 10 ms noise burst straight into a named node (e.g. a reverb send) to prove where its return goes
+    for (const j of (s.inject || [])) { const b = oc.createBuffer(1, Math.floor(sr * 0.01), sr), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.sin(i * 0.9) * 0.5; const src = oc.createBufferSource(); src.buffer = b; src.connect(e[j.node]); src.start(0); }
+    const results = [];
+    for (const c of (s.cues || [])) { if (c.cue) results.push(e.cue(c.id, c.o)); else { e.SOUNDS[c.id](c.o || {}); results.push(true); } }
+    const voices = e.voices, live = e.liveCount;
+    const buf = await oc.startRendering();
+    const L = buf.getChannelData(0), R = buf.getChannelData(1), n = L.length;
+    let peak = 0, sum = 0, nan = 0, last = 0;
+    for (let i = 0; i < n; i++) { const a = L[i], b = R[i]; if (!Number.isFinite(a) || !Number.isFinite(b)) { nan++; continue; } const m = Math.max(Math.abs(a), Math.abs(b)); if (m > peak) peak = m; if (m > 0.002) last = i; sum += a * a + b * b; }
+    const win = (s.windows || []).map(([t0, t1]) => { const a = Math.floor(t0 * sr), b = Math.min(n, Math.floor(t1 * sr)); let w = 0; for (let i = a; i < b; i++) w += L[i] * L[i] + R[i] * R[i]; return Math.sqrt(w / (2 * Math.max(1, b - a))); });
+    return { peak, rms: Math.sqrt(sum / (2 * n)), nan, len: last / sr, win, results, reads, voices, live, liveAfter: e.liveCount, dur: n / sr };
+  },
+  // Goertzel energy of a mono render at the given frequencies (Hz), window [t0, t1] seconds of channel 0
+  async tones(s, freqs, t0, t1) {
+    const sr = 44100, oc = new OfflineAudioContext(1, Math.ceil(sr * s.secs), sr), e = createEngine(oc, s.eo || {});
+    const info = e.bedInfo(s.bed), B = e.newBus(s.bed);
+    for (let i = 0; i < s.beats; i++) e.bedBeat(s.bed, i, 0.05 + i * info.beat, B);
+    const d = (await oc.startRendering()).getChannelData(0), a = Math.floor(t0 * sr), b = Math.floor(t1 * sr);
+    return freqs.map((f) => { const w = 2 * Math.PI * f / sr, co = 2 * Math.cos(w); let s1 = 0, s2 = 0; for (let i = a; i < b; i++) { const h = 0.5 - 0.5 * Math.cos(2 * Math.PI * (i - a) / (b - a)); const s0 = d[i] * h + co * s1 - s2; s2 = s1; s1 = s0; } return (s1 * s1 + s2 * s2 - co * s1 * s2) / ((b - a) * (b - a)); });
+  },
+};
 window.__ready = true;
 </script>
