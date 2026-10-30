@@ -1,6 +1,9 @@
 /* Agent Mambo - 1962 jazz-lounge spy-console look. All visuals drawn in code (CSS/SVG/canvas). No external fonts/hosts.
    Flat colour, thick #14102B ink outlines, hard offset shadows, halftone dots, stepped (limited) animation.
    Palette = docs/mambo/DESIGN.md 4.1. Owner: STYLES agent. Layout contract (ids/classes/areas) is listed in NOTES_styles.md. */
+/* Display font (the only embedded one, slot guide: at most 2): Luckiest Guy, Apache-2.0, shipped in assets/fonts with its licence.
+   One face covers every weight (no faux bold); swap = text shows at once in the fallback, then switches. Charter: docs/v2/CHARTER.md */
+@font-face{font-family:"Luckiest Guy";src:url("assets/fonts/LuckiestGuy-Regular.ttf") format("truetype");font-weight:400 900;font-style:normal;font-display:swap}
 :root{
   /* 4.1 palette */
   --ink:#14102B; --indigo:#2B2A6B; --teal:#1FB5A3; --coral:#F0472F; --flamingo:#F5799F; --lemon:#FFD23F; --cream:#FBF1D9; --lilac:#9A7BD0; --lime:#A5D63B; --steel:#6FA7D9;
@@ -14,7 +17,7 @@
   /* scene palette (scene.js may read these; free spins swaps them to the lair) */
   --sc-bg:#181640; --sc-sky:#181640; --sc-far:#2B2A6B; --sc-mid:#3B3A8C; --sc-near:#14102B; --sc-moon:#FFE98A; --sc-window:#FFD23F; --sc-neon:#F0472F; --sc-blind:#FBF1D9; --sc-spark:#FBF1D9; --sc-lilac:#9A7BD0;
   --sc-dot:#14102B;
-  --disp:"Futura","Century Gothic","Arial Black","Avenir Next","Trebuchet MS","DejaVu Sans",Verdana,sans-serif;
+  --disp:"Luckiest Guy","Futura","Century Gothic","Arial Black","Avenir Next","Trebuchet MS","DejaVu Sans",Verdana,sans-serif;
   --num:"Arial Rounded MT Bold","Trebuchet MS","Avenir Next","DejaVu Sans",Verdana,sans-serif;
   --ui:"Trebuchet MS","Segoe UI",Inter,"Helvetica Neue",Arial,"DejaVu Sans",system-ui,sans-serif;
   /* comic starburst backgrounds (data URIs, no network) */

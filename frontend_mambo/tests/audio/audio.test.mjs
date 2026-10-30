@@ -248,7 +248,7 @@ const tp = (s) => Math.pow(10, (s <= 75 ? -45 * (75 - s) / 75 : 3 * (s - 75) / 2
   let s = await st(); ok(s.state === 'none', 'no AudioContext before a user gesture');
   await page.mouse.click(5, 5); await sleep(1500); s = await st();
   ok(s.state === 'running' && s.live > 0 && Math.abs(s.g - 0.8) < 0.01 && s.mood === 'base', `after gesture the base bed plays (live=${s.live}, master=${s.g.toFixed(2)})`);
-  ok(Math.abs(s.gm - 1) < 1e-6 && Math.abs(s.gs - 1) < 1e-6, `default sliders 75/75/75 are unity on both buses (music ${s.gm.toFixed(4)}, effects ${s.gs.toFixed(4)})`);
+  ok(Math.abs(s.gm - tp(5)) < 1e-6 && Math.abs(s.gs - 1) < 1e-6, `default sliders: Effects 75 = unity, Music 5 % (slot guide) = taper(5) (music ${s.gm.toFixed(4)}, effects ${s.gs.toFixed(4)})`);
   await page.evaluate(() => { const a = window.A.audio; a.play('explosion'); a.play('bigwin', { level: 3 }); a.play('shower', { n: 30 }); });
   await sleep(100); s = await st(); ok(s.live > 40, `sfx + bed voices live (${s.live})`);
   await page.evaluate(() => window.A.audio.setMuted(true)); await sleep(300); s = await st();
@@ -295,7 +295,7 @@ const tp = (s) => Math.pow(10, (s <= 75 ? -45 * (75 - s) / 75 : 3 * (s - 75) / 2
   await page.mouse.click(5, 5); await sleep(1200); s = await st();
   ok(Math.abs(s.g - 0.8 * tp(60)) < 1e-6 && Math.abs(s.gm - tp(30)) < 1e-6 && Math.abs(s.gs - tp(90)) < 1e-6, 'L1 the engine starts at the restored levels (no ramp from default)');
   await page.evaluate(() => window.A.audio.resetVolumes()); await sleep(300); s = await st();
-  ok(s.vol.master === 75 && s.vol.music === 75 && s.vol.sfx === 75 && Math.abs(s.g - 0.8) < 0.005 && Math.abs(s.gm - 1) < 0.005, 'resetVolumes brings all three back to 75 (unity)');
+  ok(s.vol.master === 75 && s.vol.music === 5 && s.vol.sfx === 75 && Math.abs(s.g - 0.8) < 0.005 && Math.abs(s.gm - tp(5)) < 0.001, 'resetVolumes brings the defaults back (Master 75, Music 5, Effects 75)');
 
   // L4: mute vs slider
   await page.evaluate(() => { const a = window.A.audio; a.setVolume('master', 50); a.setMuted(true); }); await sleep(300);
