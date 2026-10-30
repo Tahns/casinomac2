@@ -17,7 +17,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || 
 const page = await browser.newPage({ viewport: { width: 800, height: 800 } });
 await page.setContent('<!doctype html><body style="margin:0"><div id="h"></div></body>');
 await page.addStyleTag({ content: css + '*{animation:none!important;transition:none!important}' });
-await page.addScriptTag({ content: js + ';window.__cm=createMascot;' });
+await page.addScriptTag({ content: js + ';window.__cm=createMascotV1; // WP3: createMascot now returns the heroine asynchronously; the v1 SVG baker needs createMascotV1' });
 const out = {};
 for (const pose of POSES) {
   out[pose] = await page.evaluate(([pose, i]) => {

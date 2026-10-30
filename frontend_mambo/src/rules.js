@@ -263,10 +263,12 @@ const STYLE = `
 .rules{display:flex;flex-direction:column;height:100%;max-height:100%;color:var(--fg,#f3ead7);font:14px/1.45 system-ui,sans-serif}
 .rules-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px}
 .rules-head h2{margin:0;font-size:1.1em}
-.rules-tabs{display:flex;gap:4px;overflow-x:auto;padding:0 8px}
+.rules-head,.rules-tabs{flex:0 0 auto}
+.rules-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:0 8px 2px}
 .rules-tab{flex:0 0 auto;border:1px solid rgba(255,255,255,.25);background:transparent;color:inherit;border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit}
 .rules-tab[aria-selected=true]{background:rgba(255,215,0,.2);border-color:#ffd700}
-.rules-body{flex:1 1 auto;overflow:auto;padding:8px 12px;-webkit-overflow-scrolling:touch}
+.rules-tab:focus-visible{outline:3px solid currentColor;outline-offset:2px}
+.rules-body{flex:1 1 auto;min-height:0;overflow:auto;padding:8px 12px;-webkit-overflow-scrolling:touch}
 .rules-close{border:1px solid rgba(255,255,255,.35);background:transparent;color:inherit;border-radius:6px;padding:4px 12px;cursor:pointer;font:inherit}
 .rules h3{margin:12px 0 4px;font-size:1.05em}
 .rl-table{border-collapse:collapse;width:100%;margin:6px 0}

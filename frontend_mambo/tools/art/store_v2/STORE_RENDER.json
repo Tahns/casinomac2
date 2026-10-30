@@ -1,0 +1,49 @@
+{
+ "generated": "2026-10-30T19:48:48.336Z",
+ "source": "docs/research2/art/store/keyart.html",
+ "sourceSha256": "f01cb82d980020f99f731d6e010130f694bbb4e720e17a1f56502edb0d03ff7f",
+ "rigSha256": "2832ed797f0f39618fb5507a18cb38de6b6586adbe51a2d95106bb9e298f2ef9",
+ "outfit": "inspectrice",
+ "files": [
+  {
+   "file": "tools/art/store_v2/agent_mambo_tile_3x4.png",
+   "width": 1536,
+   "height": 2048,
+   "bytes": 1460679,
+   "sha256": "2390dab264147903b914be8f17706b545c85ba3488bc52be0683f1072a9e20f2"
+  },
+  {
+   "file": "tools/art/store_v2/agent_mambo_tile_3x4_preview_150.png",
+   "width": 150,
+   "height": 200,
+   "preview": true
+  },
+  {
+   "file": "tools/art/store_v2/agent_mambo_tile_3x4_preview_300.png",
+   "width": 300,
+   "height": 400,
+   "preview": true
+  },
+  {
+   "file": "tools/art/store_v2/agent_mambo_cover_16x9.png",
+   "width": 1920,
+   "height": 1080,
+   "bytes": 909116,
+   "sha256": "5527f9de3668a84191cde8ab51ff77e2510e8a5a27a4ee50f96736580eed79d4"
+  },
+  {
+   "file": "tools/art/store_v2/agent_mambo_cover_16x9_preview_320.png",
+   "width": 320,
+   "height": 180,
+   "preview": true
+  },
+  {
+   "file": "tools/art/store_v2/agent_mambo_banner_2000x667.png",
+   "width": 2000,
+   "height": 667,
+   "bytes": 634013,
+   "sha256": "88423731ee41a8337e92c91b01a80209a0f5065c07e3dc5426f99c83bd0f5ee1"
+  }
+ ],
+ "errors": []
+}

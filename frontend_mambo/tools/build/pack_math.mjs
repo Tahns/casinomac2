@@ -1,24 +1,35 @@
 #!/usr/bin/env node
-// Validate and collect the math upload set. Zero dependencies (node >= 22 for zstd streaming; skipped with a note otherwise).
-//   node frontend/tools/build/pack_math.mjs [--src <publish_files dir>] [--out <dir>] [--stable-secs 30] [--deep] [--books-sample 5000] [--no-copy]
-// Reads math/games/the_unleashed_mine/library/publish_files at run time, waits until no file changed for --stable-secs
-// (the math agent may be regenerating it), validates, recomputes per-mode RTP / hit rate / max win from the CSVs,
-// copies to dist/math_upload/ and writes MANIFEST.txt (sha256 + size). Exit code 1 on any FAIL.
+// Validate and collect the Agent Mambo math upload set (WP11). Zero npm dependencies (node >= 22 for zstd streaming; skipped with a note otherwise).
+//   node tools/build/pack_math.mjs [--src <publish_files dir>] [--out <dir>] [--stable-secs 30] [--deep] [--books-sample 5000] [--no-copy] [--no-zip] [--no-sdk]
+// Reads math/games/agent_mambo/library/publish_files (never writes there), waits until no file changed for --stable-secs, then checks:
+//   * index.json in the strict Stake Engine form ({modes:[{name,cost,events,weights}]}, events *.jsonl.zst, weights *.csv, files present);
+//   * per mode RTP / hit rate / max win recomputed from the CSV (96.00 % +-0.05 and <= 5000x expected), payouts multiples of 10;
+//   * sha256 of every file against the SDK-written library/configs/config.json (bookShelfConfig) and cost / maxWin / bookLength / rtp;
+//   * the SDK's own checks (tools/build/sdk_verify.py with math/env/bin/python: verify_lookup_format + the books_<mode>.verification.json
+//     sidecars: books sha256, payout hash, entry count) unless --no-sdk;
+//   * the first --books-sample books of each mode (or ALL with --deep) decompressed: id / events / payoutMultiplier present, payout == CSV.
+// Then copies EXACTLY index.json + each mode's books + lookup table to dist/math_upload/ (+ MANIFEST.txt, documentation only) and writes
+// dist/agent_mambo_math_v<VERSION>.zip with those files at the zip root (books stored, csv/json deflated). Exit code 1 on any FAIL.
 // RTP = sum(weight * payout/100) / sum(weight) / cost ; CSV columns = id, weight (uint64), payout (x100 integer).
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import crypto from 'node:crypto';
 import readline from 'node:readline';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(HERE, '../../..');
+const FRONT = path.resolve(HERE, '../..');
+const ROOT = path.resolve(FRONT, '..');
+const DIST = path.join(FRONT, 'dist');
+const VERSION = fs.readFileSync(path.join(FRONT, 'VERSION'), 'utf8').trim();
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
 const flag = (k) => process.argv.includes(k);
-const GAME = path.join(ROOT, 'math/games/the_unleashed_mine');
+const GAME = path.join(ROOT, 'math/games/agent_mambo');
 const SRC = path.resolve(arg('--src', path.join(GAME, 'library/publish_files')));
-const OUT = path.resolve(arg('--out', path.join(ROOT, 'dist/math_upload')));
+const OUT = path.resolve(arg('--out', path.join(DIST, 'math_upload')));
+const ZIP = path.join(DIST, `agent_mambo_math_v${VERSION}.zip`);
 const STABLE = Number(arg('--stable-secs', 30));
 const DEEP = flag('--deep');
 const SAMPLE = Number(arg('--books-sample', 5000));
@@ -110,6 +121,64 @@ async function checkBooks(p, label, table, limit) {
   return { n, firstId, mism, missingKeys, evOk, full: !limit };
 }
 
+// ---------- SDK checks (math/env python, read-only; see tools/build/sdk_verify.py) ----------
+let sdkResult = null;
+function runSdk() {
+  const py = [path.join(ROOT, 'math/env/bin/python'), 'python3'].find((p) => p === 'python3' || fs.existsSync(p));
+  console.log(`\nSDK checks (${path.relative(ROOT, py) || py} tools/build/sdk_verify.py) ...`);
+  const r = spawnSync(py, ['-B', path.join(HERE, 'sdk_verify.py'), SRC, path.join(GAME, 'library/configs')], { encoding: 'utf8', maxBuffer: 1 << 24 });
+  let out = null;
+  try { out = JSON.parse((r.stdout || '').trim().split('\n').pop()); } catch { /* below */ }
+  if (!out) { FAIL(`SDK check did not run: ${(r.stderr || r.error?.message || '').slice(-300)}`); return null; }
+  for (const f of out.fails) FAIL('SDK: ' + f);
+  for (const [name, m] of Object.entries(out.modes)) console.log(`  ${m.books_sha256_ok && m.payout_hash_ok && m.entries_ok ? 'ok  ' : 'FAIL'} ${name}: lookup format ${m.lookup_format || '-'}, ${m.entries} entries, books sha256 ${m.books_sha256_ok ? 'matches' : 'DIFFERS from'} the sidecar, payout hash ${m.payout_hash_ok ? 'ok' : 'DIFFERS'}`);
+  return out;
+}
+
+// ---------- zip (hand-written, deterministic; books stored, text deflated; files < 4 GB so no ZIP64) ----------
+const crc32 = (b) => zlib.crc32(b) >>> 0;
+async function writeZip(names, dir, zipPath, shas) {
+  const DOS_TIME = 0, DOS_DATE = (2026 - 1980) << 9 | 1 << 5 | 1;
+  const fd = fs.openSync(zipPath + '.part', 'w');
+  let off = 0; const cen = [];
+  const w = (buf) => { fs.writeSync(fd, buf); off += buf.length; };
+  for (const n of names) {
+    const raw = fs.readFileSync(path.join(dir, n));
+    if (crypto.createHash('sha256').update(raw).digest('hex') !== shas[n]) { FAIL(`zip: ${n} changed since it was hashed`); continue; }
+    const store = /\.zst$/.test(n);
+    const data = store ? raw : zlib.deflateRawSync(raw, { level: 9 });
+    const crc = crc32(raw); const nameB = Buffer.from(n);
+    const lh = Buffer.alloc(30);
+    lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt16LE(0x0800, 6); lh.writeUInt16LE(store ? 0 : 8, 8);
+    lh.writeUInt16LE(DOS_TIME, 10); lh.writeUInt16LE(DOS_DATE, 12); lh.writeUInt32LE(crc, 14); lh.writeUInt32LE(data.length, 18); lh.writeUInt32LE(raw.length, 22);
+    lh.writeUInt16LE(nameB.length, 26); lh.writeUInt16LE(0, 28);
+    const at = off; w(lh); w(nameB); w(data);
+    const ch = Buffer.alloc(46);
+    ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(20, 4); ch.writeUInt16LE(20, 6); ch.writeUInt16LE(0x0800, 8); ch.writeUInt16LE(store ? 0 : 8, 10);
+    ch.writeUInt16LE(DOS_TIME, 12); ch.writeUInt16LE(DOS_DATE, 14); ch.writeUInt32LE(crc, 16); ch.writeUInt32LE(data.length, 20); ch.writeUInt32LE(raw.length, 24);
+    ch.writeUInt16LE(nameB.length, 28); ch.writeUInt32LE(0o100644 << 16 >>> 0, 38); ch.writeUInt32LE(at, 42);
+    cen.push(Buffer.concat([ch, nameB]));
+  }
+  const cdAt = off; for (const c of cen) w(c);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(cen.length, 8); end.writeUInt16LE(cen.length, 10); end.writeUInt32LE(off - cdAt, 12); end.writeUInt32LE(cdAt, 16);
+  w(end); fs.closeSync(fd);
+  if (off >= 0xffffffff) { FAIL('zip would need ZIP64'); return; }
+  fs.renameSync(zipPath + '.part', zipPath);
+  // self-check: read the central directory back, every entry inflates to the hashed bytes
+  const z = fs.readFileSync(zipPath); const e = z.length - 22; const n = z.readUInt16LE(e + 10); let p = z.readUInt32LE(e + 16); const seen = [];
+  for (let i = 0; i < n; i++) {
+    const method = z.readUInt16LE(p + 10), csize = z.readUInt32LE(p + 20), nlen = z.readUInt16LE(p + 28), lho = z.readUInt32LE(p + 42);
+    const name = z.toString('utf8', p + 46, p + 46 + nlen); p += 46 + nlen;
+    const ds = lho + 30 + z.readUInt16LE(lho + 26) + z.readUInt16LE(lho + 28);
+    const body = z.subarray(ds, ds + csize); const raw = method === 0 ? body : zlib.inflateRawSync(body);
+    if (crypto.createHash('sha256').update(raw).digest('hex') !== shas[name]) FAIL(`zip self-check: ${name} does not match`);
+    seen.push(name);
+  }
+  if (seen.slice().sort().join('|') !== names.slice().sort().join('|')) FAIL('zip self-check: entry list differs from the upload set');
+  console.log(`zip: ${path.relative(ROOT, zipPath)} (${seen.length} files, ${(z.length / 1048576).toFixed(1)} MB, sha256 ${crypto.createHash('sha256').update(z).digest('hex')}); self-check ${fails.length ? 'FAILED' : 'ok'}`);
+}
+
 // ---------- main ----------
 console.log(`source: ${SRC}`);
 if (await waitStable()) {
@@ -189,11 +258,13 @@ if (await waitStable()) {
     }
   }
 
+  // ---------- the SDK's own checks (read-only) ----------
+  if (!flag('--no-sdk')) sdkResult = runSdk();
   console.log('\nVALIDATION TABLE (recomputed from CSV)');
   console.log('mode   cost   rows    sum(weight)        RTP        hit rate   max win   P(max)        median  min   std');
   for (const s of rows) console.log(`${s.name.padEnd(6)} ${String(s.cost).padEnd(6)} ${String(s.rows).padEnd(7)} ${String(s.totalWeight).padEnd(18)} ${(s.rtp * 100).toFixed(4)}%   ${(s.hit * 100).toFixed(3)}%   ${fmt(s.max, 1)}x   1 in ${Math.round(s.oneIn).toLocaleString('en-US')}   ${s.median}x  ${s.min}x  ${s.std.toFixed(2)}`);
-  fs.mkdirSync(path.join(ROOT, 'dist'), { recursive: true });
-  fs.writeFileSync(path.join(ROOT, 'dist/math_validation.json'), JSON.stringify({ generated: new Date().toISOString(), src: SRC, modes: rows.map((s) => ({ name: s.name, cost: s.cost, rows: s.rows, rtp: s.rtp, hitRate: s.hit, maxWin: s.max, pMax: s.pMax, oneInMax: s.oneIn, median: s.median, minPayout: s.min, std: s.std })) }, null, 2) + '\n');
+  fs.mkdirSync(DIST, { recursive: true });
+  fs.writeFileSync(path.join(DIST, 'math_validation.json'), JSON.stringify({ generated: new Date().toISOString(), src: path.relative(ROOT, SRC), sdk: sdkResult, modes: rows.map((s) => ({ name: s.name, cost: s.cost, rows: s.rows, rtp: s.rtp, hitRate: s.hit, maxWin: s.max, pMax: s.pMax, oneInMax: s.oneIn, median: s.median, minPayout: s.min, std: s.std })) }, null, 2) + '\n');
 
   // ---------- copy ----------
   if (!fails.length && !flag('--no-copy')) {
@@ -207,8 +278,9 @@ if (await waitStable()) {
       man.push(`${h}  ${String(fs.statSync(path.join(OUT, n)).size).padStart(11)}  ${n}`);
     }
     if (key(snap()) !== after) FAIL('source changed while copying; discard dist/math_upload and re-run');
+    if (!fails.length && !flag('--no-zip')) await writeZip(Object.keys(shas), OUT, ZIP, shas);
     if (!fails.length) {
-      fs.writeFileSync(path.join(OUT, 'MANIFEST.txt'), `# The Unleashed Mine math upload set (sha256, bytes, file)\n# generated ${new Date().toISOString()} from ${path.relative(ROOT, SRC)}\n# Upload only the files listed below (index.json + each mode's csv and zst); MANIFEST.txt is documentation, not part of the strict index.json set.\n` + man.join('\n') + '\n');
+      fs.writeFileSync(path.join(OUT, 'MANIFEST.txt'), `# Agent Mambo math upload set (sha256, bytes, file)\n# generated ${new Date().toISOString()} from ${path.relative(ROOT, SRC)}\n# Upload only the files listed below (index.json + each mode's csv and zst); MANIFEST.txt is documentation, not part of the strict index.json set.\n` + man.join('\n') + '\n');
       console.log(`\npacked ${man.length} files into ${path.relative(ROOT, OUT)}/ (+ MANIFEST.txt)`);
     }
   }

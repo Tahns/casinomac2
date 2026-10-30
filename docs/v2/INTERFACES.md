@@ -54,18 +54,22 @@ Storage keys whitelist (`STORAGE_KEYS`): `am_muted`, `am_vol_master`, `am_vol_mu
 
 Extra capability fields (not extra flags): `minRoundMs` (number, ms, clamped 0..60000, the value of `minimumRoundDuration`; the unit is an assumption), `anticipation` (default true, the kill switch of the honest slow-roll, SYNTHESIS 4 lever 3), `ledgerLocked` (= `netPosition || sessionTimer`). Truthy parsing: `true`, `1`, `'true'`, `'1'`; anything else is false. Unknown flag keys are ignored.
 
-## 2. `src/audio.js` (owner WP2) API skeleton (buses are WP2's job)
+## 2. `src/audio.js` (owner WP2) real surface (M2/M3; the step-0 signatures did not change, everything below is additive)
 
 ```js
-import { audio, VOLUME_KINDS, DEFAULT_VOLUME, parseVolume } from './audio.js';
-audio.setVolume(kind, pct)   // kind 'master'|'music'|'sfx', pct 0-100 (rounded, clamped); returns false for an unknown kind or a non-number; persists am_vol_*; notifies
-audio.getVolume(kind)        // integer 0-100 (default 75), null for an unknown kind;  audio.volumes -> copy {master, music, sfx}
-audio.preview(kind)          // plays the neutral 'settingsTest' cue (WP2 adds it + the 250 ms rate limit); no-op while the id is unknown
-audio.onChange(fn)           // fn({ type:'volume'|'mute', kind?, value?, volumes, muted }); returns the unsubscribe function
-audio.setMuted(bool)         // unchanged behaviour (am_muted, master gain, killAll) + fires onChange({type:'mute'}) when the value changed;  audio.muted getter/setter
-audio.play(id, opt)          // unknown / non-string / prototype ids are no-ops; returns true when a cue started, false otherwise
+import { audio, createEngine, taper, taperDb, CUE_INFO, CUE_IDS, VOLUME_KINDS, DEFAULT_VOLUME, parseVolume } from './audio.js';
+// frozen in step 0, now audible
+audio.setVolume(kind, pct) / getVolume(kind) / volumes / onChange(fn) / setMuted(b) / muted / play(id, opt) / preview(kind)
+// added by WP2
+audio.play(id, { quiet: true })   // quiet-result path (R <= C): a cue with winLike true is refused (false, no node)
+audio.toggleMute()                // the header speaker: unmute | restore last non-zero sliders when the sliders made it silent | mute; returns true when silent afterwards
+audio.silent                      // muted, or Master 0, or Music and Effects both 0 (what body.muted and #btn-sound[aria-pressed] show); audio.muted stays the pure mute flag (am_muted)
+audio.lastVolume(kind)            // last non-zero level (memory only); audio.resetVolumes()  // three sliders to 75
+audio.cueInfo(id) -> { winLike, minGap? } | null;  audio.isWinLike(id) -> boolean | null
+audio.duck = bool                 // -6 dB of the bed under the big stingers (default false: opt-in until a human ear check)
+onChange payload: { type: 'volume'|'mute', kind?, value?, volumes, muted, silent }
 ```
-Step 0 behaviour: the volumes are stored and announced but NOT applied (the live mix is exactly the v1 mix = the 75/75/75 defaults). WP2 adds `sfxBus/musicBus`, the taper (`s=0 -> 0`, `1..75: dB = -45*(75-s)/75`, `76..100: +3*(s-75)/25`), the second reverb return and the new cue ids (`ledgerTick`, `settingsTest`, `stamp`, `caseSeal`, `caseOpen`, `lightsOut`, `spotlightStep`, `layoutDraw`, `doorCreak`, `dialStep`) behind this same API. Callers may already use any of those ids: until WP2 ships them they are no-ops. `audio.js` must stay importable alone (the harness `tests/audio/harness.html` imports only it).
+Taper: `taper(s)`: 0 -> 0, 1..75: dB = -45*(75-s)/75, 76..100: dB = +3*(s-75)/25, gain = 10^(dB/20) (75 = unity = the v1 mix, 100 = +3 dB, 1 = -44.4 dB). Graph: sfx -> sfxBus and bed -> musicBus (own reverb return) -> duck -> master (mute + Master slider) -> compressor -> soft limiter. Zero handling: Master, Music or Effects at 0 (or mute) means nothing is queued on that bus. Preview: `settingsTest` cue on the bus being tested, 1 per 250 ms. New cue ids: `ledgerTick settingsTest caseSeal caseOpen lightsOut spotlightStep layoutDraw doorCreak dialStep` (+ `stamp` options); all `winLike: false`. Every sound has an explicit `winLike` flag in `CUE_INFO` (table in `src/audio.js`, notes in `docs/v2/NOTES_WP2_AUDIO.md`). Human item: the free-spins bed moved from E dorian to F# dorian; not listened to, needs an ear check together with the new cues and the duck. `audio.js` must stay importable alone (the harness `tests/audio/harness.html` imports only it).
 
 ## 3. Heroine: `mascot.react(kind, info)` (owner WP3 implements, WP4 calls)
 
@@ -74,6 +78,8 @@ Step 0 behaviour: the volumes are stored and announced but NOT applied (the live
 - `REACT_KINDS` (exported from mascot.js), starter vocabulary: `idle, spin, anticipate, quiet, dead, win, bigwin, epic, blast, fizzle, trigger, retrigger, end, outfit`. WP4 sends only listed kinds; WP3 may APPEND kinds (and documents them here); an unknown kind returns false.
 - Mapping WP4 uses (celebration gate `celebrate.level(R, C)`): level 0 -> `quiet`, 1 -> `win`, 2 -> `bigwin`, 3 -> `epic`; a spin without any result -> `dead`; `reveal.anticipation` -> `anticipate` (never a shock without a real trigger); `fuseBlast` -> `blast`, `fuseFizzle` -> `fizzle`; `freeSpinTrigger` / `missionAssigned` -> `trigger` (info `{ mission, outfit }`); `freeSpinRetrigger` -> `retrigger`; `freeSpinEnd` -> `end`; costume change -> `outfit` (info `{ outfit: 'lab'|'trench'|'casino'|... }`).
 - `info` is a free object: `{ level, ratio, R, C, combo, mission, outfit, ms }`; every key optional. Engine [217]: only sober clips; the whitelist lives in WP3.
+- M2/M3 state (WP3): `REACT_KINDS` = the 14 kinds above + `meter`, `gag` (appended). `react()` returns true when a clip, a static pose or a costume change started. `info` keys read: `level ratio at speed ms mission outfit`. `createMascot(host, opts)` options `size crop outfit reduced onCue v1 halftone`, returns the heroine ASYNCHRONOUSLY (extra API `mode() ready setCrop setOutfit impl`); `mascotOf(el)`; `createMascotV1(host, opts)` keeps the synchronous v1 SVG mascot (used by `tools/art/bake_mambo.mjs`). Full table: `docs/v2/requests/WP3_to_WP4.md`.
+- Shipped files (all reached by dynamic `import()` from `src/render/mascot.js`, so a copy step must keep the whole folder): `src/render/heroine/{index,clips,director,gaze,bubble}.js`, `heroine.css`, the synced rig `mambo_art.js mambo_outfits.js mambo_rig.js` (+ `SYNC.json`, generated by `node tools/sync_heroine.mjs` from `docs/research2/art/*.mjs`; never hand-edit) and `fallback_art.js` (static SVG, loaded only when the rig fails). `mambo_compat.js` is not imported by the game. No `.mjs` is shipped. Outfits: `inspectrice` (base, tile and cover), `lab` (The Briefing), `trench` (Sealed Orders), `casino` (Ballroom Blackout), `vault` (reserved).
 
 ## 4. `src/render/layers/index.js` (owner WP6; the call site in render/index.js is WP4's)
 
@@ -117,9 +123,11 @@ L0 `R <= C` (quiet ledger tick only), L1 `C < R < 5C` (wink), L2 `5C <= R < 15C`
 
 New, all invisible in step 0 so v1 looks the same: `#btn-settings` (gear, `hidden`, right after `#btn-sound` inside `.tools`, `data-i18n-title="btn.settings"`, `aria-haspopup="dialog"`); `#modal-settings` (`.modal`, `hidden`, `role=dialog`, `aria-modal`, `aria-label` from `btn.settings`, an empty `.modal-box` that WP1 fills; main.js `openModal/closeModal` and the inert logic work on it like on the other modals); `#heroine-slot` (`hidden`, directly after `#mascot-slot`, inside `#app`; WP3 draws the rig into it, WP1 lays it out LEFT of the grid, removes `hidden` and retires `#mascot-slot` when the rig is ready). New stylesheets linked after `meter.css` and created empty: `src/ui/ui.css` (WP1), `src/render/heroine/heroine.css` (WP3), `src/render/layers/layers.css` (WP6). No new script tags: modules are imported from JS (`main.js` imports `settings.js` and calls `applyJurisdiction`).
 
+M1 state (WP1): `#btn-settings` is visible and wired (inside `#btn-menu` at height <= 360 px); `#modal-settings` is built on first open by `src/ui/settings_dialog.js` (ids `st-*`, four tabs through `src/ui/tabs.js`, Info tab = `rules.buildRules(data, ctx).sections` grouped as Rules = overview + howto + features, Win table, Controls, Modes and RTP, Legal, plus the RTP line, the session summary and the version). New in `index.html`: `#ledger` (inside `#hud-info`), `#door-cards` and `#door-hint` (inside `#modal-confirm`), `#replay-settings` (created by `replay.js`); `#heroine-slot` keeps its contract (`data-mode`, `data-crop`, event `am:heroine-layout`, `WP1_to_WP3.md`). `main.js` imports `src/ui/*`. New body classes: `has-heroine`, `no-turbo|no-autoplay|no-buy|no-fullscreen|no-space|no-slam`. `bet.js` gained `DOOR_MODE_COSTS` (`entrance_orders` 100, `entrance_blackout` 100); `input.js` gained `spaceDecision` and `createPacer`. Door cards (`src/ui/doors.js`) show a door when `data/rules_data.json` lists its mode AND has `shares[mode]` (`{ medianX, pGtPrice, rtp, maxWin }`); Stage Door always.
+
 ## 9. Event contract (math emits, front end replays)
 
-Unchanged from SYNTHESIS section 8 (`layout`, `reveal` with `len(cells[r])+2`, positions COMPACT-PADDED vs geometric, `missionAssigned`, `lightRoute`, `winInfo.meta.{lit,lensMult,banked}`, `caseOpen`, old books play as Mezzanine and `briefing` with step 8). `geo.js` is the only mapping between the two row languages.
+Unchanged from SYNTHESIS section 8 (`layout`, `reveal` with `len(cells[r])+2`, positions COMPACT-PADDED vs geometric, `missionAssigned`, `lightRoute`, `winInfo.meta.{lit,lensMult,banked}`, `caseOpen`, old books play as Mezzanine and `briefing` with step 8). `geo.js` is the only mapping between the two row languages. The FINAL books emit exactly this; every event with an example copied from a real book: `frontend_mambo/CONTRACT.md` section 3. Small FINAL samples of the four modes for the mock RGS and the tests: `frontend_mambo/fixtures/` (`node tools/build/make_fixtures.mjs`; v1 books in `fixtures/v1/`). Rules data from the final tables: `node tools/gen_rules_data.mjs` (`--check`).
 
 ## 10. File ownership (SYNTHESIS section 9, paths relative to `frontend_mambo/` unless `math/`)
 
