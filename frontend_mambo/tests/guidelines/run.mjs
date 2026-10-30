@@ -37,16 +37,18 @@ const fmtLog = (log) => log.map((l) => `${l.method} ${l.path} ${snippet(J(l.body
 async function collectScreens(s) {
   const out = [{ name: 'main', text: await s.visibleText() }];
   const tryOpen = async (name, sel, closeSel) => {
+    // v2 shell: at height <= 360 the gear lives in the MENU popup (WP1 request item 6)
+    if (!(await s.visible(sel)) && name === 'settings' && (await s.visible('#btn-menu'))) { await s.click('#btn-menu', { force: true }).catch(() => {}); await sleep(300); }
     if (!(await s.visible(sel))) { out.push({ name, text: '', missing: true }); return; }
     await s.click(sel, { force: true }).catch(() => {}); await sleep(500);
     out.push({ name, text: await s.visibleText() });
     // rules may have pages/tabs: click through next/tabs
-    if (name === 'info') {
+    if (name === 'info' || name === 'settings') {
       for (let i = 0; i < 12; i++) {
         const nxt = s.page.locator('.modal:not([hidden]) :is(button,[role=tab],a):has-text("Next"), .rules-tab, [role=tab], .tabs button, .rules-nav button, .pager button').nth(i);
         if (!(await nxt.isVisible().catch(() => false))) continue;
         await nxt.click({ timeout: 800 }).catch(() => {}); await sleep(120);
-        out.push({ name: 'info-tab' + i, text: await s.visibleText() });
+        out.push({ name: name + '-tab' + i, text: await s.visibleText() });
       }
     }
     await s.closeOverlays();
@@ -54,6 +56,7 @@ async function collectScreens(s) {
   await tryOpen('autoplay', '#btn-autoplay');
   await tryOpen('unleash-confirm', '#btn-unleash');
   await tryOpen('info', '#btn-info');
+  await tryOpen('settings', '#btn-settings');
   return out;
 }
 
@@ -321,21 +324,26 @@ async function main() {
     return [ok ? PASS : FAIL, `sound visible before menu=${before}, after menu=${open}, info visible=${infoVisible}, sound toggled=${muted}, rules open via menu=${rulesOpen}`];
   });
 
-  await check('MODAL-INERT', 'keyboard cannot act behind an open dialog (Enter on BET+ / BET while the UNLEASH confirm is open, UNLEASH during autoplay)', async () => {
+  await check('MODAL-INERT', 'keyboard cannot act behind an open dialog (Tab stays inside the UNLEASH confirm, BET / BET+ / UNLEASH are inert, Space starts nothing)', async () => {
     const bet = 10000000; // 10.00: UNLEASH costs 1,000.00
     await mockCfg({ balance: 5000000000, bet: { betLevels: [10000000, 20000000], minBet: 10000000, maxBet: 20000000, stepBet: 10000000, defaultBetLevel: bet } });
     const s = await sess({}); await mockClear();
     await s.click('#btn-unleash', { force: true }); await sleep(600);
     const dlg = await s.page.evaluate(() => !!document.querySelector('#modal-confirm.open'));
     const before = await s.text('#bet');
-    await s.page.focus('#btn-bet-plus').catch(() => {}); await s.page.keyboard.press('Enter'); await sleep(300);
-    await s.page.focus('#btn-bet').catch(() => {}); await s.page.keyboard.press('Enter'); await sleep(300); await s.page.keyboard.press('Space'); await sleep(300);
+    // the focus stays where the dialog put it (CANCEL, the safe answer, [31]); never move it with page.focus()
+    for (let i = 0; i < 12; i++) await s.page.keyboard.press('Tab');
+    const inside = await s.page.evaluate(() => !!document.activeElement && !!document.activeElement.closest('#modal-confirm'));
+    const behind = await s.page.evaluate(() => ['btn-bet', 'btn-bet-plus', 'btn-unleash'].map((id) => { const e = document.getElementById(id); return !!e && e.closest('[inert]') !== null; }));
+    // Space on a dialog control may act on that control (Cancel closes the dialog): it must never start a round or change the bet
+    await s.page.keyboard.press('Space'); await sleep(300);
     const after = await s.text('#bet'); const log = await mockLog(); const playsBehind = plays(log).length;
-    await s.click('#confirm-cancel', { force: true }); await sleep(300);
+    await s.page.keyboard.press('Escape'); await sleep(300);
+    const closed = await s.page.evaluate(() => !document.querySelector('#modal-confirm.open'));
     const inertAfter = await s.page.evaluate(() => !!document.querySelector('[inert]'));
     await s.close();
-    const ok = dlg && before === after && playsBehind === 0 && !inertAfter;
-    return [ok ? PASS : FAIL, `dialog open=${dlg}, bet before/after=${before}/${after}, plays sent behind dialog=${playsBehind}, [inert] left after closing=${inertAfter}`];
+    const ok = dlg && inside && behind.every(Boolean) && before === after && playsBehind === 0 && closed && !inertAfter;
+    return [ok ? PASS : FAIL, `dialog open=${dlg}, focus inside after 12 Tab=${inside}, inert BET/BET+/UNLEASH=${behind.join('/')}`, `bet before/after=${before}/${after}, plays sent=${playsBehind}, closed=${closed}, [inert] left after closing=${inertAfter}`];
   });
 
   await check(223, 'viewport meta + touch-action', async () => {

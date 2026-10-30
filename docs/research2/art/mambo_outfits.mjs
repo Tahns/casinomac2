@@ -196,7 +196,7 @@ const SUIT = PAL.mustard, LEATHER = '#7A4A2A';
 const vault = {
   key: 'vault', label: 'D. Vault / commando', accent: PAL.mustard, scarf: true,
   sleeve: { fill: SUIT, trim: LEATHER, trimAt: [0.8, 0.9], gloveFrom: null, tex: true }, glove: PAL.white, cuff: PAL.white,
-  legs: { fill: SUIT, w: 17, sock: '#5A3A22' }, shoe: { base: PAL.white },
+  legs: { fill: SUIT, w: 17, sock: '#5A3A22', fromHip: true }, shoe: { base: PAL.white },
   lidFill: PAL.eyeshadow, accBase: 90, accGain: 1, capOver: true, hairTop: () => '',
   skirt(c) { // jumpsuit hips down to the leg tops, centre seam, thigh pockets
     const d = garmentD(290, 414, { hem: 3, hemShift: 2 });

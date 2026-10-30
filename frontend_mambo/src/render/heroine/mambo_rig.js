@@ -555,17 +555,27 @@ const f2 = (n) => Math.round(n * 100) / 100;
     const lowerOn = CROPS[cropName].lower !== false;
     const hipX = d('hipX') + sway * 1.2, tilt = d('hipTilt') + sway * 0.5;
     if (lowerOn) {
-    setE('skirt', 'transform', `translate(${f(hipX)} 0) rotate(${f(tilt)} 200 346)`);
+    // pass 3: the skirt leans a little toward the feet (skew about the hip), and the legs leave from the HEM, not from hidden hip joints,
+    // so a pencil skirt and its legs always agree (wide stance, kick, jump). Trousers (legs.fromHip) keep the hip joints.
+    const skew = W.legs.fromHip || W.shoesUnder ? 0 : clamp((d('lax') + d('rax')) * 0.1, -6, 6), tk = Math.tan(rad2(skew));
+    setE('skirt', 'transform', `translate(${f(hipX)} 0) rotate(${f(tilt)} 200 346) translate(200 346) skewX(${f(skew)}) translate(-200 -346)`);
     setE('skirt-t', 'transform', `rotate(${f(sec.skirt.x)} 200 304)`);
     const LW = (W.legs.w || 13) / 13, legW = (t) => LW * (12.2 - 3.9 * t + 1.1 * Math.sin(Math.PI * t));   // slim, tapering, slight calf
-    const rootL = rotp(REST.hipJointL, tilt, REST.hip), rootR = rotp(REST.hipJointR, tilt, REST.hip);
-    rootL[0] += hipX; rootR[0] += hipX;
+    const anchor = (J) => {
+      if (W.legs.fromHip) { const q = rotp(J, tilt, REST.hip); q[0] += hipX; return q; }
+      const q = rotp([J[0], REST.skirtHem - 6], sec.skirt.x, [200, 304]); q[0] += tk * (q[1] - 346);
+      const r2 = rotp(q, tilt, REST.hip); r2[0] += hipX; return r2;
+    };
+    const rootL = anchor(REST.hipJointL), rootR = anchor(REST.hipJointR);
+    const bk = W.legs.fromHip ? 1 : 0.55;   // shorter visible leg: smaller bends
     for (const [s, root, A] of [['l', rootL, REST.ankleL], ['r', rootR, REST.ankleR]]) {
       const p = s;
-      const ax = A[0] + d(p + 'ax'), ay = A[1] + d(p + 'ay');
-      const cv = limb(root, [ax, ay], d(p + 'b1'), d(p + 'b2')), dd = tubeD(cv, legW);
+      // floor-length gown (shoesUnder): the feet stay under the flare, only the toes peek out
+      const ax = W.shoesUnder ? clamp(A[0] + d(p + 'ax') * 0.3, 168, 232) : A[0] + d(p + 'ax');
+      const ay = W.shoesUnder ? A[1] : W.legs.fromHip ? A[1] + d(p + 'ay') : Math.max(A[1] + d(p + 'ay'), root[1] + 42);   // feet never climb above the hem
+      const cv = limb(root, [ax, ay], d(p + 'b1') * bk, d(p + 'b2') * bk), dd = tubeD(cv, legW);
       setE(`leg-${s}-ink`, 'd', dd); setE(`leg-${s}-fill`, 'd', dd);
-      if (E[`leg-${s}-sh`]) setE(`leg-${s}-sh`, 'd', cubicD(limb([root[0] - 3, root[1] + 6], [ax - 3, ay - 6], d(p + 'b1') * 0.8, d(p + 'b2') * 0.8)));
+      if (E[`leg-${s}-sh`]) setE(`leg-${s}-sh`, 'd', cubicD(limb([root[0] - 3, root[1] + 6], [ax - 3, ay - 6], d(p + 'b1') * 0.8 * bk, d(p + 'b2') * 0.8 * bk)));
       const flip = d(p + 'sf');
       setE(`shoe-${s}-t`, 'transform', `translate(${f(ax)} ${f(ay)}) rotate(${f(d(p + 'sr'))}) scale(${f2(flip * 0.88)} 0.88)`);
     }

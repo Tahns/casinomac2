@@ -10,14 +10,14 @@
     },
     "mambo_outfits.js": {
       "source": "mambo_outfits.mjs",
-      "sourceSha": "52af91ae7e60e0c9",
-      "shippedSha": "cb139ddb7449373e",
+      "sourceSha": "836a4c08ee244eb2",
+      "shippedSha": "f3ec12944e624f62",
       "patches": []
     },
     "mambo_rig.js": {
       "source": "mambo_rig.mjs",
-      "sourceSha": "a0024e4c30d839ad",
-      "shippedSha": "23570d156a86665a",
+      "sourceSha": "2832ed797f0f3961",
+      "shippedSha": "2eb5157b6fe0921b",
       "patches": [
         "osFollow",
         "frameGuard",
