@@ -1,0 +1,28 @@
+{
+ "generated": "2026-10-30T19:39:19.902Z",
+ "src": "math/games/agent_mambo/library/fixtures_out",
+ "per": 3,
+ "files": {
+  "books_base_sample.jsonl": "ee19c6d723ed7486fabc2fc7d1666b0cbf77e3f8d74535e5a3bd2d3c9d40f75a",
+  "lookUpTable_base_0.csv": "7f6862895d9e02c081a35707c817278904dbe7e4ec2c1447f1e56b2215cbc0ef",
+  "books_bonus_sample.jsonl": "db6c3f3fa0669918c06236e79f59d2c357335361a883ca82d9058c1b0db7e181",
+  "lookUpTable_bonus_0.csv": "7c65baf61e32990ff7cb3a2a94b03453dd82c4950ba02461c09f538071100890",
+  "books_entrance_orders_sample.jsonl": "07d13eca7320f44632ff06e6314dee95955aac3c70882ba48b0535409f3e4f0a",
+  "lookUpTable_entrance_orders_0.csv": "4abba9dcdb4659f49596e5950666e87a52cb0442ce1c4197743ad8bd248f8fd7",
+  "books_entrance_blackout_sample.jsonl": "23369e4e231ac57cd94c710d5c7417c83eeca8a25c63cd97b891e95d3022f5d9",
+  "lookUpTable_entrance_blackout_0.csv": "d1f47a02cffc1af52e58b49d12e58cdaf0a1471cd22f60915b64d3ba541e79e5"
+ },
+ "written": {
+  "EVENTS.md": "c1f4362204a45841b766b47fa8b96b71a5b3ef8292a53c99d4661df1b6defc7f",
+  "PICKS.md": "a21eb0d759dae103b79dfde5b93b13f376467a5664b387961d644c3e0e58a02b",
+  "books_base_sample.jsonl": "a467cb926386755fddfa1d51d392664c19513b808a8d206d6c86508df3e48bf1",
+  "books_bonus_sample.jsonl": "b4d9d9e0390e71cadc275842f73d6aab40a11d66723038a2e4e982e567b2ab45",
+  "books_entrance_blackout_sample.jsonl": "9dbb5e2d8ab137f739ee652cbd88468d4c13c441493d3373713fe2249044a2a8",
+  "books_entrance_orders_sample.jsonl": "979c4b6ea766bc02b9def0c62c944d6c84aa5c8ea648f1d9423405cccf2d8806",
+  "index.json": "2c4f9bdbfd8d998dfdfe5e144528e67a0961f51162c44be8a790693d34ea20a9",
+  "lookUpTable_base_0.csv": "bbfbcedf85b623003923d6886b9eb41b9feb33539ab943658067a9c3b2af9f41",
+  "lookUpTable_bonus_0.csv": "cf79aa4a5a0c0e1c1db9478f1bb21817aab5ff9894171b7fea4f75593c508547",
+  "lookUpTable_entrance_blackout_0.csv": "7eeea4ab201d15cdcef2dcc9e2cb90e0e99ebd06aedcba7cd84bba4d5e57b85d",
+  "lookUpTable_entrance_orders_0.csv": "b212c5849c2e3dbf38da084c23a34b4e48344060bcb03a97ac83c27597b5c843"
+ }
+}

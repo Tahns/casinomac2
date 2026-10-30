@@ -34,10 +34,36 @@ const glyph = (id) => {
   return `<span class="rl-glyph" style="color:${g[0]}" aria-hidden="true">${g[1]}</span>`;
 };
 
-function modeName(name) { return t.mode(name); }
+// The rules list the three doors side by side, so the Stage Door mode gets its door name here too (the main screen keeps 'SECRET ENTRANCE').
+function modeName(name) { const n = t.mode(name); return name === 'bonus' && /^SECRET ENTRANCE$/i.test(n) ? n + ': STAGE DOOR' : n; }
 
 function tierLabel(tier) {
   return tier.min === tier.max ? `${tier.min}` : tier.max >= 30 ? `${tier.min}+` : `${tier.min}-${tier.max}`;
+}
+
+const share = (r, d = 1) => (Number.isFinite(Number(r)) ? (Number(r) * 100).toFixed(d) + '%' : '-');
+const MISSION_FALLBACK = [
+  { id: 'briefing', name: 'The Briefing', door: 'Stage Door', mode: 'bonus', dialStart: 1, dialStep: 8, dialCap: 100, payTiming: 'step' },
+];
+const DOOR_ORDER = [['bonus', 'Stage Door', 'briefing'], ['entrance_orders', 'Coat Check', 'orders'], ['entrance_blackout', 'Service Stairs', 'blackout']];
+
+// Plain-words rules of one mission, built only from the numbers of the data (missionAssigned of the real books).
+function missionRules(m, B, tableName) {
+  const start = m.dialStart || 1, step = m.dialStep || 8, cap = m.dialCap || 100;
+  if (m.id === 'orders') {
+    return `<li>During a free spin, winning steps are not won one by one: each winning step is filed into the sealed orders envelope at x1 (shown in a neutral colour and not added to the win until the envelope opens).</li>
+      <li>The Clearance Dial still rises by ${step} after every winning step (x${start}, x${start + step}, x${start + 2 * step} ... up to x${cap}).</li>
+      <li>When the board has settled and the wire has gone out or blasted, the envelope opens once: the win of that free spin is the envelope total multiplied by the dial value at that moment. A free spin without a winning step opens no envelope.</li>`;
+  }
+  if (m.id === 'blackout') {
+    const L = m.lens || { w: 2, h: 2, mult: 4 };
+    return `<li>Every free spin starts in the dark. Before any result, the spin shows the route of a ${L.w}x${L.h} spotlight.</li>
+      <li>The spotlight is used at the first evaluation of the spin and moves one place along its route at each tumble (and after a blast); after the last place it stays where it is.</li>
+      <li>A winning cluster with at least one symbol inside the spotlight wins x${L.mult} on top of the Clearance Dial. Clusters outside it win normally.</li>
+      <li>The dial starts at x${start} and rises by ${step} after every winning step, up to x${cap}. Each step is won at the current dial value.</li>`;
+  }
+  return `<li>The Clearance Dial starts at x${start}. Every winning tumble step is won with the current dial value, then the dial rises by ${step} (x${start}, x${start + step}, x${start + 2 * step} ... up to x${cap}).</li>
+      <li>The win of a step is its value from the ${esc(tableName)} multiplied by the current dial value.</li>`;
 }
 
 export function buildRules(data, ctx = {}) {
@@ -65,8 +91,16 @@ export function buildRules(data, ctx = {}) {
   const minRetrig = retrig.length ? retrig[0].scatters : 3;
   const minCluster = tiers.length ? tiers[0].min : 5;
   const B = social ? 'play amount' : 'bet';
+  const tableName = social ? 'Win table' : 'Paytable';
   const wildName = wild ? wild.name : 'Mambo Star';
   const scatName = scatter ? scatter.name : 'Classified Dossier';
+  const layouts = Array.isArray(d.layouts) ? d.layouts.filter((l) => l && l.id) : [];
+  const missions = Array.isArray(d.missions) && d.missions.length ? d.missions.filter((m) => m && m.id) : MISSION_FALLBACK;
+  const shares = d.shares && typeof d.shares === 'object' ? d.shares : {};
+  const modeOf = (name) => (d.modes || []).find((m) => m && m.name === name);
+  const doors = DOOR_ORDER.filter(([mode]) => mode === 'bonus' || (modeOf(mode) && shares[mode]));
+  const missionById = (id) => missions.find((m) => m.id === id);
+  const multiMission = missions.length > 1;
 
   let example = '';
   if (typeof fmt === 'function' && pays.length) {
@@ -78,12 +112,13 @@ export function buildRules(data, ctx = {}) {
   }
 
   const sections = [];
-
+  const planNames = layouts.map((l) => esc(l.name)).join(', ');
   sections.push({ id: 'overview', title: t('rules.tab.overview'), html: `
     <h3>Agent Mambo</h3>
-    <p>Agent Mambo is a 6-reel, 5-row cluster game. There are no paylines: wins are formed by groups of ${minCluster} or more matching symbols that touch each other horizontally or vertically.</p>
+    <p>Agent Mambo is a 6-reel cluster game. There are no paylines: wins are formed by groups of ${minCluster} or more matching symbols that touch each other horizontally or vertically.</p>
+    ${layouts.length > 1 ? `<p>In the base game the board takes one of ${layouts.length} floor plans (${planNames}). The floor plan of a spin is drawn before any result, shown before the symbols land and kept for the whole spin. The free spins always play on the ${esc(layouts[0].name)} (6 reels, 5 rows).</p>` : '<p>The board has 6 reels and 5 rows.</p>'}
     <p>After every win the winning symbols are removed, the remaining symbols fall down and new symbols drop in from above (tumbles). Tumbles continue as long as new wins are formed, and all wins of a round are added together.</p>
-    <p>Land ${minTrig} or more ${esc(scatName)} symbols to start the Mission Briefing free spins, where the Mission Meter multiplies every win and keeps rising.</p>
+    <p>Land ${minTrig} or more ${esc(scatName)} symbols to start the free spins. ${multiMission ? `Each time, one of ${missions.length} missions is drawn (${missions.map((m) => esc(m.name)).join(', ')}): every mission uses the Clearance Dial, a multiplier that only rises during the free spins, and adds its own rule.` : 'The Clearance Dial multiplies every win of the free spins and keeps rising.'}</p>
     <p>The maximum win is ${commas(wincap)}x the ${B}. When this limit is reached the round ends immediately and all remaining features are forfeited.</p>
   ` });
 
@@ -98,10 +133,10 @@ export function buildRules(data, ctx = {}) {
     </ol>
     <h3>How wins form</h3>
     <ul>
-      <li>Clusters are made of the same symbol touching horizontally or vertically. Diagonal neighbours do not connect.</li>
+      <li>Clusters are made of the same symbol touching horizontally or vertically. Diagonal neighbours do not connect. On a floor plan with missing positions, only positions that are on the board connect.</li>
       <li>${esc(wildName)} (wild) substitutes for all winning symbols. It never replaces ${esc(scatName)} (scatter).</li>
       <li>A wild can join clusters of different symbols at the same time, but each symbol cluster is evaluated on its own.</li>
-      <li>Every cluster is rewarded by its symbol and its size, as shown in the ${esc(social ? 'Win table' : 'Paytable')}. Larger clusters are worth more.</li>
+      <li>Every cluster is rewarded by its symbol and its size, as shown in the ${esc(tableName)}. Larger clusters are worth more.</li>
       <li>All wins are multiples of the ${B}, and are added together over all tumbles of a round.</li>
     </ul>
     ${example}
@@ -111,22 +146,31 @@ export function buildRules(data, ctx = {}) {
   const rows = pays.map((s) => `
       <tr><th scope="row">${glyph(s.id)} ${esc(s.name)}</th>${s.pays.map((p) => `<td>${p == null ? '-' : esc(num(p)) + 'x'}</td>`).join('')}</tr>`).join('');
   sections.push({ id: 'wins', title: t('rules.tab.wins'), html: `
-    <h3>${esc(social ? 'Win table' : 'Paytable')}</h3>
+    <h3>${esc(tableName)}</h3>
     <p>Wins are shown as multiples of the ${B} for a cluster of the given size. Cluster size is the number of connected symbols.</p>
     <div class="rl-scroll"><table class="rl-table">
       <thead><tr><th scope="col">Symbol</th>${headCells}</tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
-    <p>Cluster sizes in the header are the number of matching symbols in the cluster. Symbols on the table are listed from highest to lowest value.</p>
+    <p>Cluster sizes in the header are the number of matching symbols in the cluster. Symbols on the table are listed from highest to lowest value. The table is the same on every floor plan and in every mode.</p>
     ${wild ? `<p>${glyph('W')} <strong>${esc(wild.name)}</strong> is wild and substitutes for all winning symbols (not for ${esc(scatName)}).</p>` : ''}
     ${scatter ? `<p>${glyph('S')} <strong>${esc(scatter.name)}</strong> is the scatter. It does not form clusters, and it triggers the free spins wherever it lands.</p>` : ''}
   ` });
 
   const trigRows = trig.map((x) => `<tr><td>${x.scatters}${x === trig[trig.length - 1] ? '+' : ''}</td><td>${x.spins}</td></tr>`).join('');
   const retrigRows = retrig.map((x) => `<tr><td>${x.scatters}${x === retrig[retrig.length - 1] ? '+' : ''}</td><td>${x.spins}</td></tr>`).join('');
+  const planRows = layouts.map((l) => `<tr><th scope="row">${esc(l.name)}</th><td>${esc(planShape(l))}</td><td>${Number(l.cellCount) || '-'}</td><td>${share(l.share)}</td></tr>`).join('');
+  const missionRows = missions.map((m) => `<tr><th scope="row">${esc(m.name)}</th><td>${m.share != null ? share(m.share) : '-'}</td><td>+${Number(m.dialStep) || '-'}</td><td>${m.id === 'orders' ? 'once per free spin, when the envelope opens' : m.id === 'blackout' ? `every step; x${(m.lens && m.lens.mult) || 4} inside the spotlight` : 'every step'}</td></tr>`).join('');
   sections.push({ id: 'features', title: t('rules.tab.features'), html: `
     <h3>Tumbles</h3>
     <p>After each win, winning symbols are removed and the remaining symbols drop down. New symbols fill the empty positions. The tumbling continues until no new win is formed.</p>
+    ${layouts.length > 1 ? `<h3>Floor plans</h3>
+    <ul>
+      <li>Every base game spin is played on one floor plan. It is drawn by the round before any symbol is shown, outlined on the board, and kept for the whole spin: the reveal, every tumble and the blast of the wire.</li>
+      <li>Symbols fall inside each reel's positions only. The free spins are always played on the ${esc(layouts[0].name)}.</li>
+      <li>The floor plan cannot be chosen. The share column below is how often each plan appears over many base game spins, from the final tables of the game; the RTP of the base game already includes every floor plan.</li>
+    </ul>
+    <div class="rl-scroll"><table class="rl-table"><thead><tr><th scope="col">Floor plan</th><th scope="col">Shape</th><th scope="col">Positions</th><th scope="col">Share of base spins</th></tr></thead><tbody>${planRows}</tbody></table></div>` : ''}
     <h3>Bomb-timer wire</h3>
     <ul>
       <li>On every spin of the base game and of the free spins, a bomb-timer wire is laid along a path of ${fuseLen} connected positions on the board, starting on the first reel. The first position of the wire is already lit.</li>
@@ -135,18 +179,22 @@ export function buildRules(data, ctx = {}) {
       <li>If fewer than ${fuseDetMin} positions are lit, the wire goes out and nothing changes. The wire is shown only once it starts to burn.</li>
       <li>The wire is active in the base game and during the free spins.</li>
     </ul>
-    <h3>Mission Briefing free spins</h3>
-    <p>${minTrig} or more ${esc(scatName)} scatters anywhere on the board during a tumble sequence of a round start the Mission Briefing free spins.</p>
+    <h3>Free spins</h3>
+    <p>${minTrig} or more ${esc(scatName)} scatters anywhere on the board during a tumble sequence of a round start the free spins.</p>
     <table class="rl-table"><thead><tr><th scope="col">Scatters</th><th scope="col">Free spins awarded</th></tr></thead><tbody>${trigRows}</tbody></table>
-    <h3>Mission Meter</h3>
+    ${multiMission ? `<h3>Missions</h3>
+    <p>When the free spins start from the base game, one mission is drawn for the whole feature and announced before the first free spin. The share column is how often each mission is drawn, from the final tables of the game. Each door of the SECRET ENTRANCE always plays one mission (see Modes).</p>
+    <div class="rl-scroll"><table class="rl-table"><thead><tr><th scope="col">Mission</th><th scope="col">Share of triggers</th><th scope="col">Dial step</th><th scope="col">When wins are added</th></tr></thead><tbody>${missionRows}</tbody></table></div>` : ''}
+    <h3>Clearance Dial</h3>
     <ul>
-      <li>The Mission Meter is a global multiplier. It starts at x${gmStart} when the free spins begin and is not used in the base game.</li>
-      <li>Every winning tumble step is won with the current value of the meter. After that step, the meter rises by ${gmStep}.</li>
-      <li>The meter stays for the whole free spins feature, from one free spin to the next, and also after a retrigger.${gmCap ? ` Highest level: x${gmCap}.` : ''}</li>
-      <li>The win of a step is its value from the ${esc(social ? 'Win table' : 'Paytable')} multiplied by the current meter value.</li>
+      <li>The Clearance Dial is a global multiplier. It starts at x${gmStart} when the free spins begin and is not used in the base game.</li>
+      <li>In The Briefing every winning tumble step is won with the current value of the dial. After that step, the dial rises by ${gmStep}.</li>
+      <li>The dial stays for the whole free spins feature, from one free spin to the next, and also after a retrigger. It never goes down.${gmCap ? ` Highest level: x${gmCap}.` : ''}</li>
+      <li>The band names on the dial (Largo, Andante, Allegro, Presto) only describe its current value. They are not a prediction.</li>
     </ul>
+    ${missions.map((m) => `<h3>${esc(m.name)}</h3><ul>${missionRules(m, B, tableName)}</ul>`).join('\n    ')}
     <h3>Retrigger</h3>
-    <p>${minRetrig} or more ${esc(scatName)} scatters during the free spins award extra free spins.</p>
+    <p>${minRetrig} or more ${esc(scatName)} scatters during the free spins award extra free spins. The mission and the dial value stay the same.</p>
     <table class="rl-table"><thead><tr><th scope="col">Scatters</th><th scope="col">Extra free spins</th></tr></thead><tbody>${retrigRows}</tbody></table>
     <p>When the free spins end, the total win is added to your balance.</p>
     <h3>Maximum win</h3>
@@ -155,10 +203,17 @@ export function buildRules(data, ctx = {}) {
 
   const modeLines = (d.modes || []).map((m) => `${esc(modeName(m.name))}: RTP ${pct(m.rtp)}, max win ${commas(m.maxWin)}x`).join(' · ');
   const modeRows = (d.modes || []).map((m) => `<tr><th scope="row">${esc(modeName(m.name))}</th><td>${num(m.cost)}x</td><td>${pct(m.rtp)}</td><td>${commas(m.maxWin)}x</td></tr>`).join('');
+  const doorRows = doors.map(([mode, door, mid]) => {
+    const m = modeOf(mode) || {}; const s = shares[mode] || {}; const mi = missionById(mid);
+    return `<tr><th scope="row">${esc(door)}</th><td>${esc(mi ? mi.name : '-')}</td><td>${num(m.cost || unleashCost)}x</td><td>${pct(s.rtp != null ? s.rtp : m.rtp)}</td><td>${commas(s.maxWin != null ? s.maxWin : m.maxWin)}x</td><td>${s.medianX != null ? esc(num(s.medianX)) + 'x' : '-'}</td><td>${s.pGtPrice != null ? share(s.pGtPrice, 0) : '-'}</td></tr>`;
+  }).join('');
+  const minPrice = typeof fmt === 'function' ? esc(fmt(unleashMinPrice(currency), currency)) : '';
   sections.push({ id: 'modes', title: t('rules.tab.modes'), html: `
     <h3>Game modes</h3>
     <p><strong>${esc(modeName('base'))}</strong> is the standard game. A round costs the ${B} (1x).</p>
-    <p><strong>${esc(modeName('bonus'))}</strong> starts the Mission Briefing free spins directly, without having to land scatters. A round in this mode costs ${num(unleashCost)}x the ${B}. A confirmation is shown, stating the total cost, before the round starts. ${esc(modeName('bonus'))} is available from a minimum price of ${esc(fmt(unleashMinPrice(currency), currency))}; below that price the button stays inactive.</p>
+    <p><strong>SECRET ENTRANCE</strong> starts the free spins directly, without having to land scatters. Behind it there ${doors.length > 1 ? `are ${doors.length} doors; each door always plays one mission` : 'is one door, Stage Door, which plays The Briefing'}. A round through a door costs ${num(unleashCost)}x the ${B}. Nothing is selected in advance: you choose a door, then a confirmation states the total cost before the round starts. The SECRET ENTRANCE is available from a minimum price of ${minPrice}; below that price the button stays inactive.</p>
+    ${doors.length ? `<div class="rl-scroll"><table class="rl-table"><thead><tr><th scope="col">Door</th><th scope="col">Mission</th><th scope="col">Cost</th><th scope="col">RTP</th><th scope="col">Max win</th><th scope="col">Median round</th><th scope="col">Rounds above the cost</th></tr></thead><tbody>${doorRows}</tbody></table></div>
+    <p>Median round: half of the rounds through that door end at or below this multiple of the ${B}, half end above it. Rounds above the cost: the share of rounds that return more than the round costs (${num(unleashCost)}x the ${B}). Both come from the final tables of the game, over many rounds; a single round can end anywhere between the lowest result and the maximum win.</p>` : ''}
     <p class="rl-rtp">${modeLines}</p>
     <div class="rl-scroll"><table class="rl-table"><thead><tr><th scope="col">Mode</th><th scope="col">Cost</th><th scope="col">RTP</th><th scope="col">Max win</th></tr></thead><tbody>${modeRows}</tbody></table></div>
     <p>The RTP is the expected return over many plays. A maximum win of ${commas(wincap)}x applies to every round, in every mode.</p>
@@ -171,9 +226,9 @@ export function buildRules(data, ctx = {}) {
       <li><strong>Bet - / +</strong>: decreases or increases the ${B}. Disabled while a round is running.</li>
       <li><strong>AUTOPLAY</strong>: opens the autoplay settings. Choose the number of spins and stop conditions, then confirm to start. Press again to stop.</li>
       <li><strong>TURBO</strong>: speeds up the animations.</li>
-      <li><strong>SECRET ENTRANCE</strong>: starts the Mission Briefing free spins directly at ${num(unleashCost)}x the ${B}, after you confirm the total cost.</li>
+      <li><strong>SECRET ENTRANCE</strong>: opens the doors (${doors.map(([, door]) => esc(door)).join(', ')}). Choose a door, check the total cost (${num(unleashCost)}x the ${B}) and confirm to start its free spins. Cancel closes the window without starting a round.</li>
       <li><strong>SOUND</strong>: mutes or unmutes all sounds.</li>
-      <li><strong>SETTINGS</strong> (gear): opens the settings, in four tabs: Sound (mute, master, music and effects volume), Display (motion, screen flash effects, high contrast, session summary), Play (turbo, autoplay) and Info (these rules, RTP and version).</li>
+      <li><strong>SETTINGS</strong> (gear): opens the settings window, in four tabs: Sound (mute, master, music and effects volume), Display (motion, screen flash effects, high contrast, session summary), Play (turbo and autoplay shortcuts) and Info (these rules, RTP and version). While it is open, <kbd>Space</kbd> toggles the control that has the focus and never starts a round.</li>
       <li><strong>Session summary</strong> (NET and TIME, under the balance): the net result and the time played in this session.</li>
       <li><strong>INFO</strong>: opens these rules.</li>
       <li><strong>FULLSCREEN</strong>: enters or leaves full screen.</li>
@@ -192,6 +247,15 @@ export function buildRules(data, ctx = {}) {
 
   if (social) for (const s of sections) s.html = socialize(s.html);
   return { sections, provisional: !!d.provisional };
+}
+
+// "6x5", "6x5, corners cut", ... from the real cells of the layout event
+function planShape(l) {
+  const cells = Array.isArray(l.cells) ? l.cells : [];
+  const lens = cells.map((c) => (Array.isArray(c) ? c.length : 0));
+  if (!lens.length) return '-';
+  if (lens.every((n) => n === lens[0])) return `${lens.length} reels x ${lens[0]} rows`;
+  return `${lens.length} reels, ${lens.join('-')} rows`;
 }
 
 // ---- DOM rendering -----------------------------------------------------
@@ -233,20 +297,27 @@ export async function renderRules(container, data, ctx) {
   container.innerHTML = `
     <div class="rules" role="document">
       <div class="rules-head"><h2>${esc(t('rules.title'))}</h2><button type="button" class="rules-close" data-rules-close>${esc(t('btn.close'))}</button></div>
-      <div class="rules-tabs" role="tablist">${sections.map((s, i) => `<button type="button" role="tab" class="rules-tab" id="rules-tab-${s.id}" data-tab="${s.id}" aria-selected="${i === 0}">${esc(s.title)}</button>`).join('')}</div>
-      <div class="rules-body" id="rules-body" tabindex="0"></div>
+      <div class="rules-tabs" role="tablist" aria-label="${esc(t('rules.title'))}">${sections.map((s, i) => `<button type="button" role="tab" class="rules-tab" id="rules-tab-${s.id}" data-tab="${s.id}" aria-selected="${i === 0}">${esc(s.title)}</button>`).join('')}</div>
+      <div class="rules-body" id="rules-body">${sections.map((s) => `<div class="rules-panel" id="rules-panel-${s.id}" role="tabpanel" tabindex="0">${s.html}</div>`).join('')}</div>
     </div>`;
   const body = container.querySelector('#rules-body');
-  const show = (id) => {
-    const s = sections.find((x) => x.id === id) || sections[0];
-    body.innerHTML = s.html;
-    body.scrollTop = 0;
-    container.querySelectorAll('.rules-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === s.id)));
-  };
-  container.querySelectorAll('.rules-tab').forEach((b) => b.addEventListener('click', () => show(b.dataset.tab)));
+  const tabs = [...container.querySelectorAll('.rules-tab')];
+  const panels = [...container.querySelectorAll('.rules-panel')];
+  // the one APG tabs helper of SYNTHESIS 6 (src/ui/tabs.js: arrow keys, Home / End, roving tabindex); plain clicks if it is missing
+  let tabsMod = null;
+  try { tabsMod = await import('./ui/tabs.js'); } catch (e) { tabsMod = null; }
+  if (tabsMod && typeof tabsMod.createTabs === 'function') {
+    tabsMod.createTabs({ tablist: container.querySelector('.rules-tabs'), tabs, panels, idPrefix: 'rules', onSelect: () => { body.scrollTop = 0; } });
+  } else {
+    const show = (id) => {
+      tabs.forEach((b, i) => { const on = b.dataset.tab === id; b.setAttribute('aria-selected', String(on)); panels[i].hidden = !on; });
+      body.scrollTop = 0;
+    };
+    tabs.forEach((b) => b.addEventListener('click', () => show(b.dataset.tab)));
+    show(sections[0].id);
+  }
   const closeBtn = container.querySelector('[data-rules-close]');
   if (closeBtn) closeBtn.addEventListener('click', closeRules);
-  show(sections[0].id);
 }
 
 function modalEl() { return typeof document !== 'undefined' ? document.getElementById('modal-info') : null; }

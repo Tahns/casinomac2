@@ -1,5 +1,6 @@
 {
   "provisional": false,
+  "version": 2,
   "symbols": [
     {
       "id": "H1",
@@ -198,15 +199,303 @@
     {
       "name": "base",
       "cost": 1,
-      "rtp": 0.9599999994894652,
+      "rtp": 0.96,
       "maxWin": 5000
     },
     {
       "name": "bonus",
       "cost": 100,
-      "rtp": 0.9600000000004184,
+      "rtp": 0.96,
+      "maxWin": 5000
+    },
+    {
+      "name": "entrance_orders",
+      "cost": 100,
+      "rtp": 0.96,
+      "maxWin": 5000
+    },
+    {
+      "name": "entrance_blackout",
+      "cost": 100,
+      "rtp": 0.96,
       "maxWin": 5000
     }
   ],
-  "generatedFrom": "math/games/agent_mambo/library/publish_files/lookUpTable_base_0.csv + math/games/agent_mambo/library/publish_files/lookUpTable_bonus_0.csv + game_config.py"
+  "shares": {
+    "bonus": {
+      "medianX": 65.6,
+      "pGtPrice": 0.31,
+      "rtp": 0.96,
+      "maxWin": 5000,
+      "mission": "briefing",
+      "name": "Stage Door",
+      "books": 100000
+    },
+    "entrance_orders": {
+      "medianX": 66.8,
+      "pGtPrice": 0.31,
+      "rtp": 0.96,
+      "maxWin": 5000,
+      "mission": "orders",
+      "name": "Coat Check",
+      "books": 103125
+    },
+    "entrance_blackout": {
+      "medianX": 66.2,
+      "pGtPrice": 0.31,
+      "rtp": 0.96,
+      "maxWin": 5000,
+      "mission": "blackout",
+      "name": "Service Stairs",
+      "books": 103125
+    }
+  },
+  "layouts": [
+    {
+      "id": "mezzanine",
+      "name": "Mezzanine",
+      "rows": 5,
+      "cells": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      ],
+      "cellCount": 30,
+      "share": 0.502091
+    },
+    {
+      "id": "atrium",
+      "name": "Atrium",
+      "rows": 5,
+      "cells": [
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          1,
+          2,
+          3
+        ]
+      ],
+      "cellCount": 26,
+      "share": 0.214194
+    },
+    {
+      "id": "lobby",
+      "name": "Lobby",
+      "rows": 5,
+      "cells": [
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          1,
+          2,
+          3,
+          4
+        ]
+      ],
+      "cellCount": 24,
+      "share": 0.137581
+    },
+    {
+      "id": "annex",
+      "name": "Annex",
+      "rows": 6,
+      "cells": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      ],
+      "cellCount": 36,
+      "share": 0.146134
+    }
+  ],
+  "missions": [
+    {
+      "id": "briefing",
+      "name": "The Briefing",
+      "door": "Stage Door",
+      "mode": "bonus",
+      "share": 0.4,
+      "dialStart": 1,
+      "dialStep": 8,
+      "dialCap": 100,
+      "payTiming": "step"
+    },
+    {
+      "id": "orders",
+      "name": "Sealed Orders",
+      "door": "Coat Check",
+      "mode": "entrance_orders",
+      "share": 0.299998,
+      "dialStart": 1,
+      "dialStep": 7,
+      "dialCap": 100,
+      "payTiming": "spinEnd"
+    },
+    {
+      "id": "blackout",
+      "name": "Ballroom Blackout",
+      "door": "Service Stairs",
+      "mode": "entrance_blackout",
+      "share": 0.300002,
+      "dialStart": 1,
+      "dialStep": 3,
+      "dialCap": 100,
+      "payTiming": "step",
+      "lens": {
+        "w": 2,
+        "h": 2,
+        "mult": 4
+      }
+    }
+  ],
+  "base": {
+    "hit": 0.2332,
+    "pGtStake": 0.125172,
+    "triggerOneIn": 199.992001
+  },
+  "generatedFrom": "math/games/agent_mambo/library/publish_files/lookUpTable_base_0.csv + math/games/agent_mambo/library/publish_files/lookUpTable_bonus_0.csv + math/games/agent_mambo/library/publish_files/lookUpTable_entrance_orders_0.csv + math/games/agent_mambo/library/publish_files/lookUpTable_entrance_blackout_0.csv + library/shares.json (2026-10-30 14:08:18 UTC) + library/analysis_v2.json + library/fixtures_out/books_base_sample.jsonl + game_config.py"
 }

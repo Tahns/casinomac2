@@ -2,15 +2,27 @@
     "modes": [
         {
             "name": "base",
-            "cost": 1.0,
+            "cost": 1,
             "events": "books_base.jsonl.zst",
             "weights": "lookUpTable_base_0.csv"
         },
         {
             "name": "bonus",
-            "cost": 100.0,
+            "cost": 100,
             "events": "books_bonus.jsonl.zst",
             "weights": "lookUpTable_bonus_0.csv"
+        },
+        {
+            "name": "entrance_orders",
+            "cost": 100,
+            "events": "books_entrance_orders.jsonl.zst",
+            "weights": "lookUpTable_entrance_orders_0.csv"
+        },
+        {
+            "name": "entrance_blackout",
+            "cost": 100,
+            "events": "books_entrance_blackout.jsonl.zst",
+            "weights": "lookUpTable_entrance_blackout_0.csv"
         }
     ]
 }
