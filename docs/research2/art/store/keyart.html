@@ -1,0 +1,92 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Agent Mambo key art</title><link rel="icon" href="data:,">
+<!-- Store key art, 100 % vector: hand-built SVG scene + the hand-drawn heroine rig (inspectrice, sober cover version).
+     Usage: keyart.html?w=1920&h=1080  (wide layouts put the title left and the heroine right; portrait = heroine only, like the reference). -->
+<style>
+@font-face{font-family:"Luckiest";src:url(fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;overflow:hidden;background:#162338}
+#scene{position:absolute;left:0;top:0}
+#hero{position:absolute}
+.rim{filter:drop-shadow(5px 0 0 #FFFBF0) drop-shadow(-5px 0 0 #FFFBF0) drop-shadow(0 5px 0 #FFFBF0) drop-shadow(0 -5px 0 #FFFBF0) drop-shadow(4px 4px 0 #2B1A12) drop-shadow(-1px -1px 0 #2B1A12) drop-shadow(0 14px 10px rgba(20,16,43,.4))}
+</style></head><body><svg id="scene"></svg><div id="hero"></div>
+<script type="module">
+import { createHeroine } from '../mambo_rig.mjs';
+import { PAL } from '../mambo_art.mjs';
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 1920), H = +(q.get('h') || 1080);
+const portrait = H > W, banner = W / H > 2.4;
+const P = { ...PAL, night: '#1B2440', dusk: '#2C2F5E', plumL: '#8A5490', rose: '#C8566A', spot: '#FFF3D0' };
+const s = document.getElementById('scene');
+s.setAttribute('width', W); s.setAttribute('height', H); s.setAttribute('viewBox', `0 0 ${W} ${H}`);
+document.body.style.cssText = `width:${W}px;height:${H}px`;
+const r = (a, b) => a + (b - a) * rnd(); let seed = 11; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+let o = '';
+// ---- defs: halftone dots, paper grain (vector dots only, no raster)
+o += `<defs>
+<pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="7" cy="7" r="2.4" fill="${P.ink}" opacity=".18"/></pattern>
+<pattern id="dotsL" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="6" cy="6" r="1.8" fill="${P.white}" opacity=".16"/></pattern>
+</defs>`;
+// ---- sky: flat stepped bands (the closed palette, no gradients)
+const groundY = portrait ? H * 0.66 : H * (banner ? 0.74 : 0.72);
+const bands = [P.night, P.dusk, P.plum, P.plumL, P.rose, P.orange];
+const bh = groundY / bands.length;
+bands.forEach((c, i) => {
+  const y = i * bh, amp = 10 + i * 3, k = (2 * Math.PI) / (W * 0.55);
+  let d = `M0 ${y}`; for (let x = 0; x <= W; x += 40) d += `L${x} ${y + Math.sin(x * k + i) * amp}`;
+  o += `<path d="${d}L${W} ${groundY + 40}L0 ${groundY + 40}Z" fill="${c}"/>`;
+});
+o += `<rect width="${W}" height="${groundY}" fill="url(#dotsL)"/>`;
+// ---- stars
+for (let i = 0; i < W / 22; i++) { const x = r(0, W), y = r(0, groundY * 0.42), z = r(1.5, 4); o += `<path d="M${x} ${y - z * 2}L${x + z * .5} ${y}L${x} ${y + z * 2}L${x - z * .5} ${y}ZM${x - z * 2} ${y}L${x} ${y - z * .5}L${x + z * 2} ${y}L${x} ${y + z * .5}Z" fill="${P.spot}" opacity="${r(.4, .9)}"/>`; }
+// ---- big spotlight disc (moon) with keyhole bite
+const mR = portrait ? W * 0.24 : H * 0.27, mx = portrait ? W * 0.5 : W * (banner ? 0.52 : 0.55), my = portrait ? H * 0.23 : H * 0.3;
+o += `<circle cx="${mx}" cy="${my}" r="${mR * 1.45}" fill="${P.spot}" opacity=".10"/><circle cx="${mx}" cy="${my}" r="${mR * 1.2}" fill="${P.spot}" opacity=".12"/>`;
+o += `<circle cx="${mx}" cy="${my}" r="${mR}" fill="${P.spot}" stroke="${P.mustard}" stroke-width="${mR * .06}"/>`;
+const kh = mR * 0.28; // keyhole silhouette inside the disc (spy motif)
+o += `<g fill="${P.camel}" opacity=".35"><circle cx="${mx + mR * .32}" cy="${my - mR * .18}" r="${kh}"/><path d="M${mx + mR * .32 - kh * .55} ${my - mR * .18}L${mx + mR * .32 + kh * .55} ${my - mR * .18}L${mx + mR * .32 + kh * .85} ${my + mR * .5}L${mx + mR * .32 - kh * .85} ${my + mR * .5}Z"/>
+<circle cx="${mx - mR * .42}" cy="${my + mR * .3}" r="${mR * .1}"/><circle cx="${mx - mR * .25}" cy="${my - mR * .45}" r="${mR * .07}"/></g>`;
+// ---- searchlight beams
+[[0.12, -18], [0.86, 16]].forEach(([fx, a]) => { const bx = W * fx, len = groundY * 1.25, wd = len * 0.16;
+  o += `<path d="M${bx} ${groundY}L${bx - wd + Math.tan(a * Math.PI / 180) * len} ${groundY - len}L${bx + wd + Math.tan(a * Math.PI / 180) * len} ${groundY - len}Z" fill="${P.spot}" opacity=".10"/>`; });
+// ---- skyline, two layers, lit windows
+const city = (base, hmin, hmax, fill, win, op) => { let x = -20;
+  while (x < W + 20) { const bw = r(60, 150) * (W / 1920 + .3), bh2 = r(hmin, hmax); const top = base - bh2;
+    o += `<path d="M${x} ${base}V${top}h${bw}V${base}Z" fill="${fill}" opacity="${op}"/>`;
+    if (rnd() < .25) o += `<path d="M${x + bw * .45} ${top}v${-bh2 * .18}h${bw * .1}v${bh2 * .18}Z" fill="${fill}" opacity="${op}"/>`;
+    if (win) for (let wy = top + 16; wy < base - 18; wy += 26) for (let wx = x + 12; wx < x + bw - 16; wx += 22) if (rnd() < .3) o += `<rect x="${wx}" y="${wy}" width="9" height="13" fill="${P.gold}" opacity=".8"/>`;
+    x += bw + r(4, 18); } };
+city(groundY + 4, groundY * .2, groundY * .38, P.plum, false, .55);
+city(groundY + 4, groundY * .12, groundY * .27, P.navyDeep, true, 1);
+// ---- stage floor: mustard boards with cream lines, halftone
+o += `<path d="M0 ${groundY}H${W}V${H}H0Z" fill="${P.mustard}"/><path d="M0 ${groundY}H${W}" stroke="${P.ink}" stroke-width="8"/>`;
+for (let i = 1; i < 5; i++) { const y = groundY + (H - groundY) * (i / 5) ** 1.2; let d = `M0 ${y}`; for (let x = 0; x <= W; x += 60) d += `L${x} ${y + Math.sin(x / 180 + i) * 6}`; o += `<path d="${d}" stroke="${P.white}" stroke-width="3" fill="none" opacity=".55"/>`; }
+o += `<path d="M0 ${groundY}H${W}V${H}H0Z" fill="url(#dots)"/>`;
+// ---- title (wide layouts only, like the reference)
+if (!portrait) {
+  const tx = W * (banner ? 0.25 : 0.27), ts = banner ? H * 0.27 : H * 0.17, t1y = banner ? H * 0.42 : H * 0.36, t2y = t1y + ts * 1.45;
+  const word = (txt, y, fill, size) => {
+    const a = `x="${tx}" y="${y}" text-anchor="middle" font-family="Luckiest" font-size="${size}" letter-spacing="${size * .04}"`;
+    return `<text ${a} fill="${P.ink}" stroke="${P.ink}" stroke-width="${size * .2}" stroke-linejoin="round" transform="translate(${size * .06} ${size * .07})">${txt}</text>` +
+      `<text ${a} fill="${P.white}" stroke="${P.white}" stroke-width="${size * .26}" stroke-linejoin="round" opacity="0">${txt}</text>` +
+      `<text ${a} fill="${P.ink}" stroke="${P.white}" stroke-width="${size * .22}" stroke-linejoin="round" paint-order="stroke">${txt}</text>` +
+      `<text ${a} fill="${fill}" stroke="${P.ink}" stroke-width="${size * .1}" stroke-linejoin="round" paint-order="stroke">${txt}</text>` +
+      `<text ${a} fill="none" stroke="${P.white}" stroke-width="${size * .028}" stroke-dasharray="${size * .07} ${size * .55}" stroke-linecap="round" opacity=".85" transform="translate(${-size * .02} ${-size * .03})">${txt}</text>`;
+  };
+  o += word('AGENT', t1y, P.mustard, ts);
+  // divider: film strip / dossier tape with a keyhole badge
+  const dy = (t1y + t2y - ts) / 2 + ts * .05, dw = ts * 3.4, dh = ts * .3;
+  o += `<g transform="translate(${tx} ${dy})"><rect x="${-dw / 2 - 6}" y="${-dh / 2 - 6}" width="${dw + 12}" height="${dh + 12}" rx="${dh * .3}" fill="${P.white}"/><rect x="${-dw / 2}" y="${-dh / 2}" width="${dw}" height="${dh}" rx="${dh * .25}" fill="${P.ink}"/>`;
+  for (let x = -dw / 2 + dh * .5; x < dw / 2 - dh * .3; x += dh * .62) o += `<rect x="${x}" y="${-dh * .22}" width="${dh * .34}" height="${dh * .44}" rx="3" fill="${P.gold}"/>`;
+  const b = dh * 1.25; o += `<circle r="${b + 8}" fill="${P.white}"/><circle r="${b}" fill="${P.brick}" stroke="${P.ink}" stroke-width="6"/><circle cy="${-b * .18}" r="${b * .3}" fill="${P.ink}"/><path d="M${-b * .17} ${-b * .1}L${b * .17} ${-b * .1}L${b * .27} ${b * .55}L${-b * .27} ${b * .55}Z" fill="${P.ink}"/></g>`;
+  o += word('MAMBO', t2y, P.brick, ts * 1.12);
+}
+s.innerHTML = o;
+// ---- heroine, sober cover pose (inspectrice, happy, arms up, fully covered)
+const hh = portrait ? H * 0.86 : H * (banner ? 1.02 : 0.9), hw = hh * 400 / 600;
+const hx = portrait ? (W - hw) / 2 : W * (banner ? 0.8 : 0.77) - hw / 2, hy = portrait ? H * 0.12 : H - hh - H * (banner ? -0.005 : 0.02);
+const el = document.getElementById('hero'); el.style.cssText = `left:${hx}px;top:${hy}px;width:${hw}px;height:${hh}px`; el.classList.add('rim');
+await document.fonts.load('100px Luckiest');
+const M = createHeroine(el, { outfit: 'inspectrice', raf: false, idle: false, limited: 0, seed: 7, mirror: true });
+M.setPose(q.get('pose') || 'bigwin', { snap: true }); M.setMood('happy');
+M.snap(); for (let i = 0; i < 40; i++) M.step(1 / 60);
+window.__ready = true;
+</script></body></html>
