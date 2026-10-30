@@ -288,8 +288,12 @@ for (const vp of VIEWPORTS) {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const samples = []; const timer = setInterval(() => samples.push(rig.stats().avgMs), 16);
     const res = {}; const f0 = rig.stats().frames, t0 = performance.now();
-    const seq = [['spin', 300], ['anticipate', 300], ['win', 500], ['bigwin', 500], ['epic', 1500], ['blast', 800], ['fizzle', 900], ['meter', 800], ['trigger', 600], ['end', 1100], ['gag', 1100], ['idle', 200]];
-    for (const [k, ms] of seq) { res[k] = m.react(k, { level: 2, ratio: 8, speed: 2.5, at: { x: 600, y: 200 } }); m.say('x', 300); await sleep(ms); }
+    const seq = [['spin', 300], ['anticipate', 300], ['win', 500], ['bigwin', 500], ['epic', 1700], ['blast', 800], ['fizzle', 900], ['meter', 800], ['trigger', 600], ['end', 1100], ['gag', 1100], ['idle', 200]];
+    // after the planned gap, wait (capped at 3 s) until the running clip has ended or is only holding: a lower-priority kind is refused
+    // by design while a higher one runs (director.js), so a fixed sleep made the test depend on setTimeout lateness (megaWin = 1533 ms)
+    const dir = m.impl.director();
+    const free = async () => { const tEnd = performance.now() + 3000; while (performance.now() < tEnd) { const s = dir.state(); if ((!s.cur || s.cur.holding) && !s.locked) return; await sleep(20); } };
+    for (const [k, ms] of seq) { res[k] = m.react(k, { level: 2, ratio: 8, speed: 2.5, at: { x: 600, y: 200 } }); m.say('x', 300); await sleep(ms); await free(); }
     m.react('outfit', { outfit: 'casino' }); await sleep(2300); const outfit = rig.outfit; m.react('outfit', { outfit: 'inspectrice' }); await sleep(2300);
     clearInterval(timer);
     const st = rig.stats(); const fps = (st.frames - f0) / ((performance.now() - t0) / 1000);

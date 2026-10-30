@@ -70,8 +70,14 @@ Chain of failure: rig throws or does not load -> static picture of the same hero
 - [x] heroine/ modules, mascot.js wiring, en_hero.js
 - [x] unit tests, browser tests, screenshots viewed
 - [x] request files WP3_to_WP4 / WP11 / WP10
-- [ ] commit (own paths only)
+- [x] commit (own paths only)
 
 ## Resume hints
 
 `cd frontend_mambo`; static server `PORT=5840 node tools/mock-rgs/static-server.mjs`, mock RGS `MOCK_PORT=5841 node tools/mock-rgs/server.mjs` (only needed by hand; `browser.mjs` starts its own). New art drop: `node tools/sync_heroine.mjs --fallback && node --test tests/heroine`. Dev harness: `/tests/heroine/harness.html` (exposes `window.H`). Scratch scripts (contact sheets, live shots) were in `/tmp/claude-0/scratch/wp3/` and are not part of the repo.
+
+## Fix round 1 (reviewer finding D4-live-reactions-red)
+
+- Finding: D4 was red at 1024x576, 800x450 and 425x812 (38/41, not 41/41) because the live reaction loop slept a fixed 1500 ms after `epic`, while megaWin at speed 2.5 runs 3.683 s / 2.5 + 60 ms = 1533 ms. `blast` (prio 3) arrived while `epic` (prio 5) still ran and was refused by design (director.js). It only passed when setTimeout fired 33 ms late. The director was correct; the test was flaky.
+- Fix (tests/heroine/browser.mjs only): the `epic` gap is now 1700 ms, and after every planned gap the loop waits (capped at 3 s, polling every 20 ms) until `m.impl.director().state()` shows no running clip, or only a holding one, and no costume lock. The test no longer depends on timer lateness.
+- Verified: `PORTS=5842,5843 node tests/heroine/browser.mjs` 41/41, then `PORTS=5844,5845` 41/41 again (D4 started list has all ten kinds plus gag at all four viewports, avg 0.54-1.05 ms/frame). `node --test tests/core tests/text` 60/60. Fresh game_1024x576.png and game_425x812.png viewed: heroine left of the grid (full figure) and in the portrait corner (waist-up).
