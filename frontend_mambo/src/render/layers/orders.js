@@ -9,7 +9,7 @@
 import { createBank, fmtX } from './logic.js';
 import { envelopeSvg, slipSvg, stampSvg } from './art.js';
 import { t } from '../../i18n/index.js';
-import { h, anim, wait, isStill, isCalm, play, tx, esc, SVGNS } from './util.js';
+import { h, anim, wait, isStill, isCalm, play, tx, esc, heroine, SVGNS } from './util.js';
 
 export function createOrders() {
   const bank = createBank();
@@ -84,8 +84,14 @@ export function createOrders() {
     const my = token;
     const ok = alive(my);
     const b = Number(ev.bank) || bank.bank, m = Number(ev.mult) || 1, x = Number(ev.win) || b * m;
-    L.log.push({ t: 'open', bank: b, mult: m, win: x, capped: !!ev.capped, filed: bank.bank });
-    play(ctx, 'caseOpen');
+    // the spin result against its share of the round cost (C / totalFs, 1/100 x of the play amount as in the book): the cue is win-like
+    // only above that share, the heroine points at the board and gives a small win only when ratio > 1 (WP123_to_WP6 items 1, 2)
+    const share = (Number(ctx.cost) || 1) * 100 / Math.max(1, (ctx.mission && Number(ctx.mission.totalFs)) || 1);
+    const win = Number(ev.win) || 0;
+    L.log.push({ t: 'open', bank: b, mult: m, win: x, capped: !!ev.capped, filed: bank.bank, costShare: share, ratio: win / share });
+    play(ctx, 'caseOpen', { win, costShare: share });
+    const hero = heroine(ctx);
+    if (hero && typeof hero.react === 'function') { try { hero.react('caseOpen', { ratio: win / share }); } catch (e) { /* ignore */ } }
     // come forward to the middle of the board (Calm / Still: no travel, the envelope opens in place)
     if (!isCalm(ctx) && ctx.wrap) {
       try {

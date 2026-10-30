@@ -44,3 +44,17 @@ Ports: 5910-5919 (5910 = static http server of the repo root while working).
   * Sealed Orders: weakest. Between openings only the small envelope on the frame corner and the trench coat say it; the OPENED
     beat (envelope forward, bank x dial) is strong but only on winning spins. Helpers asked: WP5 per-mission palette
     (WP6_to_WP5) and a neutral trigger banner (WP6_to_WP4 / WP6_to_WP1). Possible WP6 follow-up: a bigger resting envelope.
+- session 2 (review fix, ports 5912-5917). Review findings A-blueprint-timing-red and open-request-WP123_to_WP6, both real:
+  * blueprint.js: the draw is raced against a deadline (its 70 % share + 1 frame): under frame jank the late animations are finished
+    at once; the stamp animates only if >= 34 ms of the budget is left, otherwise it goes up without animation. L.last gains drawMs.
+  * tests/layers/browser.mjs A: asserts the layer's own budget (blueprint.last.ms <= 500 + 120, turbo <= 200 + 100) and that the
+    outline is fully inked (strokeDashoffset 0 on every .l-bp-line) with the name stamp up when the reveal arrives (the page probe
+    records it); layout -> reveal is no longer timed (it now includes WP4's board drop and frame morph on 5 <-> 6 row plans).
+  * WP123_to_WP6 applied: orders.js play('caseOpen', { win, costShare = cost*100/totalFs }) + hero.react('caseOpen', { ratio });
+    blackout.js hero.react('spotlight') on each winInfo with meta.lit; blueprint.js hero.react('layout') for plans other than mezzanine.
+    Browser checks spy on audio.play and the heroine's react (A: layout once per non-mezzanine plan, none on mezzanine; B: cue args
+    and ratio per caseOpen; C: one spotlight reaction per lit winInfo). Request marked applied.
+  * spotlight_<vp>.png is now taken while .l-dark-win is visible (tries up to 4 lightRoutes): beam and cone on every viewport.
+  * real numbers (load ~2): A atrium 501 ms, lobby 511, annex 538, mezzanine 525, turbo 176 ms (budget 500 / 200, slack 120 / 100).
+    Full browser.mjs: 74 PASS 0 FAIL. Unit 11/11, core+text 115/115, heroine+render 88/88.
+  * guideline runner (scratch copy, PORTS=5916,5917): 39 PASS 7 FAIL 1 AT RISK, identical to the reviewer's run on the clean tree; the 7 FAILs are UNLEASH / bonus-mode ([31], UNL-MIN-USD/JPY/MXN, WIN-bonus-bonus/retrigger/maxwin: runner gets no bonus book), none in WP6 files.

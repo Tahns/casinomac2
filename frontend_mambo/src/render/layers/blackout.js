@@ -8,7 +8,7 @@
 import { createBeam } from './logic.js';
 import { lampSvg, tagSvg } from './art.js';
 import { t } from '../../i18n/index.js';
-import { h, anim, isStill, play, tx, boardRows } from './util.js';
+import { h, anim, isStill, play, tx, boardRows, heroine } from './util.js';
 
 export function createBlackout() {
   const beam = createBeam();
@@ -88,6 +88,12 @@ export function createBlackout() {
     if (!beam.route) return null;
     const toGeo = (reel, p) => { try { const g = ctx.geo.toGeo(reel, p); return typeof g === 'number' ? g : p - 1; } catch (e) { return p - 1; } };
     const res = beam.check(ev, toGeo);
+    // a lit cluster was hit: the heroine points at the board (neutral, own cooldown; WP123_to_WP6 item 2)
+    if ((ev.wins || []).some((w) => w && w.meta && w.meta.lit)) {
+      L.reacts = (L.reacts || 0) + 1;
+      const hero = heroine(ctx);
+      if (hero && typeof hero.react === 'function') { try { hero.react('spotlight', {}); } catch (e) { /* ignore */ } }
+    }
     if (!dark || !ctx.board) return null;
     const { cols, rows } = geom(ctx);
     (ev.wins || []).forEach((w, i) => {

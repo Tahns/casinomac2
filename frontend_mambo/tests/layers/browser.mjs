@@ -65,6 +65,25 @@ const shot = async (page, name) => { fs.mkdirSync(SHOTS, { recursive: true }); c
 async function slow(page, rate) { const c = await page.context().newCDPSession(page); await c.send('Animation.enable'); await c.send('Animation.setPlaybackRate', { playbackRate: rate }); return c; }
 const errorsOk = (page, name) => check(`${name}: no console error`, page.__errors.length === 0, page.__errors.slice(0, 3).join(' | '));
 
+// spies (WP123_to_WP6): every audio.play(id, o) of the case cues and every heroine react(kind, info), recorded in window.__spy
+async function spy(page) {
+  return page.evaluate(async () => {
+    window.__spy = { play: [], react: [], hero: false };
+    const { audio } = await import('/src/audio.js');
+    const { mascotOf } = await import('/src/render/mascot.js');
+    const p0 = audio.play.bind(audio);
+    audio.play = (id, o) => { if (['caseOpen', 'caseSeal', 'stamp'].includes(id)) window.__spy.play.push({ id, o: o ? JSON.parse(JSON.stringify(o)) : null }); return p0(id, o); };
+    const m = mascotOf(document.getElementById('heroine-slot')) || mascotOf(document.getElementById('mascot-slot'));
+    if (m && typeof m.react === 'function') {
+      window.__spy.hero = true;
+      const r0 = m.react.bind(m);
+      m.react = (kind, info) => { window.__spy.react.push({ kind, info: info ? JSON.parse(JSON.stringify(info)) : null }); return r0(kind, info); };
+    }
+    return window.__spy.hero;
+  });
+}
+const spied = (page) => page.evaluate(() => window.__spy);
+
 const find = (mode, pred) => load(mode).find(pred);
 const hasEv = (b, t) => b.events.some((e) => e.type === t);
 const shortest = (mode, pred) => load(mode).filter(pred).sort((a, b) => a.events.length - b.events.length)[0];
@@ -79,25 +98,37 @@ async function secA(browser) {
       if (n.nodeType === 1 && n.classList.contains('l-bp')) window.__bp.push({ plan: n.dataset.plan, cells: n.querySelectorAll('.l-bp-cell').length, t: window.P.now() });
     }))).observe(document.getElementById('app'), { childList: true, subtree: true });
   });
+  const timesA = [];
+  const heroA = await spy(page);
+  check('A heroine found for the reaction spy', heroA);
   for (const id of ['atrium', 'lobby', 'annex', 'mezzanine']) {
     const b = find('base', (x) => x.events[0] && x.events[0].type === 'layout' && x.events[0].id === id && !hasEv(x, 'freeSpinTrigger'));
-    await page.evaluate(() => { window.__bp.length = 0; });
+    await page.evaluate(() => { window.__bp.length = 0; window.__spy.react.length = 0; });
     await start(page, b.events, { cost: 1, turbo: false });
     await waitDone(page);
-    const r = await page.evaluate(() => ({ bp: window.__bp.slice(), log: window.P.log.filter((e) => e.kind === 'event').map((e) => ({ type: e.type, t: e.t })), left: document.querySelectorAll('.l-bp,.l-bp-stamp').length }));
+    const r = await page.evaluate(() => ({ bp: window.__bp.slice(), log: window.P.log.filter((e) => e.kind === 'event').map((e) => ({ type: e.type, t: e.t, ink: e.ink, bpStamp: e.bpStamp })), left: document.querySelectorAll('.l-bp,.l-bp-stamp').length, last: { ...window.__mamboLayers.blueprint.last } }));
     const lay = b.events[0];
     check(`A ${id}: exactly one blueprint, of this plan only (no cycling)`, r.bp.length === 1 && r.bp[0].plan === id, JSON.stringify(r.bp));
     check(`A ${id}: outline cells == layout cellCount (${lay.cellCount})`, r.bp[0] && r.bp[0].cells === lay.cellCount);
-    const tl = r.log.find((e) => e.type === 'layout'), tr = r.log.find((e) => e.type === 'reveal');
-    check(`A ${id}: inked and stamped before the reveal, 0.5 s (+ frame slack 120 ms)`, tl && tr && tr.t - tl.t <= 620, `${tr && tl ? tr.t - tl.t : '?'} ms`);
+    // the layer's own budget (draw + stamp), not layout -> reveal: on 5 <-> 6 row plans WP4's player also drops the old board and
+    // morphs the frame before the reveal, which is not the blueprint's time
+    const tr = r.log.find((e) => e.type === 'reveal');
+    check(`A ${id}: draw + stamp within 0.5 s (+ frame slack 120 ms)`, r.last.ms != null && r.last.ms <= 620, `${r.last.ms} ms (draw ${r.last.drawMs} ms, budget ${r.last.total} ms)`);
+    check(`A ${id}: fully inked and stamped when the reveal arrives`, !!tr && tr.ink && tr.ink.length > 0 && tr.ink.every((v) => Math.abs(v) < 0.001) && tr.bpStamp, JSON.stringify(tr && { ink: tr.ink, stamp: tr.bpStamp }));
+    timesA.push(`${id} ${r.last.ms} ms`);
     check(`A ${id}: nothing left after the book`, r.left === 0);
+    const ra = (await spied(page)).react.filter((x) => x.kind === 'layout').length;
+    check(`A ${id}: heroine react('layout') ${id === 'mezzanine' ? 'not called (default plan)' : 'called once'}`, id === 'mezzanine' ? ra === 0 : ra === 1, ra + ' calls');
   }
   // turbo: 0.2 s draw
   const b = find('base', (x) => x.events[0] && x.events[0].type === 'layout' && x.events[0].id === 'atrium' && !hasEv(x, 'freeSpinTrigger'));
   await start(page, b.events, { cost: 1, turbo: true });
   await waitDone(page);
-  const g = await page.evaluate(() => { const l = window.P.log.filter((e) => e.kind === 'event'); const a = l.find((e) => e.type === 'layout'), r = l.find((e) => e.type === 'reveal'); return r.t - a.t; });
-  check('A turbo: draw + stamp 0.2 s (+ frame slack 100 ms)', g <= 300, g + ' ms');
+  const g = await page.evaluate(() => ({ ...window.__mamboLayers.blueprint.last, rev: window.P.log.find((e) => e.kind === 'event' && e.type === 'reveal') }));
+  check('A turbo: draw + stamp 0.2 s (+ frame slack 100 ms)', g.ms != null && g.ms <= 300, `${g.ms} ms (draw ${g.drawMs} ms, budget ${g.total} ms)`);
+  check('A turbo: fully inked when the reveal arrives', !!g.rev && g.rev.ink.length > 0 && g.rev.ink.every((v) => Math.abs(v) < 0.001), JSON.stringify(g.rev && g.rev.ink));
+  timesA.push(`turbo ${g.ms} ms`);
+  console.log('A timings: ' + timesA.join(', '));
   errorsOk(page, 'A');
   await page.close();
 }
@@ -114,6 +145,7 @@ async function secB(browser) {
     };
     window.__envProbe = probe;
   });
+  await spy(page);
   await start(page, b.events, { cost: 100, skip: 0.2 });
   // sample the envelope after every event (probe layer runs before ours: sample on the next tick)
   const samples = [];
@@ -144,6 +176,15 @@ async function secB(browser) {
   const st = await page.evaluate(() => window.P.layers().orders.log.filter((x) => x.t === 'open'));
   const opens = b.events.filter((e) => e.type === 'caseOpen');
   check('B every caseOpen opened with bank == filed bank', st.length === opens.length && st.every((o, i) => o.bank === opens[i].bank && o.filed === opens[i].bank));
+  {
+    const sp = await spied(page);
+    const ma = b.events.find((e) => e.type === 'missionAssigned');
+    const share = 100 * 100 / Math.max(1, (ma && ma.totalFs) || 1);
+    const cues = sp.play.filter((x) => x.id === 'caseOpen');
+    check('B caseOpen cue carries { win, costShare } of each case (C / totalFs)', cues.length === opens.length && cues.every((c, i) => c.o && c.o.win === opens[i].win && Math.abs(c.o.costShare - share) < 1e-9), JSON.stringify(cues.slice(0, 2)) + ' share ' + share);
+    const rs = sp.react.filter((x) => x.kind === 'caseOpen');
+    check('B heroine react(caseOpen, { ratio: win / share }) at every flap', rs.length === opens.length && rs.every((r, i) => r.info && Math.abs(r.info.ratio - opens[i].win / share) < 1e-9), JSON.stringify(rs.slice(0, 2)));
+  }
   check('B envelope gone after the book', await page.evaluate(() => !document.querySelector('.l-env')));
   errorsOk(page, 'B');
   await page.close();
@@ -159,6 +200,7 @@ async function secC(browser) {
     // a probe AFTER our layers: the beam position at each winInfo / reveal
     const { LAYERS } = window.__layersMod || {};
   });
+  await spy(page);
   await start(page, b.events, { cost: 100, skip: 0.25 });
   // sample the beam at each event
   const samples = [];
@@ -181,6 +223,11 @@ async function secC(browser) {
   check('C the beam never persists between spins (no dark overlay when a reveal arrives)', revealsDark === 0, revealsDark + ' reveals with the dark left on');
   check('C board opens dark during the free spins', samples.some((s) => s.dark));
   check('C x4 tag shown on lit clusters', samples.some((s) => s.tags > 0));
+  {
+    const litWins = b.events.filter((e) => e.type === 'winInfo' && e.wins.some((w) => w.meta && w.meta.lit)).length;
+    const rs = (await spied(page)).react.filter((x) => x.kind === 'spotlight').length;
+    check('C heroine react(spotlight) once per winInfo with a lit cluster', rs === litWins && litWins > 0, rs + ' / ' + litWins);
+  }
   check('C nothing left after the book', await page.evaluate(() => !document.querySelector('.l-dark,.l-x4')));
   errorsOk(page, 'C');
   await page.close();
@@ -284,7 +331,16 @@ async function secF(browser) {
     await start(page, blk.events, { cost: 100 });
     const litIdx = blk.events.findIndex((e) => e.type === 'winInfo' && e.wins.some((w) => w.meta && w.meta.lit));
     const nLit = blk.events.slice(0, litIdx + 1).filter((e) => e.type === 'winInfo').length;
-    await waitEvent(page, 'lightRoute', 1); await page.waitForTimeout(500); await shot(page, `spotlight_${tag}`);
+    // the beam shot: taken while the 2x2 window is on screen (it is off again at the next setTotalWin / reveal); if the beam went off
+    // during the capture, try the next lightRoute (at most 4)
+    for (let k = 1, nRoutes = blk.events.filter((e) => e.type === 'lightRoute').length; k <= Math.min(4, nRoutes); k++) {
+      await waitEvent(page, 'lightRoute', k);
+      const on = await page.waitForSelector('.l-dark-win[visibility=visible]', { state: 'attached', timeout: 3000 }).then(() => true, () => false);
+      if (!on) continue;
+      await page.waitForTimeout(90);
+      await shot(page, `spotlight_${tag}`);
+      if (await page.evaluate(() => !!document.querySelector('.l-dark-win[visibility=visible]'))) break;
+    }
     await waitEvent(page, 'winInfo', nLit); await page.waitForSelector('.l-x4', { timeout: 4000 }).catch(() => null); await page.waitForTimeout(250); await shot(page, `spotlight_x4_${tag}`);
     errorsOk(page, `F blackout ${tag}`);
     await page.close();

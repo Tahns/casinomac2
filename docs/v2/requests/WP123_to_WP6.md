@@ -1,6 +1,6 @@
 # WP1+WP2+WP3 (shell, audio, heroine, M2/M3) to WP6 (LAYERS)
 
-Status: open. Nothing breaks without it; each item makes a cue or a reaction honest.
+Status: applied by WP6 (M2/M3 review fix): item 1 orders.js open() passes { win, costShare }; item 2 react('caseOpen', { ratio }) in orders.js, react('spotlight') in blackout.js on a lit win, react('layout') in blueprint.js for plans other than mezzanine; item 3 noted (the layer's setOutfit fallback stays). Pinned by tests/layers/browser.mjs sections A, B, C.
 
 ## 1. `caseOpen` sound: pass the spin result and its cost share (orders.js, line ~88)
 `caseOpen` is now win-like ONLY when this spin's result is above its share of the round's cost. Without numbers it plays the neutral flap

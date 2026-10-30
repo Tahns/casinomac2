@@ -8,7 +8,7 @@
 import { outlineOf, outlineLength } from './logic.js';
 import { blueprintDefs, stampSvg, P } from './art.js';
 import { t } from '../../i18n/index.js';
-import { h, anim, wait, isStill, play, skipping, Tm, boardRows, tx, SVGNS } from './util.js';
+import { h, anim, wait, isStill, play, skipping, Tm, boardRows, tx, heroine, SVGNS } from './util.js';
 
 export function createBlueprint() {
   let sheet = null, stamp = null, token = 0, lastPlan = null;
@@ -60,20 +60,32 @@ export function createBlueprint() {
     if (still) { sheet.style.opacity = '1'; }
     else {
       const lines = sheet.querySelectorAll('.l-bp-line,.l-bp-mis');
-      await Promise.all([
+      const all = Promise.all([
         animRaw(sheet, [{ opacity: 0 }, { opacity: 1 }], Math.min(100, dur * 0.25), 'steps(2,end)'),
         ...[...lines].map((el) => animRaw(el, [{ strokeDashoffset: String(len) }, { strokeDashoffset: '0' }], dur)),
       ]);
+      // frame jank: the draw never holds the book past its own share of the budget (+ 1 frame); late animations jump to the end
+      let to = null;
+      const late = await Promise.race([all.then(() => false), new Promise((r) => { to = setTimeout(() => r(true), Math.max(0, dur - (now() - t0)) + 34); })]);
+      clearTimeout(to);
+      if (late) { for (const el of [sheet, ...lines]) { try { el.getAnimations().forEach((x) => x.finish()); } catch (e) { /* ignore */ } } await all; }
     }
+    if (L.last) L.last.drawMs = Math.round(now() - t0);
     if (!alive()) return;
     // the name stamp (on the frame, lower left), a stamp cue
     stamp = h('div', 'l-bp-stamp', stampSvg(tx(t, 'layers.plan', plan.name, { name: String(plan.name || plan.id).toUpperCase() }), 'steel', { rot: -6, paper: P.indigo }));
     stamp.dataset.plan = plan.id;
     (ctx.wrap || ctx.board).appendChild(stamp);
     play(ctx, 'stamp', { vol: 0.5, pitch: 1.1 });
-    // the stamp gets what is left of the budget (frame latency of the draw included), at least 2 frames
-    const stampMs = Math.max(34, total - (now() - t0) - 24);
-    if (!still) await animRaw(stamp, [{ transform: 'scale(1.6)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], stampMs, 'steps(2,end)');
+    // a neutral point at the board when a plan other than the default mezzanine is drawn (WP123_to_WP6 item 2)
+    if (plan.id !== 'mezzanine') { const hero = heroine(ctx); if (hero && typeof hero.react === 'function') { try { hero.react('layout', {}); } catch (e) { /* ignore */ } } }
+    // the stamp gets what is left of the budget (frame latency of the draw included). Under frame jank the draw may already have used
+    // the whole budget: then the stamp goes up at once (no animation), so draw + stamp never run past the budget by more than a frame.
+    const left = total - (now() - t0) - 24;
+    if (!still) {
+      if (left >= 34) await animRaw(stamp, [{ transform: 'scale(1.6)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], left, 'steps(2,end)');
+      else { stamp.style.transform = 'scale(1)'; stamp.style.opacity = '1'; }
+    }
     if (still) await wait(ctx, 250, alive);
     if (L.last) L.last.ms = Math.round(now() - t0);
   }

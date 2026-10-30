@@ -38,7 +38,10 @@ let winText = [];
 LAYERS.push({ id: 'probe', onEvent(ev) {
   const L = window.__mamboLayers;
   log.push({ t: now(), kind: 'event', type: ev && ev.type, win: $('win').textContent,
-    env: !!document.querySelector('.l-env'), dark: !!document.querySelector('.l-dark'), cut: !!document.querySelector('.l-cut') });
+    env: !!document.querySelector('.l-env'), dark: !!document.querySelector('.l-dark'), cut: !!document.querySelector('.l-cut'),
+    // blueprint at this event: the stroke dash offset of every outline path (0 = fully inked) and whether the name stamp is up
+    ink: [...document.querySelectorAll('.l-bp-line')].map((p) => parseFloat(getComputedStyle(p).strokeDashoffset) || 0),
+    bpStamp: !!document.querySelector('.l-bp-stamp') });
 }, reset() {} });
 renderer.setFormat((x) => `$${x.toFixed(2)}`);
 const hooks = {
