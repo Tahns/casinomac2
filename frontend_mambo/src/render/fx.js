@@ -3,13 +3,17 @@
 // Added: stars, burstBubble (comic POW!/BAM!/BOOM! bubble), confetti, breakCell (paper-piece break of a removed cell),
 // pieces, dust, iris (iris wipe, resolves when done; a 'close' holds until iris('open') or clear()), shake.
 // All counts are capped (FX_CAPS: live particles, per-call counts; every helper clamps its own n).
-// v2 (WP5): caps live in FX_CAPS; the quality governor (quality.js) is fed every frame of the loop and thins the particles on a slow
-// device (EMA > 24 ms: half, > 40 ms: Calm); the motion store (motion.js) is read live (Still: no particle, no shake; the
-// per-call counts for Calm are scaled by the caller through motion.count). The per-cell break flash is cream, <= 0.5, and only
-// drawn when screen flashes are on. The canvas backing store is capped (FX_CAPS.canvasBytes) whatever the device pixel ratio.
+// v2 (WP5): caps live in FX_CAPS. The canvas is driven by ONE setTimeout loop on the 12 fps grid that runs only while particles
+// (or the iris) are alive: no requestAnimationFrame (a rAF loop costs a frame every vsync even off the grid). The same loop feeds
+// the quality governor (quality.sampleLag, quality.drive), which thins the particles on a slow device (EMA > 24 ms: half,
+// > 40 ms: Calm). The motion store (motion.js) is read live (Still: no particle, no shake; the per-call counts for Calm are scaled
+// by the caller through motion.count). The per-cell break flash is gated by the shared flash governor (flash.js): cream, <= 0.5,
+// only in its 'flash' mode, only while its budget has room, and on the first FX_CAPS.breakFlashCells cells of one blast.
+// The canvas backing store is capped (FX_CAPS.canvasBytes) whatever the device pixel ratio.
 import { t } from '../i18n/index.js';
 import { motion } from './motion.js';
 import { quality } from './quality.js';
+import { flash } from './flash.js';
 const TAU = Math.PI * 2;
 const INK = '#14102B', PAPER = '#FBF1D9';
 export const FX_COLORS = { ink: INK, cream: PAPER, teal: '#1FB5A3', coral: '#F0472F', flamingo: '#F5799F', lemon: '#FFD23F', lilac: '#9A7BD0', lime: '#A5D63B', steel: '#6FA7D9', indigo: '#2B2A6B' };
@@ -23,6 +27,8 @@ export const FX_CAPS = Object.freeze({
   liveLite: 110,             // same on a slow device (quality tier lite / calm)
   shards: 5, sparks: 5, stars: 12, confetti: 30, confettiMaxWin: 60, dust: 5, pieces: 6, embers: 18, coins: 14, coinRain: 24, smoke: 6,
   breakFlashPeak: 0.5,       // the per-cell break flash (cream)
+  breakFlashCells: 3,        // at most this many cells of one blast (cells broken within breakFlashMs) get the break flash
+  breakFlashMs: 400,
   canvasBytes: 24 * 1048576, // backing store of the overlay canvas (W * H * dpr^2 * 4); dpr is lowered to stay under it
   maxDpr: 2,
   fps: 12,                   // the canvas is redrawn on the limited-animation grid only (physics still integrates real time)
@@ -47,7 +53,8 @@ export function createFx(app) {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, dpr = 1;
   const parts = [];
-  let raf = 0, last = 0, lastStep = -1, acc = 0;
+  let timer = 0, due = 0, last = 0;
+  let cellFlashT = -1e9, cellFlashN = 0;
   const FRAME_MS = 1000 / FX_CAPS.fps;
   const DUST = '#E4DAEE';
   let irisP = null, irisTimer = 0;
@@ -62,13 +69,12 @@ export function createFx(app) {
 
   function add(p) {
     if (document.hidden || still()) return;
-    quality.keepAlive(3000);
     const g = quality.particles; // 1 | .5 | .4
     if (g < 1 && p.t !== 'flash' && p.t !== 'bubble' && Math.random() > g) return;
     const max = quality.tier === 'full' ? FX_CAPS.live : FX_CAPS.liveLite;
     while (parts.length >= max) parts.shift();
     parts.push(p);
-    if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); }
+    run();
   }
 
   // dust puff clouds replace shards: the symbol "puffs away"
@@ -131,10 +137,18 @@ export function createFx(app) {
   }
   // breakCell(x, y, size, color, opts): the whole "removed cell" effect for the wire blast: 80 ms cream flash, comic bubble,
   // 3 paper pieces in the symbol colour, dust on the now empty cell. opts: {word, bubble:false, dust:false, pieces:n}
+  function cellFlashOk() {
+    const t = performance.now();
+    if (t - cellFlashT > FX_CAPS.breakFlashMs) cellFlashN = 0; // a new blast
+    cellFlashT = t;
+    let ok = false; try { ok = flash.mode === 'flash' && flash.allow(); } catch (e) { ok = false; }
+    if (!ok || cellFlashN >= FX_CAPS.breakFlashCells) return false;
+    cellFlashN++;
+    return true;
+  }
   function breakCell(x, y, size, color = FX_COLORS.flamingo, opts = {}) {
     // parts are drawn newest-first (underneath), so the order here is top-to-bottom: flash, bubble, pieces, stars, dust
-    let flashes = false; try { flashes = motion.flashMode === 'flash'; } catch (e) { flashes = false; }
-    if (flashes && opts.flash !== false) add({ t: 'flash', x, y, r: size * .48, life: .08, age: 0 });
+    if (opts.flash !== false && cellFlashOk()) add({ t: 'flash', x, y, r: size * .48, life: .08, age: 0 });
     if (opts.bubble !== false) burstBubble(x, y - size * .05, size * .46, opts.word);
     pieces(x, y, color, size * .8, opts.pieces || 3);
     stars(x, y, size * .4, 3);
@@ -147,7 +161,7 @@ export function createFx(app) {
     const cx = x == null ? W / 2 : x, cy = y == null ? H / 2 : y;
     clearTimeout(irisTimer);
     irisP = { x: cx, y: cy, dir, life: ms / 1000, age: 0, color: o.color || INK, R: Math.max(Math.hypot(cx, cy), Math.hypot(W - cx, cy), Math.hypot(cx, H - cy), Math.hypot(W - cx, H - cy)) + 4 };
-    if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); }
+    run();
     return new Promise((res) => { irisTimer = setTimeout(() => { if (irisP && irisP.dir === 'open') irisP = null; res(); }, ms + 30); });
   }
   // screen shake: shakes #game and the scene (px amplitude scales with the viewport, amp 1 ~ 6 px at 500 px)
@@ -221,15 +235,23 @@ export function createFx(app) {
     }
   }
 
-  function tick(now) {
-    const raw = now - last; if (!quality.monitoring) quality.sample(raw);
-    last = now; acc += Math.min(50, Math.max(0, raw));
-    // redraw only when the 12 fps grid advances: 5x fewer canvas uploads / recomposites than drawing every frame (the cut-paper
-    // look already stepped its progress at 12 fps; positions now step too)
-    const stepIdx = Math.floor(now / FRAME_MS);
-    if (stepIdx === lastStep) { raf = requestAnimationFrame(tick); return; }
-    lastStep = stepIdx;
-    const dt = Math.min(0.1, acc / 1000); acc = 0;
+  // ONE timer loop on the 12 fps grid while something is alive; it also feeds the quality governor (lateness of each tick)
+  function run() {
+    if (timer) return;
+    try { quality.drive(true); } catch (e) { /* ignore */ }
+    last = performance.now(); due = last + FRAME_MS;
+    timer = setTimeout(tick, FRAME_MS);
+  }
+  function halt() {
+    if (timer) clearTimeout(timer);
+    timer = 0;
+    try { quality.drive(false); } catch (e) { /* ignore */ }
+  }
+  function tick() {
+    timer = 0;
+    const now = performance.now();
+    if (!document.hidden) { try { quality.sampleLag(now - due); } catch (e) { /* ignore */ } }
+    const dt = Math.min(0.1, Math.max(0, now - last) / 1000); last = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -302,8 +324,10 @@ export function createFx(app) {
       if (rr > 0.5 && rr < irisP.R * .98) { ctx.strokeStyle = INK; ctx.lineWidth = Math.max(3, Math.min(W, H) * .012); ctx.beginPath(); ctx.arc(irisP.x, irisP.y, rr, 0, TAU); ctx.stroke(); }
       if (irisP.dir === 'open' && irisP.age >= irisP.life) irisP = null;
     }
-    if (parts.length || irisP) raf = requestAnimationFrame(tick);
-    else { raf = 0; ctx.clearRect(0, 0, W, H); }
+    if (parts.length || irisP) {
+      const spent = performance.now() - now, delay = Math.max(0, FRAME_MS - spent);
+      due = performance.now() + delay; timer = setTimeout(tick, delay);
+    } else { halt(); ctx.clearRect(0, 0, W, H); }
   }
 
   // comic onomatopoeia (i18n keys fx.*) next to win / free-spin banners
@@ -330,5 +354,5 @@ export function createFx(app) {
     hook();
   }
 
-  return { resize, shards, sparks, stars, burstBubble, confetti, breakCell, pieces, dust, iris, shake, embers, coins, coinRain, smoke, ring, glow, clear() { parts.length = 0; irisP = null; clearTimeout(irisTimer); }, get count() { return parts.length; }, get canvasBytes() { return canvas.width * canvas.height * 4; }, caps: FX_CAPS };
+  return { resize, shards, sparks, stars, burstBubble, confetti, breakCell, pieces, dust, iris, shake, embers, coins, coinRain, smoke, ring, glow, clear() { parts.length = 0; irisP = null; clearTimeout(irisTimer); if (timer) { halt(); ctx.clearRect(0, 0, W, H); } }, get count() { return parts.length; }, get canvasBytes() { return canvas.width * canvas.height * 4; }, caps: FX_CAPS };
 }

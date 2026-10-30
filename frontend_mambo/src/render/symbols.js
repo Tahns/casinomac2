@@ -300,8 +300,7 @@ export function noComposite(css) {
     (block) => block.replace(/(^|[{;\s])transform\s*:/g, '$1--mbt:').replace(/(^|[{;\s])opacity\s*:/g, '$1--mbo:'));
   return '@property --mbt{syntax:"*";inherits:false}@property --mbo{syntax:"*";inherits:false}\n' + body;
 }
-export const SYMBOL_CSS = noComposite(RAW_CSS);
-const CSS = SYMBOL_CSS;
+export const SYMBOL_CSS = noComposite(clocked(RAW_CSS));
 
 let built = false;
 export function ensureSprite() {
@@ -311,8 +310,55 @@ export function ensureSprite() {
   const svg = `<svg id="sym-sprite" xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false"><defs>${DEFS}</defs>${symbols}</svg>`;
   document.body.insertAdjacentHTML('afterbegin', svg);
   if (!document.getElementById('mb-sym-css')) {
-    const st = document.createElement('style'); st.id = 'mb-sym-css'; st.textContent = CSS; document.head.appendChild(st);
+    const st = document.createElement('style'); st.id = 'mb-sym-css'; st.textContent = SYMBOL_CSS + '\n' + CLOCK_CSS; document.head.appendChild(st);
   }
+  startIdleClock();
+}
+
+// ---- ONE stepped clock for every looping symbol animation (v2, WP5 frame budget).
+// A running main-thread animation (the custom-property idle loops above, ~80 on a 30-cell board) is serviced on EVERY frame, so
+// the page produced 60 frames a second of style recalc + paint although each loop only changes a few times a second (and ~130
+// unsynchronised changes a second land on almost every frame). Measured idle at 4x CPU throttle (harness, 1024x576): p50 33 ms /
+// p95 50-67 ms with the loops running, 16.7 / 33 ms with them off.
+// The clock keeps every loop a CSS animation (values, keyframes, per-cell phases and state durations stay in the CSS above, and
+// Calm / Still / quality lite+calm still remove them in CSS) but PAUSES them (`html[data-mbclock]`) and folds a shared clock into
+// their delay: `animation-delay: calc(<phase> - var(--mbclk))`. A paused animation shows the value at -delay = clock + phase, so
+// advancing --mbclk (one custom property on #game) on the 12 fps grid steps every symbol together: at most 12 restyles a second
+// and no frame at all in between. (Pausing through the Web Animations API instead would detach them from CSS in Chrome: Calm and
+// Still could no longer remove them.) Without JS, or before the clock starts, the loops simply run as plain CSS animations.
+export const IDLE_CLOCK = Object.freeze({ gridMs: 1000 / 12 });
+/** Pure: add the shared clock to every animation rule (outside @keyframes) of a stylesheet. */
+export function clocked(css) {
+  return String(css).replace(/(@keyframes\s+[\w-]+\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\})|([^{}]+)\{([^{}]*)\}/g, (m, kf, sel, body) => {
+    if (kf) return kf;
+    if (!/(^|;)\s*animation(-delay)?\s*:/.test(body)) return m;
+    let b = body.replace(/(^|;)(\s*)animation-delay\s*:\s*([^;]+)/g, (x, a, w, v) => `${a}${w}animation-delay:calc(${v.trim()} - var(--mbclk,0s))`);
+    // a shorthand resets the delay to 0s: give it the clock too unless a delay is declared after it
+    const sh = b.search(/(^|;)\s*animation\s*:(?!.*(^|;)\s*animation\s*:)/), dl = b.lastIndexOf('animation-delay:');
+    if (sh >= 0 && dl < sh) b = b.replace(/;?\s*$/, '') + ';animation-delay:calc(0s - var(--mbclk,0s))';
+    return `${sel}{${b}}`;
+  });
+}
+export const CLOCK_CSS = `html[data-mbclock] .mb *{animation-play-state:paused!important}
+html[data-mbclock] .cell:not(.win):not(.dim):not(.fuse):not(.adim) .sym-svg.mb{animation-play-state:paused!important;animation-delay:calc(var(--c,0)*-.43s + var(--r,0)*-.71s - var(--mbclk,0s))!important}
+html[data-mbclock] .cell.dim .mb *,html[data-mbclock] .cell.adim .mb *{animation-delay:0s!important}`;
+let clockTimer = 0;
+function clockHost() { return document.getElementById('game') || document.documentElement; }
+function idleTick() {
+  clockTimer = 0;
+  const g = IDLE_CLOCK.gridMs, now = performance.now();
+  if (!document.hidden) { try { clockHost().style.setProperty('--mbclk', (Math.floor(now / g) * g / 1000).toFixed(3) + 's'); } catch (e) { /* ignore */ } }
+  clockTimer = setTimeout(idleTick, Math.max(1, (Math.floor(now / g) + 1) * g - now));
+}
+export function startIdleClock() {
+  if (clockTimer || typeof document === 'undefined' || typeof setTimeout !== 'function') return;
+  idleTick();
+  try { document.documentElement.setAttribute('data-mbclock', ''); } catch (e) { /* ignore */ }
+}
+export function stopIdleClock() {
+  if (clockTimer) clearTimeout(clockTimer);
+  clockTimer = 0;
+  try { document.documentElement.removeAttribute('data-mbclock'); } catch (e) { /* ignore */ }
 }
 
 export function symbolMarkup(name) {

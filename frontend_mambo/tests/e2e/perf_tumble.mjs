@@ -6,7 +6,9 @@
 // Plays a 30-cell tumble chain (12 cascades on the 6x5 board) under CDP Emulation.setCPUThrottlingRate, records every rAF delta,
 // and reports p50 / p95 / p99 of the frames from the start of tumble step `from-step` to the end of the chain, the compositor layer
 // count (idle, median and max while playing, via the LayerTree domain) and the canvas backing-store bytes (all <canvas>).
-// Budgets: p95 <= 16.6 ms (reported as `p95ok`), idle layers <= 45, canvas <= 96 MB. Exit code 1 when a budget fails.
+// Budgets: p95 <= 16.6 ms (reported as `p95ok`; one 60 Hz vsync interval reads 16.67, so the gate is 16.7), promoted layers <= 45
+// WHILE THE TUMBLE PLAYS (`layersOk` = idle <= 45 AND p90 of the layer counts sampled during the chain <= 45; `layersMaxOk` also
+// reports the single worst frame), canvas <= 96 MB. Exit code 1 when a budget fails.
 import fs from 'node:fs';
 import path from 'node:path';
 import { args, startServer, launch, openHarness, bookFor, layerProbe, pct } from './lib_capture.mjs';
@@ -53,7 +55,7 @@ if (results.length) {
     rate, runs: results.length, viewport: `${vw}x${vh}`, dpr: Number(A.dpr || 1), fromStep, book: results[0].book,
     p50: +med('p50').toFixed(1), p95: +med('p95').toFixed(1), p99: +med('p99').toFixed(1), longest: +med('longest').toFixed(1),
     p95ok: med('p95') <= 16.7, idleLayers: med('idleLayers'), medianLayers: med('medianLayers'), maxLayers: med('maxLayers'),
-    layersOk: med('idleLayers') <= 45, canvasMB: med('canvasMB'), canvasOk: med('canvasMB') <= 96,
+    layersOk: med('idleLayers') <= 45 && med('p90Layers') <= 45, p90Layers: med('p90Layers'), layersMaxOk: med('maxLayers') <= 45, canvasMB: med('canvasMB'), canvasOk: med('canvasMB') <= 96,
     perRun: results.map(({ canvases, ...x }) => x), canvases: results[0].canvases,
   };
   console.log(JSON.stringify(sum, null, 2));

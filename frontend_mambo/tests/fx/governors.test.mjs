@@ -137,3 +137,27 @@ test('dial: bands Largo < 17 <= Andante < 41 <= Allegro < 81 <= Presto at cap 10
   assert.deepEqual(bandEdges(-3), [17, 41, 81]);
   assert.equal(DEFAULT_DIAL_STEP, 8);
 });
+
+test('quality: timer probe (no rAF), lag samples, and a driver loop makes the probe yield (one loop on the page)', () => {
+  let t = 0; const timers = new Map(); let id = 0;
+  const T = { setTimeout: (f, ms) => { timers.set(++id, { f, at: t + ms }); return id; }, clearTimeout: (k) => { timers.delete(k); } };
+  const run = (ms, late = 0) => { const end = t + ms; for (;;) { const nx = [...timers.entries()].sort((a, b) => a[1].at - b[1].at)[0]; if (!nx || nx[1].at > end) break; timers.delete(nx[0]); t = nx[1].at + late; nx[1].f(); } t = Math.max(t, end); };
+  const q = createQuality({ now: () => t, timers: T, root: null });
+  // lag samples: 0 lag = one 60 Hz frame; 30 ms late = a 46.7 ms frame
+  for (let i = 0; i < 40; i++) q.sampleLag(30);
+  assert.equal(q.tier, 'calm');
+  q.reset();
+  q.keepAlive(1000);
+  assert.equal(timers.size, 1, 'the probe is one timer');
+  const before = q.samples;
+  run(500);
+  assert.ok(q.samples - before >= 5, 'probe samples on the 83 ms grid');
+  q.drive(true);
+  assert.equal(timers.size, 0, 'the probe yields to the driving loop');
+  assert.equal(q.monitoring, true);
+  q.drive(false);
+  assert.equal(timers.size, 1, 'the probe resumes while keepAlive lasts');
+  run(2000);
+  assert.equal(timers.size, 0, 'and stops itself afterwards');
+  assert.equal(q.monitoring, false);
+});

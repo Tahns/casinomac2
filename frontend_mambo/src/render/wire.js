@@ -192,7 +192,9 @@ export function createWire(ctx) {
       const dur = WIRE_TIMING.hopMs, t0 = performance.now();
       let lastK = -1;
       await new Promise((res) => {
-        const step = (now) => {
+        // one setTimeout per 12 fps step (no rAF loop that wakes every vsync only to skip the frame)
+        const step = () => {
+          const now = performance.now();
           if (gen !== st.gen || dead()) return res();
           const k = stepped(now - t0, dur); // 12 fps steps: the DOM only changes on a new step
           if (k !== lastK) {
@@ -201,9 +203,9 @@ export function createWire(ctx) {
             moveSpark(x, y); seg.ch.forEach((l) => { l.setAttribute('x2', x); l.setAttribute('y2', y); });
             if (Math.random() < .5) spawnSmoke(x, y, 1);
           }
-          if (k < 1) requestAnimationFrame(step); else res();
+          if (k < 1) setTimeout(step, Math.max(1, t0 + (Math.floor((now - t0) / FRAME) + 1) * FRAME - performance.now())); else res();
         };
-        requestAnimationFrame(step);
+        setTimeout(step, 0);
       });
       if (gen !== st.gen) return;
       igniteNode(i, false);

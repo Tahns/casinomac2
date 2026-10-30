@@ -15,8 +15,15 @@
 //   quality.effective(motion)   -> { level, particles, shake, rotation, hitStop, pushIn } = min(player's motion level, device tier)
 //   quality.subscribe(fn)       fn(state) when the tier changes; returns the unsubscribe function
 //   <html data-quality>         'full' | 'lite' | 'calm' (lite: CSS idle loops of the symbols pause; calm: scene loops stop too)
-//   quality.monitor() / stop()  run (or stop) a private rAF probe, e.g. while a book plays
-//   quality.keepAlive(ms)       run the probe for at least ms more (fx.js calls it on every particle burst; the probe stops itself)
+//   quality.sampleLag(lagMs)    feed the lateness of a timer tick (a 12 fps setTimeout loop): counted as a frame of 16.7 + lag ms
+//   quality.drive(on)           a module that runs its own 12 fps timer loop and feeds sampleLag() (fx.js) declares it here: while
+//                               one is driving, the probe below does not run (ONE loop on the page, no second timer, no rAF)
+//   quality.monitor() / stop()  run (or stop) the probe, e.g. while a book plays
+//   quality.keepAlive(ms)       run the probe for at least ms more (wire.js calls it; the probe stops itself)
+//
+// The probe is a setTimeout loop on the 12 fps grid (83 ms) that measures how late each tick fires. It never uses
+// requestAnimationFrame: a rAF loop forces a frame every vsync even when nothing on screen changes, which is exactly the cost the
+// governor is meant to cut on a slow device.
 //
 // Hysteresis so that the tier does not flap: enter 'lite' above 24 ms, leave below 20 ms; enter 'calm' above 40 ms, leave below
 // 30 ms; a tier only DROPS after the EMA has been over the line for `holdFrames` samples and only RISES again after `recoverMs` of
@@ -30,6 +37,8 @@ export const QUALITY = Object.freeze({
   recoverMs: 2500,
   maxDt: 250,
   gains: Object.freeze({ full: 1, lite: 0.5, calm: 0.4 }),
+  frameMs: 1000 / 60,  // a lag sample counts as one display frame plus the lag
+  probeMs: 1000 / 12,  // probe period (the limited-animation grid)
 });
 
 const LEVEL_RANK = { full: 0, calm: 1, still: 2 };
@@ -39,7 +48,11 @@ export function createQuality(opts = {}) {
   const C = { ...QUALITY, ...(opts.config || {}) };
   let ema = 16.7, tier = 'full', over = 0, goodSince = -1, samples = 0;
   const subs = new Set();
-  let raf = 0, lastT = 0, until = Infinity;
+  let timer = 0, due = 0, until = Infinity, drivers = 0;
+  const hasTimers = opts.timers ? true : (typeof window !== 'undefined' && typeof setTimeout === 'function');
+  const setT = (opts.timers && opts.timers.setTimeout) || ((f, ms) => setTimeout(f, ms));
+  const clearT = (opts.timers && opts.timers.clearTimeout) || ((id) => clearTimeout(id));
+  const hidden = () => { try { return typeof document !== 'undefined' && document.hidden; } catch (e) { return false; } };
 
   // the tier is also written to <html data-quality="full|lite|calm"> so CSS loops can follow it (symbols.js, scene.js)
   const root = opts.root !== undefined ? opts.root : (typeof document !== 'undefined' ? document.documentElement : null);
@@ -69,18 +82,19 @@ export function createQuality(opts = {}) {
     if (t - goodSince >= C.recoverMs) { goodSince = -1; setTier(tier === 'calm' ? 'lite' : 'full'); }
   }
 
+  function tick() {
+    timer = 0;
+    const t = now();
+    if (!hidden()) api.sampleLag(t - due);
+    if (drivers > 0 || t > until) { if (t > until) until = Infinity; return; }
+    due = t + C.probeMs; timer = setT(tick, C.probeMs);
+  }
   function start() {
-    if (raf || typeof requestAnimationFrame === 'undefined') return api;
-    lastT = 0;
-    const loop = (t) => {
-      if (lastT) api.sample(t - lastT);
-      lastT = t;
-      if (now() > until) { raf = 0; lastT = 0; until = Infinity; return; }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
+    if (timer || drivers > 0 || !hasTimers) return api;
+    due = now() + C.probeMs; timer = setT(tick, C.probeMs);
     return api;
   }
+  function halt() { if (timer) clearT(timer); timer = 0; }
   const api = {
     sample(dt) {
       const d = Number(dt);
@@ -90,6 +104,16 @@ export function createQuality(opts = {}) {
       decide();
       return api;
     },
+    /** lateness (ms) of a tick of a 12 fps timer loop -> one frame sample of frameMs + lag */
+    sampleLag(lag) { const l = Number(lag); if (!Number.isFinite(l)) return api; return api.sample(C.frameMs + Math.max(0, l)); },
+    /** a module with its own timer loop feeding sampleLag() starts (true) / stops (false) driving; the probe yields meanwhile */
+    drive(on) {
+      if (on) { drivers++; halt(); return api; }
+      drivers = Math.max(0, drivers - 1);
+      if (!drivers && until !== Infinity && now() < until) start();
+      return api;
+    },
+    get driven() { return drivers > 0; },
     get ema() { return ema; },
     get samples() { return samples; },
     get tier() { return tier; },
@@ -118,10 +142,10 @@ export function createQuality(opts = {}) {
     },
     subscribe(fn) { if (typeof fn !== 'function') return () => {}; subs.add(fn); return () => { subs.delete(fn); }; },
     monitor() { until = Infinity; return start(); },
-    /** run the probe for at least ms more (fx.js calls it whenever it adds particles, so the probe only runs while effects play) */
-    keepAlive(ms = 3000) { const end = now() + Math.max(0, Number(ms) || 0); if (!raf) until = end; else if (until !== Infinity) until = Math.max(until, end); return start(); },
-    get monitoring() { return !!raf; },
-    stop() { if (raf && typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(raf); raf = 0; lastT = 0; until = Infinity; return api; },
+    /** keep the probe for at least ms more (wire.js calls it when a wire plays; the probe stops itself afterwards) */
+    keepAlive(ms = 3000) { const end = now() + Math.max(0, Number(ms) || 0); if (until === Infinity && !timer) until = end; else if (until !== Infinity) until = Math.max(until, end); return start(); },
+    get monitoring() { return !!timer || drivers > 0; },
+    stop() { halt(); until = Infinity; return api; },
     reset() { ema = 16.7; over = 0; goodSince = -1; samples = 0; setTier('full'); return api; },
   };
   return api;

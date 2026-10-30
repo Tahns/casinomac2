@@ -342,10 +342,12 @@ export function createScene(app) {
     motes.push({ x: edge ? (r0() < .5 ? r0() * .22 : .78 + r0() * .22) : r0(), y: .04 + r0() * .6, s: .6 + r0() * .8, ph: r0() * 10, kind: i % 3, col: COLS[i % 4], rot: r0() * TAU });
   }
   let lt = 0, running = true; let sceneLair = false;
-  function loop(now) {
+  // one setTimeout per 140 ms step (was a rAF loop waking every vsync only to skip 7 frames of 8)
+  function loop() {
     if (!running) return;
-    requestAnimationFrame(loop);
-    if (document.hidden || now - lt < 140) { if (document.hidden) lt = now; return; }
+    setTimeout(loop, 140);
+    const now = performance.now();
+    if (document.hidden) return;
     lt = now;
     dctx.clearRect(0, 0, DW, DH);
     const u = Math.min(DW, DH) / 600; const pc = (sceneLair ? PL : P) || (P = pal(host, '', BASE));
@@ -365,7 +367,7 @@ export function createScene(app) {
       }
     }
   }
-  requestAnimationFrame(loop);
+  setTimeout(loop, 0);
 
   // ---- parallax
   const lays = [...host.querySelectorAll('.lay')];
