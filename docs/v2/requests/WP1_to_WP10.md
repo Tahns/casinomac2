@@ -26,3 +26,29 @@ await s.page.keyboard.press('Space');                                           
 // expect: inside === true, behind all true, bet text unchanged, plays === 0; then Escape closes the dialog
 ```
    G4 / G5 / G7 in `shell.mjs` already assert these properties.
+
+   **Verified drop-in (milestone 1 review V1-GUIDELINE-MODAL-INERT, still open until WP10 applies it).** Replace the whole `await check('MODAL-INERT', ...)` block of `tests/guidelines/run.mjs` (lines 324-339 at e9b0c74, up to but excluding `await check(223,`) with the block below. Tested on a clean `git archive HEAD` copy (patched there, never in the tracked tree), own ports 5820/5821: `QA_ONLY=MODAL-INERT,31,UNL-PRICE node tests/guidelines/run.mjs` gives 3 PASS, 0 FAIL ("dialog open=true, focus inside after 12 Tab=true, inert BET/BET+/UNLEASH=true/true/true, bet before/after=$10.00/$10.00, plays sent=0, closed=true, [inert] left after closing=false"). It uses only helpers already in `run.mjs` (`mockCfg`, `sess`, `mockClear`, `mockLog`, `plays`, `sleep`). WP1 code stays as it is: focus on Cancel is required by SYNTHESIS line 74.
+```js
+  await check('MODAL-INERT', 'keyboard cannot act behind an open dialog (Tab stays inside the UNLEASH confirm, BET / BET+ / UNLEASH are inert, Space starts nothing)', async () => {
+    const bet = 10000000; // 10.00: UNLEASH costs 1,000.00
+    await mockCfg({ balance: 5000000000, bet: { betLevels: [10000000, 20000000], minBet: 10000000, maxBet: 20000000, stepBet: 10000000, defaultBetLevel: bet } });
+    const s = await sess({}); await mockClear();
+    await s.click('#btn-unleash', { force: true }); await sleep(600);
+    const dlg = await s.page.evaluate(() => !!document.querySelector('#modal-confirm.open'));
+    const before = await s.text('#bet');
+    // the focus stays where the dialog put it (CANCEL, the safe answer, [31]); never move it with page.focus()
+    for (let i = 0; i < 12; i++) await s.page.keyboard.press('Tab');
+    const inside = await s.page.evaluate(() => !!document.activeElement && !!document.activeElement.closest('#modal-confirm'));
+    const behind = await s.page.evaluate(() => ['btn-bet', 'btn-bet-plus', 'btn-unleash'].map((id) => { const e = document.getElementById(id); return !!e && e.closest('[inert]') !== null; }));
+    // Space on a dialog control may act on that control (Cancel closes the dialog): it must never start a round or change the bet
+    await s.page.keyboard.press('Space'); await sleep(300);
+    const after = await s.text('#bet'); const log = await mockLog(); const playsBehind = plays(log).length;
+    await s.page.keyboard.press('Escape'); await sleep(300);
+    const closed = await s.page.evaluate(() => !document.querySelector('#modal-confirm.open'));
+    const inertAfter = await s.page.evaluate(() => !!document.querySelector('[inert]'));
+    await s.close();
+    const ok = dlg && inside && behind.every(Boolean) && before === after && playsBehind === 0 && closed && !inertAfter;
+    return [ok ? PASS : FAIL, `dialog open=${dlg}, focus inside after 12 Tab=${inside}, inert BET/BET+/UNLEASH=${behind.join('/')}`, `bet before/after=${before}/${after}, plays sent=${playsBehind}, closed=${closed}, [inert] left after closing=${inertAfter}`];
+  });
+```
+

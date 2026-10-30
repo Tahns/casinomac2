@@ -65,3 +65,11 @@ Owner: WP1. Ports 5820-5829 (static 5820, mock RGS 5821, runner copies 5822-5825
 - 400x225 is tight: three HUD plates + the summary leave a 70x57 box; free spins hide the HUD free-spin plate there (the board chip shows the count).
 - The Info tab prints `rules.js` text; the SETTINGS button is only explained there until WP11 adds it to the rules (request sent, Engine [235]).
 - `settings.js` was not changed: all needs were met by the step-0 store.
+
+## Fix pass (milestone 1 review: V1-GUIDELINE-MODAL-INERT)
+
+- Reviewer finding: full `run.mjs` on HEAD = 45 PASS, 1 FAIL ([MODAL-INERT]), 1 AT RISK (same as baseline). The cause is the required focus-on-Cancel in the Secret Entrance confirm (SYNTHESIS line 74): the check's `focus('#btn-bet-plus')` is a no-op on an inert node, Enter activates CANCEL, then BET starts a round.
+- Decision: no change to WP1 code (moving the focus would break [31] / the brief). The check lives in `tests/guidelines/run.mjs` (WP10). `docs/v2/requests/WP1_to_WP10.md` item 7 now has a **verified drop-in block** (Tab x12 stays inside `#modal-confirm`, BET/BET+/UNLEASH under `[inert]`, Space changes no bet and sends no play, Escape closes, no `[inert]` left).
+- Verified on a clean `git archive HEAD` copy under /tmp/claude-0/scratch/wp1/fixv (patched there only), ports 5820/5821: `QA_ONLY=MODAL-INERT,31,UNL-PRICE` gives 3 PASS, 0 FAIL. Screenshot after 12 Tabs (/tmp/claude-0/scratch/wp1/fixv/confirm_focus.png, ports 5822/5823): focus ring on CANCEL, Stage Door card with cost $1,000.00, nothing pre-selected.
+- `node --test tests/core tests/text tests/shell`: 95/95 pass.
+- Still open: until WP10 applies item 7, the full v1 guideline runner shows this one FAIL.
