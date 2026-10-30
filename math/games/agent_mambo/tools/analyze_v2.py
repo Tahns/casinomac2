@@ -213,7 +213,8 @@ def analyze_mode(mode, procs, limit=None):
         out["layoutShare"] = {k: round(v / Wt, 5) for k, v in sorted(lay.items())}
         out["missionShareOfTriggers"] = {k: round(v / sum(mis.values()), 5) for k, v in sorted(mis.items())}
         out["baseSpinWire"] = {"burn": wsum(lambda r: r[9]) / wsum(lambda r: r[11]), "blast": wsum(lambda r: r[10]) / wsum(lambda r: r[11])}
-        out["freeGameRtpShare"] = float(wsum(lambda r: r[22]) / wsum(lambda r: r[1]))
+        # freeGameWins / baseGameWins are in x of the bet (floats), payoutMultiplier is x100: compare like with like
+        out["freeGameRtpShare"] = float(wsum(lambda r: r[22]) / (wsum(lambda r: r[22]) + wsum(lambda r: r[23])))
         fm = {}
         for m in sorted(mis):
             idx = [i for i, r in enumerate(rows) if r[6] == m]

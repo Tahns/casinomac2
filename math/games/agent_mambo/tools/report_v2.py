@@ -2,7 +2,7 @@
 
   math/env/bin/python math/games/agent_mambo/tools/report_v2.py > /tmp/report_tables.md
 
-Inputs: library/shares.json, analysis_v2.json, verify_v2.json, wp9_timing.jsonl, wp9_recompress.json, wp9_reweight.json, stats_summary.json.
+Inputs: library/shares.json, analysis_v2.json, verify_v2.json, wp9_timing.jsonl, wp9_recompress.json, wp9_reweight.json, volatility_v2.json.
 """
 import json
 import os
@@ -25,7 +25,7 @@ def pct(x, d=2):
 
 def main():
     sh, an, ve = load("shares.json", {}), load("analysis_v2.json", {}), load("verify_v2.json", {})
-    rc, rw, st = load("wp9_recompress.json", {}), load("wp9_reweight.json", {}), load("stats_summary.json", {})
+    rc, rw, _ = load("wp9_recompress.json", {}), load("wp9_reweight.json", {}), load("stats_summary.json", {})
     print("### Results per mode (weighted by the final lookup tables)\n")
     print("| Mode | Cost | Books | RTP | Max win (odds) | Hit rate | Median | Mean | Std | P(R > 1x stake) / P(R > price) |")
     print("|---|---|---|---|---|---|---|---|---|---|")
@@ -76,12 +76,13 @@ def main():
         print(f"\nOrders: {o['caseOpensPerBook']:.2f} envelope openings per book, mean bank {o['meanBankX']:.2f}x, capped openings {pct(o['caseOpenCappedShare'], 2)}")
     if "entrance_blackout" in an:
         print(f"\nBlackout: lit share of winning steps {pct(an['entrance_blackout']['litShareOfWinningSteps'], 1)}")
-    print("\n### Volatility (SDK stats_summary.json)\n")
-    print("| Mode | std | skew | excess kurtosis | P(>=5000x) | prob_less_bet | non-zero hit |\n|---|---|---|---|---|---|---|")
+    vo = load("volatility_v2.json", {})
+    print("\n### Volatility (tools/volatility_v2.py, final tables; R = return / round price)\n")
+    print("| Mode | std of R | skew | excess kurtosis | P(win >= 5000x) | P(R < price) | P(R > price) | 99th / 99.9th pct of R |\n|---|---|---|---|---|---|---|---|")
     for m in MODES:
-        s = st.get(m)
+        s = vo.get(m)
         if s:
-            print(f"| {m} | {s.get('std')} | {s.get('skew')} | {s.get('excess_kurtosis')} | {s.get('prob5k')} | {s.get('prob_less_bet')} | {s.get('non_zero_hr')} |")
+            print(f"| {m} | {s['stdR']:.3f} | {s['skew']:.1f} | {s['excessKurtosis']:.0f} | {s['pMaxWin']:.2e} (1 / {1 / s['pMaxWin']:,.0f}) | {pct(s['pLoss'])} | {pct(s['pGtCost'])} | {s['p99R']:.2f} / {s['p999R']:.2f} |")
     print("\n### Reweight (tools/reweight_doors.py)\n")
     print("| Mode | lambda | kappa | effective books | P(R > price) | median |\n|---|---|---|---|---|---|")
     for m, s in rw.items():

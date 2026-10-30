@@ -370,14 +370,18 @@ def test_wire_rules_on_geometry():
     for mode in ("base", "bonus", "entrance_orders", "entrance_blackout"):
         for b in sample_books(mode, 600, 13):
             capped = any(e["type"] == "wincap" for e in b["events"])
+            # the Blackout lens plays in the free spins of a blackout mission: the door, or a base book whose trigger drew 'blackout'
+            mission = next((e["mission"] for e in b["events"] if e["type"] == "missionAssigned"), None)
             for lay, spin, gt, _ in _spins(b):
                 L = LAYOUTS[lay]
                 n_spins += 1
                 kinds = [e["type"] for e in spin]
                 i0 = kinds.index("fusePath")
                 assert spin[1]["type"] in ("fusePath", "lightRoute")
-                if spin[1]["type"] == "lightRoute":
-                    assert mode == "entrance_blackout" and gt == "freegame" and spin[2]["type"] == "fusePath"
+                lit_mission = gt == "freegame" and mission == "blackout"
+                assert (spin[1]["type"] == "lightRoute") == lit_mission, (mode, b["id"], gt, mission)
+                if lit_mission:
+                    assert spin[2]["type"] == "fusePath"
                 path = [(c["reel"], c["row"]) for c in spin[i0]["cells"]]
                 assert len(path) == 8 and len(set(path)) == 8 and path[0][0] == 0
                 for (r, g) in path:
@@ -464,7 +468,7 @@ def test_blast_followed_by_reevaluation():
             if e["type"] == "fuseBlast":
                 seen += 1
                 assert ev[i + 1]["type"] == "tumbleBoard"
-                assert ev[i + 2]["type"] in ("winInfo", "setTotalWin", "setWin", "freeSpinTrigger", "wincap", "finalWin"), ev[i + 2]["type"]
+                assert ev[i + 2]["type"] in ("winInfo", "caseOpen", "setTotalWin", "setWin", "freeSpinTrigger", "wincap", "finalWin"), ev[i + 2]["type"]
     assert seen > 0
 
 
@@ -518,7 +522,7 @@ def test_briefing_door_has_no_mission_events_and_base_missions_match_free_spins(
             assert kinds[kinds.index("freeSpinTrigger") + 1] == "missionAssigned"
             m = next(e for e in ev if e["type"] == "missionAssigned")
             seen[m["mission"]] += 1
-            assert m["layout"] == ev[0]["id"] and m["fuseLen"] == 8
+            assert m["layout"] == "mezzanine" and m["fuseLen"] == 8  # free spins always play the home plan (SYNTHESIS 3; field reserved)
             assert (m["payTiming"] == "spinEnd") == (m["mission"] == "orders")
             if "caseOpen" in kinds:
                 assert m["mission"] == "orders"
