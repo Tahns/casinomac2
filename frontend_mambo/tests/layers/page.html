@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Agent Mambo - WP6 layers page</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../src/render/mascot.css">
+<link rel="stylesheet" href="../../src/render/wire.css">
+<link rel="stylesheet" href="../../src/render/meter.css">
+<link rel="stylesheet" href="../../src/ui/ui.css">
+<link rel="stylesheet" href="../../src/render/heroine/heroine.css">
+<link rel="stylesheet" href="../../src/render/layers/layers.css">
+</head>
+<body class="state-idle">
+<div id="devmount"></div>
+<script type="module">
+// WP6 test page: the real index.html markup, the real renderer, the heroine shell (WP1) so the heroine stands left of the grid, and a
+// probe that records every book event with the state of the WP6 layers. tests/layers/browser.mjs drives it.
+// URL: page.html?motion=still|calm|full&social=1
+const q = new URLSearchParams(location.search);
+const html = await (await fetch('../../index.html')).text();
+const doc = new DOMParser().parseFromString(html, 'text/html');
+document.getElementById('devmount').replaceWith(doc.getElementById('app'));
+const { settings } = await import('../../src/settings.js');
+if (q.get('motion')) settings.set('motion', q.get('motion'));
+if (q.get('social')) { const i = await import('../../src/i18n/index.js'); i.setSocial(true); }
+try { const sh = await import('../../src/ui/heroine_shell.js'); sh.initHeroineShell({ settings }); } catch (e) { console.warn('shell', e); }
+const { createRenderer } = await import('../../src/render/index.js');
+const { LAYERS } = await import('../../src/render/layers/index.js');
+const $ = (id) => document.getElementById(id);
+const log = [];
+let t0 = 0;
+const now = () => Math.round(performance.now() - t0);
+const renderer = createRenderer($('game'));
+let winText = [];
+LAYERS.push({ id: 'probe', onEvent(ev) {
+  const L = window.__mamboLayers;
+  log.push({ t: now(), kind: 'event', type: ev && ev.type, win: $('win').textContent,
+    env: !!document.querySelector('.l-env'), dark: !!document.querySelector('.l-dark'), cut: !!document.querySelector('.l-cut') });
+}, reset() {} });
+renderer.setFormat((x) => `$${x.toFixed(2)}`);
+const hooks = {
+  onTotal: (x) => { $('win').textContent = x.toFixed(2); log.push({ t: now(), kind: 'win', x }); },
+  onWin: (x) => { $('win').textContent = x.toFixed(2); log.push({ t: now(), kind: 'win', x }); },
+  onFreeSpinCounter: (c, t) => { $('freespin-counter').textContent = t ? `${c}/${t}` : ''; },
+};
+$('balance').textContent = '1000.00'; $('bet').textContent = '1.00'; $('win').textContent = '0.00';
+window.P = {
+  renderer, settings, log,
+  async play(events, o = {}) {
+    log.length = 0; t0 = performance.now();
+    renderer.setCost(o.cost != null ? o.cost : 1);
+    renderer.setTurbo(!!o.turbo);
+    if (o.skip != null) renderer.setSkip(o.skip);
+    $('win').textContent = '0.00';
+    document.body.className = document.body.className.replace(/state-\w+/, 'state-playing');
+    try { await renderer.playBook(events, hooks); } finally { document.body.className = document.body.className.replace(/state-\w+/, 'state-idle'); }
+    log.push({ t: now(), kind: 'end' });
+    return log.slice();
+  },
+  layers: () => window.__mamboLayers,
+  now,
+};
+window.__ready = true;
+</script>
+</body>
+</html>

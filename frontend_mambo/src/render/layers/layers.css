@@ -1,2 +1,83 @@
 /* Agent Mambo v2: bonus/overlay layer styles (WP6 owns this file): blueprint, Sealed Orders envelope, Ballroom Blackout beam,
-   dossier cutscene, costume screen, entrance transition. Linked from index.html. Step 0: intentionally empty, v1 look unchanged. */
+   dossier cutscene, costume screen, entrance transition, debrief tab. Linked from index.html.
+   Closed palette only (styles.css :root tokens), the game's two font stacks (--disp, --num), no new font.
+   Every element here is created and removed by src/render/layers/*.js; nothing here styles an element another package owns. */
+
+/* ---------- BLUEPRINT (inside .board: the 6 x rows grid box) ---------- */
+.l-bp{position:absolute;inset:0;z-index:6;pointer-events:none}
+.l-bp svg{display:block;overflow:visible}
+.l-bp-paper{fill:var(--indigo);opacity:.86}
+.l-bp-cell{fill:none;stroke:var(--cream);stroke-width:.018;stroke-dasharray:.06 .04;opacity:.75}
+.l-bp-hole{stroke:var(--cream);stroke-width:.03;stroke-linecap:round;opacity:.45}
+.l-bp-line{fill:none;stroke:var(--cream);stroke-width:.075;stroke-linejoin:round;stroke-linecap:round}
+.l-bp-mis{fill:none;stroke:var(--steel);stroke-width:.075;stroke-linejoin:round;opacity:.85}
+.l-bp-stamp{position:absolute;z-index:9;left:calc(var(--cell,60px)*.22);bottom:calc(var(--cell,60px)*-.02);width:calc(var(--cell,60px)*1.7);height:calc(var(--cell,60px)*.52);
+  pointer-events:none;background:var(--indigo);border-radius:calc(var(--cell,60px)*.1);box-shadow:0 0 0 2px var(--ink)}
+.l-bp-stamp svg{display:block}
+
+/* ---------- SEALED ORDERS ENVELOPE (inside .board-wrap, on the top-left corner of the frame, next to the dial badge) ---------- */
+.l-env{position:absolute;z-index:12;left:calc(var(--cell,60px)*.06);top:calc(var(--cell,60px)*-.56);width:calc(var(--cell,60px)*1.05);aspect-ratio:132/136;
+  transform:rotate(-6deg);pointer-events:none;transform-origin:50% 60%}
+.l-env svg{display:block;overflow:visible}
+.l-env-flap{transform-box:fill-box;transform-origin:50% 0%}
+.l-env.open .l-env-flap{transform:scaleY(-1)}
+.l-env-plate{position:absolute;left:4%;right:4%;bottom:5%;display:flex;flex-direction:column;align-items:center;text-align:center}
+.l-env-plate b{display:none}
+.l-env-plate span{font:900 calc(var(--cell,60px)*.105)/1 var(--num);color:var(--ink);white-space:nowrap;background:var(--cream);padding:.12em .3em;border-radius:.3em}
+.l-env-plate span:empty{display:none}
+.l-env-stamp{position:absolute;left:-8%;right:-8%;top:30%;height:34%;pointer-events:none}
+.l-env-stamp svg{display:block}
+.l-env-reveal{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:4%;white-space:nowrap;padding:.25em .55em;border-radius:.35em;
+  font:900 calc(var(--cell,60px)*.16)/1 var(--num);color:var(--ink);background:var(--cream);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--steel)}
+.l-env.forward .l-env-reveal{font-size:calc(var(--cell,60px)*.11)}
+
+/* ---------- BALLROOM BLACKOUT (inside .board) ---------- */
+.l-dark{position:absolute;inset:0;z-index:7;pointer-events:none}
+.l-dark-svg{display:block;overflow:visible}
+.l-dark-shade{fill:var(--ink);opacity:.6}
+.l-dark-cone{fill:var(--cream);opacity:.14}
+.l-dark-win{fill:var(--cream);fill-opacity:.06;stroke:var(--cream);stroke-width:.05;stroke-dasharray:.16 .08}
+.l-lamp{position:absolute;top:calc(var(--cell,60px)*-.42);left:50%;width:calc(var(--cell,60px)*.62);height:calc(var(--cell,60px)*.42);transform:translateX(-50%);z-index:2}
+.l-lamp svg{display:block}
+.l-x4{position:absolute;z-index:9;width:calc(var(--cell,60px)*.66);height:calc(var(--cell,60px)*.4);transform:translate(-50%,-50%);pointer-events:none}
+.l-x4 svg{display:block}
+
+/* ---------- DOSSIER CUTSCENE + DOOR (over the board box, in #app) ---------- */
+.l-cut{position:absolute;z-index:32;display:grid;place-items:center;pointer-events:auto;overflow:visible;cursor:default;
+  background:radial-gradient(rgba(154,123,208,.35) 1.4px,transparent 2px) 0 0/8px 8px,rgba(20,16,43,.62);border-radius:12px;container-type:size}
+.l-dos{position:relative;width:min(86cqw,calc(86cqh * 320 / 250));aspect-ratio:320/250;transform:rotate(-3deg)}
+.l-dos svg{display:block;width:100%;height:100%;overflow:visible}
+.l-dos-cover{transform-box:fill-box;transform-origin:0% 50%}
+.l-dos.open .l-dos-cover{transform:scaleX(-.04)}
+.l-dos-paper{opacity:1}
+.l-dos-text{position:absolute;left:12%;right:12%;top:20%;height:46%;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:.5em;
+  color:var(--ink);visibility:hidden;text-align:left}
+.l-dos.open .l-dos-text{visibility:visible}
+.l-dos-name{font:900 clamp(13px,5.4cqmin,40px)/1.02 var(--disp);letter-spacing:.02em;color:var(--ink);text-shadow:2px 2px 0 var(--steel)}
+.l-dos.orders .l-dos-name{text-shadow:2px 2px 0 var(--teal)}
+.l-dos.blackout .l-dos-name{text-shadow:2px 2px 0 var(--lilac)}
+.l-dos-brief{font:700 clamp(10px,3.1cqmin,22px)/1.2 var(--disp);color:var(--ink-dim);max-width:78%}
+.l-dos-n{font:900 clamp(10px,3.3cqmin,24px)/1 var(--num);font-style:normal;color:var(--coral-dk);margin-top:.2em}
+.l-dos-stamp{position:absolute;left:44%;top:-6%;width:54%;height:24%;visibility:hidden;pointer-events:none}
+.l-dos.stamped .l-dos-stamp{visibility:visible}
+.l-dos-stamp svg{display:block}
+.l-dos-skip{position:absolute;left:0;right:0;bottom:-9%;text-align:center;font:800 clamp(9px,2.6cqmin,16px)/1 var(--disp);letter-spacing:.12em;color:var(--cream);opacity:0}
+.l-dos.can-skip .l-dos-skip{opacity:.85}
+.l-door{position:absolute;inset:0;display:grid;place-items:center}
+.l-door-svg{width:auto;height:96%;max-width:96%}
+.l-iris{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;visibility:hidden}
+.l-iris-mask{fill:var(--ink)}
+
+/* ---------- COSTUME SCREEN (fallback when the heroine rig is not there; over #heroine-slot, in #app) ---------- */
+.l-screen{position:absolute;z-index:33;pointer-events:none}
+.l-screen svg{display:block}
+.l-poof{position:absolute;left:30%;top:4%;width:40%;height:auto;visibility:hidden}
+.l-screen.poof .l-poof{visibility:visible}
+
+/* ---------- DEBRIEF TAB (pinned on top of the player's end-of-feature card) ---------- */
+.l-debrief{position:absolute;left:50%;top:0;transform:translate(-50%,0);margin-top:-1.7em;z-index:3;pointer-events:none;white-space:nowrap;
+  padding:.45em 1.1em .5em;border:3px solid var(--ink);border-bottom:0;border-radius:.6em .6em 0 0;background:var(--brass);box-shadow:3px 0 0 var(--orange)}
+.l-debrief-name{font:900 clamp(10px,1.6vmin + 4px,20px)/1 var(--disp);letter-spacing:.06em;color:var(--ink)}
+
+/* Still: the end state, no travel (the JS already jumps to the last frame; this keeps CSS transitions off too) */
+html[data-motion="still"] .l-bp,html[data-motion="still"] .l-env,html[data-motion="still"] .l-dark,html[data-motion="still"] .l-dos,html[data-motion="still"] .l-x4{transition:none!important;animation:none!important}
