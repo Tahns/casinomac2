@@ -44,3 +44,8 @@ this file, request files).
 - Music at 5 % on the taper is -42 dB under the v1 mix: very quiet by design (slot guide rule); ear check wanted.
 - caseOpen win layer and the new cues not listened to (ear check). WP6 must pass { win, costShare } for the win layer (WP123_to_WP6).
 - The mission reactions need a caller (WP6 or WP4, requests written).
+
+## Review fix round (BUILD-LICENCE-URL)
+- Reviewer: release build exited 1 on the apache.org URLs inside the shipped font licence. build_front.mjs is WP11's; WP11 had already
+  exempted `assets/fonts/LICENSE-*.txt` (2b745e3). Re-verified on /tmp/claude-0/scratch/wp123/fm: build exit 0, licence shipped,
+  verify:build clean. Recorded in docs/v2/requests/WP123_to_WP11.md (closed). Licence link in index.html kept.
