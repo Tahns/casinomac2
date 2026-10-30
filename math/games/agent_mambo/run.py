@@ -15,8 +15,8 @@ Stages, in the order of a full rebuild (SYNTHESIS 7 / 9):
   checks     SDK execute_all_tests (hashes, lookup format, payouts match books, volatility limits)
   all        sims configs opt reweight recompress checks
 
-Environment (defaults in brackets): THREADS [3, hard cap 3]; SIMS_BASE [93750 = 5 x 3 x 6250], SIMS_ENTRANCE_ORDERS [56250 = 6 x 3 x 3125],
-SIMS_ENTRANCE_BLACKOUT [56250], SIMS_BONUS [0 = reuse the published books]; BATCH_BASE [6250], BATCH_DOOR [3125] (books of 60 KB and more);
+Environment (defaults in brackets): THREADS [3, hard cap 3]; SIMS_BASE [112500 = 6 x 3 x 6250], SIMS_ENTRANCE_ORDERS [103125 = 11 x 3 x 3125],
+SIMS_ENTRANCE_BLACKOUT [103125], SIMS_BONUS [0 = reuse the published books]; BATCH_BASE [6250], BATCH_DOOR [3125] (books of 60 KB and more);
 ZSTD_LEVEL [15]; ONLY_MODES (comma list, restricts `sims`). A count must be a multiple of THREADS x batch: create_books silently drops sims
 otherwise (50 000 is NOT a multiple of 18 750 or 9 375). Every stage appends a wall-clock record to library/wp9_timing.jsonl.
 
@@ -79,10 +79,10 @@ def stage_sims(config, gamestate):
 
     th = threads()
     plan = [
-        ("entrance_orders", env_int("SIMS_ENTRANCE_ORDERS", 56250), env_int("BATCH_DOOR", 3125)),
-        ("entrance_blackout", env_int("SIMS_ENTRANCE_BLACKOUT", 56250), env_int("BATCH_DOOR", 3125)),
+        ("entrance_orders", env_int("SIMS_ENTRANCE_ORDERS", 103125), env_int("BATCH_DOOR", 3125)),
+        ("entrance_blackout", env_int("SIMS_ENTRANCE_BLACKOUT", 103125), env_int("BATCH_DOOR", 3125)),
         ("bonus", env_int("SIMS_BONUS", 0), env_int("BATCH_DOOR", 3125)),
-        ("base", env_int("SIMS_BASE", 93750), env_int("BATCH_BASE", 6250)),
+        ("base", env_int("SIMS_BASE", 112500), env_int("BATCH_BASE", 6250)),
     ]
     only = [m for m in os.environ.get("ONLY_MODES", "").split(",") if m]
     for mode, n, batch in plan:
