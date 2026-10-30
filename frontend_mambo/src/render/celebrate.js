@@ -107,7 +107,8 @@ export function tierPlan(x, C) {
  * R of a round = base (confirmed by the last setTotalWin) + spin (the spin in progress), both in 1/100 x of the bet as in the books.
  *   winInfo adds its wins to the spin, updateTumbleWin / setTumbleWin / setWin set the spin, setTotalWin / wincap / freeSpinEnd / finalWin
  *   set the base (and close the spin), reveal rolls an unconfirmed spin into the base. A win flagged `meta.banked` (Sealed Orders, later
- *   milestone) is filed, not paid: it never moves R until the setWin that follows the case opening.
+ *   milestone) is filed, not paid: it never moves R (nor does the updateTumbleWin that carries the running bank) until the caseOpen
+ *   (win = bank x dial) or the setWin of that spin.
  * apply(ev) returns { type, prev, next, delta, level, crossed, banked } with R in bet multiples; `crossed` is true exactly once per round.
  */
 export function createRound(cost = 1) {
@@ -129,6 +130,8 @@ export function createRound(cost = 1) {
         break;
       }
       case 'updateTumbleWin': case 'setTumbleWin': if (!st.banked) st.spin = num(ev.amount); break;
+      // Sealed Orders: the envelope opens, the spin pays bank x dial in one beat (the setWin that follows carries the same amount)
+      case 'caseOpen': st.spin = num(ev.win); st.banked = false; break;
       case 'setWin': st.spin = num(ev.amount); st.banked = false; break;
       case 'setTotalWin': case 'wincap': case 'freeSpinEnd': case 'finalWin': st.base = num(ev.amount); st.spin = 0; st.banked = false; break;
       default: break;

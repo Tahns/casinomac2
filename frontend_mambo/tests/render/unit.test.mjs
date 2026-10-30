@@ -104,6 +104,21 @@ test('round: banked wins (Sealed Orders) never move R until the setWin of the ca
   const o2 = r.apply(ev('updateTumbleWin', { amount: 1200 })); assert.equal(o2.next, 0);
   const o3 = r.apply(ev('setWin', { amount: 26400 })); assert.equal(o3.next, 264); assert.equal(o3.level, 3); assert.equal(o3.crossed, true);
 });
+test('round: caseOpen pays bank x dial in one beat (the crossing happens there, the setWin after it changes nothing)', () => {
+  const r = createRound(100);
+  r.apply(ev('reveal'));
+  r.apply({ type: 'winInfo', totalWin: 120, wins: [{ win: 120, meta: { banked: true, globalMult: 1 } }] });
+  let o = r.apply(ev('updateTumbleWin', { amount: 120 })); assert.equal(o.next, 0);
+  r.apply({ type: 'winInfo', totalWin: 300, wins: [{ win: 300, meta: { banked: true, globalMult: 1 } }] });
+  o = r.apply(ev('updateTumbleWin', { amount: 420 })); assert.equal(o.next, 0); assert.equal(o.banked, true);
+  o = r.apply(ev('caseOpen', { bank: 420, mult: 15, win: 6300, capped: false })); assert.equal(o.next, 63); assert.equal(o.level, 0); assert.equal(o.banked, false);
+  o = r.apply(ev('setWin', { amount: 6300 })); assert.equal(o.next, 63); assert.equal(o.delta, 0);
+  r.apply(ev('setTotalWin', { amount: 6300 }));
+  r.apply(ev('reveal'));
+  r.apply({ type: 'winInfo', totalWin: 500, wins: [{ win: 500, meta: { banked: true } }] });
+  o = r.apply(ev('caseOpen', { bank: 500, mult: 22, win: 11000 })); assert.equal(o.next, 173); assert.equal(o.crossed, true); assert.equal(o.level, 1);
+  o = r.apply(ev('setWin', { amount: 11000 })); assert.equal(o.crossed, false);
+});
 test('round: a hand-made book with only setWin / setTotalWin still crosses once; wincap sets the cap', () => {
   const r = createRound(1);
   r.apply(ev('reveal'));
