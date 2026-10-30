@@ -33,10 +33,16 @@ export async function createHeroineMascot(host, opts = {}) {
   const osReduced = () => { try { return !!(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } };
   // Motion level of the heroine. The settings store resolves Auto + an OS "reduce motion" request to Calm; for the figure that is still too much
   // (springs, breathing, saccades), so Auto + OS reduced = Still (static poses). An explicit Calm / Full / Still choice is taken as it is.
+  const qualityCalm = () => { try { return !!(doc.documentElement && doc.documentElement.getAttribute('data-quality') === 'calm'); } catch (e) { return false; } };
   const getMotion = () => {
     try {
       const m = settings && settings.get('motionLevel');
-      if (MOTIONS.includes(m)) return m === 'calm' && settings.get('motion') === 'auto' ? 'still' : m;
+      if (MOTIONS.includes(m)) {
+        if (m === 'calm' && settings.get('motion') === 'auto') return 'still';
+        // the quality governor (render/quality.js, html[data-quality=calm] when the frame EMA is over 40 ms) turns Full into Calm (WP5_to_WP3)
+        if (m === 'full' && qualityCalm()) return 'calm';
+        return m;
+      }
     } catch (e) { /* ignore */ }
     return opts.reduced || osReduced() ? 'still' : 'full';
   };
@@ -154,6 +160,11 @@ export async function createHeroineMascot(host, opts = {}) {
     if (CROP_VB[host.dataset.crop]) setCrop(host.dataset.crop);
   }
   doc.addEventListener('visibilitychange', onVisible); offs.push(() => doc.removeEventListener('visibilitychange', onVisible));
+  // follow html[data-quality] live (Calm while the page struggles, back to the stored level after)
+  try {
+    const MO = win.MutationObserver;
+    if (MO && doc.documentElement) { const mo = new MO(() => { if (director) director.setMotion(getMotion()); }); mo.observe(doc.documentElement, { attributes: true, attributeFilter: ['data-quality'] }); offs.push(() => mo.disconnect()); }
+  } catch (e) { /* ignore */ }
   if (settings && typeof settings.on === 'function') {
     for (const key of ['motionLevel', 'motion']) {
       try { const off = settings.on(key, () => { if (director) director.setMotion(getMotion()); }); if (typeof off === 'function') offs.push(off); } catch (e) { /* ignore */ }
@@ -166,12 +177,19 @@ export async function createHeroineMascot(host, opts = {}) {
     getPose: () => (director ? director.getPose() : 'idle'),
     say, hideSay, setCrop,
     react: (kind, info) => (director && mode === 'rig' ? director.react(kind, info) : false),
+    // setOutfit(key, { hidden: true }) (= { animated: false }): an instant swap, for a caller that draws its own screen over the slot (WP6 costume
+    // layer); without it the heroine plays her own folding-screen change. Returns true when the swap happened or started.
     setOutfit(key, o = {}) {
       if (!director || mode !== 'rig') return false;
-      if (o.animated !== false) return director.react('outfit', { outfit: key });
+      if (o.hidden || o.animated === false) {
+        if (!rig || !(rig.outfits ? rig.outfits() : []).includes(key)) return false;
+        if (rig.outfit === key) return true;
+      }
+      if (!o.hidden && o.animated !== false) return director.react('outfit', { outfit: key });
       try { rig.setOutfit(key, { animated: false }); return true; } catch (e) { fail(e); return false; }
     },
     get crop() { return currentCrop; },
+    get outfit() { try { return rig ? rig.outfit : null; } catch (e) { return null; } },
     destroy() {
       if (destroyed) return;
       destroyed = true; clearTimeout(bubTimer);

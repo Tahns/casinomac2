@@ -40,6 +40,7 @@ export function taper(s) { const d = taperDb(s); return d === -Infinity ? 0 : Ma
 // winLike = a player could take it for a win, a payout or a reward: tonal fanfares, rising vibraphone notes, coins, bells, a cymbal swell.
 // Such a cue is never played on the quiet-result path (R <= C): audio.play(id, { quiet: true }) refuses it. When in doubt the flag is true.
 // minGap (s) = rate limit on the audio clock for that cue.
+const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 const CUE_FLAGS = {
   // v1 cues
   click: false, error: false, nearmiss: false, wahwah: false, spin: false, whoosh: false, land: false,
@@ -56,9 +57,26 @@ const CUE_FLAGS = {
   spotlightStep: false, layoutDraw: false, doorCreak: false, dialStep: false,
 };
 const MIN_GAP = { settingsTest: 0.25 };
-export const CUE_INFO = Object.freeze(Object.fromEntries(Object.entries(CUE_FLAGS).map(([id, w]) => [id, Object.freeze(MIN_GAP[id] ? { winLike: w, minGap: MIN_GAP[id] } : { winLike: w })])));
+// Conditional cues: the static flag is the neutral sound; with the condition met the cue adds a win-like layer (refused on the quiet path).
+// caseOpen: { win, costShare } in the same unit (e.g. 1/100 x of the play amount): win-like only when win > costShare (this spin's share of the
+// round's cost, C / totalFs for a door). Without both numbers the case opens neutral. caseSeal and the banked slips are never win-like.
+const WIN_LIKE_IF = { caseOpen: 'aboveCostShare' };
+export const CUE_INFO = Object.freeze(Object.fromEntries(Object.entries(CUE_FLAGS).map(([id, w]) => {
+  const o = { winLike: w }; if (MIN_GAP[id]) o.minGap = MIN_GAP[id]; if (WIN_LIKE_IF[id]) o.winLikeIf = WIN_LIKE_IF[id];
+  return [id, Object.freeze(o)];
+})));
+/** Pure: is this cue win-like for these options? Static flag, or the condition of a conditional cue (caseOpen: win > costShare). */
+export function cueWinLike(id, p) {
+  if (typeof id !== 'string' || !hasOwn(CUE_INFO, id)) return null;
+  const info = CUE_INFO[id];
+  if (info.winLike) return true;
+  if (info.winLikeIf === 'aboveCostShare') {
+    const q = p && typeof p === 'object' ? p : {}, w = Number(q.win), c = Number(q.costShare);
+    return Number.isFinite(w) && Number.isFinite(c) && c >= 0 && w > c * (1 + 1e-9);
+  }
+  return false;
+}
 export const CUE_IDS = Object.freeze(Object.keys(CUE_INFO));
-const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 const NN = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 const nn = (s) => { const m = /^([A-G])([#b]?)(-?\d)$/.exec(s); return (+m[3] + 1) * 12 + NN[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); };
 const nl = (s) => s.trim().split(/\s+/).map((x) => (x === '.' || x === '-' ? x : nn(x)));
@@ -482,11 +500,13 @@ export function createEngine(c, o = {}) {
       tone({ f: 120, f2: 62, dur: 0.16, vol: 0.2, a: 0.003, when: 0.15, wet: 0.06 });
       safeClick(0.19, 0.06, 0.8);
     },
-    caseOpen() { // flap lifts: latch click, paper rustle sweeping up, a soft lift (no chime: a win is announced elsewhere, and only if R > C)
+    caseOpen(p) { // flap lifts: latch click, paper rustle sweeping up, a soft lift. p.won (set by cue() from win > costShare, never on the quiet path):
+      // + a short vibraphone "ta-da" (two notes, a fourth up) and a brush swish, the only win-like part
       safeClick(0, 0.1, 0.85);
       noise({ dur: 0.17, vol: 0.14, type: 'bandpass', f: 900, f2: 3800, q: 0.8, a: 0.02, when: 0.04, wet: 0.06, off: 0.5 });
       tone({ f: 90, f2: 150, dur: 0.14, type: 'triangle', vol: 0.12, a: 0.01, when: 0.05, wet: 0.05 });
       noise({ dur: 0.05, vol: 0.07, type: 'highpass', f: 6000, q: 0.7, a: 0.001, when: 0.22, wet: 0.04, off: 1.1 });
+      if (p && p.won) { vibe(74, 0.24, 0.09, 0.5); vibe(79, 0.36, 0.1, 0.9); noise({ dur: 0.3, vol: 0.05, type: 'highpass', f: 7000, q: 0.6, a: 0.06, when: 0.3, wet: 0.2, off: 0.8 }); }
     },
     lightsOut() { // Ballroom Blackout: breaker clunk, the lamp bank winds down (falling), the room hum sags
       tone({ f: 70, f2: 38, dur: 0.12, vol: 0.35, a: 0.002, wet: 0.08 });
@@ -537,8 +557,10 @@ export function createEngine(c, o = {}) {
   const lastAt = new Map();
   function cue(id, p) {
     if (typeof id !== 'string' || !hasOwn(SOUNDS, id) || !hasOwn(CUE_INFO, id)) return false;
-    const info = CUE_INFO[id], q = p && typeof p === 'object' ? p : {};
-    if (q.quiet && info.winLike) return false; // quiet-result path (R <= C): no win-like sound, ever
+    const info = CUE_INFO[id], q0 = p && typeof p === 'object' ? p : {};
+    if (q0.quiet && info.winLike) return false; // quiet-result path (R <= C): no win-like sound, ever
+    // a conditional cue plays its neutral form on the quiet path or when its condition is not met (caseOpen at or below the cost share)
+    const q = info.winLikeIf ? { ...q0, won: !q0.quiet && cueWinLike(id, q0) === true } : q0;
     if (!audible(id === 'settingsTest' ? (q.kind === 'music' ? 'music' : q.kind === 'master' ? 'master' : 'sfx') : 'sfx')) return false;
     if (info.minGap) { const now = c.currentTime, last = lastAt.get(id); if (last != null && now - last < info.minGap) return false; lastAt.set(id, now); }
     SOUNDS[id](q);
@@ -678,6 +700,9 @@ muted = store.read(KEY) === '1';
 // ---- volumes: Master / Music / Effects, integer 0..100, default 75 (= the mix tuned in v1) ----
 export const VOLUME_KINDS = Object.freeze(['master', 'music', 'sfx']);
 export const DEFAULT_VOLUME = 75;
+/** Slot guide rule: the music starts at 5 % (a bed far under the effects); Master and Effects start at 75 (unity, the v1 mix). */
+export const DEFAULT_MUSIC_VOLUME = 5;
+export const DEFAULT_VOLUMES = Object.freeze({ master: DEFAULT_VOLUME, music: DEFAULT_MUSIC_VOLUME, sfx: DEFAULT_VOLUME });
 const VOL_KEYS = { master: 'am_vol_master', music: 'am_vol_music', sfx: 'am_vol_sfx' };
 /** Pure: anything -> integer 0..100, or null when it is not a usable number ('', 'abc', NaN, null, undefined, booleans). */
 export function parseVolume(raw) {
@@ -685,10 +710,10 @@ export function parseVolume(raw) {
   const n = Number(raw);
   return Number.isFinite(n) ? Math.round(clamp(n, 0, 100)) : null;
 }
-const vol = { master: DEFAULT_VOLUME, music: DEFAULT_VOLUME, sfx: DEFAULT_VOLUME };
+const vol = { ...DEFAULT_VOLUMES };
 for (const k of VOLUME_KINDS) { const v = parseVolume(store.read(VOL_KEYS[k])); if (v != null) vol[k] = v; }
 // last non-zero level per slider (memory only, nothing extra is stored): what the speaker button brings back after a slider was dragged to 0
-const last = { master: vol.master || DEFAULT_VOLUME, music: vol.music || DEFAULT_VOLUME, sfx: vol.sfx || DEFAULT_VOLUME };
+const last = { master: vol.master || DEFAULT_VOLUMES.master, music: vol.music || DEFAULT_VOLUMES.music, sfx: vol.sfx || DEFAULT_VOLUMES.sfx };
 // "silent" = nothing can be heard: mute, or Master at 0, or both mixes at 0. The header speaker shows it; am_muted stays the mute flag only.
 const sliderSilent = () => vol.master === 0 || (vol.music === 0 && vol.sfx === 0);
 const silentNow = () => muted || sliderSilent();
@@ -823,10 +848,12 @@ export const audio = {
   /** Integer 0-100, or null for an unknown kind. */
   getVolume(kind) { return VOLUME_KINDS.includes(kind) ? vol[kind] : null; },
   get volumes() { return { ...vol }; },
-  /** The last non-zero level of a slider (75 if it never had one); null for an unknown kind. Not stored. */
+  /** The last non-zero level of a slider (its default if it never had one); null for an unknown kind. Not stored. */
   lastVolume(kind) { return VOLUME_KINDS.includes(kind) ? last[kind] : null; },
-  /** The three sliders back to 75. Leaves the mute flag alone. */
-  resetVolumes() { for (const k of VOLUME_KINDS) audio.setVolume(k, DEFAULT_VOLUME); return true; },
+  /** The three sliders back to their defaults (Master 75, Music 5, Effects 75). Leaves the mute flag alone. */
+  resetVolumes() { for (const k of VOLUME_KINDS) audio.setVolume(k, DEFAULT_VOLUMES[k]); return true; },
+  /** Default level of a slider (Master 75, Music 5, Effects 75); null for an unknown kind. */
+  defaultVolume(kind) { return VOLUME_KINDS.includes(kind) ? DEFAULT_VOLUMES[kind] : null; },
   /**
    * Short neutral test sound for a slider: the 'settingsTest' cue (low bongo + one vibraphone note, never win-like), on the bus being
    * tested (effects / music / master). At most one per 250 ms, silent while muted or while that bus is at 0. Call it on `change`, not on every `input`.
@@ -845,7 +872,9 @@ export const audio = {
   /** { winLike, minGap? } of a cue id, or null for an unknown id. */
   cueInfo(id) { return typeof id === 'string' && hasOwn(CUE_INFO, id) ? { ...CUE_INFO[id] } : null; },
   /** true / false for a known cue, null for an unknown id. */
-  isWinLike(id) { return typeof id === 'string' && hasOwn(CUE_INFO, id) ? CUE_INFO[id].winLike : null; },
+  isWinLike(id, opt) { return opt === undefined ? (typeof id === 'string' && hasOwn(CUE_INFO, id) ? CUE_INFO[id].winLike : null) : cueWinLike(id, opt); },
+  /** Pure lookup for WP4 / WP6: the ids of the mission and shell cues, every one with its winLike rule. */
+  get cueIds() { return CUE_IDS; },
   /** -6 dB of the bed under the big stingers. Opt-in (default false) until a human has listened to it. */
   get duck() { return duckPref; },
   set duck(b) { duckPref = !!b; if (engine) engine.duck = duckPref; },
@@ -857,11 +886,12 @@ export const audio = {
     if (mood !== 'off') audio.setMood(bonus ? 'freespins' : 'base');
   },
   // Mission Meter level (x1..): steers the free-spins vibraphone arpeggio and fires the riser when it passes x10. Optional to call.
-  setMeter(n) {
+  // opt.quiet (WP4_to_WP2): the round is still at or below its cost, so the win-like riser is refused (the arpeggio still follows the level)
+  setMeter(n, opt) {
     try {
       if (!engine) return;
       const r = engine.setMeter(n);
-      if (r.prev < 10 && r.now >= 10 && !muted) audio.play('meterRise');
+      if (r.prev < 10 && r.now >= 10 && !muted) audio.play('meterRise', { quiet: !!(opt && opt.quiet) });
     } catch (e) { /* ignore */ }
   },
   get ready() { return !!ctx && ctx.state === 'running'; },

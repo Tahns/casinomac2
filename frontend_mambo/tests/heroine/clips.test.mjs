@@ -9,9 +9,9 @@ import {
 
 const FROZEN_14 = ['idle', 'spin', 'anticipate', 'quiet', 'dead', 'win', 'bigwin', 'epic', 'blast', 'fizzle', 'trigger', 'retrigger', 'end', 'outfit'];
 
-test('vocabulary: mascot.js REACT_KINDS = the 14 frozen step-0 kinds in order + the two appended ones, and the table covers exactly those', () => {
+test('vocabulary: mascot.js REACT_KINDS = the 14 frozen step-0 kinds in order + the appended ones (meter, gag, then the M2/M3 mission beats), and the table covers exactly those', () => {
   assert.deepEqual(REACT_KINDS.slice(0, 14), FROZEN_14);
-  assert.deepEqual(REACT_KINDS.slice(14), ['meter', 'gag']);
+  assert.deepEqual(REACT_KINDS.slice(14), ['meter', 'gag', 'caseOpen', 'spotlight', 'layout']);
   assert.deepEqual([...KIND_NAMES].sort(), [...REACT_KINDS].sort());
   assert.ok(Object.isFrozen(REACT_KINDS) && Object.isFrozen(KINDS));
 });

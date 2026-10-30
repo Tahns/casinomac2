@@ -11,7 +11,7 @@ test('parseVolume: integer 0..100 or null', () => {
 });
 test('defaults and setVolume / getVolume', () => {
   assert.deepEqual([...VOLUME_KINDS], ['master', 'music', 'sfx']); assert.equal(DEFAULT_VOLUME, 75);
-  for (const k of VOLUME_KINDS) assert.equal(audio.getVolume(k), 75);
+  assert.equal(audio.getVolume('master'), 75); assert.equal(audio.getVolume('sfx'), 75); assert.equal(audio.getVolume('music'), 5); // music default 5 % (slot guide rule, WP123 M2/M3)
   assert.equal(audio.setVolume('music', 40), true); assert.equal(audio.getVolume('music'), 40);
   assert.equal(audio.setVolume('music', '250'), true); assert.equal(audio.getVolume('music'), 100);
   assert.equal(audio.setVolume('music', 'abc'), false); assert.equal(audio.getVolume('music'), 100);

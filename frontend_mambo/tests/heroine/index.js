@@ -6,3 +6,4 @@ import './gaze.test.mjs';
 import './bubble.test.mjs';
 import './sync.test.mjs';
 import './text.test.mjs';
+import './missions.test.mjs';

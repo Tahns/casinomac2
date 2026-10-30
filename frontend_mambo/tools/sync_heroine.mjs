@@ -35,8 +35,8 @@ export const PATCHES = [
   {
     file: 'mambo_rig.mjs', id: 'frameGuard',
     why: 'An exception inside the rAF loop silently kills the loop and freezes the figure. With an onError option the loop stops, the rig marks itself destroyed and the host swaps in the static fallback.',
-    find: 'const t0 = performance.now(); update(dt); render(); const ms = performance.now() - t0;',
-    replace: 'const t0 = performance.now();\n      try { update(dt); render(); } catch (err) { if (O.onError) { destroyed = true; try { O.onError(err); } catch (e2) { /* ignore */ } return; } throw err; }\n      const ms = performance.now() - t0;',
+    find: 'const t0 = performance.now(); update(dt);\n      const busy = !!clipS.cur || tweens.length > 0 || fxP.length > 0 || !grounded || spinS.active;\n      const slot = O.idleHz > 0 ? Math.floor(time * O.idleHz) : -2;\n      if (busy || slot === -2 || slot !== idleSlot || !rendered) { idleSlot = slot; render(); }',
+    replace: 'const t0 = performance.now();\n      try {\n        update(dt);\n        const busy = !!clipS.cur || tweens.length > 0 || fxP.length > 0 || !grounded || spinS.active;\n        const slot = O.idleHz > 0 ? Math.floor(time * O.idleHz) : -2;\n        if (busy || slot === -2 || slot !== idleSlot || !rendered) { idleSlot = slot; render(); }\n      } catch (err) { if (O.onError) { destroyed = true; try { O.onError(err); } catch (e2) { /* ignore */ } return; } throw err; }',
   },
   {
     file: 'mambo_rig.mjs', id: 'tightFull',

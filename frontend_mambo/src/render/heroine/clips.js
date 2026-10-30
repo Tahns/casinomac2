@@ -56,6 +56,13 @@ export const KINDS = Object.freeze({
   outfit:     { prio: 6, mode: 'outfit' },
   meter:      { prio: 1, clip: 'meterMilestone', pose: 'point', cooldown: 2500 },
   gag:        { prio: 0, mode: 'gag' },
+  // missions (M2/M3). caseOpen: the Sealed Orders case is opened; info.ratio = this spin's result / its cost share (C / totalFs). Above 1 she
+  // celebrates with the small win, otherwise she only points at the board (neutral: no wink, no particle). Missing ratio = neutral.
+  caseOpen:   { prio: 3, clip: 'meterMilestone', pose: 'point', cooldown: 1200, accent: 'pointGrid', neutral: true, aboveCost: 'win' },
+  // spotlight: the Ballroom Blackout window lights a winning cluster (meta.lit); a neutral point (the win itself is celebrated by win/bigwin)
+  spotlight:  { prio: 1, clip: 'meterMilestone', pose: 'point', cooldown: 1500, accent: 'pointGrid', neutral: true },
+  // layout: a floor plan other than the home one is drawn before the reveal; a short neutral glance and point at the new shape
+  layout:     { prio: 1, clip: 'meterMilestone', pose: 'point', cooldown: 3000, accent: 'pointGrid', neutral: true },
 });
 export const KIND_NAMES = Object.freeze(Object.keys(KINDS));
 // the ten clip targets of the acceptance test: reaction kind that must start them
@@ -136,6 +143,10 @@ const ACCENTS = {
   spinStart: [{ at: 0, pose: 'idle', keep: false, set: { lean: 6, hx: 8, htilt: -2, bRy: -6 }, look: 'spin' }, { at: 0.32, look: 'grid' }],
   scatterTease: [{ at: 0, set: { ...POSE_FIX.anticipation } }],
 };
+// accents chosen by the reaction (not the clip): the meterMilestone point aimed at the board instead of the dial, eyes on the grid
+const KIND_ACCENTS = {
+  pointGrid: [{ at: 0, look: 'grid', set: { arx: 300, ary: 250, arr: -20, arb1: 30, arb2: 10 } }, { at: 1.2, look: 'grid' }],
+};
 // the quiet beat (R <= C): one slow blink and the gaze back on the grid; no clip of the rig is involved
 const QUIET_BLINK = { name: 'quietBlink', dur: 0.5, endPose: 'idle', events: [{ at: 0, pose: 'idle', blink: 'slow', look: 'grid' }] };
 // the costume change behind the folding screen: opaque screen in, a puff at the swap (a poof, never a silhouette), screen out, salute.
@@ -164,6 +175,7 @@ export function buildClip(name, opt = {}) {
   if (!def) return null;
   def = clone(def, name);
   if (ACCENTS[name]) def = withAccents(def, ACCENTS[name]);
+  if (opt.accent && KIND_ACCENTS[opt.accent]) def = withAccents(def, KIND_ACCENTS[opt.accent]);
   if (opt.neutral) def = neutralize(def);
   if (level === 'calm') def = calmify(def);
   else def = limitJump(def, Number.isFinite(opt.jumpMax) ? opt.jumpMax : JUMP_MAX);
@@ -193,8 +205,11 @@ export function plan(kind, info) {
   const i = info && typeof info === 'object' ? info : {};
   // celebrate only above the cost: a win-like reaction with ratio <= 1 (or level 0) becomes the quiet beat
   if (entry.celebratory && !exceedsCost(i)) { eff = 'quiet'; entry = KINDS.quiet; }
+  // a mission beat that may celebrate only when the payload proves it (info.ratio > 1): the case opened above this spin's cost share
+  if (entry.aboveCost && Number.isFinite(i.ratio) && i.ratio > 1) { eff = entry.aboveCost; entry = { ...KINDS[entry.aboveCost], prio: entry.prio, cooldown: entry.cooldown }; }
   const out = { ok: true, kind: k, effective: eff, prio: entry.prio, mode: entry.mode || 'clip', clip: entry.clip || null, pose: entry.pose || null,
-    hold: entry.hold || 0, cooldown: entry.cooldown || 0, every: entry.every || 0, look: entry.look || null, real: !!entry.real, windUp: entry.windUp !== false };
+    hold: entry.hold || 0, cooldown: entry.cooldown || 0, every: entry.every || 0, look: entry.look || null, real: !!entry.real, windUp: entry.windUp !== false,
+    accent: entry.accent || null, neutral: !!entry.neutral };
   if (out.mode === 'outfit') out.outfit = pickOutfit(i);
   if (k === 'trigger') { const o = pickOutfit(i); if (o) out.outfit = o; }
   if (k === 'end') { out.neutral = !exceedsCost(i); out.outfit = BASE_OUTFIT; }

@@ -77,7 +77,7 @@ export function createDirector({
     const m = level();
     if (!WHITELIST.has(p.clip)) return false;
     if (m === 'still') return startStill(p, t, then);
-    const def = buildClip(p.clip, { level: m, neutral: p.neutral, windUp: p.windUp, jumpMax: getJumpMax() });
+    const def = buildClip(p.clip, { level: m, neutral: p.neutral, windUp: p.windUp, jumpMax: getJumpMax(), accent: p.accent });
     if (!def) return false;
     const holding = !!def.hold;
     const speed = speedFor(def, info, holding);
@@ -85,7 +85,7 @@ export function createDirector({
     clearCur();
     const until = t + (holding ? p.hold || 8000 : (clipDuration(def) * 1000) / speed + 60);
     cur = { token, kind: p.kind, prio: p.prio, clip: p.clip, holding, until, then };
-    lastAt[p.clip] = t;
+    lastAt[p.clip] = t; if (p.accent) lastAt['kind:' + p.kind] = t;
     const ok = guard(() => { rig.play(def, { speed, hold: holding, onEnd: () => finish(token) }); return true; });
     if (!ok) { cur = null; return false; }
     if (holding) cur.holdTimer = after(p.hold || 8000, () => { if (cur && cur.token === token) release(); });
@@ -152,7 +152,9 @@ export function createDirector({
         }
         default: break;
       }
-      if (p.cooldown && p.prio < 4 && t - (lastAt[p.clip] || -1e9) < p.cooldown) return drop();
+      // mission beats that borrow a clip (accent set) keep their own cooldown, so a spotlight is not refused because the dial just pointed
+      const ck = p.accent ? 'kind:' + p.kind : p.clip;
+      if (p.cooldown && p.prio < 4 && t - (lastAt[ck] || -1e9) < p.cooldown) return drop();
       if (p.kind === 'trigger' && p.outfit && p.outfit !== rigOutfit()) return doOutfit(p.outfit, info, t) || drop();
       const then = p.kind === 'end' ? () => { if (rigOutfit() !== BASE_OUTFIT) doOutfit(BASE_OUTFIT, null, now()); } : null;
       return startClip(p, info, t, then) || drop();

@@ -154,7 +154,7 @@ function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t 
 
 // ====================================================================== the heroine
 export function createHeroine(container, opts = {}) {
-  const O = { outfit: 'inspectrice', seed: 7, limited: 12, autoplay: true, raf: true, rim: false, lookTargets: {}, onCue: null, idle: true, size: null, crop: 'full', mirror: false, ...opts };
+  const O = { outfit: 'inspectrice', seed: 7, limited: 12, idleHz: 12, autoplay: true, raf: true, rim: false, lookTargets: {}, onCue: null, idle: true, size: null, crop: 'full', mirror: false, ...opts };
   const pre = O.idPrefix || `mambo${++UID}-`;
   const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   let reduced = O.reduced ?? !!(mq && mq.matches);
@@ -182,7 +182,7 @@ export function createHeroine(container, opts = {}) {
   const dir = { next: rr(5, 11), idle: 0, shiftNext: rr(5, 9), shiftSide: 1 };
   const fxP = [];
   let speed = 1; const stat = { frames: 0, avg: 0, max: 0 };
-  let time = 0, acc = 0, lastSample = 0, raf = 0, last = 0, paused = false, destroyed = false, rendered = false;
+  let time = 0, acc = 0, lastSample = 0, raf = 0, last = 0, paused = false, destroyed = false, rendered = false, idleSlot = -1;
   const prevHead = { x: 0, y: 0, a: 0, vx: 0, vy: 0, w: 0, ax: 0, ay: 0, al: 0, init: false };
   const cache = Object.create(null);
   const spinS = { angle: 0, active: false };
@@ -706,7 +706,13 @@ const f2 = (n) => Math.round(n * 100) / 100;
     raf = 0; if (destroyed) return;
     if (!paused) {
       const dt = Math.min(0.05, last ? (now - last) / 1000 : 1 / 60) * speed; last = now;
-      const t0 = performance.now(); update(dt); render(); const ms = performance.now() - t0;
+      // at rest (no clip, tween, particle, jump or spin) the figure is drawn on the 12 fps limited-animation grid only (opts.idleHz, 0 = every
+      // frame): breathing, blinks and saccades keep their timing, the SVG is written 12 times a second instead of 60 (WP5 frame budget)
+      const t0 = performance.now(); update(dt);
+      const busy = !!clipS.cur || tweens.length > 0 || fxP.length > 0 || !grounded || spinS.active;
+      const slot = O.idleHz > 0 ? Math.floor(time * O.idleHz) : -2;
+      if (busy || slot === -2 || slot !== idleSlot || !rendered) { idleSlot = slot; render(); }
+      const ms = performance.now() - t0;
       stat.frames++; stat.avg += (ms - stat.avg) * 0.05; if (stat.frames > 30) stat.max = Math.max(stat.max * 0.995, ms);
     } else last = 0;
     if (O.raf) raf = requestAnimationFrame(frame);
@@ -728,7 +734,7 @@ const f2 = (n) => Math.round(n * 100) / 100;
     snap() { applyTargets(true); render(true); },
     setReduced(v) { reduced = !!v; applyTargets(true); },
     pause() { paused = true; }, resume() { paused = false; last = 0; },
-    setLimited(hz) { O.limited = hz; }, setIdle(b) { O.idle = !!b; }, setSpeed(v) { speed = clamp(v, 0.1, 4); },
+    setLimited(hz) { O.limited = hz; }, setIdleHz(hz) { O.idleHz = Math.max(0, +hz || 0); }, setIdle(b) { O.idle = !!b; }, setSpeed(v) { speed = clamp(v, 0.1, 4); },
     stats() { return { frames: stat.frames, avgMs: stat.avg, maxMs: stat.max, clip: clipS.cur ? clipS.cur.name : '' }; },
     state: () => ({ ...Object.fromEntries(NAMES.map((n, i) => [n, X[i]])), ry, sec: Object.fromEntries(Object.keys(sec).map((k) => [k, sec[k].x])) }),
     clips: () => Object.keys(clipDefs), poses: () => Object.keys(POSES), outfits: () => OUTFIT_KEYS.slice(), moods: () => Object.keys(MOODS), visemes: () => VISEME_NAMES.slice(),

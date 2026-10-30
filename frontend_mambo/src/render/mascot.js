@@ -287,6 +287,7 @@ function ensureCss() {
 export const REACT_KINDS = Object.freeze([
   'idle', 'spin', 'anticipate', 'quiet', 'dead', 'win', 'bigwin', 'epic', 'blast', 'fizzle', 'trigger', 'retrigger', 'end', 'outfit',
   'meter', 'gag',   // appended by WP3: the Clearance Dial milestone (meterMilestone) and a random idle gag
+  'caseOpen', 'spotlight', 'layout', // appended M2/M3: Sealed Orders case opened (info.ratio = spin result / its cost share), Blackout spotlight hit, floor plan drawn
 ]);
 
 /**
@@ -392,7 +393,7 @@ export function createMascot(hostEl, opts = {}) {
   const slot = hostEl.id === 'mascot-slot' ? document.getElementById('heroine-slot') : null;
   const target = slot || hostEl;
   const register = (a) => { REGISTRY.set(target, a); REGISTRY.set(hostEl, a); return a; };
-  let impl = null, v1 = null, gone = false, pendingPose = null;
+  let impl = null, v1 = null, gone = false, pendingPose = null, pendingOutfit = null;
   const toV1 = () => {
     if (gone || v1) return v1;
     try { if (impl) impl.destroy(); } catch (_) { /* ignore */ }
@@ -403,7 +404,7 @@ export function createMascot(hostEl, opts = {}) {
   };
   const ready = import('./heroine/index.js')
     .then((mod) => mod.createHeroineMascot(target, { ...opts, onGiveUp: toV1 }))
-    .then((m) => { if (gone) { m.destroy(); return null; } impl = m; if (pendingPose) m.setPose(pendingPose); return m; })
+    .then((m) => { if (gone) { m.destroy(); return null; } impl = m; if (pendingOutfit) { try { m.setOutfit(pendingOutfit, { hidden: true }); } catch (_) { /* ignore */ } } if (pendingPose) m.setPose(pendingPose); return m; })
     .catch((e) => { try { console.error('heroine: not available, using the v1 character', e); } catch (_) { /* ignore */ } toV1(); return null; });
   const cur = () => impl || v1;
   const api = {
@@ -416,7 +417,10 @@ export function createMascot(hostEl, opts = {}) {
     hideSay() { const c = cur(); if (c) c.hideSay(); },
     react(kind, info) { return impl ? impl.react(kind, info) : false; },
     setCrop(c) { if (impl) impl.setCrop(c); },
-    setOutfit(k, o) { return impl ? impl.setOutfit(k, o) : false; },
+    // setOutfit(k, { hidden: true }) swaps instantly (the caller covers the slot with its own screen); a call made before the rig is ready is
+    // replayed as a hidden swap once it is (so a mission that starts during the load still shows the right costume)
+    setOutfit(k, o) { if (impl) return impl.setOutfit(k, o); pendingOutfit = typeof k === 'string' ? k : null; return false; },
+    get outfit() { return impl ? impl.outfit : pendingOutfit; },
     get impl() { return impl; },
     destroy() { gone = true; try { if (impl) impl.destroy(); if (v1) v1.destroy(); } catch (_) { /* ignore */ } impl = null; v1 = null; REGISTRY.delete(target); REGISTRY.delete(hostEl); },
   };

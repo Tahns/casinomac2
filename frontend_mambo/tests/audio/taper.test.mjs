@@ -49,3 +49,50 @@ test('cue table: every sound carries an explicit boolean winLike flag; the ten v
   for (const id of CUE_IDS) if (id !== 'settingsTest') assert.equal(CUE_INFO[id].minGap, undefined, `${id} has no rate limit`);
   assert.equal(Object.prototype.hasOwnProperty.call(CUE_INFO, 'constructor'), false);
 });
+
+// ---- M2/M3 (WP123): music default 5 %, conditional caseOpen, quiet meter riser ----
+import { cueWinLike, DEFAULT_VOLUMES, DEFAULT_MUSIC_VOLUME, audio as liveAudio, createEngine } from '../../src/audio.js';
+
+test('music default 5 % (slot guide rule), Master and Effects 75; reset and defaultVolume follow it', () => {
+  assert.equal(DEFAULT_MUSIC_VOLUME, 5);
+  assert.deepEqual({ ...DEFAULT_VOLUMES }, { master: 75, music: 5, sfx: 75 });
+  assert.ok(Object.isFrozen(DEFAULT_VOLUMES));
+  assert.equal(liveAudio.defaultVolume('music'), 5); assert.equal(liveAudio.defaultVolume('nope'), null);
+  const before = liveAudio.volumes;
+  liveAudio.setVolume('music', 60); liveAudio.resetVolumes();
+  assert.deepEqual(liveAudio.volumes, { master: 75, music: 5, sfx: 75 });
+  for (const k of Object.keys(before)) liveAudio.setVolume(k, before[k]);
+  // 5 on the taper: -42 dB under the v1 mix, a bed far under the effects but not silence
+  assert.ok(taper(5) > 0 && Math.abs(dB(taper(5)) - -42) < 1e-9);
+  liveAudio._stop();
+});
+
+test('caseOpen is win-like only when the spin result is above its cost share; caseSeal / stamp never', () => {
+  assert.equal(CUE_INFO.caseOpen.winLike, false); assert.equal(CUE_INFO.caseOpen.winLikeIf, 'aboveCostShare');
+  assert.equal(cueWinLike('caseOpen', { win: 2640, costShare: 833.3 }), true);
+  assert.equal(cueWinLike('caseOpen', { win: 500, costShare: 833.3 }), false);
+  assert.equal(cueWinLike('caseOpen', { win: 833.3, costShare: 833.3 }), false, 'equal to the share is not above it');
+  for (const bad of [undefined, null, {}, { win: 10 }, { costShare: 1 }, { win: 'x', costShare: 1 }, { win: 5, costShare: -1 }]) assert.equal(cueWinLike('caseOpen', bad), false, JSON.stringify(bad));
+  for (const id of ['caseSeal', 'stamp', 'ledgerTick', 'dialStep']) assert.equal(cueWinLike(id, { win: 1e6, costShare: 1 }), false, id);
+  assert.equal(cueWinLike('win'), true); assert.equal(cueWinLike('nope'), null); assert.equal(cueWinLike('constructor'), null);
+  assert.equal(liveAudio.isWinLike('caseOpen'), false); assert.equal(liveAudio.isWinLike('caseOpen', { win: 2, costShare: 1 }), true);
+});
+
+// a tiny fake AudioContext: enough for createEngine + cue() to run in node and to count what got scheduled
+function fakeCtx() {
+  const made = [];
+  const param = () => ({ value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {}, setTargetAtTime() {}, cancelScheduledValues() {} });
+  const node = (kind) => { const n = { kind, gain: param(), frequency: param(), detune: param(), Q: param(), pan: param(), delayTime: param(), threshold: param(), knee: param(), ratio: param(), attack: param(), release: param(), playbackRate: param(), connect() { return n; }, disconnect() {}, start() { made.push(kind); }, stop() {}, onended: null, buffer: null, curve: null, type: '' }; return n; };
+  return {
+    made, sampleRate: 8000, currentTime: 0, destination: node('dest'), state: 'running',
+    createGain: () => node('gain'), createOscillator: () => node('osc'), createBufferSource: () => node('buf'), createBiquadFilter: () => node('biquad'),
+    createDynamicsCompressor: () => node('comp'), createWaveShaper: () => node('shaper'), createConvolver: () => node('conv'), createDelay: () => node('delay'),
+    createStereoPanner: () => node('pan'), createBuffer: (ch, len) => ({ getChannelData: () => new Float32Array(len) }),
+  };
+}
+test('caseOpen plays its neutral flap on the quiet path or at or below the share, and adds the vibraphone only above it', () => {
+  const count = (opt) => { const c = fakeCtx(); const e = createEngine(c); const before = c.made.length; assert.equal(e.cue('caseOpen', opt), true); return c.made.length - before; };
+  const neutral = count({}), below = count({ win: 100, costShare: 833 }), quiet = count({ win: 5000, costShare: 833, quiet: true }), above = count({ win: 5000, costShare: 833 });
+  assert.equal(below, neutral); assert.equal(quiet, neutral, 'the quiet path never gets the win-like layer');
+  assert.ok(above > neutral, `the win layer adds voices (${neutral} -> ${above})`);
+});
