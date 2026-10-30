@@ -39,3 +39,22 @@ Jobs in order: (1) perf of the gravity drop (WP10_to_WP4, WP5_to_WP4 item 6), (2
 - Tests: tests/render/browser_v2.mjs P+M 123/123; V vs HEAD copy 0.00 % pixels differ; vs the true v1 commit b132a01 13-15 % differ, by eye
   the same symbols in the same cells, the difference is the v1 idle bob (always on in v1) vs the v2 stepped clock/Still (WP5).
 - tests/core: `tests/shell/doors.test.mjs` "only Stage Door is offered" fails (shares data landed for the doors; WP1/WP11), not WP4.
+- Annex wire adapter verified by screenshot (book plan_annex_win, path on geometric row 5): the wire lies on the bottom row and climbs at
+  reels 4-5 as the event says.
+- Mission screenshots looked at (1024x576, 425x812, 400x225, 1280x720): caseOpen (OPENED, `5.00 x8 = 40.00`, WIN 40.00, chip $40.00),
+  Blackout window + x4 tag + dimmed board. Plan shots in tests/render/shots/wp4_plan_*.png.
+- frontend_mambo/fixtures now holds v2 base books (layout events, Sealed Orders base triggers): tests/render/browser.mjs oracle made
+  banked-aware (caseOpen pays, banked steps do not) and the end-of-book cell count plan-aware. `--quick --only=B` 114/114, A-F 195/203
+  before that fix (the 8 failures were the test's own 30-cell / non-banked assumptions).
+- Guideline runner (PORTS=5904,5905, report to scratch, tests/shots restored from a backup taken before the run): 38 PASS, 8 FAIL, 1 AT RISK.
+  [31], UNL-MIN-USD/JPY/MXN, WIN-bonus-* fail identically with the pre-WP4-M2 render files (A/B copy in /tmp/claude-0/scratch/wp4/ab2):
+  the entrance confirm now needs a door pick and the runner's bonus fixtures moved (WP1 / WP10). [172] failed once under load, PASS on rerun.
+  [275] AT RISK = `pGtStake` in data/rules_data.json (WP11).
+- Baseline (`node tests/e2e/baseline.mjs --rate 4 --runs 3 --port 5900 --json <scratch>`, load 2-7): 1024x576 p95 99.9 layers p90 41 max 47;
+  400x225 p95 66.7 layers 39/45; 800x450 p95 66.7 layers 41/47; 425x812 dpr 3 p95 99.9 layers 36/42; layersOk true everywhere.
+- Requests written: WP4_to_WP5 (wire rows, scene.setMission, canvas cost), WP4_to_WP6 (ctx fields, stamp over a cell), WP4_to_WP1 (setMode,
+  fs.incoming, Annex CSS, doors test), WP4_to_WP10 (perf numbers, 36-cell baseline, new suite).
+
+## Resume point
+All three jobs are committed. Left for later: drop the Annex wire adapter when wire.js sets `rowsAware` (WP5), drop the x9 audio-meter hold
+when WP2 adds `setMeter(n, { quiet })` (M1 note), the remaining p95 is outside the render core (canvases, rig, layers commit).

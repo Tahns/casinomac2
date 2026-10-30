@@ -90,25 +90,31 @@ const trace = (page) => page.evaluate(() => H.renderer._state.traceLog.slice());
 // confirmed total (setTotalWin) plus the running win of the current spin, and the running win after a winInfo is what the next
 // updateTumbleWin / setWin of the book says it is (look ahead), not a sum of the winInfo wins.
 function oracle(events) {
-  const R = []; let confirmed = 0, spin = 0;
+  const R = []; let confirmed = 0, spin = 0, banked = false;
   for (let i = 0; i < events.length; i++) {
     const e = events[i];
     switch (e.type) {
-      case 'reveal': spin = 0; break;
+      case 'reveal': spin = 0; banked = false; break;
       case 'winInfo': {
+        // Sealed Orders (v2): a banked step is filed, not paid; the spin pays at caseOpen (bank x dial)
+        if ((e.wins || []).length && e.wins.every((w) => w.meta && w.meta.banked)) { banked = true; break; }
         let amt = null;
         for (let j = i + 1; j < events.length; j++) { const f = events[j]; if (f.type === 'updateTumbleWin' || f.type === 'setWin') { amt = f.amount; break; } if (f.type === 'winInfo' || f.type === 'reveal') break; }
         spin = amt != null ? amt : spin + (e.totalWin || 0);
         break;
       }
-      case 'updateTumbleWin': case 'setTumbleWin': case 'setWin': spin = e.amount; break;
-      case 'setTotalWin': case 'freeSpinEnd': case 'wincap': case 'finalWin': confirmed = e.amount; spin = 0; break;
+      case 'updateTumbleWin': case 'setTumbleWin': if (!banked) spin = e.amount; break;
+      case 'caseOpen': spin = e.win; banked = false; break;
+      case 'setWin': spin = e.amount; banked = false; break;
+      case 'setTotalWin': case 'freeSpinEnd': case 'wincap': case 'finalWin': confirmed = e.amount; spin = 0; banked = false; break;
       default: break;
     }
     R.push((confirmed + spin) / 100);
   }
   return R;
 }
+// cells the board must show at the end of a book: the plan of its `layout` event unless it played free spins (always Mezzanine)
+const cellsAtEnd = (events) => { const l = events.find((e) => e.type === 'layout'); return l && !events.some((e) => e.type === 'freeSpinTrigger') ? l.cellCount : 30; };
 // events of the log grouped by the book event that was being handled (the probe layer of the harness marks each event)
 function groupLog(log) {
   const g = []; let cur = { i: -1, type: 'start', items: [] }; g.push(cur);
@@ -214,7 +220,7 @@ if (want('B')) {
         const bad = gateViolations(events, C, log);
         check(`B ${mode}/${cat} #${id}: nothing celebratory at R <= C`, bad.length === 0, bad.slice(0, 3).join(' | '));
         const left = await cellsLeft(h.page);
-        check(`B ${mode}/${cat} #${id}: clean board at the end`, left.cells === 30 && left.win === 0 && !left.banner && !left.layerOn && left.outl === 0, JSON.stringify(left));
+        check(`B ${mode}/${cat} #${id}: clean board at the end (${cellsAtEnd(events)} cells)`, left.cells === cellsAtEnd(events) && left.win === 0 && !left.banner && !left.layerOn && left.outl === 0, JSON.stringify(left));
         // end of a feature
         const end = events.find((e) => e.type === 'freeSpinEnd'), cap = events.find((e) => e.type === 'wincap');
         const banners = log.filter((l) => l.kind === 'dom' && l.what === 'banner');
