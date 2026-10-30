@@ -19,3 +19,16 @@ Two small things in `tools/mock-rgs/server.mjs` (yours):
    ```
 3. `tests/core` is red by one test until WP1 applies `WP11_to_WP1.md` item 1 (`tests/shell/doors.test.mjs` asserted "no shares data today";
    the FINAL shares are now in `data/rules_data.json`).
+4. **Guideline runner: pick a door before CONFIRM (7 FAILs until applied).** With the FINAL shares in `data/rules_data.json` the SECRET ENTRANCE
+   confirm offers three doors, and by design (SYNTHESIS 2, WP1 `confirmDoors`) nothing is pre-selected: CONFIRM stays disabled until a door is
+   chosen. The runner clicks `#confirm-ok` straight after `#btn-unleash`, so no play is sent: `[31]`, `[UNL-MIN-USD|JPY|MXN]`,
+   `[WIN-bonus-bonus|retrigger|maxwin]` fail (38 PASS / 8 FAIL on 2026-10-30 at ports 5925/5927; the 8th, `[172]`, was a long first fixture book
+   and is fixed in the fixtures). Proven: with `shares` removed from the data, `[31]` and `[WIN-bonus-bonus]` PASS again. Fix in
+   `tests/guidelines/run.mjs` (lines ~164, 216, 249, 557 and the UNL-MIN checks), between the unleash click and the confirm click:
+   ```js
+   await s.page.click('#door-cards .door[data-mode="bonus"]', { force: true, timeout: 1500 }).catch(() => {}); await sleep(150);
+   ```
+   (a single-door dialog renders `.door.single` with no input, so the click is harmless there). A door test for the two new modes can use
+   `data-mode="entrance_orders"` / `"entrance_blackout"`; the mock serves them at cost 100.
+   Checked on a scratch copy of run.mjs patched this way: `[31]` and `[WIN-bonus-bonus]` PASS (book 81291, win $153.40 shown and settled);
+   the UNL-MIN checks open the dialog in a separate statement (line ~249), so the same line must go before their `#confirm-ok` click.

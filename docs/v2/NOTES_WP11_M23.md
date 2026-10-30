@@ -22,9 +22,28 @@ Scratch scripts: /tmp/claude-0/scratch/wp11/.
 5. Requests written: WP11_to_WP1 (doors.test "today no shares" now fails, exact replacement; drop info.controls.settings; tabs; version),
    WP11_to_WP4 (browser.mjs v1 suite -> fixtures/v1), WP11_to_WP10 (mock MOCK_FIXTURES, non-recursive scan).
 
+6. **pack_math.mjs** retargeted to `math/games/agent_mambo` (was the mining game), output in `frontend_mambo/dist/math_upload/` +
+   `dist/agent_mambo_math_v2.0.0.zip` (9 files: index.json + 4 books + 4 tables, books stored / text deflated, deterministic, read back and
+   hash-checked). New `tools/build/sdk_verify.py` runs the SDK's own `verify_lookup_format` + the `books_<mode>.verification.json` sidecars
+   (books sha256, payout hash, entries) with `python -B` and writes nothing (the SDK's execute_all_tests would rewrite library/stats_summary.json,
+   so it is not called). Last run: 0 FAIL 0 WARN, all modes 96.0000 %, max 5000x, config.json hashes match, first 5000 books per mode match the CSV.
+7. **Store art**: `tools/art/render_keyart.mjs` (port 5926) renders keyart.html (inspectrice, sober) to `tools/art/store_v2/`: tile 3:4
+   1536x2048, cover 16:9 1920x1080, banner 2000x667, previews 150/300/320 px, STORE_RENDER.json; deterministic. Looked at: OK. `docs/v2/STORE.md`.
+   `tools/art/bake_mambo.mjs` uses `createMascotV1` (WP3 item 2).
+8. VERSION 2.0.0; INTERFACES.md sections 2 (WP2), 3 (WP3), 8 (WP1), 9 updated.
+9. Rules screen looked at in the real game at 1280x720, 1024x576, 425x812, 400x225 (normal + social): tabs wrapped and never clipped
+   (flex 0 0 auto, they were squeezed before), no horizontal scroll, ArrowRight moves the tab focus.
+10. `npm run build` and `PORT=5920 MOCK_PORT=5921 npm run verify:build` green (desktop + mobile, 0 errors, 0 404).
+
 ## Known
 * `node --test tests/core` has 1 failure owned by WP1 (`tests/shell/doors.test.mjs` "today (no shares data)") until WP11_to_WP1 item 1 is applied.
 
 ## Next
 pack_math.mjs for agent_mambo + SDK sidecar check + math zip; store art sizes; INTERFACES.md updates (WP1/WP2/WP3 requests); tools/art
 createMascotV1 (WP3 item 2); VERSION 2.0.0; build + verify:build on 5920/5921; guideline runner.
+
+## Guideline runner (ports 5925/5927, report in /tmp/claude-0/scratch/wp11/REPORT_guidelines.md, WP10's REPORT.md untouched)
+38 PASS / 8 FAIL / 1 AT RISK. `[172]` (replay of an unknown event id = mock list[0], which was a long book) fixed: make_fixtures puts the
+shortest book first in each mode (rerun 172/173/188: PASS). The other 7 (`[31]`, `[UNL-MIN-*]`, `[WIN-bonus-*]`) come from the three doors now
+being offered (nothing pre-selected by design, CONFIRM disabled until a door is chosen): runner fix in WP11_to_WP10 item 4, verified on a
+scratch copy (`[31]`, `[WIN-bonus-bonus]` PASS). With `shares` stripped from the data they PASS unchanged, so the data is right.

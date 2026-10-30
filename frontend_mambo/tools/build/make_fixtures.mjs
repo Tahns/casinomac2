@@ -82,7 +82,10 @@ for (const m of index.modes) {
   for (const [id, { b }] of byId) { const k = mockCat(b); if ((need[k] || 0) < MOCK_MIN) { keep.add(id); need[k] = (need[k] || 0) + 1; } }
   // guideline [273] needs base wins of at most 0.3x (sub-cent payouts at the smallest play amount)
   if (mode === 'base') { let n = [...keep].filter((id) => { const p = byId.get(id).b.payoutMultiplier; return p > 0 && p <= 30; }).length; for (const [id, { b }] of byId) { if (n >= MOCK_MIN) break; if (b.payoutMultiplier > 0 && b.payoutMultiplier <= 30 && !keep.has(id)) { keep.add(id); n++; } } }
+  // ids ascending, but the SHORTEST book first: the mock RGS serves list[0] for a replay of an unknown event id (guideline replay checks)
   const kept = [...keep].sort((a, b) => a - b);
+  const shortest = kept.reduce((best, id) => (byId.get(id).b.events.length < byId.get(best).b.events.length ? id : best), kept[0]);
+  kept.splice(kept.indexOf(shortest), 1); kept.unshift(shortest);
   const outBooks = kept.map((id) => byId.get(id).line).join('\n') + '\n';
   fs.writeFileSync(path.join(OUT, `books_${mode}_sample.jsonl`), outBooks);
   // lookup rows of exactly those books, from the PUBLISHED table (falls back to the fixtures_out copy)
