@@ -241,9 +241,16 @@ const DEFS = `
 <pattern id="mb-ht2" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(32)"><circle cx="2" cy="2" r="1" fill="${INK}" opacity=".28"/></pattern>`;
 
 // Symbol-inside CSS. Per-cell phase comes from --c/--r (set on .cell). Everything is steps() (limited animation).
-const CSS = `
+// v2 (WP5, layer budget): every idle keyframe animates the NON-INHERITED custom properties --mbt / --mbo instead of transform /
+// opacity (see noComposite below). A custom property animation runs on the main thread, so Chrome no longer promotes each
+// twinkle / dial / bubble to its own compositor layer (30 cells used to cost about 60 layers for these parts alone), and a
+// steps(1,end) animation only restyles at its step boundaries. The visible result is identical: the 'universal' syntax
+// interpolates discretely and steps(1,end) holds the start value of every interval, exactly like before.
+const ANIMATED = '.mb-tw,.mb-dial,.mb-bub,.mb-orbit,.mb-vshine,.mb-feather,.mb-hand,.mb-rot,.mb-glint,.mb-knot,.mb-wburst,.mb-sp>path,.mb-eye,.mb-stamp,.mb-closed,.mb-open,.mb-doss';
+const RAW_CSS = `
 .mb *{transform-box:fill-box}
-.mb-tw{transform-origin:50% 50%;opacity:0;animation:mb-tw 3.6s steps(1,end) infinite;animation-delay:calc(var(--c,0)*-.55s + var(--r,0)*-.95s)}
+${ANIMATED}{transform:var(--mbt,none);opacity:var(--mbo,1)}
+.mb-tw{transform-origin:50% 50%;opacity:var(--mbo,0);animation:mb-tw 3.6s steps(1,end) infinite;animation-delay:calc(var(--c,0)*-.55s + var(--r,0)*-.95s)}
 @keyframes mb-tw{0%,60%,82%,100%{opacity:0;transform:scale(.2)}62%{opacity:1;transform:scale(.55)}67%{opacity:1;transform:scale(1.15)}73%{opacity:1;transform:scale(.7)}78%{opacity:1;transform:scale(.3)}}
 .mb-dial{animation:mb-dial 4s steps(1,end) infinite;animation-delay:calc(var(--c,0)*-.7s + var(--r,0)*-1.3s)}
 @keyframes mb-dial{0%,70%{transform:rotate(0)}74%{transform:rotate(45deg)}78%{transform:rotate(90deg)}82%{transform:rotate(135deg)}86%,100%{transform:rotate(0)}}
@@ -266,7 +273,7 @@ const CSS = `
 /* wild: gentle pulse + sparkle state */
 .mb-wburst{animation:mb-wp 1.6s steps(1,end) infinite}
 @keyframes mb-wp{0%{transform:scale(1) rotate(0)}25%{transform:scale(1.03) rotate(4deg)}50%{transform:scale(1.06) rotate(8deg)}75%{transform:scale(1.03) rotate(4deg)}}
-.mb-sp>path{transform-origin:50% 50%;opacity:0;animation:mb-wk 2.4s steps(1,end) infinite}
+.mb-sp>path{transform-origin:50% 50%;opacity:var(--mbo,0);animation:mb-wk 2.4s steps(1,end) infinite}
 .mb-sp>.mb-s2{animation-delay:-.6s}.mb-sp>.mb-s3{animation-delay:-1.2s}.mb-sp>.mb-s4{animation-delay:-1.8s}.mb-sp>.mb-s5{animation-delay:-.3s}
 @keyframes mb-wk{0%,66%,100%{opacity:0;transform:scale(.1)}70%{opacity:1;transform:scale(.6)}76%{opacity:1;transform:scale(1.25) rotate(20deg)}84%{opacity:1;transform:scale(.8) rotate(45deg)}92%{opacity:0}}
 .cell.win .mb-sp>path,.cell.hot .mb-sp>path{animation-duration:.5s}
@@ -285,7 +292,16 @@ const CSS = `
 @keyframes mb-sh{0%{transform:translate(0,0) rotate(0)}33%{transform:translate(1.5px,-1px) rotate(2deg)}66%{transform:translate(-1.5px,0) rotate(-2deg)}}
 .cell.dim .mb *,.cell.adim .mb *{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){.mb *{animation:none!important}.mb-tw,.mb-sp>path{opacity:0}}
+html[data-motion="calm"] .mb *,html[data-motion="still"] .mb *,html[data-quality="lite"] .mb *,html[data-quality="calm"] .mb *{animation:none!important}
 `;
+/** Pure: rewrite every @keyframes block so it animates --mbt / --mbo (main thread) instead of transform / opacity (compositor). */
+export function noComposite(css) {
+  const body = String(css).replace(/@keyframes\s+[\w-]+\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g,
+    (block) => block.replace(/(^|[{;\s])transform\s*:/g, '$1--mbt:').replace(/(^|[{;\s])opacity\s*:/g, '$1--mbo:'));
+  return '@property --mbt{syntax:"*";inherits:false}@property --mbo{syntax:"*";inherits:false}\n' + body;
+}
+export const SYMBOL_CSS = noComposite(RAW_CSS);
+const CSS = SYMBOL_CSS;
 
 let built = false;
 export function ensureSprite() {

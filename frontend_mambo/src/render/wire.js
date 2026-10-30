@@ -2,8 +2,19 @@
 // A braided cable runs through 8 cell lugs and ends in a cartoon alarm-clock bomb. The blast flashes each burnt
 // non-scatter cell, breaks it into paper pieces and REMOVES it (ctx.emptyCell). No wild is ever created.
 // Everything is drawn in code. Every ctx helper is optional (feature-detected).
+// v2 (WP5, SYNTHESIS 5 rows 9-10): draw-on 450 ms and spark travel 300 ms per hop, both stepped at 12 fps (limited animation);
+// blast = tick ramp 600 ms, hit-stop 100 ms, one flash <= 0.6 for 200 ms (the flash governor clamps it to 0.5, cream);
+// the wire never plays a win-like cue (every wire cue is sent { quiet: true }) and never strikes a happy pose: whether the blast
+// "paid" is decided by the re-evaluation (the winInfo that follows), which the player stages through the celebration gate.
+// Motion is read live from ctx.motion (render/motion.js): Calm / Still replace motion, they never shorten the wire.
+import { hasKey } from '../i18n/index.js';
+import { quality } from './quality.js';
 const COLS = 6, ROWS = 5, NS = 'http://www.w3.org/2000/svg';
 const MAX_SMOKE = 14;
+export const WIRE_TIMING = Object.freeze({ fps: 12, drawMs: 450, hopMs: 300, rampMs: 600, hitStopMs: 100, flashPeak: 0.6, flashMs: 200 });
+const FRAME = 1000 / WIRE_TIMING.fps;
+/** Pure: stepped (12 fps) progress 0..1 of an animation of length dur after elapsed ms. */
+export function stepped(elapsed, dur) { if (!(dur > 0)) return 1; const e = Math.max(0, elapsed); return e >= dur ? 1 : Math.min(1, Math.floor(e / FRAME) * FRAME / dur); }
 const PAL = ['#F0472F', '#FBF1D9', '#FFD23F', '#9A7BD0', '#1FB5A3', '#F5799F'];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const el = (tag, attrs = {}, parent) => {
@@ -36,18 +47,22 @@ export function normCells(cells) {
 /**
  * ctx: { board (HTMLElement), cellCenter(c,r)->{x,y,size}, cellEl(c,r), emptyCell(c,r) (remove the cell, leave a hole),
  *        fx ({sparks,ring,glow,smoke,breakCell?}), audio, pose(name,holdMs), shake(amp,ms), flash(peak,ms,color),
- *        sleep(ms), turbo()->bool, reduced, t(key), destroyed()->bool, symColor?(c,r)->css colour }
+ *        sleep(ms), turbo()->bool, reduced, motion, camera?, t(key), destroyed()->bool, symColor?(c,r)->css colour }
  */
 export function createWire(ctx) {
   ensureCss();
-  const reduced = !!ctx.reduced;
+  // live motion level ('full' | 'calm' | 'still'); a missing store falls back to the creation-time flag
+  const level = () => { try { if (ctx.motion && ctx.motion.level) return ctx.motion.level; } catch (e) { /* ignore */ } return ctx.reduced ? 'calm' : 'full'; };
+  const isReduced = () => level() !== 'full';
   const turbo = () => { try { return !!(ctx.turbo && ctx.turbo()); } catch (e) { return false; } };
   const dead = () => { try { return !!(ctx.destroyed && ctx.destroyed()); } catch (e) { return false; } };
   const sleep = (ms) => (ctx.sleep ? ctx.sleep(ms) : new Promise((r) => setTimeout(r, ms)));
-  const snd = (n) => { try { if (ctx.audio && typeof ctx.audio.play === 'function') ctx.audio.play(n); } catch (e) { /* ignore */ } };
+  // every wire cue is neutral and sent quiet: the audio layer refuses anything win-like on this path, whatever the round level
+  const snd = (n) => { try { if (ctx.audio && typeof ctx.audio.play === 'function') ctx.audio.play(n, { quiet: true }); } catch (e) { /* ignore */ } };
   const pose = (n, h) => { try { if (ctx.pose) ctx.pose(n, h); } catch (e) { /* ignore */ } };
   const T = (ms) => ms * (turbo() ? 0.42 : 1);
-  const tr = (key, dflt) => { try { const v = ctx.t ? ctx.t(key) : ''; return v && v !== key ? v : dflt; } catch (e) { return dflt; } };
+  // t() humanises unknown keys ('fx.bam' -> 'Bam'): use it only for keys that exist
+  const tr = (key, dflt) => { try { if (!hasKey(key)) return dflt; const v = ctx.t ? ctx.t(key) : ''; return v && v !== key ? v : dflt; } catch (e) { return dflt; } };
 
   const layer = document.createElement('div');
   layer.className = 'wr-layer'; layer.setAttribute('aria-hidden', 'true');
@@ -68,7 +83,7 @@ export function createWire(ctx) {
     st.pending = null; st.gen++;
     const nodes = [...svg.childNodes];
     st.cells = []; st.burned = 0; st.nodes = []; st.segs = []; st.scorch = []; st.spark = null; st.bomb = null; st.smoke = 0;
-    if (fade && nodes.length && !reduced) {
+    if (fade && nodes.length && !isReduced()) {
       const g = el('g'); nodes.forEach((n) => g.appendChild(n)); svg.appendChild(g);
       try { g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: T(420), fill: 'forwards' }).finished.then(() => g.remove(), () => g.remove()); } catch (e) { g.remove(); }
     } else nodes.forEach((n) => n.remove());
@@ -79,7 +94,7 @@ export function createWire(ctx) {
 
   function spawnSmoke(x, y, n = 2, color) {
     for (let i = 0; i < n; i++) {
-      if (st.smoke >= MAX_SMOKE || reduced) return;
+      if (st.smoke >= MAX_SMOKE || isReduced()) return;
       st.smoke++;
       const g = el('g', { transform: `translate(${(x + (Math.random() - .5) * .25).toFixed(3)} ${(y - .05).toFixed(3)})` }, svg);
       const c = el('circle', { class: 'wr-puff', r: (0.09 + Math.random() * .07).toFixed(3), fill: color || '#FBF1D9' }, g);
@@ -169,19 +184,23 @@ export function createWire(ctx) {
   }
 
   async function travel(from, to, gen) {
-    const fast = turbo() || reduced;
+    const fast = turbo() || level() === 'still'; // Calm keeps the stepped travel (12 fps, no smoke); Still jumps
     for (let i = from + 1; i <= to; i++) {
       if (gen !== st.gen || dead()) return;
       const seg = st.segs[i - 1]; if (!seg) break;
       if (fast) { moveSpark(seg.b.x, seg.b.y); igniteNode(i, true); continue; }
-      const dur = 300, t0 = performance.now();
+      const dur = WIRE_TIMING.hopMs, t0 = performance.now();
+      let lastK = -1;
       await new Promise((res) => {
         const step = (now) => {
           if (gen !== st.gen || dead()) return res();
-          const k = clamp((now - t0) / dur, 0, 1);
-          const x = seg.a.x + (seg.b.x - seg.a.x) * k, y = seg.a.y + (seg.b.y - seg.a.y) * k;
-          moveSpark(x, y); seg.ch.forEach((l) => { l.setAttribute('x2', x); l.setAttribute('y2', y); });
-          if (Math.random() < .35) spawnSmoke(x, y, 1);
+          const k = stepped(now - t0, dur); // 12 fps steps: the DOM only changes on a new step
+          if (k !== lastK) {
+            lastK = k;
+            const x = seg.a.x + (seg.b.x - seg.a.x) * k, y = seg.a.y + (seg.b.y - seg.a.y) * k;
+            moveSpark(x, y); seg.ch.forEach((l) => { l.setAttribute('x2', x); l.setAttribute('y2', y); });
+            if (Math.random() < .5) spawnSmoke(x, y, 1);
+          }
           if (k < 1) requestAnimationFrame(step); else res();
         };
         requestAnimationFrame(step);
@@ -201,7 +220,7 @@ export function createWire(ctx) {
 
   let capShown = 0;
   function caption(key, dflt, cls) {
-    if (reduced) return;
+    if (isReduced()) return;
     try {
       const e = document.createElement('div'); e.className = 'wr-cap' + (cls ? ' ' + cls : ''); e.textContent = tr(key, dflt);
       layer.appendChild(e); setTimeout(() => e.remove(), 2200);
@@ -217,14 +236,16 @@ export function createWire(ctx) {
     if (capShown < 3) { capShown++; caption('fx.wire', 'WIRE!'); }
     const gen = st.gen;
     pose('think'); snd('fuse');
-    const fast = turbo() || reduced;
+    const fast = turbo() || level() === 'still';
     const parts = [...svg.querySelectorAll('.wr-seg,.wr-node,.wr-bomb')];
     if (!fast) {
-      parts.forEach((p, i) => { try { p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, delay: i * 38, fill: 'backwards', easing: 'steps(3,end)' }); } catch (e) { /* ignore */ } });
-      await sleep(Math.min(700, parts.length * 38 + 200));
+      // draw-on: the parts appear in path order over WIRE_TIMING.drawMs, on the 12 fps grid (one hard step each, no fade)
+      const n = Math.max(1, parts.length - 1), last = WIRE_TIMING.drawMs - FRAME;
+      parts.forEach((p, i) => { const d = Math.round(Math.floor((i / n) * last / FRAME) * FRAME); try { p.animate([{ opacity: 0 }, { opacity: 0 }], { duration: Math.max(1, d), fill: 'backwards', easing: 'steps(1,end)' }); } catch (e) { /* ignore */ } });
+      await sleep(WIRE_TIMING.drawMs);
     }
     if (gen !== st.gen) return;
-    if (burned > 0) { setBurned(burned); const c = ctx.cellCenter ? ctx.cellCenter(cells[0].reel, cells[0].row) : null; if (c && ctx.fx && !reduced) ctx.fx.sparks(c.x, c.y, '#FFD23F', c.size * .25, 6, 4); }
+    if (burned > 0) { setBurned(burned); const c = ctx.cellCenter ? ctx.cellCenter(cells[0].reel, cells[0].row) : null; if (c && ctx.fx && !isReduced()) ctx.fx.sparks(c.x, c.y, '#FFD23F', c.size * .25, 6, 4); }
     if (!fast) await sleep(380);
   }
 
@@ -232,6 +253,7 @@ export function createWire(ctx) {
   async function path(ev) { st.pending = ev || null; }
 
   async function burn(ev) {
+    quality.keepAlive(3000);
     if (!st.cells.length && st.pending) { const pe = st.pending; st.pending = null; await drawPath(pe); }
     if (!st.cells.length) return;
     const gen = st.gen;
@@ -248,7 +270,7 @@ export function createWire(ctx) {
     await travel(from, to - 1, gen);
     if (gen !== st.gen) return;
     setBurned(to);
-    if (!(turbo() || reduced)) await sleep(220);
+    if (!(turbo() || isReduced())) await sleep(220);
   }
 
   const key = (p) => p.reel + ':' + p.row;
@@ -265,13 +287,13 @@ export function createWire(ctx) {
     if (word) { const tx = document.createElement('span'); tx.className = 'wr-pow-text'; tx.textContent = word; b.appendChild(tx); }
     b.style.left = (c.reel + .5) / COLS * 100 + '%'; b.style.top = (c.row + .5) / ROWS * 100 + '%';
     layer.appendChild(b);
-    if (!reduced) { try { b.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 1, offset: .3 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: 1, offset: .7 }, { transform: 'translate(-50%,-50%) scale(1.1)', opacity: 0 }], { duration: T(700), delay, fill: 'both', easing: 'steps(6,end)' }).finished.then(() => b.remove(), () => b.remove()); } catch (e) { setTimeout(() => b.remove(), 800); } }
+    if (!isReduced()) { try { b.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 1, offset: .3 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: 1, offset: .7 }, { transform: 'translate(-50%,-50%) scale(1.1)', opacity: 0 }], { duration: T(700), delay, fill: 'both', easing: 'steps(6,end)' }).finished.then(() => b.remove(), () => b.remove()); } catch (e) { setTimeout(() => b.remove(), 800); } }
     else { setTimeout(() => b.remove(), 700); }
   }
 
   // local paper breakup: 3 cut-paper triangles fly out of the cell, then a dust cloud marks the empty cell
   function localBreak(p, color) {
-    if (reduced) return;
+    if (isReduced()) return;
     const u = ctx.board.clientWidth / COLS, cx = (p.reel + .5) * u, cy = (p.row + .5) * (ctx.board.clientHeight / ROWS);
     const tris = ['polygon(50% 0,100% 100%,0 100%)', 'polygon(0 0,100% 20%,40% 100%)', 'polygon(10% 0,100% 50%,0 90%)'];
     for (let i = 0; i < 3; i++) {
@@ -284,7 +306,7 @@ export function createWire(ctx) {
     }
   }
   function dustCloud(p) {
-    if (reduced) return;
+    if (isReduced()) return;
     const u = ctx.board.clientWidth / COLS, cx = (p.reel + .5) * u, cy = (p.row + .5) * (ctx.board.clientHeight / ROWS);
     for (let i = 0; i < 3; i++) {
       const d = document.createElement('div'); d.className = 'wr-dust';
@@ -295,7 +317,7 @@ export function createWire(ctx) {
     }
   }
   function shield(p) {
-    if (reduced) return;
+    if (isReduced()) return;
     const u = ctx.board.clientWidth / COLS, w = u * .95, cx = (p.reel + .5) * u, cy = (p.row + .5) * (ctx.board.clientHeight / ROWS);
     const s = document.createElement('div'); s.className = 'wr-shield';
     s.style.cssText = `left:${cx - w / 2}px;top:${cy - w / 2}px;width:${w}px;height:${w}px`;
@@ -312,10 +334,11 @@ export function createWire(ctx) {
   }
 
   async function blast(ev) {
+    quality.keepAlive(4000);
     if (!st.cells.length && st.pending) { const pe = st.pending; st.pending = null; await drawPath(pe); }
     const cells = normCells(ev && ev.cells);
     const gen = st.gen;
-    const fast = turbo(), still = reduced;
+    const fast = turbo(), still = isReduced();
     setUnit();
     layer.classList.add('on');
     // 1. DEFUSE tag, Mambo shocked then on the plunger; ticks speed up for 600 ms
@@ -323,16 +346,27 @@ export function createWire(ctx) {
     if (st.bomb) st.bomb.g.classList.add('hot');
     if (st.spark) st.spark.g.classList.add('hot');
     if (!still) caption('fx.defuse', 'DEFUSE!', 'defuse');
-    const wait = fast ? 0 : (still ? 500 : 600);
+    const wait = fast ? 0 : WIRE_TIMING.rampMs; // Calm / Still keep the same beat length (motion is replaced, never shortened)
     if (wait) {
       pose('plunger');
       let gap = 150;
       for (let el0 = 0; el0 < wait; el0 += gap) { snd('fuse'); await sleep(gap); gap = Math.max(55, gap * .8); if (gen !== st.gen || dead()) return; }
     } else { pose('plunger'); snd('fuse'); }
     if (gen !== st.gen || dead()) return;
+    // hit-stop: the board holds for 100 ms before the bang (camera.freeze pauses every running animation when allowed; otherwise a
+    // plain hold of the same length, so Calm / Still keep the timing)
+    if (!fast) {
+      let held = false;
+      try {
+        const m = ctx.motion;
+        if (ctx.camera && typeof ctx.camera.freeze === 'function' && (!m || m.hitStop !== false)) { await ctx.camera.freeze(WIRE_TIMING.hitStopMs); held = true; }
+      } catch (e) { held = false; }
+      if (!held) await sleep(WIRE_TIMING.hitStopMs);
+      if (gen !== st.gen || dead()) return;
+    }
     // 2. BLAST
     snd('explosion');
-    try { if (ctx.flash && !still) ctx.flash(.7, 380, '#FBF1D9'); } catch (e) { /* ignore */ }
+    try { if (ctx.flash) ctx.flash(WIRE_TIMING.flashPeak, WIRE_TIMING.flashMs, '#FBF1D9'); } catch (e) { /* ignore */ }
     try { if (ctx.shake) ctx.shake(still ? .3 : 1.5, 250); } catch (e) { /* ignore */ }
     // burnt path cells that are not removed (scatters) get a shield flash and stay
     const gone = new Set(cells.map(key));
@@ -348,7 +382,7 @@ export function createWire(ctx) {
       if (gen2 !== st.gen || dead()) return;
       let host = null;
       try { host = ctx.cellEl ? ctx.cellEl(p.reel, p.row) : null; } catch (e) { host = null; }
-      if (host && !still && !fast) { try { await host.animate([{ filter: 'brightness(1)' }, { filter: 'brightness(5) saturate(0)' }], { duration: 80, fill: 'forwards' }).finished; } catch (e) { /* ignore */ } }
+      void host; // v1 whitened the cell with a filter animation (a flash per cell, a compositor layer each): the cream break flash of fx.breakCell replaces it
       burstStar(p, i < 3 ? words[i % words.length] : '', 0);
       let col = PAL[0]; try { if (ctx.symColor) col = ctx.symColor(p.reel, p.row) || col; } catch (e) { /* ignore */ }
       let done = false;
@@ -365,7 +399,7 @@ export function createWire(ctx) {
     })());
     await Promise.all(jobs);
     await sleep(fast ? 120 : 420);
-    pose('happy');
+    pose('idle'); // neutral: the re-evaluation decides whether there is anything to be happy about
     layer.classList.remove('on');
   }
 
@@ -376,9 +410,9 @@ export function createWire(ctx) {
     const gen = st.gen;
     const k = Math.max(0, Math.min(st.burned, st.cells.length) - 1), p = st.cells[k] || st.cells[0], c = ctr(p);
     if (st.spark) st.spark.g.classList.add('dying');
-    snd('fizzle');
+    snd('wahwah'); // 'fizzle' was never a cue id (a silent no-op in v1); the neutral wah-wah is the gag
     spawnSmoke(c.x, c.y, 3, '#9A7BD0');
-    try { const px = ctx.cellCenter(p.reel, p.row); if (ctx.fx && !reduced) ctx.fx.smoke(px.x, px.y, px.size * .4, 3); } catch (e) { /* ignore */ }
+    try { const px = ctx.cellCenter(p.reel, p.row); if (ctx.fx && !isReduced()) ctx.fx.smoke(px.x, px.y, px.size * .4, 3); } catch (e) { /* ignore */ }
     pose('shrug');
     // lugs go dark one by one, back toward the start
     const fast = turbo();
@@ -388,9 +422,9 @@ export function createWire(ctx) {
       if (i > 0 && st.segs[i - 1]) st.segs[i - 1].g.classList.remove('burnt');
       setClock(i);
       if (st.spark && st.cells[i]) moveSpark(st.cells[i].reel + .5, st.cells[i].row + .5);
-      if (!fast && !reduced) await sleep(70);
+      if (!fast && !isReduced()) await sleep(70);
     }
-    if (!fast) await sleep(reduced ? 400 : 320);
+    if (!fast) await sleep(isReduced() ? 400 : 320);
     if (gen !== st.gen) return;
     clear(true);
     if (!fast) await sleep(300);

@@ -6,6 +6,8 @@
 // Palette     : CSS custom properties read at draw time, with built-in defaults (DESIGN 4.1).
 //   base  tokens: --mb-sky --mb-sky2 --mb-far --mb-near --mb-dark --mb-window --mb-moon --mb-lilac --mb-lemon --mb-cream --mb-coral --mb-blind
 //   lair  tokens: --mb-fs-bg --mb-fs-wall --mb-fs-ring --mb-fs-seam --mb-fs-rivet --mb-fs-dark --mb-fs-screen --mb-fs-lamp --mb-fs-blind --mb-fs-wedge
+import { motion } from './motion.js';
+import { quality } from './quality.js';
 const TAU = Math.PI * 2;
 
 const BASE = {
@@ -249,13 +251,14 @@ const CSS = `
 #scene{background:#181640}
 #scene .mbs-grp{position:absolute;inset:0;overflow:hidden}
 #scene .mbs-lair{clip-path:circle(0% at 50% 50%);visibility:hidden}
-#scene .lay{position:absolute;inset:-4%;will-change:transform}
+#scene .lay{position:absolute;inset:-4%}
+#scene .lay.mv{will-change:transform}
 #scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-#scene .mbs-blinds{position:absolute;inset:-12% -12%;opacity:.10;pointer-events:none;animation:mbsblind 60s linear infinite alternate}
+#scene .mbs-blinds{position:absolute;inset:-12% -12%;opacity:.10;pointer-events:none;animation:mbsblind 60s steps(90,end) infinite alternate}
 #scene .mbs-blinds canvas{width:100%;height:100%}
 #scene .mbs-lair .mbs-blinds{opacity:.2}
 @keyframes mbsblind{from{transform:translateX(0)}to{transform:translateX(360px)}}
-#scene .mbs-sat{position:absolute;left:0;top:7%;width:clamp(30px,8vmin,64px);animation:mbssat 40s linear infinite;pointer-events:none}
+#scene .mbs-sat{position:absolute;left:0;top:7%;width:clamp(30px,8vmin,64px);animation:mbssat 40s steps(320,end) infinite;pointer-events:none}
 #scene .mbs-sat svg{display:block;width:100%;height:auto;overflow:visible;animation:mbsspin 4s steps(8,end) infinite}
 @keyframes mbssat{0%{transform:translate3d(-12vw,0,0)}50%{transform:translate3d(50vw,-3vh,0)}100%{transform:translate3d(112vw,3vh,0)}}
 @keyframes mbsspin{to{transform:rotate(360deg)}}
@@ -273,9 +276,17 @@ const CSS = `
 #scene .mbs-lamp svg path:first-child{animation:mbsalarmf 1.2s steps(1,end) infinite}
 @keyframes mbsalarm{0%{opacity:1}50%{opacity:.15}100%{opacity:1}}
 @keyframes mbsalarmf{0%{fill:#F0472F}50%{fill:#9B2A1E}100%{fill:#F0472F}}
+html[data-motion="calm"] #scene .mbs-blinds,html[data-motion="calm"] #scene .mbs-sat,html[data-motion="calm"] #scene .mbs-sat svg,html[data-motion="calm"] #scene .mbs-radar .dish,html[data-motion="calm"] #scene .mbs-sweep,
+html[data-motion="still"] #scene .mbs-blinds,html[data-motion="still"] #scene .mbs-sat,html[data-motion="still"] #scene .mbs-sat svg,html[data-motion="still"] #scene .mbs-radar .dish,html[data-motion="still"] #scene .mbs-sweep,html[data-motion="still"] #scene .mbs-lamp .beam,html[data-motion="still"] #scene .mbs-lamp svg path:first-child,
+html[data-quality="calm"] #scene .mbs-blinds,html[data-quality="calm"] #scene .mbs-sat,html[data-quality="calm"] #scene .mbs-sat svg,html[data-quality="calm"] #scene .mbs-radar .dish,html[data-quality="calm"] #scene .mbs-sweep{animation:none!important}
 @media (prefers-reduced-motion:reduce){#scene .mbs-blinds,#scene .mbs-sat,#scene .mbs-sat svg,#scene .mbs-radar .dish,#scene .mbs-sweep,#scene .mbs-lamp .beam,#scene .mbs-lamp svg path:first-child{animation:none!important}}
 `;
 
+// v2 (WP5): the blinds and the satellite move in hard steps (1.5 and 8 per second) instead of a continuous compositor slide:
+// a full-screen layer that moves every frame forced a full-screen recomposite 60 times a second (half a CPU core in software
+// compositing). The parallax layers are promoted (will-change) only while they actually move, and the parallax runs in Full motion
+// only (render/motion.js) and not on a device the quality governor has put to Calm. Calm / Still (html[data-motion]) and the
+// quality governor (html[data-quality]) switch the decorative loops off.
 export function createScene(app) {
   let host = app.querySelector('#scene');
   if (!host) { host = document.createElement('div'); host.id = 'scene'; app.insertBefore(host, app.firstChild); }
@@ -359,12 +370,18 @@ export function createScene(app) {
   // ---- parallax
   const lays = [...host.querySelectorAll('.lay')];
   let tx = 0, ty = 0, cx = 0, cy = 0, pr = 0;
+  const parallaxOn = () => { try { return motion.level === 'full' && !quality.calm; } catch (e) { return true; } };
   function par() {
     cx += (tx - cx) * .08; cy += (ty - cy) * .08;
     for (const l of lays) { const k = Number(l.dataset.k || 0); l.style.transform = `translate3d(${(cx * k * -14).toFixed(2)}px,${(cy * k * -9).toFixed(2)}px,0)`; }
-    if (Math.abs(tx - cx) > .002 || Math.abs(ty - cy) > .002) pr = requestAnimationFrame(par); else pr = 0;
+    if (Math.abs(tx - cx) > .002 || Math.abs(ty - cy) > .002) pr = requestAnimationFrame(par);
+    else { pr = 0; lays.forEach((l) => l.classList.remove('mv')); }
   }
-  window.addEventListener('pointermove', (e) => { tx = e.clientX / window.innerWidth - .5; ty = e.clientY / window.innerHeight - .5; if (!pr) pr = requestAnimationFrame(par); }, { passive: true });
+  window.addEventListener('pointermove', (e) => {
+    if (!parallaxOn()) { if (tx || ty) { tx = 0; ty = 0; } if (!cx && !cy) return; }
+    else { tx = e.clientX / window.innerWidth - .5; ty = e.clientY / window.innerHeight - .5; }
+    if (!pr) { lays.forEach((l) => l.classList.add('mv')); pr = requestAnimationFrame(par); }
+  }, { passive: true });
 
   let ro = null;
   const onResize = () => { clearTimeout(timer); timer = setTimeout(draw, 120); };

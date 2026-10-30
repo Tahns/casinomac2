@@ -2,8 +2,14 @@
 // Original API kept (shards/sparks/embers/coins/coinRain/smoke/ring/glow/clear/count/resize).
 // Added: stars, burstBubble (comic POW!/BAM!/BOOM! bubble), confetti, breakCell (paper-piece break of a removed cell),
 // pieces, dust, iris (iris wipe, resolves when done; a 'close' holds until iris('open') or clear()), shake.
-// All counts are capped (MAX live particles; every helper clamps its own n).
+// All counts are capped (FX_CAPS: live particles, per-call counts; every helper clamps its own n).
+// v2 (WP5): caps live in FX_CAPS; the quality governor (quality.js) is fed every frame of the loop and thins the particles on a slow
+// device (EMA > 24 ms: half, > 40 ms: Calm); the motion store (motion.js) is read live (Still: no particle, no shake; the
+// per-call counts for Calm are scaled by the caller through motion.count). The per-cell break flash is cream, <= 0.5, and only
+// drawn when screen flashes are on. The canvas backing store is capped (FX_CAPS.canvasBytes) whatever the device pixel ratio.
 import { t } from '../i18n/index.js';
+import { motion } from './motion.js';
+import { quality } from './quality.js';
 const TAU = Math.PI * 2;
 const INK = '#14102B', PAPER = '#FBF1D9';
 export const FX_COLORS = { ink: INK, cream: PAPER, teal: '#1FB5A3', coral: '#F0472F', flamingo: '#F5799F', lemon: '#FFD23F', lilac: '#9A7BD0', lime: '#A5D63B', steel: '#6FA7D9', indigo: '#2B2A6B' };
@@ -12,7 +18,21 @@ const CONF_COLS = [FX_COLORS.lemon, FX_COLORS.coral, FX_COLORS.teal, FX_COLORS.f
 const DISP = "'Arial Black','Futura','Century Gothic',Impact,sans-serif";
 const safeT = (key, dflt) => { try { const v = t(key); return v && v !== key ? v : dflt; } catch (e) { return dflt; } };
 const rnd = (a, b) => a + Math.random() * (b - a);
-const REDUCE = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const FX_CAPS = Object.freeze({
+  live: 200,                 // particles alive at once (oldest dropped first)
+  liveLite: 110,             // same on a slow device (quality tier lite / calm)
+  shards: 5, sparks: 5, stars: 12, confetti: 30, confettiMaxWin: 60, dust: 5, pieces: 6, embers: 18, coins: 14, coinRain: 24, smoke: 6,
+  breakFlashPeak: 0.5,       // the per-cell break flash (cream)
+  canvasBytes: 24 * 1048576, // backing store of the overlay canvas (W * H * dpr^2 * 4); dpr is lowered to stay under it
+  maxDpr: 2,
+});
+/** Pure: the device pixel ratio to use for a W x H css px canvas under the byte cap. */
+export function cappedDpr(W, H, dpr, capBytes = FX_CAPS.canvasBytes, maxDpr = FX_CAPS.maxDpr) {
+  const d = Math.max(1, Math.min(Number(dpr) || 1, maxDpr));
+  const px = Math.max(1, W) * Math.max(1, H) * 4;
+  return Math.max(0.5, Math.min(d, Math.sqrt(capBytes / px)));
+}
+const still = () => { try { return motion.level === 'still'; } catch (e) { return false; } };
 const STEP = 1 / 12; // limited-animation frame length
 const q = (t) => Math.floor(t / STEP) * STEP;
 
@@ -26,30 +46,32 @@ export function createFx(app) {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, dpr = 1;
   const parts = [];
-  let raf = 0, last = 0, ema = 16, lite = false; // lite: drop half the particles when frames are slow
-  const MAX = 240;
+  let raf = 0, last = 0;
   const DUST = '#E4DAEE';
   let irisP = null, irisTimer = 0;
 
   function resize() {
     const r = app.getBoundingClientRect();
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+    dpr = cappedDpr(W, H, window.devicePixelRatio || 1);
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
   }
   resize();
 
   function add(p) {
-    if ((REDUCE && Math.random() < .6) || (lite && Math.random() < .5)) return;
-    if (document.hidden) return;
-    if (parts.length >= MAX) parts.shift();
+    if (document.hidden || still()) return;
+    quality.keepAlive(3000);
+    const g = quality.particles; // 1 | .5 | .4
+    if (g < 1 && p.t !== 'flash' && p.t !== 'bubble' && Math.random() > g) return;
+    const max = quality.tier === 'full' ? FX_CAPS.live : FX_CAPS.liveLite;
+    while (parts.length >= max) parts.shift();
     parts.push(p);
     if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); }
   }
 
   // dust puff clouds replace shards: the symbol "puffs away"
   function shards(x, y, color, size, n = 8) {
-    const m = Math.min(5, 2 + Math.round(n / 4));
+    const m = Math.min(FX_CAPS.shards, 2 + Math.round(n / 4));
     for (let i = 0; i < m; i++) {
       const a = rnd(0, TAU), sp = rnd(size * .6, size * 2);
       add({ t: 'puff', x: x + Math.cos(a) * size * .25, y: y + Math.sin(a) * size * .25, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - size * .5, drag: 2.2, life: rnd(.45, .75), age: 0, r: rnd(.18, .3) * size, color: i % 2 ? PAPER : DUST });
@@ -60,7 +82,7 @@ export function createFx(app) {
     }
   }
   function sparks(x, y, color, size, n = 10, speed = 6) {
-    const m = Math.min(5, Math.ceil(n / 2));
+    const m = Math.min(FX_CAPS.sparks, Math.ceil(n / 2));
     for (let i = 0; i < m; i++) {
       const a = rnd(0, TAU), sp = rnd(size * 1.5, size * speed);
       add({ t: 'star', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 4, drag: 1.8, rot: rnd(0, TAU), vr: rnd(-5, 5), life: rnd(.35, .7), age: 0, color: color || STAR_COLS[i % STAR_COLS.length], r: rnd(.12, .2) * size + 3 });
@@ -68,7 +90,7 @@ export function createFx(app) {
   }
   // new-palette stars: no colour needed, cycles lemon/cream/flamingo/teal/lilac (pass opts.colors to override)
   function stars(x, y, size, n = 8, opts = {}) {
-    const cols = opts.colors || STAR_COLS, m = Math.min(12, n), speed = opts.speed || 5;
+    const cols = opts.colors || STAR_COLS, m = Math.min(FX_CAPS.stars, n), speed = opts.speed || 5;
     for (let i = 0; i < m; i++) {
       const a = rnd(0, TAU), sp = rnd(size * 1.5, size * speed);
       add({ t: 'star', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 3, drag: 1.8, rot: rnd(0, TAU), vr: rnd(-5, 5), life: rnd(.4, .8), age: 0, color: cols[i % cols.length], r: rnd(.12, .22) * size + 3 });
@@ -81,7 +103,7 @@ export function createFx(app) {
   }
   // confetti: little flat paper rectangles that flutter (stepped x-scale) down with the new palette
   function confetti(x, y, size, n = 24, opts = {}) {
-    const m = Math.min(30, n), cols = opts.colors || CONF_COLS, spread = opts.spread == null ? Math.PI : opts.spread, ang = opts.angle == null ? -Math.PI / 2 : opts.angle;
+    const m = Math.min(opts.maxWin ? FX_CAPS.confettiMaxWin : FX_CAPS.confetti, n), cols = opts.colors || CONF_COLS, spread = opts.spread == null ? Math.PI : opts.spread, ang = opts.angle == null ? -Math.PI / 2 : opts.angle;
     for (let i = 0; i < m; i++) {
       const a = ang + rnd(-1, 1) * spread * .5, sp = rnd(size * .8, size * 3.2) * (opts.power || 1);
       add({ t: 'conf', x: opts.w ? x + rnd(0, opts.w) : x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 2.2, drag: .9, rot: rnd(0, TAU), vr: rnd(-7, 7), fl: rnd(0, TAU), life: rnd(1.3, 2.3), age: 0, color: cols[i % cols.length], r: rnd(.03, .055) * size + 3 });
@@ -89,7 +111,7 @@ export function createFx(app) {
   }
   // dust cloud (e.g. on the removed, now empty cell): big lingering puffs that rise a little
   function dust(x, y, size, n = 3) {
-    const m = Math.min(5, n);
+    const m = Math.min(FX_CAPS.dust, n);
     for (let i = 0; i < m; i++) {
       const a = rnd(0, TAU), sp = rnd(size * .15, size * .7);
       add({ t: 'puff', x: x + Math.cos(a) * size * .15, y: y + Math.sin(a) * size * .15, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - size * .25, drag: 1.6, life: rnd(.8, 1.2), age: 0, r: rnd(.28, .42) * size, color: i % 2 ? PAPER : DUST });
@@ -97,7 +119,7 @@ export function createFx(app) {
   }
   // paper pieces: irregular cut-paper chunks (face colour on one side, cream back on the other) that tumble out and fall
   function pieces(x, y, color, size, n = 3) {
-    const m = Math.min(6, n);
+    const m = Math.min(FX_CAPS.pieces, n);
     for (let i = 0; i < m; i++) {
       const base = (i / m) * TAU + rnd(-.5, .5), sp = rnd(size * 2.2, size * 4.2);
       const k = 3 + (i % 2), pts = [];
@@ -109,7 +131,8 @@ export function createFx(app) {
   // 3 paper pieces in the symbol colour, dust on the now empty cell. opts: {word, bubble:false, dust:false, pieces:n}
   function breakCell(x, y, size, color = FX_COLORS.flamingo, opts = {}) {
     // parts are drawn newest-first (underneath), so the order here is top-to-bottom: flash, bubble, pieces, stars, dust
-    add({ t: 'flash', x, y, r: size * .48, life: .08, age: 0 });
+    let flashes = false; try { flashes = motion.flashMode === 'flash'; } catch (e) { flashes = false; }
+    if (flashes && opts.flash !== false) add({ t: 'flash', x, y, r: size * .48, life: .08, age: 0 });
     if (opts.bubble !== false) burstBubble(x, y - size * .05, size * .46, opts.word);
     pieces(x, y, color, size * .8, opts.pieces || 3);
     stars(x, y, size * .4, 3);
@@ -127,33 +150,35 @@ export function createFx(app) {
   }
   // screen shake: shakes #game and the scene (px amplitude scales with the viewport, amp 1 ~ 6 px at 500 px)
   function shake(amp = 1, ms = 250) {
-    if (REDUCE) amp *= .25;
+    let gain = 1; try { gain = quality.effective(motion.state).shake; } catch (e) { gain = 1; }
+    if (!(gain > 0)) return;
+    amp *= gain;
     const els = [app.querySelector('#game'), app.querySelector('#scene')].filter(Boolean);
     const n = 10; const px = Math.min(app.clientWidth || 500, app.clientHeight || 500) * .012 * amp;
     const frames = Array.from({ length: n + 1 }, (_, i) => { const k = 1 - i / n; return { transform: i === n ? 'none' : `translate(${((Math.random() - .5) * 2 * px * k).toFixed(1)}px,${((Math.random() - .5) * 2 * px * k).toFixed(1)}px)` }; });
     els.forEach((e) => { try { e.animate(frames, { duration: ms, easing: 'steps(10,end)' }); } catch (x) { /* ignore */ } });
   }
   function embers(x, y, w, h, n, size) {
-    const m = Math.min(18, n >> 1);
+    const m = Math.min(FX_CAPS.embers, n >> 1);
     for (let i = 0; i < m; i++) {
       add({ t: 'diamond', x: x + rnd(0, w), y: y + rnd(0, h), vx: rnd(-.5, .5) * size, vy: -rnd(1, 3.5) * size, g: -size * .3, drag: .5, life: rnd(.8, 1.6), age: 0, color: Math.random() < .5 ? FX_COLORS.lemon : FX_COLORS.coral, r: rnd(.03, .06) * size + 2 });
     }
   }
   function coins(x, y, size, n = 30, spread = 1, angle = -Math.PI / 2, power = 1) {
-    const m = Math.min(n, 14);
+    const m = Math.min(n, FX_CAPS.coins);
     for (let i = 0; i < m; i++) {
       const a = angle + rnd(-1, 1) * spread, sp = rnd(size * 1.0, size * 2.1) * power;
       add({ t: 'coin', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: size * 2.4, rot: rnd(0, TAU), vr: rnd(5, 12), life: rnd(1.3, 2.2), age: 0, r: rnd(.026, .04) * size + 3 });
     }
   }
   function coinRain(n, size) {
-    const m = Math.min(n, 24);
+    const m = Math.min(n, FX_CAPS.coinRain);
     for (let i = 0; i < m; i++) {
       add({ t: 'coin', x: rnd(0, W), y: -rnd(10, H * .5), vx: rnd(-30, 30), vy: rnd(100, 260), g: size * .5, rot: rnd(0, TAU), vr: rnd(5, 12), life: rnd(2, 3.2), age: 0, r: rnd(.024, .036) * size + 3 });
     }
   }
   function smoke(x, y, size, n = 6) {
-    const m = Math.min(n, 6);
+    const m = Math.min(n, FX_CAPS.smoke);
     for (let i = 0; i < m; i++) {
       const a = rnd(0, TAU), sp = rnd(0, size * 1.4);
       add({ t: 'puff', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - size * .5, drag: 1.4, life: rnd(.7, 1.2), age: 0, r: rnd(.3, .55) * size, color: i % 2 ? '#CFC3E6' : DUST });
@@ -179,7 +204,7 @@ export function createFx(app) {
 
   function drawTop(p, k) {
     if (p.t === 'flash') {
-        ctx.save(); ctx.translate(p.x, p.y); ctx.globalAlpha = 1 - k * .5; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff';
+        ctx.save(); ctx.translate(p.x, p.y); ctx.globalAlpha = FX_CAPS.breakFlashPeak * (1 - k * .5); ctx.fillStyle = PAPER; ctx.strokeStyle = PAPER;
         ctx.beginPath(); ctx.rect(-p.r, -p.r, p.r * 2, p.r * 2); ctx.fill(); ctx.restore(); return;
       }
     if (p.t === 'bubble') {
@@ -195,7 +220,7 @@ export function createFx(app) {
   }
 
   function tick(now) {
-    const raw = now - last; ema = ema * .92 + Math.min(raw, 200) * .08; lite = ema > 42;
+    const raw = now - last; if (!quality.monitoring) quality.sample(raw);
     const dt = Math.min(0.05, raw / 1000); last = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
@@ -297,5 +322,5 @@ export function createFx(app) {
     hook();
   }
 
-  return { resize, shards, sparks, stars, burstBubble, confetti, breakCell, pieces, dust, iris, shake, embers, coins, coinRain, smoke, ring, glow, clear() { parts.length = 0; irisP = null; clearTimeout(irisTimer); }, get count() { return parts.length; } };
+  return { resize, shards, sparks, stars, burstBubble, confetti, breakCell, pieces, dust, iris, shake, embers, coins, coinRain, smoke, ring, glow, clear() { parts.length = 0; irisP = null; clearTimeout(irisTimer); }, get count() { return parts.length; }, get canvasBytes() { return canvas.width * canvas.height * 4; }, caps: FX_CAPS };
 }
