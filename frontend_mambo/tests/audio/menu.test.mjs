@@ -55,7 +55,7 @@ async function openGame(init) {
   const { page, A, open, slide } = g;
   await open(); await sleep(1200);
   const sl = await page.evaluate(() => ['master', 'music', 'sfx'].map((k) => { const e = document.getElementById('st-vol-' + k); return e && [e.type, e.min, e.max, e.value]; }));
-  ok(sl.every((x) => x && x[0] === 'range' && x[1] === '0' && x[2] === '100' && x[3] === '75'), `the dialog has three 0-100 sliders at 75 (${JSON.stringify(sl)})`);
+  ok(sl.every((x) => x && x[0] === 'range' && x[1] === '0' && x[2] === '100') && sl.map((x) => x[3]).join() === '75,5,75', `the dialog has three 0-100 sliders at their defaults Master 75, Music 5 (slot guide), Effects 75 (${JSON.stringify(sl)})`);
   // L1 persist via the sliders
   const r = [await slide('master', 60), await slide('music', 30), await slide('sfx', 90)]; await sleep(400);
   let s = await A();
