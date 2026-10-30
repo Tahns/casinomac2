@@ -161,3 +161,22 @@ test('quality: timer probe (no rAF), lag samples, and a driver loop makes the pr
   assert.equal(timers.size, 0, 'and stops itself afterwards');
   assert.equal(q.monitoring, false);
 });
+
+test('symbols: the shared idle clock folds --mbclk into every loop delay and steps only on keyframe changes', async () => {
+  const { clocked, loopStep, CLOCK_CSS, SYMBOL_CSS } = await import('../../src/render/symbols.js');
+  const out = clocked('.a{animation:k 2s steps(1,end) infinite}.b{animation:k 2s infinite;animation-delay:calc(var(--c,0)*-.5s)}.c{animation-delay:-.6s}.d{color:red}@keyframes k{0%{opacity:1}50%{opacity:0}}');
+  assert.match(out, /\.a\{animation:k 2s steps\(1,end\) infinite;animation-delay:calc\(0s - var\(--mbclk,0s\)\)\}/);
+  assert.match(out, /\.b\{animation:k 2s infinite;animation-delay:calc\(calc\(var\(--c,0\)\*-\.5s\) - var\(--mbclk,0s\)\)\}/);
+  assert.match(out, /\.c\{animation-delay:calc\(-\.6s - var\(--mbclk,0s\)\)\}/);
+  assert.match(out, /\.d\{color:red\}/);
+  assert.match(out, /@keyframes k\{0%\{opacity:1\}50%\{opacity:0\}\}/, 'keyframes untouched');
+  assert.ok(!/animation-delay:(?!calc\([^;]*--mbclk)/.test(SYMBOL_CSS), 'every symbol delay carries the clock');
+  assert.match(CLOCK_CSS, /@property --mbclk\{syntax:"<time>";inherits:false/);
+  assert.match(CLOCK_CSS, /#sym-sprite \*\{animation:none!important\}/);
+  const offs = [0, 0.25, 0.5, 0.75];
+  assert.equal(loopStep(100, 1000, offs).key, 0);
+  assert.equal(loopStep(260, 1000, offs).key, 1);
+  assert.equal(loopStep(1260, 1000, offs).key, 1001);
+  assert.equal(Math.round(loopStep(260, 1000, offs).next), 500);
+  assert.equal(loopStep(10, 0, offs), null);
+});

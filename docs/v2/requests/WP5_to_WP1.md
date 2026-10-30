@@ -54,3 +54,20 @@ because `t()` humanises a missing key ("meter.title" -> "Title").
 ## 3. Settings dialog wording (no change needed, FYI)
 "Screen flash effects" off (`reduceFlash: true`) and Calm both make every flash a single 167 ms dissolve at <= 0.25; Still draws no
 flash at all (`src/render/flash.js`). The quality governor never changes a stored setting.
+
+## 4. Follow-up (WP5 fixer pass, 2026-10-30): frame budget
+
+a) **The loading screen keeps animating after it is hidden.** `#loading` is only `visibility:hidden` after boot, and CSS animations
+keep running under visibility:hidden: 13 main-thread animations (`mbn1..8` animate `fill`, `mbburn`, `mbspark`, `mbtick`, the
+loading-logo `lgtw` stars) are serviced on every frame for the whole session. Measured idle at 4x CPU throttle (harness, 1024x576):
+p50 frame 33 ms -> 16.8 ms with `#loading{display:none}`. Add to styles.css:
+```css
+body.rendered:not(.state-booting):not(.state-authenticating) #loading *,body.state-error #loading *{animation:none!important}
+```
+(or set `display:none` at the end of the fade). This is the largest single idle cost left on the page.
+
+b) Item 1 still applies (drop the two `will-change` / `translateZ(0)` lines and make the bob animate `--mbt`). The bob no longer needs
+its own phase rule beyond the snippet: `symbols.js` now runs ONE stepped clock for every looping symbol animation (paused CSS
+animations whose delay carries a registered non-inherited `--mbclk`, written only when that element's step changes, on a 12 fps
+grid) and its `CLOCK_CSS` already overrides the bob's play state and delay under `html[data-mbclock]`. With item 1 + 4a previewed
+(`--css`), the 30-cell tumble at 4x went p50 33 -> 16.7 ms.

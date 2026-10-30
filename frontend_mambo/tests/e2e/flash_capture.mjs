@@ -7,7 +7,9 @@
 // Records the page with the CDP screencast (every compositor frame, jpeg 320 px), decodes the frames in a blank page, computes the
 // WCAG relative luminance of the whole frame and of 25 overlapping windows (each 1/3 x 1/3 of the frame, ~ the 10 degree area),
 // and counts flashes: a flash is a pair of opposing changes of >= 0.10 relative luminance with the darker state < 0.80. It also
-// reports saturated-red area (R / (R+G+B) >= 0.8) per frame. Exit code 1 when any window exceeds 2 flashes in a 1 s window.
+// reports saturated-red area (R / (R+G+B) >= 0.8) per frame, and `pageFlashes` (animations started on #flash) next to
+// `governorFlashes` (entries in the shared governor's log): `sharedGovernor` is true once every page flash goes through flash.js.
+// Exit code 1 when any window exceeds 2 flashes in a 1 s window.
 // BASE=http://host:port reuses a running server instead of starting one.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,6 +34,13 @@ try {
   if (!book) throw new Error('no book');
   const maxMs = Number(A['max-ms'] || 40000);
   const t0 = Date.now();
+  // count every animation started on the full-screen #flash element, whoever started it: `pageFlashes` vs `governorFlashes` shows
+  // whether all of the page's flashes go through the ONE shared governor (src/render/flash.js)
+  await page.evaluate(() => {
+    window.__flashAnims = 0;
+    const o = Element.prototype.animate;
+    Element.prototype.animate = function (...a) { if (this.id === 'flash') window.__flashAnims++; return o.apply(this, a); };
+  });
   const frames = await screencast(cdp, async () => {
     await page.evaluate(({ ev, turbo }) => { window.__done = false; H.play(ev, { turbo }).finally(() => { window.__done = true; }); }, { ev: book.events, turbo: !!A.turbo });
     await page.waitForFunction(() => window.__done === true, null, { timeout: maxMs, polling: 250 }).catch(() => {});
@@ -55,9 +64,12 @@ try {
     transitionsFullFrame: per[0] ? per[0].transitions.length : 0,
     maxSaturatedRedShare: +redMax.toFixed(3),
     governorFlashes: govLog.length,
+    pageFlashes: await page.evaluate(() => window.__flashAnims || 0),
+    sharedGovernor: null,
     pageErrors: errors.slice(0, 10),
     pass: worst.v <= 2,
   };
+  res.sharedGovernor = res.pageFlashes === 0 ? null : res.governorFlashes >= res.pageFlashes;
   console.log(JSON.stringify(res, null, 2));
   if (A.json) fs.writeFileSync(path.resolve(A.json), JSON.stringify({ ...res, series: series.map((f) => ({ t: Math.round(f.t), L: +f.lum[0].toFixed(4) })) }, null, 1));
   if (!res.pass) exit = 1;

@@ -55,3 +55,28 @@ With the WP1 snippet (request WP5_to_WP1) idle is 33 layers, but while 30 cells 
 layer: median 54, peak 70 during the tumble book. Animating one wrapper per column (6 layers) for the gravity drop, or the drop as
 a custom-property animation (`el.animate([{ '--dy': '-300%' }, { '--dy': '0%' }])` with `transform: translateY(var(--dy))`,
 main thread, no layer) would keep the peak under 45. Your call: per-cell compositor layers are cheaper on the main thread.
+
+## Follow-up (WP5 fixer pass, 2026-10-30): items 2 and 6 are now blocking two WP5 acceptance checks
+
+Reviewer finding GOV-not-shared: `node tests/e2e/flash_capture.mjs --book fixture --turbo` now prints `pageFlashes` (animations
+started on `#flash`, whoever started them) next to `governorFlashes` (the shared governor's log). Today: `pageFlashes: 7,
+governorFlashes: 0, sharedGovernor: false` because `index.js flash()` (lines ~356-369) keeps its own `flashAt` budget. Please apply
+item 2 exactly (import `flash as flashGov` from './flash.js', `flashGov.attach(flashEl)`, body = `flashGov.fire(peak, T(ms), color)`).
+fx.js's per-cell break flash is already gated on `flash.mode === 'flash' && flash.allow()` (and at most 3 cells per blast), so once
+index.js fires through the governor the break flashes stop as soon as the page budget is used. Check: `sharedGovernor: true`.
+
+Reviewer finding ACC-layers-30-cells: `perf_tumble.mjs` now gates the layers WHILE the tumble plays (`layersOk` = idle <= 45 and
+p90 <= 45). With the WP1 snippet: idle 33, median 45, p90 56, max 64 -> FAIL, all of it from the per-cell drop animations (item 6).
+Please animate the gravity drop per column wrapper (6 layers) or as a custom property (`--dy`, main thread, no layer).
+
+New, frame budget (ACC-p95-frame): CPU profile of the 30-cell tumble at 4x (tests/e2e harness): `index.js:shortSide` (the camera
+option `shortSide: () => Math.min(app.clientWidth, app.clientHeight)`) plus `getBoundingClientRect` cost about 1.2 s of 33 s, mostly
+forced synchronous layout because it is read every camera frame right after the rig and the board wrote to the DOM. Cache it:
+```js
+let SHORT = 600;
+const measureShort = () => { SHORT = Math.min(app.clientWidth || 600, app.clientHeight || 600); };
+measureShort(); new ResizeObserver(measureShort).observe(app);
+const camera = createCamera({ targets: () => [root, scene && scene.host], shortSide: () => SHORT });
+```
+and do the same for any `getBoundingClientRect` read inside a per-frame loop (`cellCenter` during the drop: read the board rect once
+per tumble step, not per cell).

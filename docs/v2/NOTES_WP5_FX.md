@@ -96,3 +96,53 @@ on an idle machine after WP1 (CSS), WP3 (rig 12 fps) and WP4 (per-column drop) l
   boundaries, but no layer per part; software compositing (headless, many low-end devices) pays per layer per frame.
 - The quality governor never writes settings; it publishes a ceiling (`effective()`, `data-quality`).
 - Band edges = round(cap * {0.16, 0.40, 0.80}) + 1, which gives exactly 17/41/81 at cap 100.
+
+## Fixer pass (2026-10-30, after the independent review: ACC-p95-frame, ACC-layers-30-cells, GOV-not-shared)
+
+Machine load average 1-2 during these runs (much quieter than before), so the numbers below are comparable to each other.
+
+### What changed (WP5 files only)
+1. **No rAF loop left in WP5 code.** `fx.js` draws from ONE `setTimeout(FRAME_MS)` loop that runs only while particles / the iris are
+   alive and feeds the quality governor from that loop (`quality.sampleLag(lateness)`, `quality.drive(true/false)`); `quality.js`'s
+   probe is now a 12 fps timer that yields while a driver is active (`keepAlive` from wire.js; `monitor()`); the wire spark hop
+   (`wire.js`) and the scene twinkle canvas (`scene.js`, 140 ms) use one timer per step instead of a rAF that skipped frames.
+2. **Symbols: ONE stepped clock for every looping symbol animation** (`symbols.js`, `clocked()`, `loopStep()`, `CLOCK_CSS`,
+   `startIdleClock()` from `ensureSprite()`). Finding: the ~80 custom-property idle loops are main-thread animations, serviced EVERY
+   frame (idle at 4x: p50 33 / p95 50-67 ms; with them off 16.7 / 33). Now they stay CSS animations but are paused under
+   `html[data-mbclock]`, and their delay is `calc(<phase> - var(--mbclk))`; `--mbclk` is a registered NON-inherited `<time>` written
+   inline only on an element whose step index changes, on a 12 fps grid (reads via `#game.getAnimations({subtree:true})`, never
+   `pause()`/`currentTime`). Two dead ends recorded: (a) pausing through WAAPI detaches the CSS animation in Chrome, so Calm / Still
+   could not remove it any more (verified in a minimal page); (b) one inherited `--mbclk` on `#game` restyled the whole board subtree
+   each tick: p50 100 ms, much worse. Calm / Still / quality lite+calm still remove the loops in CSS (Still screenshot: 0 animations on
+   the board, 0 clock writes). Dim cells hold step 0.
+3. `#sym-sprite *{animation:none}`: the hidden 0x0 sprite ran ~20 copies of the loops on every frame for nothing.
+4. `fx.js` per-cell break flash: gated by the shared governor (`flash.mode === 'flash' && flash.allow()`), and only on the first
+   `FX_CAPS.breakFlashCells` (3) cells of one blast (cells broken within 400 ms).
+5. `perf_tumble.mjs`: `layersOk` = idle <= 45 AND p90 of the layer counts sampled during the tumble <= 45; `layersMaxOk` reports the
+   worst frame. `flash_capture.mjs`: `pageFlashes` (animations started on `#flash` by anyone) and `sharedGovernor`.
+6. Tests: `tests/fx` 12 (new: quality timer probe / lag / driver hand-off; clocked CSS + loopStep). v1 `tests/core tests/text` 60/60.
+
+### Measurements (`perf_tumble.mjs --rate 4 --runs 3`, 30-cell tumble, step 8+, 1024x576)
+| state | p50 | p95 | p99 | idle layers | layers during tumble (median / p90 / max) |
+|---|---|---|---|---|---|
+| committed before this pass (HEAD, WP1 snippet previewed, same quiet machine) | 33.3 | 66.7 | 133 | 33 | 46 / 56 / 64 |
+| this pass, nothing previewed | 33.4 | 83.3 | 167 | 94 | 97 / 100 / 103 |
+| this pass + WP1 snippet + `#loading` animations off (both previewed with `--css`) | **16.7** | 66.7 | 133 | 33 | 45 / 56 / 64 |
+| same previews, rate 1 | 16.7 | 33.3 | 33.4 | 33 | - |
+Idle (no book) at 4x with the previews: p50 16.7, p95 33 (before this pass: 33 / 50-67).
+
+**ACC-p95-frame: still FAIL (p95 66.7 ms vs 16.6).** p50 now meets one vsync. CPU profile of the tumble at 4x after this pass:
+64% native (style / layout / paint / commit), heroine rig JS ~12% + setAttribute 3.8% (WP3), `index.js shortSide` +
+`getBoundingClientRect` ~3.6% forced layout (WP4, camera), fx.js 0.5%, symbols.js 0.1%, the clock's getAnimations 1%.
+What remains is outside WP5 files: requests updated (WP5_to_WP1 item 4: loading-screen animations run forever under visibility:hidden,
+the largest idle cost; WP5_to_WP4 follow-up: shared flash governor, per-column drop, cached shortSide; WP5_to_WP3 follow-up: rig at
+12 fps, skip unchanged setAttribute). Re-run `perf_tumble.mjs --rate 4 --runs 3` after they land. Do not report this check as passed.
+
+**ACC-layers-30-cells: FAIL as now gated** (p90 56, max 64 with the WP1 snippet; 33 idle). The extra layers are the per-cell WAAPI
+drop transforms in index.js (WP4, request item 6).
+
+**GOV-not-shared:** fx.js fixed (above). Page: `flash_capture --book fixture --turbo`: max 2 flashes/s (PASS, at the limit), full frame
+1, red share 0.041, `pageFlashes 7, governorFlashes 0, sharedGovernor false` until WP4 applies request item 2. Busy dev book: 1/s.
+
+Screens viewed: `/tmp/claude-0/scratch/wp5/idle_full_a.png` (board renders, symbols intact), `blast.png` (free spins tumble, dial
+LARGO), Still run (no board animation).

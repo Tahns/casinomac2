@@ -321,12 +321,15 @@ export function ensureSprite() {
 // unsynchronised changes a second land on almost every frame). Measured idle at 4x CPU throttle (harness, 1024x576): p50 33 ms /
 // p95 50-67 ms with the loops running, 16.7 / 33 ms with them off.
 // The clock keeps every loop a CSS animation (values, keyframes, per-cell phases and state durations stay in the CSS above, and
-// Calm / Still / quality lite+calm still remove them in CSS) but PAUSES them (`html[data-mbclock]`) and folds a shared clock into
-// their delay: `animation-delay: calc(<phase> - var(--mbclk))`. A paused animation shows the value at -delay = clock + phase, so
-// advancing --mbclk (one custom property on #game) on the 12 fps grid steps every symbol together: at most 12 restyles a second
-// and no frame at all in between. (Pausing through the Web Animations API instead would detach them from CSS in Chrome: Calm and
-// Still could no longer remove them.) Without JS, or before the clock starts, the loops simply run as plain CSS animations.
-export const IDLE_CLOCK = Object.freeze({ gridMs: 1000 / 12 });
+// Calm / Still / quality lite+calm still remove them in CSS) but PAUSES them (`html[data-mbclock]`) and folds a clock into their
+// delay: `animation-delay: calc(<phase> - var(--mbclk))`. A paused animation shows its value at -delay = clock + phase. --mbclk is
+// a registered NON-inherited <time>, written inline on an animated element only when that element's step index changes, on a
+// shared 12 fps grid: at most 12 restyles a second for all symbols together, each touching only the elements that change, and no
+// frame at all in between. (Not on a common ancestor: an inherited clock restyled the whole board subtree on every tick, which
+// measured worse than the free-running loops. And not through anim.pause()/currentTime: Chrome then detaches the animation from
+// CSS, so Calm and Still could no longer remove it.) Without JS, or before the clock starts, the loops run as plain CSS.
+// The hidden <symbol> sprite (#sym-sprite, 0x0) used to run its own ~20 copies of the loops, every frame, for nothing: off.
+export const IDLE_CLOCK = Object.freeze({ gridMs: 1000 / 12, maxWaitMs: 500 });
 /** Pure: add the shared clock to every animation rule (outside @keyframes) of a stylesheet. */
 export function clocked(css) {
   return String(css).replace(/(@keyframes\s+[\w-]+\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\})|([^{}]+)\{([^{}]*)\}/g, (m, kf, sel, body) => {
@@ -339,21 +342,69 @@ export function clocked(css) {
     return `${sel}{${b}}`;
   });
 }
-export const CLOCK_CSS = `html[data-mbclock] .mb *{animation-play-state:paused!important}
+/** Pure: the step index of an infinite loop at active time `active` (ms) and the active time of its next step change.
+ *  offsets = sorted keyframe offsets in [0,1]. Returns null for a zero duration. */
+export function loopStep(active, duration, offsets) {
+  const dur = Number(duration);
+  if (!(dur > 0)) return null;
+  if (active < 0) return { key: -1, next: 0 };
+  const it = Math.floor(active / dur), p = (active - it * dur) / dur;
+  const offs = offsets && offsets.length ? offsets : [0];
+  let i = 0;
+  while (i + 1 < offs.length && offs[i + 1] <= p) i++;
+  const nextOff = i + 1 < offs.length ? offs[i + 1] : 1;
+  return { key: it * 1000 + i, next: (it + nextOff) * dur };
+}
+export const CLOCK_CSS = `@property --mbclk{syntax:"<time>";inherits:false;initial-value:0s}
+#sym-sprite *{animation:none!important}
+html[data-mbclock] .mb *{animation-play-state:paused!important}
 html[data-mbclock] .cell:not(.win):not(.dim):not(.fuse):not(.adim) .sym-svg.mb{animation-play-state:paused!important;animation-delay:calc(var(--c,0)*-.43s + var(--r,0)*-.71s - var(--mbclk,0s))!important}
 html[data-mbclock] .cell.dim .mb *,html[data-mbclock] .cell.adim .mb *{animation-delay:0s!important}`;
 let clockTimer = 0;
-function clockHost() { return document.getElementById('game') || document.documentElement; }
+const clockSeen = new WeakMap(); // animation -> { skip } | { offs }
+const clockOf = new WeakMap();   // element -> the --mbclk (ms) written on it
 function idleTick() {
   clockTimer = 0;
-  const g = IDLE_CLOCK.gridMs, now = performance.now();
-  if (!document.hidden) { try { clockHost().style.setProperty('--mbclk', (Math.floor(now / g) * g / 1000).toFixed(3) + 's'); } catch (e) { /* ignore */ } }
-  clockTimer = setTimeout(idleTick, Math.max(1, (Math.floor(now / g) + 1) * g - now));
+  const g = IDLE_CLOCK.gridMs, now = performance.now(), T = Math.floor(now / g) * g;
+  let next = now + IDLE_CLOCK.maxWaitMs;
+  if (!document.hidden && typeof document.getAnimations === 'function') {
+    let list = [];
+    // the board only (Element.getAnimations subtree): the scene, logo and HUD animations are not walked on every tick
+    const host = document.getElementById('game');
+    try { list = host && host.getAnimations ? host.getAnimations({ subtree: true }) : document.getAnimations(); } catch (e) { list = []; }
+    const writes = [];
+    for (const a of list) {
+      let rec = clockSeen.get(a);
+      if (!rec) {
+        const el = a.effect && a.effect.target;
+        const ok = typeof a.animationName === 'string' && el && el.closest && el.closest('.mb');
+        rec = ok ? { offs: null } : { skip: true };
+        clockSeen.set(a, rec);
+      }
+      if (rec.skip) continue;
+      try { // reads only: the animation stays owned by CSS
+        if (a.playState !== 'paused') continue; // running = clock CSS not applied yet; idle = removed by CSS
+        const el = a.effect.target, tm = a.effect.getTiming();
+        if (tm.iterations !== Infinity) continue;
+        if (!rec.offs) rec.offs = [...new Set(a.effect.getKeyframes().map((kf) => kf.computedOffset))].sort((x, y) => x - y);
+        const cur = clockOf.get(el) || 0;
+        const phase = (Number(tm.delay) || 0) + cur;            // delay = phase - clock
+        const was = loopStep(cur - phase, tm.duration, rec.offs), now1 = loopStep(T - phase, tm.duration, rec.offs);
+        if (!was || !now1) continue;
+        if (was.key !== now1.key) writes.push([el, T]);
+        const nx = now1.next + phase;                            // document time of the next change
+        if (nx < next) next = nx;
+      } catch (e) { rec.skip = true; }
+    }
+    for (const [el, t] of writes) { if (clockOf.get(el) !== t) { clockOf.set(el, t); el.style.setProperty('--mbclk', (t / 1000).toFixed(3) + 's'); } }
+  }
+  const at = Math.max(now + 1, Math.ceil((next + 0.01) / g) * g);
+  clockTimer = setTimeout(idleTick, at - now);
 }
 export function startIdleClock() {
   if (clockTimer || typeof document === 'undefined' || typeof setTimeout !== 'function') return;
-  idleTick();
   try { document.documentElement.setAttribute('data-mbclock', ''); } catch (e) { /* ignore */ }
+  clockTimer = setTimeout(idleTick, 0);
 }
 export function stopIdleClock() {
   if (clockTimer) clearTimeout(clockTimer);
