@@ -25,6 +25,7 @@ export const FX_CAPS = Object.freeze({
   breakFlashPeak: 0.5,       // the per-cell break flash (cream)
   canvasBytes: 24 * 1048576, // backing store of the overlay canvas (W * H * dpr^2 * 4); dpr is lowered to stay under it
   maxDpr: 2,
+  fps: 12,                   // the canvas is redrawn on the limited-animation grid only (physics still integrates real time)
 });
 /** Pure: the device pixel ratio to use for a W x H css px canvas under the byte cap. */
 export function cappedDpr(W, H, dpr, capBytes = FX_CAPS.canvasBytes, maxDpr = FX_CAPS.maxDpr) {
@@ -46,7 +47,8 @@ export function createFx(app) {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, dpr = 1;
   const parts = [];
-  let raf = 0, last = 0;
+  let raf = 0, last = 0, lastStep = -1, acc = 0;
+  const FRAME_MS = 1000 / FX_CAPS.fps;
   const DUST = '#E4DAEE';
   let irisP = null, irisTimer = 0;
 
@@ -221,7 +223,13 @@ export function createFx(app) {
 
   function tick(now) {
     const raw = now - last; if (!quality.monitoring) quality.sample(raw);
-    const dt = Math.min(0.05, raw / 1000); last = now;
+    last = now; acc += Math.min(50, Math.max(0, raw));
+    // redraw only when the 12 fps grid advances: 5x fewer canvas uploads / recomposites than drawing every frame (the cut-paper
+    // look already stepped its progress at 12 fps; positions now step too)
+    const stepIdx = Math.floor(now / FRAME_MS);
+    if (stepIdx === lastStep) { raf = requestAnimationFrame(tick); return; }
+    lastStep = stepIdx;
+    const dt = Math.min(0.1, acc / 1000); acc = 0;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';

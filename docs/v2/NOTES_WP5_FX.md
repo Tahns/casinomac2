@@ -54,9 +54,41 @@ Restart note: the user changed the model engine and asked to redo the package. A
 - Layers at idle 1024x576: v1 174; WP5 files 94; WP5 + WP1 snippet 33. During a tumble (cells animate transform via WAAPI in
   index.js): median ~54, peak ~70 with the WP1 snippet (transient, while 30 cells drop).
 
+## Second pass (after the first commit 93aeb06)
+
+- fx.js redraws the overlay canvas on the 12 fps grid only (FX_CAPS.fps; physics integrates real time): 5x fewer canvas uploads.
+- quality.keepAlive(ms): fx.js / wire.js keep a private rAF probe alive only while effects play.
+- wire.css: Still stops the spark spin and the bomb shake.
+- Requests written: WP5_to_WP1 (styles.css layer snippet, Clearance Dial strings, fx.bam), WP5_to_WP4 (missionAssigned ->
+  meter.mission, one flash governor, camera in the wire ctx, quality.effective, confetti maxWin, per-column drop for the layer
+  peak), WP5_to_WP3 (rig idle at 12 fps), WP5_to_WP11 (rules text rename), WP5_to_WP10 (scripts, tests, '+N' chip).
+
+## Final measurements (shared container, load average 10-18 on 4 cores)
+
+| check | result |
+|---|---|
+| flash, busiest bonus fixture (id 95271, turbo) | max 2 flashes/s in the worst window, 1 on the full frame: PASS (at the limit) |
+| flash, busy dev book (free spin, dial step 8, 9 tumbles, blast) | 1 / s: PASS |
+| flash, fixture with Screen flash effects off | 1 / s: PASS |
+| saturated red share | <= 4.1% of any window |
+| idle layers 1024x576 | v1 174, WP5 files 94, WP5 + WP1 snippet 33 (<= 45 PASS once WP1 lands it) |
+| layers while a 30-cell tumble plays (WP1 snippet) | median 45-47, peak 64 (cells animated per cell by index.js; request WP5_to_WP4 item 6) |
+| canvas, 390x844 dpr 3 touch | 29.7 MB (<= 96 PASS); fx overlay capped at 24 MB whatever the dpr |
+| frame p95, tumble step 8+, 4x CPU | v1 233 ms, v2 167-183 ms, p50 v1 83 -> v2 50-67 ms. FAIL vs 16.6 ms |
+| frame p95, same, no throttle | v1 200 ms, v2 100 ms; p50 v1 33 -> v2 16.7 ms |
+| idle VizCompositor thread | 79-85% -> 30-37% of a core (stepped blinds) |
+
+The 16.6 ms p95 at 4x throttle is NOT met and cannot be judged on this machine: other agents keep the 4 cores at load 10-18, so
+even an unthrottled run misses frames, and the renderer main thread is about half busy at rate 1 with most of it outside WP5 files
+(heroine rig at 60 fps with a layout per frame, per-cell WAAPI in index.js). Re-run `node tests/e2e/perf_tumble.mjs --rate 4 --runs 3`
+on an idle machine after WP1 (CSS), WP3 (rig 12 fps) and WP4 (per-column drop) land their parts.
+
 ## Left / open
 
-- see "Final status" below once written.
+- Logo, fuse.js (legacy, unused by the v2 renderer) unchanged. Scene, logo small loops (sat spin, dish, logo stars) still compositor
+  animations (about 8 small layers); fine within the budget.
+- Wire geometry still 6x5 (floor plans are milestone 2).
+- Dial stamp / chip need WP4 to call meter.mission(ev) for non-default steps (Blackout step 3); v1 books already show +8.
 
 ## Decisions
 
