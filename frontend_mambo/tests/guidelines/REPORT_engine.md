@@ -1,0 +1,19 @@
+# Engine self-check, scripted part (WP10, milestones 2 and 3)
+
+Run 2026-10-30T23:30:33.142Z. 13 PASS, 0 FAIL, 0 AT RISK. The runtime checks of run.mjs ([181]-[243]) are in REPORT.md.
+
+| Id | Verdict | Check | Evidence |
+|---|---|---|---|
+| MATH-MODES | PASS | index.json: at most 20 modes, every events / weights file present | 4 modes: base (cost 1), bonus (cost 100), entrance_orders (cost 100), entrance_blackout (cost 100)<br>files not found in publish_files or lookup_tables: [] (the release pack is built by tools/build/pack_math.mjs) |
+| 25 | PASS | RTP and max win per mode: recomputed from the lookup tables == rules data == 96.00% / 5,000x | base: RTP from math/games/agent_mambo/library/publish_files/lookUpTable_base_0.csv (112500 rows) = 96.0000%, rules 96.00%; max win 5000x, rules 5000x <br>bonus: RTP from math/games/agent_mambo/library/publish_files/lookUpTable_bonus_0.csv (100000 rows) = 96.0000%, rules 96.00%; max win 5000x, rules 5000x <br>entrance_orders: RTP from math/games/agent_mambo/library/publish_files/lookUpTable_entrance_orders_0.csv (103125 rows) = 96.0000%, rules 96.00%; max win 5000x, rules 5000x <br>entrance_blackout: RTP from math/games/agent_mambo/library/publish_files/lookUpTable_entrance_blackout_0.csv (103125 rows) = 96.0000%, rules 96.00%; max win 5000x, rules 5000x  |
+| 27 | PASS | every mode described with its cost, consistent with index.json (data side) | base: index.json cost 1, rules 1 <br>bonus: index.json cost 100, rules 100 <br>entrance_orders: index.json cost 100, rules 100 <br>entrance_blackout: index.json cost 100, rules 100 <br>modes in the rules but not in index.json: [] |
+| 266 | PASS | probabilities shown on the door cards match the math (data side) | bonus (Stage Door): median 65.6x from the table, shares.json 65.6x, rules data 65.6x; P(R > 100x) table 31.00%, shares.json 31.00%, rules data 31.00% <br>entrance_orders (Coat Check): median 66.8x from the table, shares.json 66.8x, rules data 66.8x; P(R > 100x) table 31.00%, shares.json 31.00%, rules data 31.00% <br>entrance_blackout (Service Stairs): median 66.2x from the table, shares.json 66.2x, rules data 66.2x; P(R > 100x) table 31.00%, shares.json 31.00%, rules data 31.00%  |
+| 275 | PASS | no Stake Engine loader strings in the shipped source or the built front | source files scanned: 70; hits []; dist hits [] |
+| 213 | PASS | title without restricted words (trademark search stays a human item) | <title>Agent Mambo</title> |
+| 223 | PASS | double-tap zoom off | <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"><br>touch-action none\|manipulation in styles.css: true |
+| 185 | PASS | disclaimer verbatim in the shipped source | found in ["src/rules.js"] |
+| EXT-SRC | PASS | no external host referenced by src / href / url() / import / fetch in the shipped source | hits [] |
+| 266-UI | PASS | door cards in the real game show the figures of the math (median, share above the price, RTP, max win) | bonus: "Stage Door Cost: $100.00 RTP 96.00% Max win 5,000x Median round 65.6x 31% of rounds return more than the cost"<br>entrance_orders: "Coat Check Cost: $100.00 RTP 96.00% Max win 5,000x Median round 66.8x 31% of rounds return more than the cost"<br>entrance_blackout: "Service Stairs Cost: $100.00 RTP 96.00% Max win 5,000x Median round 66.2x 31% of rounds return more than the cost" |
+| 27-UI | PASS | rules screen: the three doors, their missions, the floor plans, 100x cost and 96.00% shown | missing [] (text scanned 13802 chars) |
+| 78 | PASS | social currencies on the door picker: "SC" / "GC", never "$" | XSC: "$" present=false, "100.00 SC" present=true<br>XGC: "$" present=false, "100.00 GC" present=true<br>XEC: "$" present=false, "100.00 SC" present=true |
+| CONSOLE-ENGINE | PASS | no console / page error, no external request in these sessions | errors []; external [] |

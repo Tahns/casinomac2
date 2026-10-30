@@ -23,3 +23,14 @@ Ports 5940-5959 (kill only own PIDs). Scratch: /tmp/claude-0/scratch/wp10/.
 ## Next
 - full modes run (bg) -> guideline runner full -> shell.mjs -> browser suites -> perf baseline (idle machine) -> flash on
   Orders / Blackout books -> build + verify -> G2G3_REPORT.md -> commit.
+
+## Results (2026-10-30, all on own ports)
+- runner full 46 PASS / 0 FAIL / 1 AT RISK ([275] JSON key; runner fixed; QA_ONLY=275 PASS). shell.mjs 14/0. engine 13/0.
+- modes 358/0 (first full run; rerun after wire/scene changes in progress -> modes_final.log). smoke 72/72.
+- unit: core+text 115, heroine+render 88, npm test 214. heroine browser 41/41, visual 17/0, render 366/366, render_v2 123/123,
+  layers 74/0, audio gesture 6/0, menu ALL PASSED, audio ALL PASSED.
+- flash Orders #700 / Blackout #1459 normal + turbo: max 2/s, governor 10/10 (tests/e2e/flash_m23.json).
+- baseline_m23.json: p95 FAIL (30 cells 33-67 ms, 36 cells 50-83 ms); layers 30 cells PASS p90 36-41, 36 cells FAIL p90 46-50.
+- build + verify green (zip v2.0.0 sha 3a817402...).
+- Other packages' screenshots rewritten by their suites were restored with git checkout (they were clean before).
+- Report: docs/v2/G2G3_REPORT.md. Requests: WP10_to_WP1, WP10_to_WP6, WP10_to_WP4 (M2/M3 items 1-3).

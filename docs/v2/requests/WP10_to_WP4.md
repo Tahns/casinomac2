@@ -35,3 +35,12 @@ if (motion.particles > 0) {
 ### 2. FYI: applied in WP5 files by WP10
 `src/render/wire.js` is now rows-aware (`rowsAware: true`): your Annex adapter (`wireHost`, `WO`) steps aside on its own. You may delete
 it when convenient; it is inert now. `src/render/scene.js` keys its free-spins palette on `<html data-mission>` (WP6_to_WP5).
+
+### 3. 36-cell (Annex) baseline: promoted layers over budget (copy to WP6, the blueprint is one of the suspects)
+`node tests/e2e/baseline.mjs --rate 4 --runs 2` (frontend_mambo/tests/e2e/baseline_m23.json): the real Annex book 25532 (layout annex,
+4 tumbles) peaks at p90 46-50 / max 51-56 compositor layers at the four viewports (budget 45; the 30-cell devbook is p90 36-41 there).
+The layer probe samples from the start of the book, so the layout event (old board drop-out, 417 ms frame morph, WP6 blueprint draw and
+name stamp) is inside the window. Please check which elements are promoted during the Annex spin (DevTools Layers on that book, or
+`perf_tumble.mjs --fixture fixtures/books_base_sample.jsonl --id 25532 --from-step 1 --runs 1`) and drop the promotion of the ones
+that animate only once (the morph wrapper and the blueprint strokes are the likely ones: animate a custom property, or remove
+`will-change` once the animation has finished).
