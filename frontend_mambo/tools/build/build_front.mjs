@@ -140,9 +140,10 @@ for (const r of files) {
   });
 }
 // External hosts: report all; fail on any that is not in code paths documented as RGS (params.js builds the scheme only).
-const HOST_ALLOW_FILES = []; // none: no host literals are expected in the bundle
+// Licence texts must ship verbatim and quote their own URL; they are never fetched.
+const HOST_ALLOW_FILES = [/^assets\/fonts\/LICENSE-[^:/]+\.txt:\d+$/];
 for (const [k, u] of extHosts) {
-  if (HOST_ALLOW_FILES.some((f) => k.startsWith(f))) continue;
+  if (HOST_ALLOW_FILES.some((re) => re.test(k))) continue;
   problems.push(`external URL literal ${k}: ${u}`);
 }
 for (const m of missing) problems.push('missing reference: ' + m);

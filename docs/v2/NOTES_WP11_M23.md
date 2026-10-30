@@ -47,3 +47,7 @@ createMascotV1 (WP3 item 2); VERSION 2.0.0; build + verify:build on 5920/5921; g
 shortest book first in each mode (rerun 172/173/188: PASS). The other 7 (`[31]`, `[UNL-MIN-*]`, `[WIN-bonus-*]`) come from the three doors now
 being offered (nothing pre-selected by design, CONFIRM disabled until a door is chosen): runner fix in WP11_to_WP10 item 4, verified on a
 scratch copy (`[31]`, `[WIN-bonus-bonus]` PASS). With `shares` stripped from the data they PASS unchanged, so the data is right.
+
+## Review fix (BUILD-RED)
+- WP1 shipped assets/fonts/LICENSE-LuckiestGuy-Apache-2.0.txt quoting apache.org URLs; build_front.mjs flagged them. HOST_ALLOW_FILES now exempts /^assets\/fonts\/LICENSE-[^:/]+\.txt:\d+$/ (licence texts ship verbatim, never fetched).
+- npm run build rc=0, 0 problems; verify:build (5921/5922) green; core+text 115/115, heroine+render 88/88.
