@@ -110,8 +110,10 @@ async function main() {
     const walk = (d) => { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, f.name); if (f.isDirectory()) { if (!['node_modules', 'tests', 'tools', 'fixtures', 'shots'].includes(f.name)) walk(p); } else if (/\.(js|mjs|html|css|json|svg|txt)$/.test(f.name) && !/^(CONTRACT|NOTES)/.test(f.name) && f.name !== 'package.json') { fs.readFileSync(p, 'utf8').split('\n').forEach((l, i) => { if (/stake/i.test(l)) srcHits.push(`${path.relative(FRONT, p)}:${i + 1}: ${snippet(l, 100)}`); }); } } };
     walk(FRONT); await s.close();
     const bad = srcHits.filter((h) => re.test(h)); const loose = srcHits.filter((h) => !re.test(h) && !/i18n\/social\.js:\d+:\s*\[\/\\bstake\\b\/gi,/.test(h)); // social.js sanitizer regex (source only, never displayed) is benign
+    // a camelCase JSON key of the data files (e.g. rules_data.json "pGtStake", a math statistic) is never shown: the visible-text scans ([77], [225]) cover display
+    const keyOnly = (h) => /\.json:\d+:\s*"[a-z][A-Za-z0-9]*Stake[A-Za-z0-9]*"\s*:/.test(h); const keys = loose.filter(keyOnly); for (const k of keys) loose.splice(loose.indexOf(k), 1);
     const dom = re.test(html) || re.test(txt);
-    return [!dom && bad.length === 0 && reqUrls.length === 0 ? (loose.length ? RISK : PASS) : FAIL, 'DOM hit=' + dom, 'network urls with "stake": ' + J(reqUrls), 'source "stake engine" hits: ' + J(bad.slice(0, 5)), loose.length ? 'other "stake" occurrences (check social wording): ' + J(loose.slice(0, 5)) : null];
+    return [!dom && bad.length === 0 && reqUrls.length === 0 ? (loose.length ? RISK : PASS) : FAIL, 'DOM hit=' + dom, 'network urls with "stake": ' + J(reqUrls), 'source "stake engine" hits: ' + J(bad.slice(0, 5)), loose.length ? 'other "stake" occurrences (check social wording): ' + J(loose.slice(0, 5)) : null, keys.length ? 'JSON keys only, never displayed (benign): ' + J(keys.slice(0, 4)) : null];
   });
 
   await check(242, 'dynamic bet config (1.00-2.00, 4 levels, default in middle)', async () => {
