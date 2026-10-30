@@ -223,7 +223,9 @@ if (want('B')) {
           const R = end.amount / 100;
           if (!(R > C * (1 + 1e-9))) {
             const deb = banners.filter((l) => /debrief/.test(l.cls));
-            check(`B ${mode}/${cat} #${id}: R ${R}x <= ${C}x -> neutral Debrief with FILED, no rays`, deb.length === 1 && stamps.includes('FILED') && !stamps.includes('DECLASSIFIED') && cnt(log, (l) => l.kind === 'dom' && l.what === 'rays') === 0, `debrief ${deb.length}, stamps ${stamps}`);
+            // rays of the feature START (freeSpinTrigger banner) are fine; the end of a quiet feature must have none
+            const raysAtEnd = groupLog(log).filter((g) => g.type === 'freeSpinEnd').reduce((n, g) => n + g.items.filter((l) => l.kind === 'dom' && l.what === 'rays').length, 0);
+            check(`B ${mode}/${cat} #${id}: R ${R}x <= ${C}x -> neutral Debrief with FILED, no rays`, deb.length === 1 && stamps.includes('FILED') && !stamps.includes('DECLASSIFIED') && raysAtEnd === 0, `debrief ${deb.length}, stamps ${stamps}, rays at the end ${raysAtEnd}`);
           } else {
             check(`B ${mode}/${cat} #${id}: R ${R}x > ${C}x -> DECLASSIFIED report`, stamps.includes('DECLASSIFIED') && !stamps.includes('FILED'), `stamps ${stamps}`);
           }
@@ -494,11 +496,11 @@ if (want('G') && SHOTS_ON) {
     await ctx.close();
   }
   const P = picks();
-  const pick = (mode, cat, k = 0) => (P[mode][cat] || []).filter((i) => books(mode).has(i))[k];
+  void P;
   await realShots('base', 69089, [{ tag: 'wp4_quiet_result', when: (s) => s.out && s.pop, delay: 350 }]);          // 1.0x exactly: R == C is quiet
   await realShots('base', 72928, [{ tag: 'wp4_l2_win', when: (s) => s.out && s.pop && s.black, delay: 300 }]);       // 6.3x: L2 ripple
   await realShots('base', 40563, [{ tag: 'wp4_staircase_count', when: (s) => s.ban && !s.tier && s.amt && !/0\.00/.test(s.amt), delay: 150 }, { tag: 'wp4_staircase_big', when: (s) => s.tier === 'win.big', delay: 320 }]);   // feature, 28.4x
-  await realShots('base', pick('base', 'trigger', 3) || 90731, [{ tag: 'wp4_debrief_filed', when: (s) => s.debrief && s.stamp, delay: 250 }]); // feature <= 1x: neutral Debrief
+  await realShots('base', 90731, [{ tag: 'wp4_debrief_filed', when: (s) => s.debrief && s.stamp, delay: 250 }]); // feature ends at 0.1x (R <= C): neutral Debrief
 }
 
 // ================================================================ H  v1 identity

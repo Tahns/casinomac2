@@ -39,6 +39,11 @@ const CSS = `
 .cell.qw{z-index:2}
 .cell.qw .sym-svg{animation:none}
 .cell.win.rip .sym-svg{animation:none}
+/* scatter award highlight (a feature award, not a return): same look as the v1 .win squash, but a class of its own so the gate and its
+   tests can tell "the feature is awarded" from "this step returns something" */
+.cell.sct{z-index:2}
+.cell.sct:not(.win):not(.dim):not(.fuse):not(.adim) .sym-svg{animation:squash .75s infinite}
+html:not([data-motion="full"]) .cell.sct:not(.win):not(.dim):not(.fuse):not(.adim) .sym-svg{animation:none;transform:scale(1.08)}
 .outlines path.q{stroke:var(--lemon)!important}
 .popups .pop.q{font-size:calc(var(--cell)*.27)}
 .chip.tw.q{background:var(--cream)}
@@ -305,7 +310,7 @@ export function createRenderer(rootEl) {
     S.meterOn = true; S.gm = v;
     meterShow(true); meter.reset(); meter.set(v);
     cue('stamp');
-    try { if (typeof audio.setMeter === 'function') audio.setMeter(v); } catch (e) { /* ignore */ }
+    audioMeter(v);
     try {
       if (motion.particles > 0) { const r = app.getBoundingClientRect(), p = cellCenter(1.2, 0.2); fxm.burstBubble(p.x, p.y, Math.min(r.width, r.height) * .22, t('meter.start')); }
     } catch (e) { /* ignore */ }
@@ -313,7 +318,16 @@ export function createRenderer(rootEl) {
   }
   function meterEnd() {
     S.meterOn = false; S.gm = 1; meterShow(false); meterReset();
-    try { if (typeof audio.setMeter === 'function') audio.setMeter(1); } catch (e) { /* ignore */ }
+    audioMeter(1);
+  }
+  // audio.setMeter(n) (WP2) fires the win-like riser when the level passes x10 and has no quiet option yet (request
+  // docs/v2/requests/WP4_to_WP2.md). On the quiet path (R <= C) the audio meter is held at x9: the bed arpeggio stays almost the same and
+  // the riser cannot start; the next meter change once the round is above its cost brings it up to the real value. The extra argument is
+  // ignored today and lets WP2 take over the decision.
+  function audioMeter(v) {
+    if (typeof audio.setMeter !== 'function') return;
+    const quiet = round.level < 1;
+    try { audio.setMeter(quiet && v >= 10 ? 9 : v, { quiet }); } catch (e) { /* ignore */ }
   }
   const METER_MILESTONES = [5, 10, 20, 50];
   async function onGlobalMult(ev) {
@@ -326,7 +340,7 @@ export function createRenderer(rootEl) {
     if (v === prev) return null;
     const from = S.lastCluster ? { x: S.lastCluster.x, y: S.lastCluster.y } : undefined;
     meter.set(v, { animate: true, from });
-    try { if (typeof audio.setMeter === 'function') audio.setMeter(v); } catch (e) { /* ignore */ }
+    audioMeter(v);
     if (S.cap && v >= S.cap) { meter.max(); }
     // the dial is a readout, not a win: she points at it on the milestones (any level); the v1 happy pose is kept for rounds above the cost
     const milestone = METER_MILESTONES.some((m) => prev < m && v >= m) || (S.cap && v >= S.cap && prev < S.cap);
@@ -397,7 +411,7 @@ export function createRenderer(rootEl) {
   }
   function clearWins() {
     outl.innerHTML = '';
-    cellsEl.querySelectorAll('.win,.qw,.rip,.dim,.fuse').forEach((e) => e.classList.remove('win', 'qw', 'rip', 'dim', 'fuse'));
+    cellsEl.querySelectorAll('.win,.qw,.rip,.dim,.fuse,.sct').forEach((e) => e.classList.remove('win', 'qw', 'rip', 'dim', 'fuse', 'sct'));
   }
   function outlinePath(cells) {
     const set = new Set(cells.map(([c, r]) => c + ',' + r)); let d = '';
@@ -493,10 +507,10 @@ export function createRenderer(rootEl) {
     for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) if (S.grid[c][r] && S.grid[c][r].name === 'S') sc.push(S.grid[c][r]);
     if (sc.length >= (S.inFs ? 3 : 4)) {
       cue('scatter', { n: sc.length - 2 }); react('anticipate', rinfo(), () => pose('shock', 1400)); say('mascot.shock');
-      sc.forEach((cell) => { cell.el.classList.add('win'); const p = cellCenter(cell.c, cell.r); fxm.sparks(p.x, p.y, FX_COLORS.coral, p.size * .35, 10, 5); fxm.glow(p.x, p.y, p.size * 1.1, '240,71,47', .7); });
+      sc.forEach((cell) => { cell.el.classList.add('sct'); const p = cellCenter(cell.c, cell.r); fxm.sparks(p.x, p.y, FX_COLORS.coral, p.size * .35, 10, 5); fxm.glow(p.x, p.y, p.size * 1.1, '240,71,47', .7); });
       shake(.6, 400);
       await sleep(sc.length >= 4 ? 700 : 900);
-      sc.forEach((cell) => cell.el.classList.remove('win'));
+      sc.forEach((cell) => cell.el.classList.remove('sct'));
     }
   }
 
@@ -713,7 +727,8 @@ export function createRenderer(rootEl) {
       const dim = document.createElement('div'); dim.className = 'banner-dim';
       const rays = document.createElement('div'); rays.className = 'rays';
       if (o.hi) rays.classList.add('hi');
-      bannerLayer.append(dim, rays, el); bannerLayer.classList.add('on');
+      // the neutral Debrief and a banner asked without rays never put the rays element in the DOM (its CSS would show it)
+      bannerLayer.append(...(debrief || o.rays === false ? [dim, el] : [dim, rays, el])); bannerLayer.classList.add('on');
       trace('banner', { kind: debrief ? 'debrief' : 'win', target, steps: plan.steps.length });
       let tapped = false, countDone = false, tierIdx = -1;
       const onSkip = () => { if (!caps().slamstop && !countDone) return; tapped = true; };
@@ -738,8 +753,11 @@ export function createRenderer(rootEl) {
       // wait until performance.now() reaches `until` (already T-scaled), the book is destroyed or the player taps
       const waitUntil = (until) => new Promise((res) => { const w = (now) => { if (S.destroyed || tapped || now >= until) res(); else requestAnimationFrame(w); }; requestAnimationFrame(w); });
       let lastTick = 0, lastCoin = 0;
+      // the staircase runs on an absolute schedule: step k ends at tAcc + T(ms of steps 0..k), so the frame quantisation of each rAF start
+      // never adds up over the 9 steps of a 5000x count (the 7.5 s acceptance limit)
+      let tAcc = 0;
       const segment = (st) => new Promise((res) => {
-        const dur = T(st.ms), t0 = performance.now();
+        const dur = T(st.ms), t0 = tAcc || performance.now();
         const step = (now) => {
           if (S.destroyed || tapped) { res(); return; }
           const p = clamp((now - t0) / dur, 0, 1);
@@ -757,7 +775,7 @@ export function createRenderer(rootEl) {
         requestAnimationFrame(step);
       });
       const beat = async (st) => {
-        const tb = performance.now();
+        const tb = tAcc || performance.now();
         tierIdx = st.tier;
         trace('beat', { tier: st.key, hitStop: st.hitStop });
         // the beat is 0.55 s of wall time: the hit-stop (83 / 100 / 125 ms) is its first moment, then the stamp, stinger and ring
@@ -773,9 +791,11 @@ export function createRenderer(rootEl) {
       const run = async () => {
         try {
           await sleep(debrief ? 250 : 450);
+          tAcc = performance.now();
           for (const st of plan.steps) {
             if (S.destroyed || tapped) break;
             if (st.type === 'count') { trace('segment', { from: st.from, to: st.to, ms: st.ms }); await segment(st); } else await beat(st);
+            tAcc += T(st.ms);
           }
           // the final value and title (a tap lands here too, straight from wherever the staircase was)
           tick(target); trace('final', { target, tapped });
@@ -875,7 +895,7 @@ export function createRenderer(rootEl) {
     const tot = Number(ev.totalFs) || 0;
     const add = tot > S.fsTotal && S.fsTotal ? tot - S.fsTotal : tot;
     cue('scatter', { n: 3 });
-    sc.forEach((cell) => { cell.el.classList.add('win'); const p = cellCenter(cell.c, cell.r); fxm.sparks(p.x, p.y, FX_COLORS.lemon, p.size * .4, 12, 6); fxm.glow(p.x, p.y, p.size * 1.2, '255,210,63', .8); });
+    sc.forEach((cell) => { cell.el.classList.add('sct'); const p = cellCenter(cell.c, cell.r); fxm.sparks(p.x, p.y, FX_COLORS.lemon, p.size * .4, 12, 6); fxm.glow(p.x, p.y, p.size * 1.2, '255,210,63', .8); });
     shake(.7, 500);
     await sleep(900);
     clearWins();
@@ -1043,7 +1063,7 @@ export function createRenderer(rootEl) {
   let sweepTimer = 0;
   sweepTimer = setInterval(() => {
     if (S.destroyed || document.hidden || motion.reduced) return;
-    const cells = cellsEl.querySelectorAll('.cell:not(.win):not(.qw):not(.dim):not(.fuse):not(.adim)');
+    const cells = cellsEl.querySelectorAll('.cell:not(.win):not(.qw):not(.sct):not(.dim):not(.fuse):not(.adim)');
     if (!cells.length) return;
     for (let k = 0; k < 2; k++) {
       const el = cells[(Math.random() * cells.length) | 0];
