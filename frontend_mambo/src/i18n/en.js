@@ -41,7 +41,7 @@ export const en = {
   'label.spinsLeft': 'Spins left',
   'label.mode': 'MODE',
   'label.multiplier': 'MULTIPLIER',
-  'label.meter': 'MISSION METER',
+  'label.meter': 'CLEARANCE DIAL',
   'meter.kept': 'KEPT',
   'meter.max': 'MAX',
   'meter.start': 'MISSION START',
@@ -93,6 +93,7 @@ export const en = {
   'win.amount': 'You won {amount}',
 
   'fs.trigger': 'MISSION BRIEFING',
+  'fs.incoming': 'MISSION INCOMING',
   'fs.start': '{n} FREE SPINS',
   'fs.retrigger': 'INCOMING TELEGRAM: +{n} FREE SPINS',
   'fs.counter': 'Free spin {cur} of {total}',

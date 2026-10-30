@@ -46,7 +46,6 @@ export const en_ui = {
   'info.controls': 'Controls',
   'info.modes': 'Modes and RTP',
   'info.legal': 'Legal',
-  'info.controls.settings': 'SETTINGS: opens this window with sound, motion, flashes, contrast, the session summary and the play shortcuts. Space toggles the control that has the focus while this window is open.',
 
   // session summary (main screen)
   'ledger.title': 'Session summary',
@@ -70,5 +69,12 @@ export const en_ui = {
   'door.fact.share': '{p} of rounds return more than the cost',
   'mode.entrance_orders': 'SECRET ENTRANCE: COAT CHECK',
   'mode.entrance_blackout': 'SECRET ENTRANCE: SERVICE STAIRS',
+  // Clearance Dial (WP5_to_WP1 item 2; player-facing name, SYNTHESIS 0.2)
+  'meter.title': 'Clearance Dial',
+  'meter.band.largo': 'Largo',
+  'meter.band.andante': 'Andante',
+  'meter.band.allegro': 'Allegro',
+  'meter.band.presto': 'Presto',
+  'fx.bam': 'BAM!',
 };
 export default en_ui;

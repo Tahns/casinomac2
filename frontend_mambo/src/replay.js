@@ -165,6 +165,7 @@ export async function startReplay(opts = {}) {
       const r = await ensureRenderer();
       if (r.setTurbo) r.setTurbo(turbo);
       if (r.setCost) r.setCost(replay._cost || 1);
+      if (r.setMode) r.setMode(String(params.replayMode || 'base').toLowerCase());
       if (r.setFormat) r.setFormat((x) => formatMoney(Math.round((Number(x) || 0) * replay._amount), currency, { social: isSocial() }));
       const hooks = { onTotal() {}, onWin() {}, onFreeSpinCounter() {} };
       await r.playBook(replay.state, hooks);

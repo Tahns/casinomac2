@@ -238,6 +238,7 @@ async function playRound(mode) {
   setState('betting');
   S.inFs = false;
   if (S.renderer && S.renderer.setCost) S.renderer.setCost(modeCost(mode));
+  if (S.renderer && S.renderer.setMode) S.renderer.setMode(mode);
   renderWin(0);
   S.pacer.begin();
   let res;
@@ -480,6 +481,7 @@ async function boot() {
   if (r && r.active) {
     setState('playing');
     if (S.renderer && S.renderer.setCost) S.renderer.setCost(modeCost(String(r.mode || 'base').toLowerCase()));
+    if (S.renderer && S.renderer.setMode) S.renderer.setMode(String(r.mode || 'base').toLowerCase());
     try { await runEvents(r); } catch (e) { console.error(e); }
     try { await settle(r); } catch (e) { return fatal(e); }
     setState('idle');

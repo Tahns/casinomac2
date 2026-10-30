@@ -205,7 +205,7 @@ export function createSettingsDialog({ el, settings, audio, t, host }) {
     const groups = [
       { key: 'info.rules', ids: ['overview', 'howto', 'features'] },
       { key: 'rules.tab.wins', ids: ['wins'] },
-      { key: 'info.controls', ids: ['controls'], extra: 'info.controls.settings' },
+      { key: 'info.controls', ids: ['controls'] },
       { key: 'info.modes', ids: ['modes'] },
       { key: 'info.legal', ids: ['legal'] },
     ];

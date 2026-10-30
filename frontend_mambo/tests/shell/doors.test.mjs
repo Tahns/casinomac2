@@ -18,11 +18,17 @@ test('doors: three doors in a fixed order, Stage Door = bonus', () => {
   assert.deepEqual(DOORS.map((d) => d.id), ['stage', 'coat', 'stairs']);
   assert.deepEqual(DOORS.map((d) => d.mode), ['bonus', 'entrance_orders', 'entrance_blackout']);
 });
-test('doors: today (no shares data) only Stage Door is offered, with the real RTP and max win', () => {
-  const doors = availableDoors(real);
+test('doors: without shares data only Stage Door is offered, with the real RTP and max win', () => {
+  const noShares = JSON.parse(JSON.stringify(real)); delete noShares.shares;
+  const doors = availableDoors(noShares);
   assert.deepEqual(doors.map((d) => d.mode), ['bonus']);
   assert.equal(doors[0].cost, 100); assert.ok(Math.abs(doors[0].facts.rtp - 0.96) < 1e-6); assert.equal(doors[0].facts.maxWin, 5000);
   assert.equal(doors[0].facts.medianX, null); assert.equal(doors[0].facts.pGtPrice, null);
+});
+test('doors: the real FINAL data offers the three doors with their real facts', () => {
+  const doors = availableDoors(real);
+  assert.deepEqual(doors.map((d) => d.mode), ['bonus', 'entrance_orders', 'entrance_blackout']);
+  for (const d of doors) { assert.ok(Math.abs(d.facts.rtp - 0.96) < 1e-6); assert.equal(d.facts.maxWin, 5000); assert.ok(d.facts.medianX > 30); assert.ok(d.facts.pGtPrice > 0 && d.facts.pGtPrice < 1); }
 });
 test('doors: a door needs BOTH the mode in the data and its shares facts', () => {
   const d = withDoors();
