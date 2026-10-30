@@ -432,9 +432,9 @@ async function main() {
     const missing = screens.filter((x) => x.missing).map((x) => x.name);
     return [hits.length === 0 ? (hid.length || missing.length ? RISK : PASS) : FAIL, 'screens: ' + screens.map((x) => x.name).join(', '), 'visible hits: ' + J(hits), 'words anywhere in DOM textContent (incl. hidden panels): ' + J(hid), missing.length ? 'not found: ' + missing : null, 'title: ' + title];
   });
-  await check(225, 'social=true: rules/info/autoplay/confirm wording (restricted words, same scan, rules screen only)', async () => {
+  await check(225, 'social=true: rules/info/autoplay/confirm/settings wording (restricted words, same scan, rules screen only)', async () => {
     const { screens } = await socialScan('XGC');
-    const sel = screens.filter((x) => /info|autoplay|unleash/.test(x.name));
+    const sel = screens.filter((x) => /info|autoplay|unleash|settings/.test(x.name));
     const hits = sel.map((sc) => ({ n: sc.name, m: [...new Set((sc.text.match(restrictedRe) || []).map((x) => x.toLowerCase()))], len: sc.text.length })).filter((h) => h.m.length);
     const empty = sel.filter((x) => !x.text || x.text.length < 40).map((x) => x.name);
     return [hits.length === 0 && !empty.length ? PASS : hits.length ? FAIL : RISK, 'rules/info texts scanned: ' + sel.map((x) => x.name + '(' + x.text.length + ')').join(', '), 'hits: ' + J(hits), empty.length ? 'empty/short: ' + empty : null];

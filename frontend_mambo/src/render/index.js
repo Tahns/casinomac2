@@ -23,6 +23,7 @@ import { dispatch as dispatchLayers, resetLayers } from './layers/index.js';
 import { settings } from '../settings.js';
 import { motion } from './motion.js';
 import { createCamera } from './camera.js';
+import { flash as flashGov } from './flash.js'; // WP10 integration: the ONE page flash budget (request WP5_to_WP4 item 2)
 import * as cel from './celebrate.js';
 
 const COLS = 6, ROWS = 5;
@@ -116,9 +117,13 @@ export function createRenderer(rootEl) {
   };
 
   // ---------- motion store consumers: camera (trauma shake + hit-stop), particles, flash ----------
+  let SHORT = 600;
+  const measureShort = () => { SHORT = Math.min(app.clientWidth || 600, app.clientHeight || 600); };
+  measureShort();
+  try { new ResizeObserver(measureShort).observe(app); } catch (e) { /* no ResizeObserver: keep the first measure */ }
   const camera = createCamera({
     targets: () => [root, scene && scene.host],
-    shortSide: () => Math.min(app.clientWidth || 600, app.clientHeight || 600),
+    shortSide: () => SHORT, // cached (WP5_to_WP4 follow-up): reading clientWidth every camera frame forced a synchronous layout
   });
   // particle engine behind the motion store: counts scale with Full / Calm / Still (Still draws none); Full is the v1 count
   const fxm = {
@@ -219,6 +224,7 @@ export function createRenderer(rootEl) {
   root.innerHTML = '';
   const wrap = document.createElement('div'); wrap.className = 'board-wrap';
   layerCtx.wrap = wrap;
+  layerCtx.flash = flash; // WP10: layers share the page flash budget
   wrap.innerHTML = `<div class="board">
       <div class="slots"></div><div class="reelglows"></div><div class="cells"></div>
       <svg class="outlines" viewBox="0 0 ${COLS} ${ROWS}" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -354,19 +360,12 @@ export function createRenderer(rootEl) {
   // Camera trauma (camera.js): MAX 1.6% of the short side, 0.8 degree; Calm x0.25 without rotation, Still none.
   function shake(amp = 1, ms = 420) { trace('shake', { amp }); camera.shake(amp, ms); }
   // Flash governor (SYNTHESIS S4): cream or lemon only, peak <= .5, at most 2 per second; flashes off = one 167 ms dissolve (<= .25); Still = none
-  const flashAt = [];
-  function flash(peak = .8, ms = 500, color = '#fff') {
-    const mode = motion.flashMode;
-    if (mode === 'none') return;
-    const nowT = performance.now();
-    while (flashAt.length && nowT - flashAt[0] > 1000) flashAt.shift();
-    if (flashAt.length >= 2) return;
-    flashAt.push(nowT);
-    trace('flash', { peak });
-    const dissolve = mode === 'dissolve';
-    flashEl.style.background = String(color).toLowerCase() === FX_COLORS.lemon.toLowerCase() ? FX_COLORS.lemon : FX_COLORS.cream;
-    const p = Math.min(peak, dissolve ? .25 : .5);
-    try { flashEl.animate([{ opacity: p }, { opacity: 0 }], { duration: dissolve ? 167 : T(ms), easing: dissolve ? 'linear' : 'ease-out' }); } catch (e) { /* ignore */ }
+  // WP10 integration (WP5_to_WP4 item 2): every page flash goes through the shared governor of render/flash.js (mode from the
+  // settings store, <= 2 starts per sliding second, peak <= .5, dissolve when flashes are reduced, none in Still)
+  flashGov.attach(flashEl);
+  function flash(peak = .8, ms = 500, color = FX_COLORS.cream) {
+    const ok = flashGov.fire(peak, T(ms), color);
+    if (ok) trace('flash', { peak: Math.min(peak, .5) });
   }
   function chip(el, text, on, bump = true) {
     const changed = text != null && text !== '' && el.textContent !== text;

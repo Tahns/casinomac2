@@ -1,8 +1,8 @@
 # Engine guideline QA report
 
-Generated 2026-10-26T09:50:14.148Z by `node tests/guidelines/run.mjs`. Mock RGS books: see mock state.
+Generated 2026-10-30T16:17:15.218Z by `node tests/guidelines/run.mjs`. Mock RGS books: see mock state.
 
-Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
+Totals: 47 PASS, 0 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 ## Verdicts
 
@@ -25,8 +25,8 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 | 221 | no end-round after 0x, end-round after win | **PASS** |
 | 222 | zero balance -> no /wallet/play (button, space, autoplay, unleash) + visible message | **PASS** |
 | 223 | viewport meta + touch-action | **PASS** |
-| 225 | social=true: rules/info/autoplay/confirm wording (restricted words, same scan, rules screen only) | **PASS** |
-| 227 | no scrollbars/scroll at 4 viewports (idle + after bet + rules open) | **FAIL** |
+| 225 | social=true: rules/info/autoplay/confirm/settings wording (restricted words, same scan, rules screen only) | **PASS** |
+| 227 | no scrollbars/scroll at 4 viewports (idle + after bet + rules open) | **PASS** |
 | 228 | space bar places a bet, no page scroll, no double fire | **PASS** |
 | 239 | lang=en: no keys/undefined/NaN/{...} (all screens) | **PASS** |
 | 240 | lang=zz: no keys/undefined/NaN/{...} (all screens) | **PASS** |
@@ -41,9 +41,9 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 | UNL-PRICE | UNLEASH cost label and confirm dialog show round values (bet x100) for every bet in the round ladder | **PASS** |
 | CLICK-AFTER-FEATURE | after a free-spins round no overlay covers the controls (bet, sound, info stay clickable) | **PASS** |
 | MENU-400x225 | compact landscape (400x225): MENU opens SOUND / INFO / FULLSCREEN and they work | **PASS** |
-| MODAL-INERT | keyboard cannot act behind an open dialog (Enter on BET+ / BET while the UNLEASH confirm is open, UNLEASH during autoplay) | **PASS** |
+| MODAL-INERT | keyboard cannot act behind an open dialog (Tab stays inside the UNLEASH confirm, BET / BET+ / UNLEASH are inert, Space starts nothing) | **PASS** |
 | 219b | CA$/MX$/XSC/JPY with large balance: no clipping of balance/bet/win at 4 viewports | **PASS** |
-| RULES | rules/info content: RTP + max win per mode, symbols, modes+cost, free games/retrigger, controls, disclaimer | **FAIL** |
+| RULES | rules/info content: RTP + max win per mode, symbols, modes+cost, free games/retrigger, controls, disclaimer | **PASS** |
 | REPLAY-LONG | replay of the longest bonus book in the fixtures finishes (seconds measured, >60 s flagged); speed control present? | **PASS** |
 | WIN-base-loss | base mode, forced loss book: displayed win == bet x payoutMultiplier/100, balance consistent | **PASS** |
 | WIN-base-win | base mode, forced win book: displayed win == bet x payoutMultiplier/100, balance consistent | **PASS** |
@@ -60,12 +60,12 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 ### [31] unleash: one press sends no play, dialog shows cost; cancel safe; confirm plays bonus - PASS
 
-- dialog visible=true text="SECRET ENTRANCE Take the secret entrance? This starts the free spins right away and costs $100.00 for this round. Continue? CANCEL CONFIRM"
-- plays before confirm=0, after cancel=0, after OK=1 {"sessionID":"qa-qaz7k-31","amount":1000000,"mode":"bonus"}
+- dialog visible=true text="SECRET ENTRANCE Take the secret entrance? This starts the free spins right away and costs $100.00 for this round. Continue? Stage Door Cost: $100.00 R"
+- plays before confirm=0, after cancel=0, after OK=1 {"sessionID":"qa-4t6qb-31","amount":1000000,"mode":"bonus"}
 
 ### [77] social=true: no restricted words in any visible text - PASS
 
-- screens: main, autoplay, unleash-confirm, info, info-tab0, info-tab1, info-tab2, info-tab3, info-tab4, info-tab5, info-tab6, after-win, error-ERR_IPB, error-ERR_GEN, error-ERR_GLE, error-ERR_VAL
+- screens: main, autoplay, unleash-confirm, info, info-tab0, info-tab1, info-tab2, info-tab3, info-tab4, info-tab5, info-tab6, settings, settings-tab7, settings-tab8, settings-tab9, settings-tab10, after-win, error-ERR_IPB, error-ERR_GEN, error-ERR_GLE, error-ERR_VAL
 - visible hits: []
 - words anywhere in DOM textContent (incl. hidden panels): []
 - title: Agent Mambo
@@ -83,9 +83,9 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 ### [107] sound toggle mutes everything - PASS
 
 - body.muted + master gain 0 / context not running
-- before: {"ctx":["running"],"dest":["WaveShaperNode:x"],"muted":false,"graph":{"sources":251,"audibleSources":25,"masterGains":222},"media":[]}
-- after toggle: {"ctx":["running"],"dest":["WaveShaperNode:x"],"muted":true,"graph":{"sources":255,"audibleSources":0,"masterGains":226},"media":[]}
-- after another round while muted: {"ctx":["running"],"dest":["WaveShaperNode:x"],"muted":true,"graph":{"sources":255,"audibleSources":0,"masterGains":226},"media":[]}
+- before: {"ctx":["running"],"dest":["WaveShaperNode:x"],"muted":false,"graph":{"sources":3124,"audibleSources":69,"masterGains":3044},"media":[]}
+- after toggle: {"ctx":["running"],"dest":["WaveShaperNode:x"],"muted":true,"graph":{"sources":3128,"audibleSources":0,"masterGains":3057},"media":[]}
+- after another round while muted: {"ctx":["running"],"dest":["WaveShaperNode:x"],"muted":true,"graph":{"sources":3128,"audibleSources":0,"masterGains":3057},"media":[]}
 
 ### [171] replay: no wallet calls, GET /bet/replay/{game}/{version}/{mode}/{event} - PASS
 
@@ -96,12 +96,12 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 - Play/Start button found=true
 - replay-again button found after finish=true
 - betting controls still visible: []
-- text before play: WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O DEFUSE WILD TOP SECRE
+- text before play: WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O WILD TOP SECRET TOP S
 
 ### [173] replay: bet amount shown; cost>1x shows multiplier and real cost (bonus: 100x, 100.00) - PASS
 
-- bonus replay text: WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O DEFUSE WILD TOP SECRET TOP SECRET SECRET ENTRANCE: $1.00 · 100x · REAL COST: $100.00 PLAY TURBO SKIP DEFUSE A G E N T M A
-- base replay text: WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O DEFUSE WILD TOP SECRE
+- bonus replay text: WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O WILD TOP SECRET TOP SECRET SECRET ENTRANCE: $1.00 · 100x · REAL COST: $100.00 PLAY TURBO SKIP A G E N T M A M B O A G E N
+- base replay text: WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O WILD TOP SECRET TOP S
 - bet 1.00 shown=true, 100x shown=true, real cost 100.00 shown=true
 
 ### [174] replay at 400x225 fits without scroll - PASS
@@ -110,25 +110,25 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 ### [181] authenticate on load hits rgs_url with sessionID - PASS
 
-- POST /wallet/authenticate {"sessionID":"qa-qaz7k-181"}
-- origin=http://localhost:36425
+- POST /wallet/authenticate {"sessionID":"qa-4t6qb-181"}
+- origin=http://localhost:5870
 
 ### [183] /wallet/play {sessionID,amount,mode} - PASS
 
-- POST /wallet/play {"sessionID":"qa-qaz7k-183","amount":1000000,"mode":"base"}
-- POST /wallet/end-round {"sessionID":"qa-qaz7k-183"}
+- POST /wallet/play {"sessionID":"qa-4t6qb-183","amount":1000000,"mode":"base"}
+- POST /wallet/end-round {"sessionID":"qa-4t6qb-183"}
 
 ### [187] active round restores bet = round.amount after reload - PASS
 
 - bet display after load=$3.00, after reload=$3.00 (round.amount=3.00, default 1.00)
-- POST /wallet/authenticate {"sessionID":"qa-qaz7k-187"}
-- POST /wallet/end-round {"sessionID":"qa-qaz7k-187"}
-- POST /wallet/authenticate {"sessionID":"qa-qaz7k-187"}
-- POST /wallet/end-round {"sessionID":"qa-qaz7k-187"}
+- POST /wallet/authenticate {"sessionID":"qa-4t6qb-187"}
+- POST /wallet/end-round {"sessionID":"qa-4t6qb-187"}
+- POST /wallet/authenticate {"sessionID":"qa-4t6qb-187"}
+- POST /wallet/end-round {"sessionID":"qa-4t6qb-187"}
 
 ### [188] replay fetch failure shows a message - PASS
 
-- text: WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O DEFUSE WILD TOP SECRET TOP SECRET BET: $1.00 · SECRET ENTRANCE RETRY TURBO SKIP C
+- text: WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O WILD TOP SECRET TOP SECRET BET: $1.00 · SECRET ENTRANCE RETRY TURBO SKIP Could no
 - Play button still offered=false
 
 ### [219] currencies USD/EUR/CAD/MXN/JPY/XSC/XGC - PASS
@@ -145,9 +145,9 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 - 0x round: play=1 end-round=0
 - win round: play=1 end-round=1
-- POST /wallet/play {"sessionID":"qa-qaz7k-221","amount":1000000,"mode":"base"}
-- POST /wallet/play {"sessionID":"qa-qaz7k-221","amount":1000000,"mode":"base"}
-- POST /wallet/end-round {"sessionID":"qa-qaz7k-221"}
+- POST /wallet/play {"sessionID":"qa-4t6qb-221","amount":1000000,"mode":"base"}
+- POST /wallet/play {"sessionID":"qa-4t6qb-221","amount":1000000,"mode":"base"}
+- POST /wallet/end-round {"sessionID":"qa-4t6qb-221"}
 
 ### [222] zero balance -> no /wallet/play (button, space, autoplay, unleash) + visible message - PASS
 
@@ -160,14 +160,26 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 - touch-action on #game=none
 - body overflow=hidden
 
-### [225] social=true: rules/info/autoplay/confirm wording (restricted words, same scan, rules screen only) - PASS
+### [225] social=true: rules/info/autoplay/confirm/settings wording (restricted words, same scan, rules screen only) - PASS
 
-- rules/info texts scanned: autoplay(869), unleash-confirm(714), info(1352), info-tab0(1352), info-tab1(1745), info-tab2(1398), info-tab3(2683), info-tab4(1347), info-tab5(1644), info-tab6(1227)
+- rules/info texts scanned: autoplay(937), unleash-confirm(856), info(1427), info-tab0(1427), info-tab1(1820), info-tab2(1473), info-tab3(2758), info-tab4(1422), info-tab5(2057), info-tab6(1302), settings(755), settings-tab7(755), settings-tab8(944), settings-tab9(827), settings-tab10(818)
 - hits: []
 
-### [227] no scrollbars/scroll at 4 viewports (idle + after bet + rules open) - FAIL
+### [227] no scrollbars/scroll at 4 viewports (idle + after bet + rules open) - PASS
 
-- runner exception: page.waitForFunction: Timeout 4000ms exceeded. at Session.waitEnabled (/home/user/casinomac2/frontend_mambo/tests/guidelines/lib.mjs:148:55) at Session.click (/home/user/casinomac2/frontend_mambo/tests/guidelines/lib.mjs:134:50) at async Session.playRound (/home/user/casinomac2/frontend_mambo/tests/guidelines/lib.mjs:141:5) at async file:///home/user/casinomac2/frontend_mambo/tests/guidelines/run.
+- 1024x576 idle: scroll=(0,0) doc 1024x576 vs 1024x576 scrollbarW=0 overflow=hidden/hidden offscreen=["lay:1065x599","CANVAS:1065x599","lay:1065x599"]
+- 1024x576 after-bet: scroll=(0,0) doc 1024x576 vs 1024x576 scrollbarW=0 overflow=hidden/hidden offscreen=["lay:1063x599","CANVAS:1063x599","lay:1062x599"]
+- 1024x576 rules: scroll=(0,0) doc 1024x576 vs 1024x576 scrollbarW=0 overflow=hidden/hidden offscreen=["lay mv:1063x599","CANVAS:1063x599","lay mv:1062x600"]
+- 400x225 idle: scroll=(0,0) doc 400x225 vs 400x225 scrollbarW=0 overflow=hidden/hidden offscreen=["lay:416x234","CANVAS:416x234","lay:416x234"]
+- 400x225 after-bet: scroll=(0,0) doc 400x225 vs 400x225 scrollbarW=0 overflow=hidden/hidden offscreen=["lay:414x235","CANVAS:414x235","lay:413x235"]
+- 400x225 rules: scroll=(0,0) doc 400x225 vs 400x225 scrollbarW=0 overflow=hidden/hidden offscreen=["lay:414x235","CANVAS:414x235","lay:413x235"]
+- 800x450 idle: scroll=(0,0) doc 800x450 vs 800x450 scrollbarW=0 overflow=hidden/hidden offscreen=["lay:832x468","CANVAS:832x468","lay:832x468"]
+- 800x450 after-bet: scroll=(0,0) doc 800x450 vs 800x450 scrollbarW=0 overflow=hidden/hidden offscreen=["lay:830x468","CANVAS:830x468","lay:829x468"]
+- 800x450 rules: scroll=(0,0) doc 800x450 vs 800x450 scrollbarW=0 overflow=hidden/hidden offscreen=["lay mv:830x469","CANVAS:830x469","lay mv:829x469"]
+- 425x812 idle: scroll=(0,0) doc 425x812 vs 425x812 scrollbarW=0 overflow=hidden/hidden offscreen=["lay:442x844","CANVAS:442x844","lay:442x844"]
+- 425x812 after-bet: scroll=(0,0) doc 425x812 vs 425x812 scrollbarW=0 overflow=hidden/hidden offscreen=["lay:442x844","CANVAS:442x844","lay:442x843"]
+- 425x812 rules: scroll=(0,0) doc 425x812 vs 425x812 scrollbarW=0 overflow=hidden/hidden offscreen=["lay mv:442x843","CANVAS:442x843","lay mv:442x842"]
+- screenshots: tests/shots/qa_1024x576.png qa_400x225.png qa_800x450.png qa_425x812.png (one bet played before the shot where possible)
 
 ### [228] space bar places a bet, no page scroll, no double fire - PASS
 
@@ -177,13 +189,13 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 ### [239] lang=en: no keys/undefined/NaN/{...} (all screens) - PASS
 
-- screens scanned: main, autoplay, unleash-confirm, info, info-tab0, info-tab1, info-tab2, info-tab3, info-tab4, info-tab5, info-tab6, after-bet, error-msg
+- screens scanned: main, autoplay, unleash-confirm, info, info-tab0, info-tab1, info-tab2, info-tab3, info-tab4, info-tab5, info-tab6, settings, settings-tab7, settings-tab8, settings-tab9, settings-tab10, after-bet, error-msg
 - hits: []
 - <html lang>=en
 
 ### [240] lang=zz: no keys/undefined/NaN/{...} (all screens) - PASS
 
-- screens scanned: main, autoplay, unleash-confirm, info, info-tab0, info-tab1, info-tab2, info-tab3, info-tab4, info-tab5, info-tab6, after-bet, error-msg
+- screens scanned: main, autoplay, unleash-confirm, info, info-tab0, info-tab1, info-tab2, info-tab3, info-tab4, info-tab5, info-tab6, settings, settings-tab7, settings-tab8, settings-tab9, settings-tab10, after-bet, error-msg
 - hits: []
 - <html lang>=en
 
@@ -197,7 +209,7 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 - restricted hits: []
 - "$" present=false
-- text: WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O DEFUSE WILD TOP SECRET TOP SECRET SECRET ENTRANCE: 1.00 SC · 100x · REAL COST: 10
+- text: WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O WILD TOP SECRET TOP SECRET SECRET ENTRANCE: 1.00 SC · 100x · REAL COST: 100.00 SC
 
 ### [273] sub-cent payouts (bet 0.01 x 0.1x win = 0.001) are not shown as 0.00 - PASS
 
@@ -206,11 +218,11 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 ### [274] rgs_url=example.com (and bare host) -> error, no RGS call elsewhere - PASS
 
-- requests to example.com: ["GET http://localhost:36425/index.html?sessionID=qa-qaz7k-274&rgs_url=example.com&lang=en&device=desktop","POST https://example.com/wallet/authenticate"]
+- requests to example.com: ["GET http://localhost:5870/index.html?sessionID=qa-4t6qb-274&rgs_url=example.com&lang=en&device=desktop","POST https://example.com/wallet/authenticate"]
 - mock log entries: 0
 - state=error error visible=true
-- text=WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O D
-- bare host rgs.test requests: ["GET http://localhost:36425/index.html?sessionID=qa-qaz7k-274&rgs_url=rgs.test&lang=en&device=desktop","POST https://rgs.test/wallet/authenticate"]
+- text=WILD TOP SECRET TOP SECRET Agent Mambo A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O A G E N T M A M B O W
+- bare host rgs.test requests: ["GET http://localhost:5870/index.html?sessionID=qa-4t6qb-274&rgs_url=rgs.test&lang=en&device=desktop","POST https://rgs.test/wallet/authenticate"]
 - idle after bare host=idle
 
 ### [275] no "stake engine" text/branding in DOM/network/source - PASS
@@ -225,21 +237,21 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 - bet 0.2: reached=true disabled=true class has below-min=true cost label="from $50.00" dialog opened=false
 - plays sent below minimum=0
 - bet 0.5 (cost 50): reached=true disabled=false label="$50.00" confirm visible=true text="SECRET ENTRANCE Take the secret entrance? This starts the free spins right away and costs $50.00 for"
-- plays after OK=1 {"sessionID":"qa-qaz7k-UNL-MIN-USD","amount":500000,"mode":"bonus"}
+- plays after OK=1 {"sessionID":"qa-4t6qb-UNL-MIN-USD","amount":500000,"mode":"bonus"}
 
 ### [UNL-MIN-JPY] UNLEASH below minimum (JPY 7500): disabled + "from" text + no play; at minimum: confirm dialog and bonus play - PASS
 
 - bet 50: reached=true disabled=true class has below-min=true cost label="from ¥7,500" dialog opened=false
 - plays sent below minimum=0
 - bet 75 (cost 7500): reached=true disabled=false label="¥7,500" confirm visible=true text="SECRET ENTRANCE Take the secret entrance? This starts the free spins right away and costs ¥7,500 for"
-- plays after OK=1 {"sessionID":"qa-qaz7k-UNL-MIN-JPY","amount":75000000,"mode":"bonus"}
+- plays after OK=1 {"sessionID":"qa-4t6qb-UNL-MIN-JPY","amount":75000000,"mode":"bonus"}
 
 ### [UNL-MIN-MXN] UNLEASH below minimum (MXN 1000): disabled + "from" text + no play; at minimum: confirm dialog and bonus play - PASS
 
 - bet 5: reached=true disabled=true class has below-min=true cost label="from MX$1,000.00" dialog opened=false
 - plays sent below minimum=0
 - bet 10 (cost 1000): reached=true disabled=false label="MX$1,000.00" confirm visible=true text="SECRET ENTRANCE Take the secret entrance? This starts the free spins right away and costs MX$1,000.0"
-- plays after OK=1 {"sessionID":"qa-qaz7k-UNL-MIN-MXN","amount":10000000,"mode":"bonus"}
+- plays after OK=1 {"sessionID":"qa-4t6qb-UNL-MIN-MXN","amount":10000000,"mode":"bonus"}
 
 ### [UNL-PRICE] UNLEASH cost label and confirm dialog show round values (bet x100) for every bet in the round ladder - PASS
 
@@ -263,98 +275,99 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 - sound visible before menu=false, after menu=true, info visible=true, sound toggled=true, rules open via menu=true
 
-### [MODAL-INERT] keyboard cannot act behind an open dialog (Enter on BET+ / BET while the UNLEASH confirm is open, UNLEASH during autoplay) - PASS
+### [MODAL-INERT] keyboard cannot act behind an open dialog (Tab stays inside the UNLEASH confirm, BET / BET+ / UNLEASH are inert, Space starts nothing) - PASS
 
-- dialog open=true, bet before/after=$10.00/$10.00, plays sent behind dialog=0, [inert] left after closing=false
+- dialog open=true, focus inside after 12 Tab=true, inert BET/BET+/UNLEASH=true/true/true
+- bet before/after=$10.00/$10.00, plays sent=0, closed=true, [inert] left after closing=false
 
 ### [219b] CA$/MX$/XSC/JPY with large balance: no clipping of balance/bet/win at 4 viewports - PASS
 
 - moderate balance clipped cases=0; 7-figure stress clipped cases=0
-- [moderate 12,345.67] CAD 1024x576: balance="CA$12,515.67"(141/156) bet="CA$100.00"(102/102) win="CA$270.00"(109/156) unleash-cost="CA$10,000.00"(78/78)
+- [moderate 12,345.67] CAD 1024x576: balance="CA$12,415.67"(141/156) bet="CA$100.00"(102/102) win="CA$170.00"(109/156) unleash-cost="CA$10,000.00"(78/78)
 - [moderate 12,345.67] CAD 400x225: balance="CA$12,295.67"(61/62) bet="CA$100.00"(51/62) win="CA$50.00"(54/62) unleash-cost="CA$10,000.00"(45/45)
-- [moderate 12,345.67] CAD 800x450: balance="CA$12,255.67"(110/123) bet="CA$100.00"(75/77) win="CA$10.00"(75/123) unleash-cost="CA$10,000.00"(61/61)
-- [moderate 12,345.67] CAD 425x812: balance="CA$12,445.67"(98/103) bet="CA$100.00"(123/156) win="CA$200.00"(81/82) unleash-cost="CA$10,000.00"(88/88)
-- [moderate 12,345.67] MXN 1024x576: balance="MX$12,305.67"(145/156) bet="MX$100.00"(100/102) win="MX$60.00"(101/156) unleash-cost="MX$10,000.00"(80/80)
-- [moderate 12,345.67] MXN 400x225: balance="MX$12,475.67"(59/62) bet="MX$100.00"(53/62) win="MX$230.00"(59/62) unleash-cost="MX$10,000.00"(47/47)
-- [moderate 12,345.67] MXN 800x450: balance="MX$12,465.67"(113/123) bet="MX$100.00"(74/77) win="MX$220.00"(89/123) unleash-cost="MX$10,000.00"(63/63)
-- [moderate 12,345.67] MXN 425x812: balance="MX$12,285.67"(101/103) bet="MX$100.00"(129/156) win="MX$40.00"(80/82) unleash-cost="MX$10,000.00"(91/91)
-- [moderate 12,345.67] XSC 1024x576: balance="12,255.67 SC"(133/156) bet="100.00 SC"(102/102) win="10.00 SC"(89/156) unleash-cost="10,000.00 SC"(74/74)
-- [moderate 12,345.67] XSC 400x225: balance="12,335.67 SC"(62/62) bet="100.00 SC"(47/62) win="90.00 SC"(50/62) unleash-cost="10,000.00 SC"(43/43)
-- [moderate 12,345.67] XSC 800x450: balance="12,295.67 SC"(104/123) bet="100.00 SC"(75/77) win="50.00 SC"(70/123) unleash-cost="10,000.00 SC"(58/58)
-- [moderate 12,345.67] XSC 425x812: balance="12,265.67 SC"(99/103) bet="100.00 SC"(115/156) win="20.00 SC"(80/82) unleash-cost="10,000.00 SC"(84/84)
-- [stress 1,234,567.89] CAD 1024x576: balance="CA$1,234,477.89"(153/156) bet="CA$100.00"(102/102) win="CA$10.00"(96/156) unleash-cost="CA$10,000.00"(78/78)
-- [stress 1,234,567.89] CAD 400x225: balance="CA$1,234,547.89"(62/62) bet="CA$100.00"(51/62) win="CA$80.00"(54/62) unleash-cost="CA$10,000.00"(45/45)
-- [stress 1,234,567.89] CAD 800x450: balance="CA$1,234,587.89"(119/123) bet="CA$100.00"(75/77) win="CA$120.00"(85/123) unleash-cost="CA$10,000.00"(61/61)
-- [stress 1,234,567.89] CAD 425x812: balance="CA$1,234,477.89"(100/103) bet="CA$100.00"(123/156) win="CA$10.00"(81/82) unleash-cost="CA$10,000.00"(88/88)
-- [stress 1,234,567.89] MXN 1024x576: balance="MX$1,235,057.89"(147/156) bet="MX$100.00"(100/102) win="MX$590.00"(113/156) unleash-cost="MX$10,000.00"(80/80)
-- [stress 1,234,567.89] MXN 400x225: balance="MX$1,234,567.89"(60/62) bet="MX$100.00"(53/62) win="MX$100.00"(59/62) unleash-cost="MX$10,000.00"(47/47)
-- [stress 1,234,567.89] MXN 800x450: balance="MX$1,234,587.89"(122/123) bet="MX$100.00"(74/77) win="MX$120.00"(89/123) unleash-cost="MX$10,000.00"(63/63)
-- [stress 1,234,567.89] MXN 425x812: balance="MX$1,234,677.89"(103/103) bet="MX$100.00"(129/156) win="MX$210.00"(79/82) unleash-cost="MX$10,000.00"(91/91)
-- [stress 1,234,567.89] XSC 1024x576: balance="1,234,517.89 SC"(155/156) bet="100.00 SC"(102/102) win="50.00 SC"(89/156) unleash-cost="10,000.00 SC"(74/74)
-- [stress 1,234,567.89] XSC 400x225: balance="1,234,477.89 SC"(60/62) bet="100.00 SC"(47/62) win="10.00 SC"(50/62) unleash-cost="10,000.00 SC"(43/43)
-- [stress 1,234,567.89] XSC 800x450: balance="1,234,537.89 SC"(121/123) bet="100.00 SC"(75/77) win="70.00 SC"(70/123) unleash-cost="10,000.00 SC"(58/58)
-- [stress 1,234,567.89] XSC 425x812: balance="1,234,587.89 SC"(102/103) bet="100.00 SC"(115/156) win="120.00 SC"(80/82) unleash-cost="10,000.00 SC"(84/84)
+- [moderate 12,345.67] CAD 800x450: balance="CA$12,495.67"(110/123) bet="CA$100.00"(75/77) win="CA$250.00"(85/123) unleash-cost="CA$10,000.00"(61/61)
+- [moderate 12,345.67] CAD 425x812: balance="CA$12,265.67"(98/103) bet="CA$100.00"(123/156) win="CA$20.00"(81/82) unleash-cost="CA$10,000.00"(88/88)
+- [moderate 12,345.67] MXN 1024x576: balance="MX$12,505.67"(145/156) bet="MX$100.00"(100/102) win="MX$260.00"(113/156) unleash-cost="MX$10,000.00"(80/80)
+- [moderate 12,345.67] MXN 400x225: balance="MX$12,295.67"(59/62) bet="MX$100.00"(53/62) win="MX$50.00"(56/62) unleash-cost="MX$10,000.00"(47/47)
+- [moderate 12,345.67] MXN 800x450: balance="MX$12,495.67"(113/123) bet="MX$100.00"(74/77) win="MX$250.00"(89/123) unleash-cost="MX$10,000.00"(63/63)
+- [moderate 12,345.67] MXN 425x812: balance="MX$12,505.67"(101/103) bet="MX$100.00"(129/156) win="MX$260.00"(79/82) unleash-cost="MX$10,000.00"(91/91)
+- [moderate 12,345.67] XSC 1024x576: balance="12,405.67 SC"(133/156) bet="100.00 SC"(102/102) win="160.00 SC"(102/156) unleash-cost="10,000.00 SC"(74/74)
+- [moderate 12,345.67] XSC 400x225: balance="12,265.67 SC"(62/62) bet="100.00 SC"(47/62) win="20.00 SC"(50/62) unleash-cost="10,000.00 SC"(43/43)
+- [moderate 12,345.67] XSC 800x450: balance="12,265.67 SC"(104/123) bet="100.00 SC"(75/77) win="20.00 SC"(70/123) unleash-cost="10,000.00 SC"(58/58)
+- [moderate 12,345.67] XSC 425x812: balance="12,365.67 SC"(99/103) bet="100.00 SC"(115/156) win="120.00 SC"(80/82) unleash-cost="10,000.00 SC"(84/84)
+- [stress 1,234,567.89] CAD 1024x576: balance="CA$1,234,557.89"(153/156) bet="CA$100.00"(102/102) win="CA$90.00"(96/156) unleash-cost="CA$10,000.00"(78/78)
+- [stress 1,234,567.89] CAD 400x225: balance="CA$1,234,737.89"(62/62) bet="CA$100.00"(51/62) win="CA$270.00"(61/62) unleash-cost="CA$10,000.00"(45/45)
+- [stress 1,234,567.89] CAD 800x450: balance="CA$1,234,487.89"(119/123) bet="CA$100.00"(75/77) win="CA$20.00"(75/123) unleash-cost="CA$10,000.00"(61/61)
+- [stress 1,234,567.89] CAD 425x812: balance="CA$1,234,887.89"(100/103) bet="CA$100.00"(123/156) win="CA$420.00"(81/82) unleash-cost="CA$10,000.00"(88/88)
+- [stress 1,234,567.89] MXN 1024x576: balance="MX$1,234,477.89"(147/156) bet="MX$100.00"(100/102) win="MX$10.00"(101/156) unleash-cost="MX$10,000.00"(80/80)
+- [stress 1,234,567.89] MXN 400x225: balance="MX$1,234,677.89"(60/62) bet="MX$100.00"(53/62) win="MX$210.00"(59/62) unleash-cost="MX$10,000.00"(47/47)
+- [stress 1,234,567.89] MXN 800x450: balance="MX$1,234,517.89"(122/123) bet="MX$100.00"(74/77) win="MX$50.00"(79/123) unleash-cost="MX$10,000.00"(63/63)
+- [stress 1,234,567.89] MXN 425x812: balance="MX$1,234,527.89"(103/103) bet="MX$100.00"(129/156) win="MX$60.00"(80/82) unleash-cost="MX$10,000.00"(91/91)
+- [stress 1,234,567.89] XSC 1024x576: balance="1,234,487.89 SC"(155/156) bet="100.00 SC"(102/102) win="20.00 SC"(89/156) unleash-cost="10,000.00 SC"(74/74)
+- [stress 1,234,567.89] XSC 400x225: balance="1,234,617.89 SC"(60/62) bet="100.00 SC"(47/62) win="150.00 SC"(57/62) unleash-cost="10,000.00 SC"(43/43)
+- [stress 1,234,567.89] XSC 800x450: balance="1,234,627.89 SC"(121/123) bet="100.00 SC"(75/77) win="160.00 SC"(79/123) unleash-cost="10,000.00 SC"(58/58)
+- [stress 1,234,567.89] XSC 425x812: balance="1,234,477.89 SC"(102/103) bet="100.00 SC"(115/156) win="10.00 SC"(80/82) unleash-cost="10,000.00 SC"(84/84)
 
-### [RULES] rules/info content: RTP + max win per mode, symbols, modes+cost, free games/retrigger, controls, disclaimer - FAIL
+### [RULES] rules/info content: RTP + max win per mode, symbols, modes+cost, free games/retrigger, controls, disclaimer - PASS
 
-- info text length=12265; RTP-like percentages found: ["96.00","96.00","96.00","96.00","96.00","96.00"]
-- missing: ["Ruby","Sapphire","Emerald","Topaz","Amethyst","Pickaxe","Lantern","Hard hat","Gold Nugget wild","Dynamite scatter","UNLEASH mode + 100x"]
+- info text length=13171; RTP-like percentages found: ["96.00","96.00","96.00","96.00","96.00","96.00"]
+- missing: []
 - controls not mentioned in rules text: []
 
 ### [REPLAY-LONG] replay of the longest bonus book in the fixtures finishes (seconds measured, >60 s flagged); speed control present? - PASS
 
 - longest bonus book: id 80884, 629 events, payout 1271.6x
 - normal-speed run not measured (set QA_REPLAY_NORMAL=1; previously about 250 s)
-- SKIP pressed 1.5 s after Play: finished in 41.4 s; total shown: TOTAL WIN: $1,271.60
+- SKIP pressed 1.5 s after Play: finished in 32.2 s; total shown: TOTAL WIN: $1,271.60
 - banner-layer after the replay: banner-layer
 - page errors: []
 
 ### [WIN-base-loss] base mode, forced loss book: displayed win == bet x payoutMultiplier/100, balance consistent - PASS
 
-- book 31602 payoutMultiplier=0x bet=$2.00 -> expected win $0.00; displayed win=$0.00; balance $4,998.00 (expected $4,998.00); round took 1s; final state idle=true
+- book 99746 payoutMultiplier=0x bet=$2.00 -> expected win $0.00; displayed win=$0.00; balance $4,998.00 (expected $4,998.00); round took 2s; final state idle=true
 - renderer's last #win value before end-round request: $0.00 (matches); #win values seen: ["$0.00"]
 - end-round calls=0 (expected 0)
 
 ### [WIN-base-win] base mode, forced win book: displayed win == bet x payoutMultiplier/100, balance consistent - PASS
 
-- book 72928 payoutMultiplier=6.3x bet=$2.00 -> expected win $12.60; displayed win=$12.60; balance $5,010.60 (expected $5,010.60); round took 3s; final state idle=true
-- renderer's last #win value before end-round request: $12.60 (matches); #win values seen: ["$0.00","$12.60"]
+- book 70366 payoutMultiplier=0.1x bet=$2.00 -> expected win $0.20; displayed win=$0.20; balance $4,998.20 (expected $4,998.20); round took 2s; final state idle=true
+- renderer's last #win value before end-round request: $0.20 (matches); #win values seen: ["$0.00","$0.20"]
 - end-round calls=1 (expected 1)
 
 ### [WIN-base-bonus] base mode, forced bonus book: displayed win == bet x payoutMultiplier/100, balance consistent - PASS
 
-- book 86460 payoutMultiplier=5x bet=$2.00 -> expected win $10.00; displayed win=$10.00; balance $5,008.00 (expected $5,008.00); round took 19s; final state idle=true
-- renderer's last #win value before end-round request: $10.00 (matches); #win values seen: ["$0.00","$1.00","$10.00"]
+- book 33736 payoutMultiplier=53.5x bet=$2.00 -> expected win $107.00; displayed win=$107.00; balance $5,105.00 (expected $5,105.00); round took 23s; final state idle=true
+- renderer's last #win value before end-round request: $107.00 (matches); #win values seen: ["$0.00","$1.00","$8.20","$49.00","$74.00","$107.00"]
 - end-round calls=1 (expected 1)
 
 ### [WIN-base-retrigger] base mode, forced retrigger book: displayed win == bet x payoutMultiplier/100, balance consistent - PASS
 
-- book 36936 payoutMultiplier=262.2x bet=$2.00 -> expected win $524.40; displayed win=$524.40; balance $5,522.40 (expected $5,522.40); round took 65s; final state idle=true
-- renderer's last #win value before end-round request: $524.40 (matches); #win values seen: ["$2.60","$42.20","$62.60","$87.60","$186.60","$235.80","$353.40","$524.40"]
+- book 63423 payoutMultiplier=72x bet=$2.00 -> expected win $144.00; displayed win=$144.00; balance $5,142.00 (expected $5,142.00); round took 31s; final state idle=true
+- renderer's last #win value before end-round request: $144.00 (matches); #win values seen: ["$0.00","$1.00","$4.00","$41.80","$69.00","$144.00"]
 - end-round calls=1 (expected 1)
 
 ### [WIN-base-maxwin] base mode, forced maxwin book: displayed win == bet x payoutMultiplier/100, balance consistent - PASS
 
-- book 12543 payoutMultiplier=5000x bet=$2.00 -> expected win $10,000.00; displayed win=$10,000.00; balance $14,998.00 (expected $14,998.00); round took 26s; final state idle=true
+- book 12543 payoutMultiplier=5000x bet=$2.00 -> expected win $10,000.00; displayed win=$10,000.00; balance $14,998.00 (expected $14,998.00); round took 29s; final state idle=true
 - renderer's last #win value before end-round request: $10,000.00 (matches); #win values seen: ["$0.00","$2,792.00","$10,000.00"]
 - end-round calls=1 (expected 1)
 
 ### [WIN-bonus-bonus] bonus mode, forced bonus book: displayed win == bet x payoutMultiplier/100, balance consistent - PASS
 
-- book 59498 payoutMultiplier=33.2x bet=$2.00 -> expected win $66.40; displayed win=$66.40; balance $4,866.40 (expected $4,866.40); round took 26s; final state idle=true
-- renderer's last #win value before end-round request: $66.40 (matches); #win values seen: ["$0.00","$0.20","$24.40","$41.40","$66.40"]
+- book 85228 payoutMultiplier=63.7x bet=$2.00 -> expected win $127.40; displayed win=$127.40; balance $4,927.40 (expected $4,927.40); round took 24s; final state idle=true
+- renderer's last #win value before end-round request: $127.40 (matches); #win values seen: ["$0.00","$0.40","$9.40","$12.80","$87.80","$127.40"]
 - end-round calls=1 (expected 1)
 
 ### [WIN-bonus-retrigger] bonus mode, forced retrigger book: displayed win == bet x payoutMultiplier/100, balance consistent - PASS
 
-- book 90664 payoutMultiplier=265.8x bet=$2.00 -> expected win $531.60; displayed win=$531.60; balance $5,331.60 (expected $5,331.60); round took 58s; final state idle=true
-- renderer's last #win value before end-round request: $531.60 (matches); #win values seen: ["$0.00","$21.00","$24.40","$29.40","$425.40","$486.00","$531.60"]
+- book 95880 payoutMultiplier=231.4x bet=$2.00 -> expected win $462.80; displayed win=$462.80; balance $5,262.80 (expected $5,262.80); round took 72s; final state idle=true
+- renderer's last #win value before end-round request: $462.80 (matches); #win values seen: ["$33.60","$66.60","$107.60","$117.40","$140.20","$205.20","$219.80","$462.80"]
 - end-round calls=1 (expected 1)
 
 ### [WIN-bonus-maxwin] bonus mode, forced maxwin book: displayed win == bet x payoutMultiplier/100, balance consistent - PASS
 
-- book 92007 payoutMultiplier=5000x bet=$2.00 -> expected win $10,000.00; displayed win=$10,000.00; balance $14,800.00 (expected $14,800.00); round took 24s; final state idle=true
-- renderer's last #win value before end-round request: $10,000.00 (matches); #win values seen: ["$0.00","$1,280.00","$10,000.00"]
+- book 68638 payoutMultiplier=5000x bet=$2.00 -> expected win $10,000.00; displayed win=$10,000.00; balance $14,800.00 (expected $14,800.00); round took 24s; final state idle=true
+- renderer's last #win value before end-round request: $10,000.00 (matches); #win values seen: ["$0.00","$4,489.40","$10,000.00"]
 - end-round calls=1 (expected 1)
 
 ### [EXT] no requests to external hosts (all sessions) - PASS
@@ -376,6 +389,7 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 ### localhost references (params.js only defaults a scheme-less LOCAL rgs_url to http://; no host is hardcoded) - PASS
 
+- dist/front/src/params.js:13 (CORE): const local = /^(localhost|127(\.\d{1,3}){3}|\[::1\]|0\.0\.0\.0)(:\d+)?(\/|$)/i.test(u);
 - src/params.js:13 (CORE): const local = /^(localhost|127(\.\d{1,3}){3}|\[::1\]|0\.0\.0\.0)(:\d+)?(\/|$)/i.test(u);
 
 ### External scripts/styles/fonts/CDN in HTML/CSS - PASS
@@ -393,33 +407,57 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 ### money.js symbol table lines (review XSC/XGC have no '$') - INFO
 
+- dist/front/src/money.js:5 (CORE): USD: ['$', 2], CAD: ['CA$', 2], JPY: ['¥', 0], EUR: ['€', 2], RUB: ['₽', 2], CNY: ['CN¥', 2],
+- dist/front/src/money.js:6 (CORE): PHP: ['₱', 2], INR: ['₹', 2], IDR: ['Rp', 0], KRW: ['₩', 0], BRL: ['R$', 2], MXN: ['MX$', 2],
+- dist/front/src/money.js:45 (CORE): return (neg ? '-' : '') + (meta.symbolAfter ? `${abs} ${meta.symbol}` : `${meta.symbol}${abs}`);
 - src/money.js:5 (CORE): USD: ['$', 2], CAD: ['CA$', 2], JPY: ['¥', 0], EUR: ['€', 2], RUB: ['₽', 2], CNY: ['CN¥', 2],
 - src/money.js:6 (CORE): PHP: ['₱', 2], INR: ['₹', 2], IDR: ['Rp', 0], KRW: ['₩', 0], BRL: ['R$', 2], MXN: ['MX$', 2],
 - src/money.js:45 (CORE): return (neg ? '-' : '') + (meta.symbolAfter ? `${abs} ${meta.symbol}` : `${meta.symbol}${abs}`);
 
 ### Fixed 2 decimals / /100 (JPY has 0 decimals; sub-cent payouts need more) - AT RISK
 
-- src/replay.js:37 (TEXT): try { amountStr = formatMoney(amt, cur, { social: isSocial() }); } catch (e) { amountStr = (amt / MICRO).toFixed(2); }
-- src/replay.js:40 (TEXT): try { real = formatMoney(Math.round(amt * mult), cur, { social: isSocial() }); } catch (e) { real = ((amt * mult) / MICRO).toFixed
-- src/replay.js:167 (TEXT): try { totalStr = formatMoney(total, currency, { social: isSocial() }); } catch (e) { totalStr = (total / MICRO).toFixed(2); }
+- dist/front/src/replay.js:38 (TEXT): try { amountStr = formatMoney(amt, cur, { social: isSocial() }); } catch (e) { amountStr = (amt / MICRO).toFixed(2); }
+- dist/front/src/replay.js:41 (TEXT): try { real = formatMoney(Math.round(amt * mult), cur, { social: isSocial() }); } catch (e) { real = ((amt * mult) / MICRO).toFixed
+- dist/front/src/replay.js:183 (TEXT): try { totalStr = formatMoney(total, currency, { social: isSocial() }); } catch (e) { totalStr = (total / MICRO).toFixed(2); }
+- src/replay.js:38 (TEXT): try { amountStr = formatMoney(amt, cur, { social: isSocial() }); } catch (e) { amountStr = (amt / MICRO).toFixed(2); }
+- src/replay.js:41 (TEXT): try { real = formatMoney(Math.round(amt * mult), cur, { social: isSocial() }); } catch (e) { real = ((amt * mult) / MICRO).toFixed
+- src/replay.js:183 (TEXT): try { totalStr = formatMoney(total, currency, { social: isSocial() }); } catch (e) { totalStr = (total / MICRO).toFixed(2); }
 
 ### Micro-unit conversions outside money.js/bet.js (review) - AT RISK
 
-- src/replay.js:7 (TEXT): const MICRO = 1_000_000;
+- dist/front/src/replay.js:8 (TEXT): const MICRO = 1_000_000;
+- src/replay.js:8 (TEXT): const MICRO = 1_000_000;
 
 ### end-round call sites (must be guarded: only payoutMultiplier > 0; never for 0x) - PASS
 
-- src/main.js:130 (CORE): if (S.renderer && round && round.state) await S.renderer.playBook(round.state, hooks()); ⏎ } ⏎  ⏎ async function settle(round) { ⏎ setState('settling'); ⏎ if (shouldEndRound(round)) { ⏎ const r = await rgs.endRound();
+- dist/front/src/main.js:210 (CORE): if (S.renderer && round && round.state) await S.renderer.playBook(round.state, hooks()); ⏎ } ⏎  ⏎ async function settle(round) { ⏎ setState('settling'); ⏎ if (shouldEndRound(round)) { ⏎ const r = await rgs.endRound();
+- src/main.js:210 (CORE): if (S.renderer && round && round.state) await S.renderer.playBook(round.state, hooks()); ⏎ } ⏎  ⏎ async function settle(round) { ⏎ setState('settling'); ⏎ if (shouldEndRound(round)) { ⏎ const r = await rgs.endRound();
 
 ### keydown listeners (Space must be on window, preventDefault called) - PASS
 
-- listener src/main.js:265 (CORE): window.addEventListener('keydown', (e) => {
-- listener src/rules.js:271 (TEXT): window.addEventListener('keydown', (e) => {
-- preventDefault src/main.js:268 (CORE): e.preventDefault();
+- listener dist/front/src/main.js:407 (CORE): window.addEventListener('keydown', (e) => {
+- listener dist/front/src/main.js:426 (CORE): window.addEventListener('keyup', (e) => {
+- listener dist/front/src/rules.js:273 (TEXT): window.addEventListener('keydown', (e) => {
+- listener src/main.js:407 (CORE): window.addEventListener('keydown', (e) => {
+- listener src/main.js:426 (CORE): window.addEventListener('keyup', (e) => {
+- listener src/rules.js:273 (TEXT): window.addEventListener('keydown', (e) => {
+- preventDefault dist/front/src/main.js:411 (CORE): if (m.id === 'modal-settings') { e.preventDefault(); settingsDialog.close(); }
+- preventDefault dist/front/src/main.js:412 (CORE): else if (m.id === 'modal-autoplay') { e.preventDefault(); closeModal(m); }
+- preventDefault dist/front/src/main.js:413 (CORE): else if (m.id === 'modal-confirm') { e.preventDefault(); const c = $('confirm-cancel'); if (c) c.click(); }
+- preventDefault dist/front/src/main.js:422 (CORE): if (d.prevent) e.preventDefault();
+- preventDefault dist/front/src/main.js:428 (CORE): if (e.target && e.target.closest && e.target.closest('#btn-bet, #btn-unleash')) e.preventDefault();
+- preventDefault src/main.js:411 (CORE): if (m.id === 'modal-settings') { e.preventDefault(); settingsDialog.close(); }
+- preventDefault src/main.js:412 (CORE): else if (m.id === 'modal-autoplay') { e.preventDefault(); closeModal(m); }
+- preventDefault src/main.js:413 (CORE): else if (m.id === 'modal-confirm') { e.preventDefault(); const c = $('confirm-cancel'); if (c) c.click(); }
+- preventDefault src/main.js:422 (CORE): if (d.prevent) e.preventDefault();
+- preventDefault src/main.js:428 (CORE): if (e.target && e.target.closest && e.target.closest('#btn-bet, #btn-unleash')) e.preventDefault();
 
 ### Space key handling lines - INFO
 
-- src/main.js:266 (CORE): if (e.code !== 'Space' && e.key !== ' ') return;
+- dist/front/src/main.js:417 (CORE): if (e.code !== 'Space' && e.key !== ' ') return;
+- dist/front/src/main.js:427 (CORE): if ((e.code !== 'Space' && e.key !== ' ') || params.replay || settings.capabilities.spacebar) return;
+- src/main.js:417 (CORE): if (e.code !== 'Space' && e.key !== ' ') return;
+- src/main.js:427 (CORE): if ((e.code !== 'Space' && e.key !== ' ') || params.replay || settings.capabilities.spacebar) return;
 
 ### HTML/CSS: viewport meta, title restrictions, overflow, touch-action - PASS
 
@@ -430,7 +468,8 @@ Totals: 45 PASS, 2 FAIL, 0 AT RISK, 0 NEEDS A HUMAN.
 
 ### Network calls outside rgs.js (must be none; replay must not touch wallet) - AT RISK
 
-- src/render/index.js:176 (RENDER): fetch(new URL('../../data/rules_data.json', import.meta.url)).then((r) => (r.ok ? r.json() : null)).then((d) => { const c = d && N
+- dist/front/src/render/index.js:309 (RENDER): fetch(new URL('../../data/rules_data.json', import.meta.url)).then((r) => (r.ok ? r.json() : null)).then((d) => { const c = d && N
+- src/render/index.js:309 (RENDER): fetch(new URL('../../data/rules_data.json', import.meta.url)).then((r) => (r.ok ? r.json() : null)).then((d) => { const c = d && N
 
 ### src/i18n/social.js string values containing restricted words - PASS
 

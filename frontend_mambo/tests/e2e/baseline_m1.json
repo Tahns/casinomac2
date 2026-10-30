@@ -1,0 +1,82 @@
+{
+ "date": "2026-10-30T16:36:33.514Z",
+ "host": {
+  "cpus": 4
+ },
+ "budget": {
+  "p95": 16.6,
+  "layers": 45,
+  "canvasMB": 96
+ },
+ "rows": [
+  {
+   "viewport": "1024x576",
+   "cells": 30,
+   "rate": 4,
+   "p50": 33.3,
+   "p95": 83.3,
+   "p99": 133.3,
+   "p95ok": false,
+   "idleLayers": 33,
+   "p90Layers": 56,
+   "maxLayers": 64,
+   "layersOk": false,
+   "canvasMB": 24.17,
+   "canvasOk": true,
+   "loadAvg": 1.83
+  },
+  {
+   "viewport": "400x225",
+   "cells": 30,
+   "rate": 4,
+   "p50": 16.7,
+   "p95": 50.1,
+   "p99": 116.6,
+   "p95ok": false,
+   "idleLayers": 31,
+   "p90Layers": 52,
+   "maxLayers": 62,
+   "layersOk": false,
+   "canvasMB": 3.69,
+   "canvasOk": true,
+   "loadAvg": 1.77
+  },
+  {
+   "viewport": "800x450",
+   "cells": 30,
+   "rate": 4,
+   "p50": 33.3,
+   "p95": 66.6,
+   "p99": 133.4,
+   "p95ok": false,
+   "idleLayers": 33,
+   "p90Layers": 56,
+   "maxLayers": 64,
+   "layersOk": false,
+   "canvasMB": 14.75,
+   "canvasOk": true,
+   "loadAvg": 1.31
+  },
+  {
+   "viewport": "425x812",
+   "cells": 30,
+   "rate": 4,
+   "p50": 33.4,
+   "p95": 100,
+   "p99": 150.1,
+   "p95ok": false,
+   "idleLayers": 28,
+   "p90Layers": 48,
+   "maxLayers": 59,
+   "layersOk": false,
+   "canvasMB": 30.93,
+   "canvasOk": true,
+   "loadAvg": 1.35
+  },
+  {
+   "viewport": "all",
+   "cells": 36,
+   "status": "not yet: floor plans (Annex 6x6) arrive in M2"
+  }
+ ]
+}

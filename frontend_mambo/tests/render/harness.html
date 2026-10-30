@@ -82,7 +82,9 @@ try {
   const cam = renderer.camera;
   const ca = cam.add; cam.add = (amount, o) => { const ok = ca.call(cam, amount, o); log.push({ t: now(), kind: 'trauma', amount, tier: !!(o && o.tier), accepted: ok }); return ok; };
   const cf = cam.freeze; cam.freeze = async (ms) => { const t1 = now(); const ok = await cf.call(cam, ms); log.push({ t: t1, kind: 'hitstop', ms, ok, took: now() - t1 }); return ok; };
-  cam.onFreeze((on) => log.push({ t: now(), kind: 'freeze', on, paused: document.getAnimations().filter((a) => a.playState === 'paused').length }));
+  // WP10: CSS loops that are paused by their own animation-play-state (WP5's stepped symbol clock) are not the hit-stop's doing
+  const cssPaused = (a) => { try { return typeof CSSAnimation !== 'undefined' && a instanceof CSSAnimation && /paused/.test(getComputedStyle(a.effect.target).animationPlayState); } catch (e) { return false; } };
+  cam.onFreeze((on) => log.push({ t: now(), kind: 'freeze', on, paused: document.getAnimations().filter((a) => a.playState === 'paused' && !cssPaused(a)).length, cssPaused: document.getAnimations().filter(cssPaused).length }));
   const fl = document.getElementById('flash');
   if (fl) { const fa = fl.animate.bind(fl); fl.animate = (kf, o) => { log.push({ t: now(), kind: 'flash', peak: Array.isArray(kf) ? kf[0].opacity : null, ms: o && o.duration }); return fa(kf, o); }; }
 } catch (e) { console.error('spy', e); }

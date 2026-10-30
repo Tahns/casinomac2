@@ -173,6 +173,8 @@ export function buildRules(data, ctx = {}) {
       <li><strong>TURBO</strong>: speeds up the animations.</li>
       <li><strong>SECRET ENTRANCE</strong>: starts the Mission Briefing free spins directly at ${num(unleashCost)}x the ${B}, after you confirm the total cost.</li>
       <li><strong>SOUND</strong>: mutes or unmutes all sounds.</li>
+      <li><strong>SETTINGS</strong> (gear): opens the settings, in four tabs: Sound (mute, master, music and effects volume), Display (motion, screen flash effects, high contrast, session summary), Play (turbo, autoplay) and Info (these rules, RTP and version).</li>
+      <li><strong>Session summary</strong> (NET and TIME, under the balance): the net result and the time played in this session.</li>
       <li><strong>INFO</strong>: opens these rules.</li>
       <li><strong>FULLSCREEN</strong>: enters or leaves full screen.</li>
       <li><strong>MENU</strong>: opens the game menu.</li>

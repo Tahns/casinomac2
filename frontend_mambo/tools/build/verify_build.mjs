@@ -11,12 +11,12 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(HERE, '../../..');
+const ROOT = path.resolve(HERE, '../..'); // WP10: frontend_mambo/ (build_front.mjs writes frontend_mambo/dist; the old repo-root dist/ holds another game)
 const FRONT = path.join(ROOT, 'dist/front');
 const PORT = Number(process.env.PORT || 5230), MOCK = Number(process.env.MOCK_PORT || 5231);
 const PREFIX = '/game/v1/';
-const PW_DIR = process.env.PW_DIR || process.cwd();
-const CHROME = process.env.CHROMIUM || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const PW_DIR = process.env.PW_DIR || (fs.existsSync('/tmp/claude-0/pw/node_modules/playwright-core') ? '/tmp/claude-0/pw' : process.cwd());
+const CHROME = process.env.CHROMIUM || ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome', '/opt/pw-browsers/chromium'].find((p) => fs.existsSync(p));
 const { chromium } = createRequire(path.join(PW_DIR, 'x.js'))('playwright-core');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -30,7 +30,7 @@ const srv = http.createServer((req, res) => {
   served.push([200, p]); res.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store' }); fs.createReadStream(f).pipe(res);
 });
 await new Promise((r) => srv.listen(PORT, r));
-const mock = spawn('node', [path.join(ROOT, 'frontend/tools/mock-rgs/server.mjs')], { env: { ...process.env, MOCK_PORT: String(MOCK) }, stdio: 'ignore' });
+const mock = spawn('node', [path.join(ROOT, 'tools/mock-rgs/server.mjs')], { env: { ...process.env, MOCK_PORT: String(MOCK) }, stdio: 'ignore' });
 await sleep(800);
 
 const errors = [], failed = [], bad = [], rgs = [];

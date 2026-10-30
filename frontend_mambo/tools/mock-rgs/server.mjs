@@ -72,6 +72,8 @@ function loadFixtures() {
     }
   } catch (e) { console.error('fixture load failed', e.message); }
   for (const k of Object.keys(HAND_BOOKS)) if (!books[k]?.length) books[k] = HAND_BOOKS[k];
+  // v2 doors (SYNTHESIS 8.9): served at cost 100; until their books ship, the bonus books stand in
+  for (const k of ['entrance_orders', 'entrance_blackout']) { if (!(k in costs)) costs[k] = 100; if (!books[k]?.length) books[k] = books.bonus; }
 }
 loadFixtures();
 

@@ -9,7 +9,13 @@
     "qa": "node tests/guidelines/run.mjs",
     "build": "node tools/build/build_front.mjs",
     "pack:math": "node tools/build/pack_math.mjs",
-    "verify:build": "node tools/build/verify_build.mjs"
+    "verify:build": "node tools/build/verify_build.mjs",
+    "test": "node --test tests/core tests/text tests/heroine",
+    "qa:shell": "node tests/guidelines/shell.mjs",
+    "qa:heroine": "node tests/heroine/browser.mjs",
+    "qa:smoke": "node tests/e2e/smoke.mjs",
+    "qa:baseline": "node tests/e2e/baseline.mjs",
+    "qa:flash": "node tests/e2e/flash_capture.mjs --book busy"
   },
   "devDependencies": {
     "playwright-core": "1.56.1"
