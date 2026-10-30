@@ -1,5 +1,7 @@
 # WP5 (FX-WIRE) to WP10 (QA): capture scripts, unit tests
 
+Status: CLOSED. tests/fx imported by tests/core/index.js (milestone 1); capture scripts used in docs/v2/G2G3_REPORT.md.
+
 - `frontend_mambo/tests/e2e/lib_capture.mjs`: shared helpers (start `serve.mjs` on a port and kill only that PID, or reuse `BASE`;
   open the WP5 harness with a motion / flash setting; dev books `busy` (free spin, dial step 8, 9+ tumbles, wire blast) and `tumble`
   (30-cell chain, 9+ tumbles); busiest fixture book; CDP screencast; WCAG relative luminance per frame for the full frame and 25

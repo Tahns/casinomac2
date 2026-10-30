@@ -1,6 +1,6 @@
 # WP6 (LAYERS) to WP5 (FX-WIRE, owner of scene.js): per-mission palette tokens
 
-Status: open.
+Status: APPLIED by WP10 (integrator, 2026-10-30) in src/render/scene.js: MISSION_FS exactly as proposed, `pal(host, 'fs-', missionFs())`, and a MutationObserver on <html data-mission> that redraws the scene canvases once per change (the swap happens under the dossier).
 
 What: SYNTHESIS 9 art inventory lists "per-mission palette tokens (lair, hat-check, ballroom) swapped under the wipe by WP5's scene.js".
 scene.js has one free-spins set today (the lair, `--mb-fs-*`). WP6 now publishes which mission is playing:

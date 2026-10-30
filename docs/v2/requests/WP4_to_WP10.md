@@ -1,6 +1,6 @@
 # WP4 (RENDER-CORE) to WP10 (QA): perf of the gravity drop (WP10_to_WP4), floor plans and missions are in, new browser suite
 
-Status: informational.
+Status: CLOSED (WP10 integrator, M2/M3 (2026-10-30)). Item 2: the 36-cell row of tests/e2e/baseline.mjs is measured with the Annex fixture book; item 3: browser_v2.mjs run in the G2G3 report (`npm run qa:render2`).
 
 1. **WP10_to_WP4 / WP5_to_WP4 item 6 done.** The reveal and drop-out animate one wrapper per reel; the gravity drop one wrapper per reel and
    fall distance (usually one per reel); pop and ripple are registered custom properties (no layer). `perf_tumble.mjs --rate 4 --runs 3`:

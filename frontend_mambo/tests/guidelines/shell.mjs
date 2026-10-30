@@ -431,7 +431,7 @@ export async function runShellChecks() {
     note((await s.page.locator('#btn-unleash').count()) === 1, 'exactly one Secret Entrance button');
     await s.click('#btn-unleash'); await s.page.waitForSelector('#modal-confirm.open', { timeout: 3000 });
     let st = await s.page.evaluate(() => ({ focus: document.activeElement && document.activeElement.id, cards: [...document.querySelectorAll('#door-cards .door')].map((d) => d.dataset.mode), radios: [...document.querySelectorAll('#door-cards input:checked')].length, ok: document.getElementById('confirm-ok').disabled, text: document.getElementById('modal-confirm').innerText }));
-    note(st.focus === 'confirm-cancel', 'focus on Cancel'); note(J(st.cards) === '["bonus"]', 'today: only Stage Door (the math for the others does not exist): ' + J(st.cards)); note(st.radios === 0, 'nothing pre-selected');
+    note(st.focus === 'confirm-cancel', 'focus on Cancel'); note(J(st.cards) === '["bonus","entrance_orders","entrance_blackout"]', 'the FINAL data offers the three doors (Stage Door, Coat Check, Service Stairs): ' + J(st.cards)); note(st.radios === 0, 'nothing pre-selected');
     note(/100\.00/.test(st.text), 'real cost 100.00 shown: ' + snippet(st.text.replace(/\s+/g, ' '), 120)); note(!/\b\d+\s*(s|sec|seconds)\b|countdown|hurry|last chance|better odds/i.test(st.text), 'no countdown or pressure wording');
     note(plays(await mockLog()).length === 0, 'opening it sends no play');
     await s.close();

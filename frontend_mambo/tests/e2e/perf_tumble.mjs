@@ -2,6 +2,7 @@
 //
 //   node tests/e2e/perf_tumble.mjs [--rate 4] [--book tumble|busy|<devbook>] [--from-step 8] [--runs 3] [--port 5863]
 //        [--viewport 1024x576] [--css "<extra css>"] [--json out.json] [--touch] [--dpr 3]
+//        [--fixture fixtures/books_base_sample.jsonl --id 25532]   (WP10 M2/M3: a real book, e.g. a 36-cell Annex tumble; use --from-step 1)
 //
 // Plays a 30-cell tumble chain (12 cascades on the 6x5 board) under CDP Emulation.setCPUThrottlingRate, records every rAF delta,
 // and reports p50 / p95 / p99 of the frames from the start of tumble step `from-step` to the end of the chain, the compositor layer
@@ -16,6 +17,13 @@ import { args, startServer, launch, openHarness, bookFor, layerProbe, pct } from
 const A = args();
 const port = Number(A.port || 5863), rate = Number(A.rate || 4), runs = Number(A.runs || 3), fromStep = Number(A['from-step'] || 8);
 const [vw, vh] = String(A.viewport || '1024x576').split('x').map(Number);
+function fixtureBook(file, id) {
+  const all = fs.readFileSync(path.resolve(file), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  const b = id != null && id !== true ? all.find((x) => String(x.id) === String(id)) : all[0];
+  if (!b) throw new Error('no book ' + id + ' in ' + file);
+  const plan = (b.events.find((e) => e.type === 'layout') || {}).id || 'mezzanine';
+  return { events: b.events, label: `fixture ${path.basename(file)} book ${b.id} (${plan}, ${b.events.filter((e) => e.type === 'tumbleBoard').length} tumbles)` };
+}
 const srv = await startServer(port);
 const browser = await launch();
 const results = [];
@@ -25,7 +33,7 @@ try {
     const { ctx, page, cdp, errors } = await openHarness(browser, srv.base, { viewport: { width: vw, height: vh }, css: A.css, dpr: Number(A.dpr || 1), touch: !!A.touch });
     const layers = await layerProbe(cdp);
     await page.waitForTimeout(800);
-    const book = await bookFor(page, A.book || 'tumble', { steps: 12, minTumbles: Math.max(9, fromStep + 1) });
+    const book = A.fixture ? fixtureBook(A.fixture, A.id) : await bookFor(page, A.book || 'tumble', { steps: 12, minTumbles: Math.max(9, fromStep + 1) });
     if (!book) throw new Error('no book');
     const idleLayers = layers.now;
     if (rate > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate });

@@ -1,5 +1,7 @@
 # WP1+WP2+WP3 (M2/M3) to WP10 (QA)
 
+Status: CLOSED (WP10 integrator, M2/M3 (2026-10-30)). 1 kept. 2 package.json scripts `qa:gesture`, `qa:visual` added. 3 nothing to do (tests/heroine/index.js). 4 applied as written in tests/guidelines/shell.mjs PICKER.
+
 1. **`tests/core/audio_api.test.mjs` edited in the same commit as the change it pins** (INTERFACES rule: a frozen value changes only with its
    pinning test updated in the same commit). The Music slider default is now 5 (slot guide rule "music default 5 %"); Master and Effects
    stay 75. One line changed: the defaults loop now asserts master 75, sfx 75, music 5. Please keep it.

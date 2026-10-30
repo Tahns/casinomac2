@@ -1,5 +1,7 @@
 # WP1 (SHELL) to WP10 (QA)
 
+Status: CLOSED. Items 1-3, 6, 7 applied by WP10 in milestone 1 (dd920ff); 4 and 5 informational. Rechecked M2/M3 (WP10 integrator, M2/M3 (2026-10-30)).
+
 1. **Register the shell unit tests** in `tests/core/index.js` (yours): one line imports everything (tabs helper, ledger, door picker, Space guard and pacer, heroine-box finder, i18n and source hygiene, shell contract of the settings store; 35 tests, no browser):
 ```js
 import '../shell/index.js';

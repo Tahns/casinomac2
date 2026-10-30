@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   FRONT, SHOTS, GAME, RGS, SESSION, setSid, VIEWPORTS, loadPlaywright, ensureServers, stopServers, waitForGame, Session,
-  mockCfg, mockReset, mockLog, mockClear, mockState, plays, ends, sleep, nums, snippet, HERE,
+  mockCfg, mockReset, mockLog, mockClear, mockState, plays, ends, sleep, nums, snippet, HERE, pickDoor,
 } from './lib.mjs';
 import { staticReview } from './static.mjs';
 
@@ -161,7 +161,7 @@ async function main() {
     await s.click('#btn-bet', { force: true }).catch(() => {}); await sleep(900); res.button = await msgOf(); await s.closeOverlays();
     await s.page.keyboard.press('Space'); await sleep(900); res.space = await msgOf(); await s.closeOverlays();
     await s.clickIfVisible('#btn-autoplay'); await sleep(400); await s.clickIfVisible('#ap-confirm'); await sleep(1500); res.autoplay = await msgOf(); await s.closeOverlays();
-    await s.clickIfVisible('#btn-unleash'); await sleep(400); await s.clickIfVisible('#confirm-ok'); await sleep(1200); res.unleash = await msgOf(); await s.closeOverlays();
+    await s.clickIfVisible('#btn-unleash'); await sleep(400); await pickDoor(s, 'bonus'); await s.clickIfVisible('#confirm-ok'); await sleep(1200); res.unleash = await msgOf(); await s.closeOverlays();
     const log = await mockLog(); const pl = plays(log); await s.shot?.('x');
     await s.page.screenshot({ path: path.join(SHOTS, 'qa_zero_balance.png') }); await s.close();
     ev.push('messages by path: ' + J(res), 'play calls=' + pl.length, ...fmtLog(log));
@@ -213,7 +213,7 @@ async function main() {
     const s = await sess({}); await s.setBet(1); await s.waitEnabled('#btn-unleash', 3000).catch(() => {}); await mockClear(); await s.click('#btn-unleash'); await s.waitVisible('#modal-confirm', 3000).catch(() => {});
     const shown = await s.visible('#modal-confirm'); const txt = (await s.text('#modal-confirm')) || ''; const p0 = plays(await mockLog()).length;
     await s.click('#confirm-cancel', { force: true }).catch(() => {}); await sleep(600); const p1 = plays(await mockLog()).length;
-    await s.click('#btn-unleash', { force: true }); await sleep(500); await s.click('#confirm-ok', { force: true }).catch(() => {}); await sleep(1200);
+    await s.click('#btn-unleash', { force: true }); await sleep(500); await pickDoor(s, 'bonus'); await s.click('#confirm-ok', { force: true }).catch(() => {}); await sleep(1200);
     const pl = plays(await mockLog()); await s.close();
     const costShown = /100(\.00)?/.test(txt);
     return [p0 === 0 && p1 === 0 && shown && costShown && pl.length === 1 && /bonus/i.test(pl[0].body.mode) ? PASS : FAIL, `dialog visible=${shown} text="${snippet(txt, 150)}"`, `plays before confirm=${p0}, after cancel=${p1}, after OK=${pl.length} ${pl[0] ? J(pl[0].body) : ''}`];
@@ -246,7 +246,7 @@ async function main() {
       const dis = await s.isDisabled('#btn-unleash'); const cost = (await s.text('#unleash-cost')) || '';
       await s.click('#btn-unleash'); await s.waitVisible('#modal-confirm', 3000).catch(() => {});
       const dlg = await s.visible('#modal-confirm'); const dtxt = (await s.text('#modal-confirm')) || '';
-      await s.click('#confirm-ok').catch(() => {}); await sleep(900);
+      await pickDoor(s, 'bonus'); await s.click('#confirm-ok').catch(() => {}); await sleep(900);
       const pl = plays(await mockLog());
       ev.push(`bet ${c.at} (cost ${c.min}): reached=${reached} disabled=${dis} label="${snippet(cost, 30)}" confirm visible=${dlg} text="${snippet(dtxt, 100)}"`, `plays after OK=${pl.length} ${pl[0] ? J(pl[0].body) : ''}`);
       await s.close();
@@ -353,8 +353,8 @@ async function main() {
     return [norm(r.meta) === norm(want) && r.ta === 'none' ? PASS : FAIL, 'meta=' + r.meta, 'touch-action on #game=' + r.ta, 'body overflow=' + r.ov];
   });
 
-  await check(219, 'currencies USD/EUR/CAD/MXN/JPY/XSC/XGC', async () => {
-    const exp = { USD: '$12.34', EUR: '€12.34', CAD: 'CA$12.34', MXN: 'MX$12.34', JPY: '¥12', XSC: '12.34 SC', XGC: '12.34 GC' }; const ev = []; let bad = 0;
+  await check(219, 'currencies USD/EUR/CAD/MXN/JPY/XSC/XGC/XEC', async () => {
+    const exp = { USD: '$12.34', EUR: '€12.34', CAD: 'CA$12.34', MXN: 'MX$12.34', JPY: '¥12', XSC: '12.34 SC', XGC: '12.34 GC', XEC: '12.34 SC' }; const ev = []; let bad = 0;
     for (const [cur, want] of Object.entries(exp)) {
       await mockCfg({ currency: cur, balance: cur === 'JPY' ? 12000000 : 12340000, bet: cur === 'JPY' ? { minBet: 1000000, maxBet: 10000000, stepBet: 1000000, defaultBetLevel: 1000000, betLevels: [1000000, 2000000, 5000000, 10000000] } : undefined });
       const s = await sess({}); const b = (await s.text('#balance')) || ''; const bet = (await s.text('#bet')) || ''; await s.close();
@@ -554,7 +554,7 @@ async function main() {
       await s.page.evaluate(() => { window.__winSeq = []; const el = document.getElementById('win'); new MutationObserver(() => window.__winSeq.push([Date.now(), el.textContent])).observe(el, { childList: true, characterData: true, subtree: true }); });
       await mockCfg({ force: { category: cat, mode } }); await mockClear();
       const t0 = Date.now();
-      if (mode === 'bonus') { await s.page.evaluate(() => { if (!document.body.classList.contains('turbo')) document.querySelector('#btn-turbo')?.click(); }); await s.click('#btn-unleash', { force: true }); await sleep(500); await s.click('#confirm-ok', { force: true }).catch(() => {}); await s.waitIdle(15000).catch(() => {}); }
+      if (mode === 'bonus') { await s.page.evaluate(() => { if (!document.body.classList.contains('turbo')) document.querySelector('#btn-turbo')?.click(); }); await s.click('#btn-unleash', { force: true }); await sleep(500); await pickDoor(s, 'bonus'); await s.click('#confirm-ok', { force: true }).catch(() => {}); await s.waitIdle(15000).catch(() => {}); }
       await sleep(400);
       if (mode !== 'bonus') await s.playRound({ timeout: 200000 }); else { for (let i = 0; i < 100 && (await s.state()) !== 'idle'; i++) await sleep(2000); }
       const secs = Math.round((Date.now() - t0) / 1000);

@@ -1,6 +1,6 @@
 # WP6 (LAYERS) to WP4 (RENDER-CORE): layer ctx fields, trigger banner wording, test probe order
 
-Status: open. None of these blocks the layers (each has a fallback today); they remove workarounds.
+Status: CLOSED for items 1-2 (applied by WP4, see WP4_to_WP6.md). Item 4 FYI, rechecked by WP10: meter.js takes the "+N" step from missionAssigned.dialStep (meter.mission); "MISSION METER" now appears only in a code comment of render/index.js, not on screen.
 
 ## 1. Add four fields to `layerCtx` (INTERFACES 4 says "fields are only ever added")
 Why: the layers today import the audio singleton directly (their cues are all neutral, `winLike: false`, so the quiet gate is not

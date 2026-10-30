@@ -1,5 +1,7 @@
 # WP11 (CONTENT-RELEASE) to WP10 (QA): mock RGS and the new fixtures
 
+Status: CLOSED (WP10 integrator, M2/M3 (2026-10-30)). Items 1 and 2 applied as written in tools/mock-rgs/server.mjs (MOCK_FIXTURES, non-recursive scan with the `_sample`-aware regex: no phantom `entrance` mode). Item 3 done by WP1 (986bc5e). Item 4 applied: `pickDoor(s, mode)` in tests/guidelines/lib.mjs (your snippet) before every `#confirm-ok` click of run.mjs ([222], [31], UNL-MIN-*, WIN-bonus-*).
+
 `fixtures/` now holds small samples of the FINAL v2 books for the four modes (`node tools/build/make_fixtures.mjs`, see `fixtures/PICKS.md` and
 `fixtures/SOURCE.json`); the v1 books moved to `fixtures/v1/`. The mock already loads them through `index.json` (`_sample.jsonl` candidate):
 `/__mock/state` shows `bookSource: fixtures`, costs `{ base: 1, bonus: 100, entrance_orders: 100, entrance_blackout: 100 }` and 80 / 24 / 32 / 27

@@ -14,3 +14,24 @@ WP5_to_WP4 item 6: the gravity drop animates every cell on its own (per-cell com
 snippet landed (idle 33 layers): p90 56, max 64 layers during the tumble; p95 frame 66.7 ms at 4x CPU (budget 16.6).
 Animate one wrapper per column (6 layers) or the drop as a custom property (`--dy`, no layer), then check with
 `node tests/e2e/perf_tumble.mjs --rate 4 --runs 3` (`layersOk` true) and `node tests/e2e/baseline.mjs`.
+
+---
+## M2/M3 (WP10 integrator, 2026-10-30)
+
+### 1. The "MISSION START" burst runs off the left edge in portrait and at 400x225 (render/index.js:449)
+Seen in `tests/e2e/modes.mjs` shots `frontend_mambo/tests/shots/v2_m23/modes_425x812_door_orders_mid.png` ("SSION START", the word is cut
+by the screen edge) and `modes_400x225_door_blackout_mid.png` (the text overflows its star across the logo). The bubble is centred on
+`cellCenter(1.2, 0.2)`, near the left frame edge, and its text is wider than the star. Keep the bubble inside the app box:
+```js
+// render/index.js, free spins start (line ~449)
+if (motion.particles > 0) {
+  const r = appRect(), p = cellCenter(2.5, 0.2), size = Math.min(r.width, r.height) * .22;   // board centre column, not reel 1
+  const x = Math.min(Math.max(p.x, r.left + size * 1.6), r.right - size * 1.6);             // half the text width stays on screen
+  fxm.burstBubble(x, p.y, size, t('meter.start'));
+}
+```
+(Exact clamp is yours; what matters is that no letter leaves the 425x812 or 400x225 viewport.) Not a guideline FAIL; a polish item.
+
+### 2. FYI: applied in WP5 files by WP10
+`src/render/wire.js` is now rows-aware (`rowsAware: true`): your Annex adapter (`wireHost`, `WO`) steps aside on its own. You may delete
+it when convenient; it is inert now. `src/render/scene.js` keys its free-spins palette on `<html data-mission>` (WP6_to_WP5).

@@ -1,6 +1,6 @@
 # WP4 (RENDER-CORE) to WP5 (FX-WIRE): frame height for the wire (Annex 6 rows), scene palette hook, canvas cost
 
-Status: open (M2/M3). Nothing is broken today: render/index.js carries a workaround for item 1; items 2 and 3 are optional.
+Status: item 1 APPLIED by WP10 (integrator, 2026-10-30) in src/render/wire.js: `rowsOf()` from ctx.rows(), `normCells(cells, rows)` without the padded guess, viewBox per path, every `/ ROWS` uses rowsOf(), `rowsAware: true` (the Annex adapter of render/index.js steps aside). Checked: browser_v2 --only=P 62/62, Annex book 59389 (path on geometric rows 5-4-3) drawn on the right cells at 1280x720 (viewBox 0 0 6 6). fuse.js is not used by the player (left unchanged). Item 2: done through <html data-mission> (WP6_to_WP5 applied). Item 3 (canvas redraw only on change) still OPEN for WP5.
 
 ## 1. wire.js (and fuse.js) assume 5 rows; the Annex floor plan has 6 (SYNTHESIS 3, WP7_to_FRONT item 3)
 `const ROWS = 5`, `normCells()` reads any row >= 5 as a PADDED row and shifts the whole path up, the svg viewBox is `0 0 6 5`, and the fx

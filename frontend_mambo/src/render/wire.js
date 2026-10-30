@@ -36,12 +36,12 @@ function ensureCss() {
   } catch (e) { /* styles optional */ }
 }
 
-// Visible rows 0..4. If any row reaches 5 the event uses padded rows (1..5): shift down.
-export function normCells(cells) {
+// Fuse events are GEOMETRIC (never padded, WP7_to_FRONT): keep the cells inside the live frame (rows = 5, or 6 on the Annex plan).
+// (WP4_to_WP5 item 1, applied by WP10: the padded-row guess is gone; the frame height comes from ctx.rows().)
+export function normCells(cells, rows = ROWS) {
   const list = (Array.isArray(cells) ? cells : []).map((p) => ({ ...p, reel: Number(p.reel), row: Number(p.row) }))
     .filter((p) => Number.isFinite(p.reel) && Number.isFinite(p.row));
-  const padded = list.some((p) => p.row >= ROWS);
-  return list.map((p) => ({ ...p, row: padded ? p.row - 1 : p.row })).filter((p) => p.reel >= 0 && p.reel < COLS && p.row >= 0 && p.row < ROWS);
+  return list.filter((p) => p.reel >= 0 && p.reel < COLS && p.row >= 0 && p.row < rows);
 }
 
 /**
@@ -66,6 +66,8 @@ export function createWire(ctx) {
 
   const layer = document.createElement('div');
   layer.className = 'wr-layer'; layer.setAttribute('aria-hidden', 'true');
+  // the frame height comes from the player (ctx.rows() = 5 or 6; default 5 for old callers)
+  const rowsOf = () => { try { const n = Number(ctx.rows && ctx.rows()); return n >= 1 && n <= 8 ? n : ROWS; } catch (e) { return ROWS; } };
   const svg = el('svg', { class: 'wr-svg', viewBox: `0 0 ${COLS} ${ROWS}`, preserveAspectRatio: 'none' });
   layer.appendChild(svg);
   ctx.board.appendChild(layer);
@@ -111,7 +113,7 @@ export function createWire(ctx) {
     const last = ctr(cells[cells.length - 1]), prev = ctr(cells[cells.length - 2]);
     let dx = last.x - prev.x, dy = last.y - prev.y; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
     // sit on the cell corner away from the cable so the end symbol stays readable
-    const cx = clamp(last.x + dx * .36 + (dx === 0 ? .26 : 0), .34, COLS - .34), cy = clamp(last.y + dy * .36 - .2, .34, ROWS - .34);
+    const cx = clamp(last.x + dx * .36 + (dx === 0 ? .26 : 0), .34, COLS - .34), cy = clamp(last.y + dy * .36 - .2, .34, rowsOf() - .34);
     const g = el('g', { class: 'wr-bomb', transform: `translate(${cx.toFixed(3)} ${cy.toFixed(3)})` }, svg);
     el('line', { class: 'wr-out', x1: last.x - cx, y1: last.y - cy, x2: 0, y2: 0 }, g);
     el('line', { class: 'wr-hot-core', x1: last.x - cx, y1: last.y - cy, x2: 0, y2: 0, style: 'opacity:1;stroke:#9A7BD0' }, g);
@@ -138,6 +140,7 @@ export function createWire(ctx) {
 
   function build(cells) {
     clear(); setUnit();
+    svg.setAttribute('viewBox', `0 0 ${COLS} ${rowsOf()}`);
     st.cells = cells; st.burned = 0;
     const rope = el('g', { class: 'wr-rope' }, svg);
     cells.forEach((p) => st.scorch.push(el('rect', { class: 'wr-scorch', x: p.reel + .06, y: p.row + .06, width: .88, height: .88, rx: .14 }, rope)));
@@ -230,7 +233,7 @@ export function createWire(ctx) {
   }
 
   async function drawPath(ev) {
-    const cells = normCells(ev && ev.cells);
+    const cells = normCells(ev && ev.cells, rowsOf());
     if (cells.length < 2) return;
     const burned = clamp(Math.round(Number(ev.burned) || 0), 0, cells.length);
     build(cells); st.shown = 0;
@@ -287,7 +290,7 @@ export function createWire(ctx) {
     el('polygon', { class: 'wr-pow-in', points: d2.trim() }, sv);
     b.appendChild(sv);
     if (word) { const tx = document.createElement('span'); tx.className = 'wr-pow-text'; tx.textContent = word; b.appendChild(tx); }
-    b.style.left = (c.reel + .5) / COLS * 100 + '%'; b.style.top = (c.row + .5) / ROWS * 100 + '%';
+    b.style.left = (c.reel + .5) / COLS * 100 + '%'; b.style.top = (c.row + .5) / rowsOf() * 100 + '%';
     layer.appendChild(b);
     if (!isReduced()) { try { b.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 1, offset: .3 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: 1, offset: .7 }, { transform: 'translate(-50%,-50%) scale(1.1)', opacity: 0 }], { duration: T(700), delay, fill: 'both', easing: 'steps(6,end)' }).finished.then(() => b.remove(), () => b.remove()); } catch (e) { setTimeout(() => b.remove(), 800); } }
     else { setTimeout(() => b.remove(), 700); }
@@ -296,7 +299,7 @@ export function createWire(ctx) {
   // local paper breakup: 3 cut-paper triangles fly out of the cell, then a dust cloud marks the empty cell
   function localBreak(p, color) {
     if (isReduced()) return;
-    const u = ctx.board.clientWidth / COLS, cx = (p.reel + .5) * u, cy = (p.row + .5) * (ctx.board.clientHeight / ROWS);
+    const u = ctx.board.clientWidth / COLS, cx = (p.reel + .5) * u, cy = (p.row + .5) * (ctx.board.clientHeight / rowsOf());
     const tris = ['polygon(50% 0,100% 100%,0 100%)', 'polygon(0 0,100% 20%,40% 100%)', 'polygon(10% 0,100% 50%,0 90%)'];
     for (let i = 0; i < 3; i++) {
       const d = document.createElement('div'); d.className = 'wr-piece';
@@ -309,7 +312,7 @@ export function createWire(ctx) {
   }
   function dustCloud(p) {
     if (isReduced()) return;
-    const u = ctx.board.clientWidth / COLS, cx = (p.reel + .5) * u, cy = (p.row + .5) * (ctx.board.clientHeight / ROWS);
+    const u = ctx.board.clientWidth / COLS, cx = (p.reel + .5) * u, cy = (p.row + .5) * (ctx.board.clientHeight / rowsOf());
     for (let i = 0; i < 3; i++) {
       const d = document.createElement('div'); d.className = 'wr-dust';
       const w = u * (.22 + Math.random() * .12);
@@ -320,7 +323,7 @@ export function createWire(ctx) {
   }
   function shield(p) {
     if (isReduced()) return;
-    const u = ctx.board.clientWidth / COLS, w = u * .95, cx = (p.reel + .5) * u, cy = (p.row + .5) * (ctx.board.clientHeight / ROWS);
+    const u = ctx.board.clientWidth / COLS, w = u * .95, cx = (p.reel + .5) * u, cy = (p.row + .5) * (ctx.board.clientHeight / rowsOf());
     const s = document.createElement('div'); s.className = 'wr-shield';
     s.style.cssText = `left:${cx - w / 2}px;top:${cy - w / 2}px;width:${w}px;height:${w}px`;
     layer.appendChild(s);
@@ -338,7 +341,7 @@ export function createWire(ctx) {
   async function blast(ev) {
     quality.keepAlive(4000);
     if (!st.cells.length && st.pending) { const pe = st.pending; st.pending = null; await drawPath(pe); }
-    const cells = normCells(ev && ev.cells);
+    const cells = normCells(ev && ev.cells, rowsOf());
     const gen = st.gen;
     const fast = turbo(), still = isReduced();
     setUnit();
@@ -435,6 +438,7 @@ export function createWire(ctx) {
 
   return {
     path, burn, blast, fizzle,
+    rowsAware: true, // the player's Annex adapter steps aside (WP4_to_WP5 item 1)
     clear: () => { clear(false); },
     get active() { return st.cells.length > 0; },
     destroy() { clear(false); layer.remove(); },

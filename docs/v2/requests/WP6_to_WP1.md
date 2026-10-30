@@ -1,6 +1,6 @@
 # WP6 (LAYERS) to WP1 (SHELL, owner of en.js)
 
-Status: open.
+Status: CLOSED (applied by WP1 in 986bc5e: en.js 'fs.incoming': 'MISSION INCOMING'; the player uses it).
 
 ## A neutral title for the free-spins trigger banner
 What: add one key to `src/i18n/en.js` (and `social.js` needs nothing, the text is clean):

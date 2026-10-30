@@ -19,6 +19,15 @@ const LAIR = {
   lamp: '#F0472F', blind: '#F0472F', wedge: '#1FB5A3', cream: '#FBF1D9', lemon: '#FFD23F',
 };
 
+// Per-mission free-spins palettes (WP6_to_WP5, applied by WP10): keyed on <html data-mission> (set by WP6 under the dossier wipe);
+// the lair stays the default (Briefing and any unknown mission). Closed-palette colours only.
+const MISSION_FS = {
+  briefing: LAIR,                                                    // the secret lair (teal round room)
+  orders: { ...LAIR, bg: '#3B1F52', wall: '#9A7BD0', ring: '#E8A92B', seam: '#14102B', lamp: '#F08A2B', blind: '#E8A92B', wedge: '#E8A92B' },  // hat-check room: aubergine and brass
+  blackout: { ...LAIR, bg: '#14102B', wall: '#2B2A6B', ring: '#9A7BD0', seam: '#1D1B4F', lamp: '#FBF1D9', blind: '#9A7BD0', wedge: '#FBF1D9' },  // ballroom in the dark: ink, indigo, cream spot
+};
+const missionFs = () => { try { return MISSION_FS[document.documentElement.dataset.mission] || LAIR; } catch (e) { return LAIR; } };
+
 function rng(seed) {
   let a = seed >>> 0;
   return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -317,7 +326,7 @@ export function createScene(app) {
     const rect = host.getBoundingClientRect();
     const W = Math.max(2, Math.round(rect.width)), H = Math.max(2, Math.round(rect.height));
     if (!force && W === lastW && H === lastH) return;
-    lastW = W; lastH = H; P = pal(host, '', BASE); PL = pal(host, 'fs-', LAIR);
+    lastW = W; lastH = H; P = pal(host, '', BASE); PL = pal(host, 'fs-', missionFs());
     const sc = Math.min(window.devicePixelRatio || 1, 1.5);
     const size = (k, f) => { const c = cv(k); c.width = Math.round(W * f * sc); c.height = Math.round(H * f * sc); return c; };
     const run = (name, fn, c, ...a) => { try { fn(c, c.width, c.height, ...a); } catch (e) { console.error('scene', name, e); } };
@@ -407,6 +416,13 @@ export function createScene(app) {
     mo = new MutationObserver(() => setLair(isFs(), false));
     mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     mo.observe(app, { attributes: true, attributeFilter: ['class'] });
+  }
+  // redraw the lair canvases when the mission changes (the palette swap happens while the dossier covers the board)
+  let missionNow = document.documentElement.dataset.mission || '';
+  if (typeof MutationObserver !== 'undefined') {
+    const mm = new MutationObserver(() => { const m = document.documentElement.dataset.mission || ''; if (m === missionNow) return; missionNow = m; lastW = 0; draw(true); });
+    mm.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mission'] });
+    const prev = mo; mo = { disconnect() { mm.disconnect(); if (prev) prev.disconnect(); } };
   }
   draw(true);
   setLair(isFs(), true);

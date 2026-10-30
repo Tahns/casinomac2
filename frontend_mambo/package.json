@@ -10,12 +10,18 @@
     "build": "node tools/build/build_front.mjs",
     "pack:math": "node tools/build/pack_math.mjs",
     "verify:build": "node tools/build/verify_build.mjs",
-    "test": "node --test tests/core tests/text tests/heroine",
+    "test": "node --test tests/core tests/text tests/heroine tests/render tests/layers",
     "qa:shell": "node tests/guidelines/shell.mjs",
     "qa:heroine": "node tests/heroine/browser.mjs",
     "qa:smoke": "node tests/e2e/smoke.mjs",
     "qa:baseline": "node tests/e2e/baseline.mjs",
-    "qa:flash": "node tests/e2e/flash_capture.mjs --book busy"
+    "qa:flash": "node tests/e2e/flash_capture.mjs --book busy",
+    "qa:modes": "node tests/e2e/modes.mjs",
+    "qa:engine": "node tests/guidelines/engine_selfcheck.mjs",
+    "qa:gesture": "node tests/audio/gesture.mjs",
+    "qa:visual": "node tests/heroine/visual.mjs",
+    "qa:render2": "node tests/render/browser_v2.mjs",
+    "qa:layers": "node tests/layers/browser.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.56.1"

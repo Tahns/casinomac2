@@ -171,3 +171,13 @@ export class Session {
 
 export const nums = (s) => (String(s || '').match(/[0-9]+(?:[.,][0-9]+)?/g) || []).map((x) => parseFloat(x.replace(',', '.')));
 export const snippet = (s, n = 160) => String(s ?? '').replace(/\s+/g, ' ').slice(0, n);
+
+// v2 Secret Entrance confirm (WP11_to_WP10 item 4): with several doors nothing is pre-selected and CONFIRM stays disabled until one
+// is chosen. Click the door card of `mode` (bonus = Stage Door, entrance_orders = Coat Check, entrance_blackout = Service Stairs).
+// A single-door dialog renders `.door.single` (no input): then this is a no-op. Returns true when a radio of that mode is checked.
+export async function pickDoor(s, mode = 'bonus') {
+  const sel = `#door-cards .door[data-mode="${mode}"]`;
+  await s.page.click(sel, { force: true, timeout: 1500 }).catch(() => {});
+  await sleep(150);
+  return s.page.evaluate((m) => { const i = document.querySelector(`#door-cards input.door-in[value="${m}"]`); return i ? i.checked : null; }, mode).catch(() => null);
+}

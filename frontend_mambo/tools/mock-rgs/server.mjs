@@ -12,7 +12,7 @@ import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const FIX = path.resolve(HERE, '../../fixtures');
+const FIX = path.resolve(process.env.MOCK_FIXTURES || path.resolve(HERE, '../../fixtures')); // MOCK_FIXTURES: e.g. fixtures/v1 (WP11_to_WP10 item 1)
 const PORT = Number(process.env.MOCK_PORT || 5180);
 const MICRO = 1_000_000;
 
@@ -59,8 +59,8 @@ function loadFixtures() {
     }
     // fallback: any books_<mode>*.jsonl[.zst] / *.json arrays in fixtures
     if (fs.existsSync(FIX)) {
-      for (const f of fs.readdirSync(FIX, { recursive: true })) {
-        const m = /books?_([a-z]+)[^/]*\.(jsonl(\.zst)?|json)$/i.exec(String(f));
+      for (const f of fs.readdirSync(FIX)) {               // not recursive: fixtures/v1 is a separate set (WP11_to_WP10 item 2)
+        const m = /^books_([a-z_]+?)(?:_sample)?\.(jsonl(\.zst)?|json)$/i.exec(String(f));
         if (!m) continue; const name = m[1].toLowerCase();
         if (books[name]?.length) continue;
         try {
@@ -86,6 +86,19 @@ function category(b, mode) {
   if (p >= 1500) return 'bigwin';                             // >= 15x
   return p > 0 ? 'win' : 'loss';
 }
+// v2 tags (milestones 2 and 3): force {category:'plan_annex'|'plan_lobby'|'plan_atrium'|'plan_mezzanine'|'mission_briefing'|'mission_orders'|'mission_blackout'|'caseOpen'|'lightRoute'}
+// also matches; 'plan_mezzanine' includes a book with no layout event (the home plan).
+function tags(b) {
+  const t = new Set(); let plan = null;
+  for (const e of b.events || []) {
+    if (e.type === 'layout') plan = String(e.id || '').toLowerCase();
+    else if (e.type === 'missionAssigned') t.add('mission_' + String(e.mission || 'briefing').toLowerCase());
+    else if (e.type === 'caseOpen' || e.type === 'lightRoute') t.add(e.type);
+  }
+  t.add('plan_' + (plan || 'mezzanine'));
+  return t;
+}
+const matches = (b, mode, cat) => category(b, mode) === cat || tags(b).has(cat);
 // Real SDK books: payoutMultiplier and event amounts are integers x100 (500000 = 5000x). The RGS serves round.payoutMultiplier as a plain multiplier.
 const norm = (b) => ({ ...b, payoutMultiplier: Number(b.payoutMultiplier) / 100 });
 
@@ -118,7 +131,7 @@ function pickBook(S, mode, amountMicro) {
   const list = books[m] || books.base;
   let b;
   if (f?.id != null) b = list.find((x) => x.id === f.id) || Object.values(books).flat().find((x) => x.id === f.id) || list[0];
-  else if (f?.category) { const cat = f.category === 'big' ? 'bigwin' : f.category; const c = list.filter((x) => category(x, m) === cat); b = c.length ? c[Math.floor(S.rng() * c.length)] : null; if (!b) throw new Error('no book of category ' + f.category + ' in ' + m); }
+  else if (f?.category) { const cat = f.category === 'big' ? 'bigwin' : f.category; const c = list.filter((x) => matches(x, m, cat)); b = c.length ? c[Math.floor(S.rng() * c.length)] : null; if (!b) throw new Error('no book of category ' + f.category + ' in ' + m); }
   else b = list[Math.floor(S.rng() * list.length)];
   return { book: norm(b), mode: m };
 }
@@ -179,7 +192,7 @@ const server = http.createServer(async (req, res) => {
     if (p === '/__mock/log' && req.method === 'DELETE') { S.log = []; return send(res, 200, { ok: true }); }
     if (p === '/__mock/log/clear') { S.log = []; return send(res, 200, { ok: true }); }
     if (p === '/__mock/config' && req.method === 'POST') { applyConfig(S, body); return send(res, 200, { ok: true, state: { balance: S.balance, currency: S.currency, config: S.config, round: S.round && { ...S.round, state: undefined }, bookSource } }); }
-    if (p === '/__mock/state') { const { rng, ...rest } = S; return send(res, 200, { ...rest, log: S.log.length, bookSource, costs, books: Object.fromEntries(Object.entries(books).map(([k, v]) => [k, v.map((b) => ({ id: b.id, p: b.payoutMultiplier, cat: category(b, k) }))])) }); }
+    if (p === '/__mock/state') { const { rng, ...rest } = S; return send(res, 200, { ...rest, log: S.log.length, bookSource, costs, books: Object.fromEntries(Object.entries(books).map(([k, v]) => [k, v.map((b) => ({ id: b.id, p: b.payoutMultiplier, cat: category(b, k), tags: [...tags(b)] }))])) }); }
     return send(res, 404, { error: 'unknown control' });
   }
 

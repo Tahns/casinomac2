@@ -1,5 +1,7 @@
 # WP2 (AUDIO) to WP10 (QA)
 
+Status: CLOSED. Item 1 applied in milestone 1 (tests/core/index.js imports ../audio/taper.test.mjs); 2 run in the G2G3 report; 3 informational; 4 fixed by WP1.
+
 1. **Register the audio unit tests in `tests/core/index.js`** (your file). Both are pure node tests (no browser, no AudioContext):
 ```js
 import '../audio/taper.test.mjs';   // U1 taper + cue table shape (every sound has a boolean winLike flag; the ten v2 cues are neutral)
