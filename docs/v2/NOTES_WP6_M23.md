@@ -30,3 +30,17 @@ Ports: 5910-5919 (5910 = static http server of the repo root while working).
   * requests written: WP6_to_WP4 (ctx.audio/mascot/fmt/mode; neutral trigger banner), WP6_to_WP1 (key fs.incoming), WP6_to_WP5 (palette).
   * observed (not mine): WP4 trigger banner says "MISSION BRIEFING" for every mission; WP4's index.js is mid-edit in this session
     (a transient `syncPlan is not defined` console error was seen once while it changed).
+- session 1 (results): `node tests/layers/browser.mjs` sections A-E 38/38 PASS (A blueprint: one sheet per spin, only the plan of the
+  spin, outline cells == cellCount for mezzanine 30 / atrium 26 / lobby 24 / annex 36, 515-525 ms, turbo <= 290 ms; B envelope: WIN
+  untouched between banked steps and caseOpen, SEALED -> OPENED, slips steel/lilac, bank == caseOpen.bank; C beam: 0 lit mismatches,
+  no dark left at any reveal; D door, skip refused before 1.2 s and accepted after (1235 ms), costume trench, v1 bonus book -> Briefing,
+  door + dossier 4.4 s; E Still: dossier open at once, no running layer animation, blueprint fully inked). F/G 16/16 PASS (shots of
+  every layer at 1280x720, 1024x576, 425x812, 400x225 in tests/layers/shots/, all looked at). Unit 11/11. Guideline runner (ports
+  5912/5913, report in scratch): 47 PASS 0 FAIL; the qa_*.png it rewrites were restored with git checkout.
+- 10-second proxy (tests/layers/shots/tensec_<mission>_{2s,8s}.png, 1280x720, sound off, frames 2 s and 8 s after the first free-spin
+  reveal). Judged by me, not by 5 viewers (the real test needs people):
+  * Ballroom Blackout: identifiable at a glance at 2 s and 8 s (dark board, cone + lit 2x2 window, heroine in the evening gown).
+  * The Briefing: identifiable by elimination only (bright board, climbing dial, lab coat); nothing WP6 draws during its spins.
+  * Sealed Orders: weakest. Between openings only the small envelope on the frame corner and the trench coat say it; the OPENED
+    beat (envelope forward, bank x dial) is strong but only on winning spins. Helpers asked: WP5 per-mission palette
+    (WP6_to_WP5) and a neutral trigger banner (WP6_to_WP4 / WP6_to_WP1). Possible WP6 follow-up: a bigger resting envelope.

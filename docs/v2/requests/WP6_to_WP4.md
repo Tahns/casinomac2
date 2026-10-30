@@ -35,3 +35,8 @@ the mission right after it. Snippet (WP1 owns en.js; key name is a proposal, WP1
 - `.l-bp` / `.l-dark` are inserted inside `.board` before `.popups`; `.l-env` / `.l-bp-stamp` inside `.board-wrap`; `.l-cut` /
   `.l-screen` inside `#app`; the debrief tab inside your `.banner` (end-of-feature card). If the shape-driven board sets a `--rows`
   custom property on `.board`, the overlays use it (else the plan's frame rows).
+
+## 4. Seen in the WP6 screenshots (FYI, not WP6 files)
+- Ballroom Blackout: the "+N" chip near a winning cluster reads "+8" while the dial goes 1 -> 4 (missionAssigned.dialStep = 3):
+  `tests/layers/shots/spotlight_x4_1280x720.png`. The chip should read `dialStep` (WP8_to_FRONT 5); WP5's meter.mission(ev) has it.
+- The end card subtitle still says "MISSION METER x17"; the player-facing name is "Clearance Dial" (SYNTHESIS 0 names table).
