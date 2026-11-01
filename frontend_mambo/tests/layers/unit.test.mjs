@@ -205,29 +205,52 @@ test('orders: fmtAmt uses the HUD formatter (USD bet 2, JPY, social coins) and f
   assert.deepEqual(findRestricted(t('layers.bank', { x: sc })), []);
 });
 
-// ---- K4: the parked envelope never overlaps a cell (its top is under the board's bottom edge, tilt included) ----
-test('orders: parkEnvelope keeps the envelope under the cell area at every viewport', () => {
+// ---- K4 (round 2): the parked envelope never overlaps a cell, stays inside the viewport and above the HUD (room = px down to the
+// floor: the viewport's bottom - 4 px, or the HUD's top when the HUD row starts under the board) ----
+test('orders: parkEnvelope keeps the envelope under the cell area and above the floor in landscape', () => {
+  const tiltOf = (w) => Math.ceil(w * 0.06) + 1;
   const cases = [
-    // board (cell area) in wrap px, room under the board in px, cell px  (1280x720, 1024x576, 425x812, 400x225 measured)
-    [{ left: 18, top: 18, width: 706, height: 588 }, 66, 117.7],
-    [{ left: 14, top: 14, width: 555, height: 462 }, 57, 92.5],
+    // board (cell area) in wrap px, room down to the floor, cell px (1280x720, 1024x576, 800x450 measured in the game)
+    [{ left: 18, top: 18, width: 706, height: 588 }, 62, 117.7],
+    [{ left: 14, top: 14, width: 555, height: 462 }, 53, 92.5],
+    [{ left: 11, top: 11, width: 434, height: 362 }, 41, 72.3],
     [{ left: 9, top: 10, width: 393, height: 327 }, 351, 65.4],
-    [{ left: 6, top: 6, width: 240, height: 199 }, 13, 40],
   ];
   for (const [board, room, cell] of cases) {
-    const p = parkEnvelope(board, room, cell, 0);
-    assert.equal(p.mode, 'below');
-    const tilt = Math.ceil(p.width * Math.sin(6 * Math.PI / 180) / 2 + 1);
-    assert.ok(p.top - tilt >= board.top + board.height, JSON.stringify({ board, p }));
-    assert.ok(p.height <= Math.max(20, cell * 0.62) + 0.5 && p.height >= 20, 'size ' + p.height);
+    const p = parkEnvelope(board, room, cell, 0, {});
+    assert.equal(p.mode, 'below', JSON.stringify({ board, room }));
+    const bottom = board.top + board.height, t = tiltOf(p.width);
+    assert.ok(p.top - t >= bottom, 'under the cells ' + JSON.stringify({ board, p }));
+    assert.ok(p.top + p.height + t <= bottom + room, 'above the floor ' + JSON.stringify({ board, room, p }));
+    assert.ok(p.height <= cell * 0.62 + 0.5 && p.height >= 18, 'size ' + p.height);
     assert.ok(p.left >= board.left && p.left + p.width <= board.left + board.width, 'inside the board column');
   }
-  // 400x225: 13 px under the board, 80 px to its right: parked beside the board's lower-right corner, outside the frame
+  // 400x225: 9 px down to the floor, 76 px to the viewport's right edge: beside the board's lower-right corner, outside the frame
   const sb = { left: 6, top: 6, width: 240, height: 199 };
-  const q = parkEnvelope(sb, 13, 40, 80);
+  const q = parkEnvelope(sb, 9, 40, 76, {});
   assert.equal(q.mode, 'side');
   assert.ok(q.left >= sb.left + sb.width + 40 * 0.15, 'outside the frame lip ' + q.left);
-  assert.ok(q.top + q.height + 20 <= sb.top + sb.height + 13, 'plate room under the envelope, inside the viewport');
+  assert.ok(q.top + q.height + 20 <= sb.top + sb.height + 9, 'plate room under the envelope, above the floor');
+  // no room under the board nor beside it: the top lip
+  const lip = { left: 60, right: 300, top: -20, bottom: 5 };
+  assert.equal(parkEnvelope(sb, 9, 40, 10, { lip }).mode, 'top');
+});
+
+test('orders: parkEnvelope parks on the top lip in portrait (the HUD row starts under the board), clear of the cells', () => {
+  const tiltOf = (w) => Math.ceil(w * 0.06) + 1;
+  // 425x812 in the game: cell area at wrap (9,10) 393 x 327, HUD 1 px under the frame (room 0), lip left of the FREE SPINS plate
+  const board = { left: 9, top: 10, width: 393, height: 327 };
+  const lip = { left: 47, right: 107, top: -11, bottom: 9 };
+  const p = parkEnvelope(board, 0, 65.4, 0, { portrait: true, lip, plateW: 34 });
+  assert.equal(p.mode, 'top');
+  assert.ok(p.top + p.height + tiltOf(p.width) <= lip.bottom + 0.5, 'above the first cell row ' + JSON.stringify(p));
+  assert.ok(p.top - tiltOf(p.width) >= lip.top - 0.5, 'under the meter ' + JSON.stringify(p));
+  assert.ok(p.left >= lip.left && p.height >= 14 && p.height <= 24, JSON.stringify(p));
+  assert.equal(p.tight, false);
+  // a long plate does not fit before the FREE SPINS plate: smaller type
+  assert.equal(parkEnvelope(board, 0, 65.4, 0, { portrait: true, lip, plateW: 60 }).tight, true);
+  // portrait with plenty of room under the board still goes to the top lip (never where the HUD row starts)
+  assert.equal(parkEnvelope(board, 300, 65.4, 0, { portrait: true, lip }).mode, 'top');
 });
 
 test('blackout: upcoming() lists the next route windows only (I4)', () => {

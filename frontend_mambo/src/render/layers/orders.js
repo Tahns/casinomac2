@@ -1,6 +1,8 @@
 // Agent Mambo v2 layer SEALED ORDERS ENVELOPE (WP6). Mission `orders` (payTiming spinEnd, WP8_to_FRONT 3):
-//   - a manila envelope is parked under the board, on the frame's lower-left lip, for the whole feature: never on a cell, never on the
-//     Clearance Dial (K4: the place is measured from the cell area and the viewport, logic.js parkEnvelope)
+//   - a manila envelope is parked for the whole feature: never on a cell, never on the Clearance Dial, never under the HUD, always fully
+//     inside the viewport with its plate (K4 round 2: measured from the cell area, the viewport, #hud-info and the top lip, logic.js
+//     parkEnvelope): landscape under the board on the frame's lower-left lip (shrunk to the room) or beside its lower-right corner;
+//     portrait (the HUD row starts right under the board) on the frame's top lip, left of the FREE SPINS plate
 //   - every banked winInfo (meta.banked) slides a slip into it: neutral steel / lilac paper, never gold, never the word WIN; the plate
 //     beside the envelope reads FILED <bank> in the HUD money format (K3, ctx.fmt: USD / JPY / social coins); a small steel paper tag
 //     +<amount> drops into the envelope with each slip (I5, no WIN word); the SEALED stamp lands with the first slip (cue caseSeal)
@@ -11,11 +13,11 @@
 import { createBank, fmtAmt, parkEnvelope } from './logic.js';
 import { envelopeSvg, slipSvg, stampSvg } from './art.js';
 import { t } from '../../i18n/index.js';
-import { h, anim, wait, isStill, isCalm, play, tx, esc, heroine, SVGNS } from './util.js';
+import { h, anim, wait, isStill, isCalm, play, tx, esc, heroine, SVGNS, isPortrait, shownRect, topLip, vpSize, afterAnims } from './util.js';
 
 export function createOrders() {
   const bank = createBank();
-  let active = false, env = null, sealEl = null, plate = null, revealEl = null, token = 0, offResize = null, lastCtx = null;
+  let active = false, env = null, sealEl = null, plate = null, revealEl = null, token = 0, offResize = null, lastCtx = null, ro = null;
   const L = { id: 'orders', log: [] };
   const alive = (my) => () => my === token;
 
@@ -27,19 +29,30 @@ export function createOrders() {
     plate.innerHTML = cut ? `<i class="l-env-pre">${esc(full.slice(0, cut))}</i>${esc(tail)}` : esc(full);
   }
 
-  // K4: park the envelope outside the cell area (under the board, lower-left lip), sized to the room the viewport leaves there
+  // K4: park the envelope outside the cell area, inside the viewport, clear of #hud-info (logic.js parkEnvelope), sized to the room
   function park(ctx) {
     if (!env || !ctx || !ctx.wrap || env.classList.contains('forward')) return null;
     try {
       const W = ctx.wrap.getBoundingClientRect();
       const B = (ctx.board || ctx.wrap).getBoundingClientRect();
       const cell = B.width / 6;
-      const vh = (typeof window !== 'undefined' && window.innerHeight) || (B.bottom + cell);
+      const vp = vpSize();
+      const vh = vp.h || (B.bottom + cell), vw = vp.w || (B.right + cell);
       const sx = W.width && ctx.wrap.offsetWidth ? W.width / ctx.wrap.offsetWidth : 1; // the wrap may be scaled by a transform
       const k = sx > 0 ? 1 / sx : 1;
-      const vw = (typeof window !== 'undefined' && window.innerWidth) || (B.right + cell);
-      const p = parkEnvelope({ left: (B.left - W.left) * k, top: (B.top - W.top) * k, width: B.width * k, height: B.height * k }, (vh - B.bottom) * k, cell * k, (vw - B.right) * k);
+      // the floor under the board: the viewport's bottom edge, or the HUD's top edge when the HUD row starts under the board
+      let floor = vh - 4;
+      const hud = shownRect(document.getElementById('hud-info'));
+      if (hud && hud.top >= B.bottom - 2 && hud.left < B.right && hud.right > B.left) floor = Math.min(floor, hud.top - 3);
+      const L = topLip(B, cell, { tuck: 3 });
+      const lip = { left: (L.left - W.left) * k, right: (L.right - W.left) * k, top: (L.top - W.top) * k, bottom: (L.bottom - W.top) * k };
+      const plateW = plate && plate.textContent ? plate.offsetWidth : 0;
+      const p = parkEnvelope({ left: (B.left - W.left) * k, top: (B.top - W.top) * k, width: B.width * k, height: B.height * k },
+        (floor - B.bottom) * k, cell * k, (vw - 4 - B.right) * k, { portrait: isPortrait(), lip, plateW });
       env.classList.toggle('side', p.mode === 'side');
+      env.classList.toggle('top', p.mode === 'top');
+      env.classList.toggle('tight', !!p.tight);
+      env.dataset.park = p.mode;
       Object.assign(env.style, { left: p.left + 'px', top: p.top + 'px', width: p.width + 'px', height: p.height + 'px' });
       env.style.setProperty('--ecell', (cell * k).toFixed(1) + 'px');
       return p;
@@ -49,6 +62,7 @@ export function createOrders() {
   function remove() {
     token++;
     if (offResize) { offResize(); offResize = null; }
+    if (ro) { try { ro.disconnect(); } catch (e) { /* ignore */ } ro = null; }
     if (env) { env.remove(); env = null; }
     sealEl = null; plate = null; revealEl = null;
   }
@@ -62,12 +76,14 @@ export function createOrders() {
     lastCtx = ctx;
     park(ctx);
     if (typeof window !== 'undefined') {
-      const onR = () => park(lastCtx);
+      const onR = () => { park(lastCtx); if (lastCtx) afterAnims(lastCtx.wrap, () => park(lastCtx)); };
       window.addEventListener('resize', onR);
       offResize = () => window.removeEventListener('resize', onR);
+      // the frame can change size under the envelope (a 5 <-> 6 row morph, the shell's layout): park again
+      if (typeof ResizeObserver === 'function') { try { ro = new ResizeObserver(onR); ro.observe(ctx.wrap); } catch (e) { ro = null; } }
     }
-    // slides up from under the frame lip (never across the cells)
-    anim(ctx, env, [{ transform: 'translate(0,70%) rotate(-14deg)', opacity: 0 }, { transform: 'translate(0,0) rotate(-6deg)', opacity: 1 }], { duration: 333, easing: 'steps(4,end)' });
+    // pops up in its own spot (grows from 0.6: every frame stays inside the parked box, never across the cells or past the viewport)
+    anim(ctx, env, [{ transform: 'scale(.6) rotate(-14deg)', opacity: 0 }, { transform: 'scale(1) rotate(-6deg)', opacity: 1 }], { duration: 333, easing: 'steps(4,end)' });
     return env;
   }
 
@@ -82,7 +98,9 @@ export function createOrders() {
     const slips = env.querySelector('.l-env-slips'); if (slips) slips.innerHTML = '';
     if (sealEl) { sealEl.remove(); sealEl = null; }
     if (revealEl) { revealEl.remove(); revealEl = null; }
-    if (plate) plate.textContent = '';
+    // the plate is always there during the feature (FILED 0 until the first slip of the spin): the bank can always be read
+    setPlate(tx(t, 'layers.bank', `FILED ${money(ctx, 0)}`, { x: money(ctx, 0) }), money(ctx, 0));
+    park(ctx);
   }
 
   function stampOn(ctx, text, kind) {
@@ -112,15 +130,16 @@ export function createOrders() {
         if (!isStill(ctx)) anim(ctx, slip, [{ transform: 'translateY(-46px)', opacity: 0 }, { transform: 'translateY(-18px)', opacity: 1, offset: 0.5 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 300, easing: 'steps(4,end)' });
       }
     }
-    park(ctx);
     setPlate(tx(t, 'layers.bank', `FILED ${money(ctx, bank.bank)}`, { x: money(ctx, bank.bank) }), money(ctx, bank.bank));
+    park(ctx); // after the plate text: the top-lip spot is checked against the plate width
     slipTag(ctx, amt);
     if (bank.slips === 1) { play(ctx, 'caseSeal'); stampOn(ctx, tx(t, 'layers.sealed', 'SEALED'), 'sealed'); }
-    else if (!isCalm(ctx) && env) anim(ctx, env, [{ transform: 'rotate(-6deg) translateY(-3px)' }, { transform: 'rotate(-6deg)' }], { duration: 167, easing: 'steps(2,end)' });
+    else if (!isCalm(ctx) && env) anim(ctx, env, [{ transform: 'rotate(-6deg) scale(.9)' }, { transform: 'rotate(-6deg)' }], { duration: 167, easing: 'steps(2,end)' }); // a squeeze, never out of its box
     return null;
   }
 
-  // I5: a small steel paper tag "+<amount>" drops into the envelope with each banked slip (neutral, never the word WIN, never gold)
+  // I5: a small steel paper tag "+<amount>" slides into the envelope with each banked slip (neutral, never the word WIN, never gold).
+  // K4 round 2: it moves inside the envelope's own band (from the plate side into the envelope), never up over the cells or the HUD
   function slipTag(ctx, amt) {
     if (!env || isStill(ctx)) return;
     const tag = h('div', 'l-env-tag');
@@ -128,8 +147,8 @@ export function createOrders() {
     env.appendChild(tag);
     const frames = isCalm(ctx)
       ? [{ opacity: 0 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }]
-      : [{ transform: 'translate(-50%,-150%) rotate(-8deg)', opacity: 0 }, { transform: 'translate(-50%,-110%) rotate(4deg)', opacity: 1, offset: 0.35 },
-        { transform: 'translate(-50%,-60%) rotate(-3deg)', opacity: 1, offset: 0.7 }, { transform: 'translate(-50%,10%) scale(.5)', opacity: 0 }];
+      : [{ transform: 'translate(10%,0) rotate(-8deg)', opacity: 0 }, { transform: 'translate(-10%,0) rotate(4deg)', opacity: 1, offset: 0.35 },
+        { transform: 'translate(-35%,5%) rotate(-3deg)', opacity: 1, offset: 0.7 }, { transform: 'translate(-50%,15%) scale(.5)', opacity: 0 }];
     anim(ctx, tag, frames, { duration: 500, easing: 'steps(6,end)' }).then(() => tag.remove());
   }
 

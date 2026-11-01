@@ -11,10 +11,12 @@
 .l-bp-hole{stroke:var(--cream);stroke-width:.03;stroke-linecap:round;opacity:.45}
 .l-bp-line{fill:none;stroke:var(--cream);stroke-width:.075;stroke-linejoin:round;stroke-linecap:round}
 .l-bp-mis{fill:none;stroke:var(--steel);stroke-width:.075;stroke-linejoin:round;opacity:.85}
-/* K6: the plan name sits on the frame's lower lip, UNDER the cell area (the board ends at 5.15 cells in the wrap), never on a cell */
+/* K6: the plan name sits on the frame's lower lip, UNDER the cell area (the board ends at 5.15 cells in the wrap), never on a cell;
+   .on-lip (portrait, or a lower lip outside the viewport): on the frame's top lip, left / top / size in px from blueprint.js */
 .l-bp-stamp{position:absolute;z-index:9;left:calc(var(--cell,60px)*.3);top:calc(100% - var(--cell,60px)*.09);width:calc(var(--cell,60px)*1.3);height:calc(var(--cell,60px)*.4);
   pointer-events:none;background:var(--indigo);border-radius:calc(var(--cell,60px)*.1);box-shadow:0 0 0 2px var(--ink)}
 .l-bp-stamp svg{display:block}
+.l-bp-stamp.on-lip{box-shadow:0 0 0 1.5px var(--ink)}
 .l-bp-stamp.on-void{left:calc(var(--cell,60px)*(.15 + var(--sc,0) + .04));top:calc(var(--cell,60px)*(.15 + var(--sr,0) + .3));width:calc(var(--cell,60px)*.92);height:calc(var(--cell,60px)*.36);border-radius:calc(var(--cell,60px)*.08)}
 
 /* ---------- SEALED ORDERS ENVELOPE (inside .board-wrap, parked UNDER the board on the lower-left lip, K4: never on a cell or the dial).
@@ -28,6 +30,11 @@
 .l-env.side .l-env-plate{left:0;top:100%;margin:calc(var(--ec)*.06) 0 0;transform:rotate(6deg)}
 .l-env.side .l-env-plate span{font-size:10px;padding:.15em .35em}
 .l-env.side .l-env-pre{display:none}
+/* portrait (K4 round 2): a small envelope on the frame's top lip, left of the FREE SPINS plate; the compact plate (the amount) beside it */
+.l-env.top .l-env-plate{margin-left:3px}
+.l-env.top .l-env-plate span{font-size:10px;padding:.15em .35em;border-width:1.5px;box-shadow:1.5px 1.5px 0 var(--steel)}
+.l-env.top.tight .l-env-plate span{font-size:9px;padding:.12em .3em}
+.l-env.top .l-env-pre{display:none}
 .l-env-pre{font-style:normal}
 .l-env-plate b{display:none}
 .l-env-plate span{font:900 max(10px,calc(var(--ec)*.16))/1 var(--num);color:var(--ink);white-space:nowrap;background:var(--cream);padding:.18em .45em;border-radius:.3em;
@@ -39,7 +46,7 @@
 .l-env-reveal{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:6%;white-space:nowrap;padding:.25em .55em;border-radius:.35em;
   font:900 max(11px,calc(var(--ec)*.2))/1 var(--num);color:var(--ink);background:var(--cream);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--steel)}
 .l-env.forward .l-env-reveal{top:100%;bottom:auto;margin:4% 0 0;font-size:calc(max(11px,calc(var(--ec)*.2)) / var(--es,1.9));border-width:calc(3px / var(--es,1.9));box-shadow:calc(3px / var(--es,1.9)) calc(3px / var(--es,1.9)) 0 var(--steel)}
-.l-env-tag{position:absolute;left:50%;top:0;transform:translate(-50%,-150%);opacity:0;white-space:nowrap;pointer-events:none;padding:.15em .4em;border-radius:.2em;
+.l-env-tag{position:absolute;left:50%;top:0;transform:translate(-50%,0);opacity:0;white-space:nowrap;pointer-events:none;padding:.15em .4em;border-radius:.2em;
   font:900 max(9px,calc(var(--ec)*.13))/1 var(--num);color:var(--ink);background:var(--steel);border:2px solid var(--ink)}
 
 /* ---------- BALLROOM BLACKOUT (inside .board) ---------- */

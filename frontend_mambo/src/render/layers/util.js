@@ -100,6 +100,68 @@ export function rectIn(el, host) {
   } catch (e) { return null; }
 }
 
+// ---- free spots on the frame for the plan stamp and the Sealed Orders envelope (K4 / K6 round 2) ----
+// Portrait test of the heroine shell (src/ui/heroine_shell.js PORTRAIT_QUERY): the HUD row starts right under the board there.
+export const PORTRAIT_QUERY = '(max-aspect-ratio: 11/10)';
+export function isPortrait() {
+  try { return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(PORTRAIT_QUERY).matches; } catch (e) { return false; }
+}
+
+/** the client rect of el when it is on screen (laid out, not hidden, not faded out with its ancestors), else null */
+export function shownRect(el) {
+  try {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    if (!(r.width > 0 && r.height > 0)) return null;
+    for (let e = el; e && e.nodeType === 1; e = e.parentElement) {
+      const cs = getComputedStyle(e);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) < 0.05) return null;
+      if (e.id === 'app') break;
+    }
+    return r;
+  } catch (e) { return null; }
+}
+
+export const vpSize = () => ({ w: (typeof window !== 'undefined' && window.innerWidth) || 0, h: (typeof window !== 'undefined' && window.innerHeight) || 0 });
+
+/**
+ * The free stretch of the frame's TOP lip, left of the FREE SPINS plate and of the COMBO chip slot, under the Mission Meter / logo,
+ * right of the dial badge (client px: { left, right, top, bottom }; bottom = 1 px above the first cell row). B = the cell area rect.
+ * o.tuck: px the spot may tuck under the Mission Meter track's lower rim (the bars themselves stay clear).
+ */
+export function topLip(B, cell, o = {}) {
+  const q = (s) => (typeof document !== 'undefined' ? [...document.querySelectorAll(s)] : []);
+  const lip = { left: B.left, right: B.right - cell * 1.6, top: Math.max(0, B.top - cell * 0.9), bottom: B.top - 1 };
+  // the COMBO chip (top-right lip, shown during tumbles) and the FREE SPINS plate (top middle) close the stretch on the right
+  for (const c of q('.board .chip.combo, .board .chip.fsc')) {
+    const r = shownRect(c);
+    if (r && r.width > cell * 0.5 && (c.textContent || '').trim()) lip.right = Math.min(lip.right, r.left - 3);
+  }
+  // the dial badge and the KEPT tag stand on the top-left corner in portrait: start right of them
+  for (const el of q('#meter-slot .mm-badge, #meter-slot .mm-kept')) {
+    const r = shownRect(el);
+    if (r && r.left < B.left + cell && r.bottom > lip.top && r.top < lip.bottom) lip.left = Math.max(lip.left, r.right + 3);
+  }
+  // the Mission Meter bars / band and the logo above the lip set its ceiling
+  for (const el of q('#meter-slot .mm-bars, #meter-slot .mm-band, #meter-slot .mm-badge, #meter-slot .mm-kept, #logo, #hud-info')) {
+    const r = shownRect(el);
+    if (r && r.right > lip.left && r.left < lip.right && r.bottom <= lip.bottom + 2 && r.bottom > lip.top) lip.top = r.bottom + 1 - (el.classList.contains('mm-bars') ? (o.tuck || 0) : 0);
+  }
+  return lip;
+}
+
+/** fn() once the running animations of el (the frame's 5 <-> 6 row FLIP morph, a scale on the wrap) are over; true when there were any */
+export function afterAnims(el, fn) {
+  try {
+    const list = el && typeof el.getAnimations === 'function' ? el.getAnimations() : [];
+    for (const a of list) a.finished.then(fn, fn);
+    return list.length > 0;
+  } catch (e) { return false; }
+}
+
+/** true when the two rects (client px, { left, top, right, bottom }) overlap */
+export const hits = (a, b) => !!(a && b && Math.min(a.right, b.right) > Math.max(a.left, b.left) && Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top));
+
 /** rows the board is drawn with: the board's --rows when the player sets one, else the plan's frame rows */
 export function boardRows(ctx, plan) {
   try {

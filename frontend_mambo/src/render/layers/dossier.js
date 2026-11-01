@@ -19,6 +19,7 @@ import { h, anim, wait, isStill, isCalm, play, tx, esc, heroine, rectIn, Tm, ski
 
 export const SKIP_AFTER_MS = 1200;
 export const DOSSIER_MS = 3000;
+export const DOOR_HOLD_MIN_MS = 300; // the labelled door is held at least this long, turbo included (round 2)
 
 export function createDossier() {
   let pending = false, shown = false, cut = null, screen = null, token = 0, offKeys = null, entered = false, fsN = 0;
@@ -52,9 +53,12 @@ export function createDossier() {
         <path class="l-iris-mask" fill-rule="evenodd" d="M-500 -500H500V500H-500Z ${scaledKeyhole(8)}"/></svg>`);
     d.dataset.door = DOOR_OF[m];
     cut.appendChild(d);
-    // schedule (scaled by ctx.T): fade in, hold the labelled door, iris; hard end at tEnd
-    const tFade = Tm(ctx, 167), tHold = Tm(ctx, 320), steps = isCalm(ctx) ? 3 : 8, per = Tm(ctx, 440) / steps;
-    let tIris = t0 + tFade + tHold; const tEnd = t0 + Math.min(Tm(ctx, 1050), tFade + tHold + per * steps + Tm(ctx, 40));
+    // schedule (scaled by ctx.T): fade in, hold the labelled door, iris; hard cap at tCap = 1.05 s (Rule P <= 1.2 s). The labelled hold
+    // never drops under DOOR_HOLD_MIN_MS, turbo included (round 2: the T-scaled hold was about 185 ms in turbo, and a T-scaled deadline
+    // ate it further after a janky first frame); in turbo the iris after it stays short
+    const tFade = Tm(ctx, 167), tHold = Math.max(DOOR_HOLD_MIN_MS, Tm(ctx, 320)), steps = isCalm(ctx) ? 3 : 8, per = Tm(ctx, 440) / steps;
+    const tCap = t0 + 1050;
+    let tIris = t0 + tFade + tHold, tEnd = Math.min(tCap, tIris + per * steps + Tm(ctx, 40));
     play(ctx, 'doorCreak', { dur: Math.min(1.1, Math.max(0.3, (tEnd - t0) / 1000)) });
     L.log.push({ t: 'door', m });
     let held = 0;
@@ -62,12 +66,17 @@ export function createDossier() {
     if (isStill(ctx)) { await sleepUntil(t0 + Tm(ctx, 400) + tHold, alive); return done('still'); }
     await Promise.race([anim(ctx, d, [{ opacity: 0 }, { opacity: 1 }], { duration: 167, easing: 'steps(2,end)' }), sleepUntil(t0 + tFade + 34, alive)]);
     d.style.opacity = '1';
+    try { d.getAnimations().forEach((x) => x.finish()); } catch (e) { /* ignore */ } // a late fade frame (0.5) never covers the hold
+    // the hold starts once the opaque door has been painted (a busy main thread can paint it a few frames late), never later than
+    // the last moment that still leaves the hold and half the iris before the cap
+    await Promise.race([painted(), sleepUntil(tCap - per * steps * 0.5 - tHold, alive)]);
     if (!alive()) return done('reset');
     // hold the door with its name on it (it is read: STAGE DOOR / COAT CHECK / SERVICE STAIRS)
     // counted from the moment it is fully on screen (a janky first frame does not eat the hold); the iris is squeezed instead, and
-    // the hard end tEnd never moves
+    // the hard cap tCap never moves
     const tSeen = Date.now();
-    tIris = Math.max(tIris, Math.min(tSeen + tHold, tEnd - per * steps * 0.5));
+    tIris = Math.max(tIris, Math.min(tSeen + tHold, tCap - per * steps * 0.5));
+    tEnd = Math.min(tCap, tIris + per * steps + Tm(ctx, 40));
     await sleepUntil(tIris, alive);
     held = Date.now() - tSeen;
     if (!alive() || Date.now() >= tEnd) return done(alive() ? 'deadline' : 'reset');
@@ -85,6 +94,10 @@ export function createDossier() {
       await sleepUntil(Math.min(tEnd, tIris + per * i), alive);
     }
     return done(alive() ? 'end' : 'reset');
+  }
+  // resolves after the next painted frame (two animation frames), or at once without requestAnimationFrame
+  function painted() {
+    return new Promise((r) => { if (typeof requestAnimationFrame !== 'function') { r(); return; } requestAnimationFrame(() => requestAnimationFrame(() => r())); });
   }
   // resolves at the wall-clock time t (or at once when the layer was reset)
   function sleepUntil(t, alive) {

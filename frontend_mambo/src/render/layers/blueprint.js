@@ -5,19 +5,67 @@
 //   replay skip: ctx.T. The draw takes 3/4 of it, the stamp the last 1/4.
 //   Still: the inked end state at once, held 250 ms (ctx.T)
 //   the sheet lifts (stepped fade) when the reveal starts; the name stamp stays on the frame until the end of the book
+//   the stamp (K6, round 2): on a void cell of the plan, else on the frame's lower lip; in portrait (the HUD row starts right under the
+//   board) and whenever the lower lip would leave the viewport or touch #hud-info, on the frame's top lip left of the COMBO chip slot
+//   (util.js topLip), re-placed when the frame changes size (5 <-> 6 row morph, resize)
 import { outlineOf, outlineLength } from './logic.js';
 import { blueprintDefs, stampSvg, P } from './art.js';
 import { t } from '../../i18n/index.js';
-import { h, anim, wait, isStill, play, skipping, Tm, boardRows, tx, heroine, SVGNS } from './util.js';
+import { h, anim, wait, isStill, play, skipping, Tm, boardRows, tx, heroine, SVGNS, isPortrait, shownRect, topLip, vpSize, hits, afterAnims } from './util.js';
 
 export function createBlueprint() {
-  let sheet = null, stamp = null, token = 0, lastPlan = null;
+  let sheet = null, stamp = null, token = 0, lastPlan = null, ro = null, offResize = null;
   const L = { id: 'blueprint', last: null };
 
   function clear() {
     token++;
     if (sheet) { sheet.remove(); sheet = null; }
+    dropStamp();
+  }
+  function dropStamp() {
+    if (ro) { try { ro.disconnect(); } catch (e) { /* ignore */ } ro = null; }
+    if (offResize) { offResize(); offResize = null; }
     if (stamp) { stamp.remove(); stamp = null; }
+  }
+
+  // the lower lip (layers.css) when it is inside the viewport and clear of #hud-info, else the top lip (px, in the wrap's box)
+  function placeStamp(ctx) {
+    const el = stamp;
+    if (!el || el.classList.contains('on-void') || !ctx || !ctx.board) return;
+    try {
+      const wrap = ctx.wrap || ctx.board;
+      const W = wrap.getBoundingClientRect(), B = ctx.board.getBoundingClientRect();
+      const sx = W.width && wrap.offsetWidth ? W.width / wrap.offsetWidth : 1;
+      const k = sx > 0 ? 1 / sx : 1;
+      const cell = B.width / 6;
+      const vp = vpSize();
+      const hud = shownRect(document.getElementById('hud-info'));
+      // the CSS lower-lip box (left .3 cell, top 100% - .09 cell, 1.3 x .4 cell) in client px, the -6 deg tilt of the svg included
+      const lo = { left: W.left + cell * 0.3, right: W.left + cell * 1.6, top: W.bottom - cell * 0.09 - cell * 0.07, bottom: W.bottom - cell * 0.09 + cell * 0.47 };
+      const lowOk = !isPortrait() && lo.bottom <= (vp.h || Infinity) - 2 && !hits(lo, hud);
+      if (lowOk) { el.classList.remove('on-lip'); el.style.left = el.style.top = el.style.width = el.style.height = ''; delete el.dataset.lip; return; }
+      const tilt = (x) => Math.ceil(x * 0.055) + 1; // the svg's -6 deg tilt pokes past the box
+      const put = (kind, left, top, w, hh) => {
+        el.classList.add('on-lip');
+        el.dataset.lip = kind;
+        Object.assign(el.style, { left: ((left - W.left) * k).toFixed(1) + 'px', top: ((top - W.top) * k).toFixed(1) + 'px', width: (w * k).toFixed(1) + 'px', height: (hh * k).toFixed(1) + 'px' });
+      };
+      // the top lip: as wide as 1.3 cell (and the stretch), shrunk to the lip's height
+      const L = topLip(B, cell);
+      const room = L.bottom - L.top;
+      let w = Math.min(cell * 1.3, L.right - L.left - 2), hh = w / 3.25;
+      if (hh + 2 * tilt(w) > room) { hh = (room - 2) / (1 + 2 * 0.055 * 3.25); w = hh * 3.25; }
+      if (isPortrait()) { hh = Math.max(12, hh); w = Math.max(w, hh * 3.25); put('top', L.left + 1, L.bottom - tilt(w) - hh, w, hh); return; }
+      // landscape: beside the board's lower-right corner, outside the frame, 4 px over the viewport's bottom edge (the Sealed Orders
+      // envelope's 'side' spot; the stamp is gone before a feature starts), when it is free of the controls and bigger than the top lip
+      const sl = B.right + cell * 0.15 + 3;
+      const sw = Math.max(36, Math.min(cell * 1.3, (vp.w || sl + 60) - 4 - sl)), sh = sw / 3.25;
+      const st = Math.min(B.bottom, (vp.h || B.bottom) - 4) - tilt(sw) - sh;
+      const box = { left: sl, top: st - tilt(sw), right: sl + sw, bottom: st + sh + tilt(sw) };
+      const busy = [...document.querySelectorAll('#app button, #hud-info, #replay-ui')].some((x) => hits(box, shownRect(x)));
+      if ((!busy && sh > hh) || hh < 12) put('side', sl, st, sw, sh);
+      else put('top', L.left + 1, L.bottom - tilt(w) - hh, w, hh);
+    } catch (e) { /* ignore */ }
   }
 
   async function draw(ev, ctx) {
@@ -80,6 +128,13 @@ export function createBlueprint() {
     const vo = voidSpot(has, cols, plan.rows || rows); // the plan's own rows (the frame may still be the previous height)
     if (vo) { stamp.classList.add('on-void'); stamp.style.setProperty('--sc', vo.reel); stamp.style.setProperty('--sr', vo.row); stamp.dataset.void = vo.reel + ',' + vo.row; }
     (ctx.wrap || ctx.board).appendChild(stamp);
+    if (!vo) {
+      placeStamp(ctx);
+      const onR = () => { placeStamp(ctx); afterAnims(ctx.wrap || ctx.board, () => placeStamp(ctx)); };
+      if (typeof ResizeObserver === 'function') { try { ro = new ResizeObserver(onR); ro.observe(ctx.wrap || ctx.board); ro.observe(ctx.board); } catch (e) { ro = null; } }
+      if (typeof window !== 'undefined') { window.addEventListener('resize', onR); offResize = () => window.removeEventListener('resize', onR); }
+      afterAnims(ctx.wrap || ctx.board, () => placeStamp(ctx)); // measured again once a 5 <-> 6 row FLIP morph of the frame is over
+    }
     play(ctx, 'stamp', { vol: 0.5, pitch: 1.1 });
     // a neutral point at the board when a plan other than the default mezzanine is drawn (WP123_to_WP6 item 2)
     if (plan.id !== 'mezzanine') { const hero = heroine(ctx); if (hero && typeof hero.react === 'function') { try { hero.react('layout', {}); } catch (e) { /* ignore */ } } }
@@ -119,7 +174,7 @@ export function createBlueprint() {
   L.onEvent = (ev, ctx) => {
     if (!ev || !ctx) return null;
     if (ev.type === 'layout') return draw(ev, ctx);
-    if (ev.type === 'reveal') { lift(ctx); if (ev.gameType === 'freegame' && stamp) { stamp.remove(); stamp = null; } }
+    if (ev.type === 'reveal') { lift(ctx); if (ev.gameType === 'freegame' && stamp) dropStamp(); }
     return null;
   };
   L.reset = () => { clear(); };

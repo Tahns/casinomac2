@@ -182,21 +182,42 @@ export function fmtAmt(fmt, x100) {
 }
 
 /**
- * Where the Sealed Orders envelope is parked (K4): outside the cell area. All values in px of the board-wrap box. `board` is the cell
- * area (the .board box) in wrap px, `room` the free px below the board inside the viewport, `side` the px from the board's right edge to
- * the viewport's right edge, `cell` the cell size.
- *   'below' (the usual case): under the board on the frame's lower-left lip, never taller than 0.62 cell nor than the room (min 20 px);
- *            its top is always below the board's bottom edge (with room for the -6 deg tilt); the plate goes beside it
- *   'side'  (a short landscape screen, less than 26 px under the board): beside the board's lower-right corner, outside the frame,
- *            the plate under the envelope
+ * Where the Sealed Orders envelope is parked (K4, round 2): outside the cell area, fully inside the viewport, never under the HUD.
+ * All values in px of the board-wrap box. `board` is the cell area (the .board box), `room` the free px from the board's bottom edge
+ * down to the floor (the viewport's bottom edge - 4 px, or the HUD's top edge when the HUD row starts under the board), `side` the px
+ * from the board's right edge to the viewport's right edge, `cell` the cell size, `o.lip` the free stretch of the frame's top lip
+ * ({ left, top, right, bottom }, layers/util.js topLip), `o.portrait` the portrait shell, `o.plateW` the plate width.
+ *   'below' (landscape): under the board on the frame's lower-left lip, 0.62 cell at most, shrunk to the room (min 18 px) so its
+ *            tilted box ends above the floor; the plate goes beside it (right)
+ *   'side'  (a short landscape screen): beside the board's lower-right corner, outside the frame, the plate under the envelope, the
+ *            plate's bottom 2 px above the floor
+ *   'top'   (portrait, where the HUD row starts right under the board; and the last resort in landscape): on the frame's top lip, left
+ *            of the FREE SPINS plate, a small envelope with the compact plate (the amount) beside it; `tight` = the plate needs the
+ *            smaller type to fit before the FREE SPINS plate
  */
-export function parkEnvelope(board, room, cell, side = 0) {
-  if (room < 26 && side >= cell * 0.3 + 30) {
-    const h = Math.round(Math.max(20, Math.min(cell * 0.5, 24))), w = Math.round(h * 132 / 136);
-    // the envelope and its plate (about 18 px) end 2 px above the viewport's bottom edge
-    return { mode: 'side', left: Math.round(board.left + board.width + cell * 0.15 + 3), top: Math.round(board.top + board.height + room - 2 - 18 - h - 2), width: w, height: h };
+export function parkEnvelope(board, room, cell, side = 0, o = {}) {
+  const bottom = board.top + board.height;
+  const tiltOf = (w) => Math.ceil(w * 0.06) + 1; // the -6 deg tilt pokes about 0.06 w past the box, top and bottom
+  const lip = o.lip && o.lip.right > o.lip.left && o.lip.bottom > o.lip.top ? o.lip : null;
+  const top = () => {
+    const free = lip.bottom - lip.top;
+    const h = Math.round(Math.max(14, Math.min(24, cell * 0.5, (free - 2) / 1.12))), w = Math.round(h * 132 / 136);
+    const t = tiltOf(w);
+    const tight = !!(o.plateW && lip.left + 1 + w + 4 + o.plateW > lip.right);
+    return { mode: 'top', left: Math.round(lip.left + 1), top: Math.round(lip.bottom - t - h), width: w, height: h, tight };
+  };
+  if (o.portrait && lip) return top();
+  const hb = Math.floor(Math.min(cell * 0.62, (room - 4) / 1.12));
+  if (hb >= 18) {
+    const w = Math.round(hb * 132 / 136);
+    return { mode: 'below', left: Math.round(board.left + cell * 0.12), top: Math.ceil(bottom + 2 + tiltOf(w)), width: w, height: hb };
   }
-  const want = Math.max(20, Math.min(cell * 0.62, Math.max(0, room - 4)));
-  const h = Math.round(want), w = Math.round(want * 132 / 136);
-  return { mode: 'below', left: Math.round(board.left + cell * 0.12), top: Math.ceil(board.top + board.height + 2 + w * 0.06), width: w, height: h };
+  if (side >= cell * 0.3 + 30) {
+    const h = Math.round(Math.max(20, Math.min(cell * 0.5, 24))), w = Math.round(h * 132 / 136);
+    // the envelope and its plate (about 18 px) end 2 px above the floor
+    return { mode: 'side', left: Math.round(board.left + board.width + cell * 0.15 + 3), top: Math.round(bottom + room - 2 - 18 - h - 2), width: w, height: h };
+  }
+  if (lip) return top();
+  const w = Math.round(18 * 132 / 136);
+  return { mode: 'below', left: Math.round(board.left + cell * 0.12), top: Math.ceil(bottom + 2 + tiltOf(w)), width: w, height: 18 };
 }
