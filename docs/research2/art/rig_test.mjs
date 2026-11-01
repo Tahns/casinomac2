@@ -120,6 +120,64 @@ if (args.crops) {   // pass 2: the crop and mirror options must run every pose a
     return { steps: n.steps, nonFinite: [...new Set(bad)].slice(0, 10), crop: h.crop, mirror: h.mirror };
   });
 }
+if (args.checks) {   // v2 round 1 (I6): machine checks of the defects found in H3 (hands over eyes, floating feet, casino legs, head crop)
+  results.checks = await page.evaluate(() => {
+    const h = window.__h, fails = [], n = { poses: 0, frames: 0 };
+    const svg = () => h.svg, pre = () => h.svg.querySelector('[id$="root-t"]').id.replace(/root-t$/, '');
+    const el = (id) => svg().querySelector('#' + CSS.escape(pre() + id));
+    // a box in art units (viewBox space), through the element's CTM relative to the svg
+    const artBox = (e) => {
+      if (!e) return null; const b = e.getBBox(); if (!(b.width > 0 && b.height > 0)) return null;
+      const m = svg().getScreenCTM().inverse().multiply(e.getScreenCTM());
+      const pts = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].map(([x, y]) => new DOMPoint(x, y).matrixTransform(m));
+      const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y); return { l: Math.min(...xs), t: Math.min(...ys), r: Math.max(...xs), b: Math.max(...ys) };
+    };
+    const visGlove = (s) => [...svg().querySelectorAll(`[id^="${pre()}g-${s}-"]`)].find((g) => /^[a-z]+$/.test(g.id.slice((pre() + 'g-' + s + '-').length)) && g.getAttribute('display') !== 'none');
+    // share of the eye white covered by the visible glove shapes (grid of points inside the sclera, tested against every painted glove path)
+    const shown = (e, stop) => { for (let x = e; x && x !== stop; x = x.parentNode) if (x.getAttribute && (x.getAttribute('opacity') === '0' || x.getAttribute('display') === 'none')) return false; return true; };
+    const cover = (eyeId, glove) => {
+      const sc = el(eyeId + '-sclera'); if (!sc || !glove) return 0;
+      const paths = [...glove.querySelectorAll('path')].filter((q) => shown(q, glove) && q.getAttribute('fill') && q.getAttribute('fill') !== 'none');
+      const b = sc.getBBox(), M = sc.getScreenCTM(); let tot = 0, hit = 0;
+      for (let i = 0; i <= 8; i++) for (let j = 0; j <= 10; j++) {
+        const pt = new DOMPoint(b.x + (b.width * i) / 8, b.y + (b.height * j) / 10); if (!sc.isPointInFill(pt)) continue; tot++;
+        const sp = pt.matrixTransform(M);
+        if (paths.some((q) => q.isPointInFill(sp.matrixTransform(q.getScreenCTM().inverse())))) hit++;
+      }
+      return tot ? hit / tot : 0;
+    };
+    const handOverEye = (tag) => {
+      for (const s of ['l', 'r']) for (const eye of ['eye-l', 'eye-r']) { const k = cover(eye, visGlove(s)); if (k > 0.1) fails.push(`${tag}: hand-${s} covers ${Math.round(100 * k)}% of ${eye}`); }
+    };
+    const GROUND = 566;
+    for (const o of h.outfits()) {
+      h.setCrop('full'); h.setOutfit(o); h.stop(true);
+      if (o === 'casino' && (el('leg-l') || el('leg-r'))) fails.push('casino: legs are drawn under the gown');
+      for (const p of h.poses()) {
+        h.setPose(p, { snap: true }); h.snap(); n.poses++;
+        handOverEye(`${o}/${p}`);
+        const sb = ['shoe-l', 'shoe-r'].map((id) => artBox(el(id)));
+        if (sb[0] && sb[1] && Math.max(sb[0].b, sb[1].b) < GROUND - 10) fails.push(`${o}/${p}: both shoes off the ground (lowest sole y ${Math.round(Math.max(sb[0].b, sb[1].b))})`);
+        if (o === 'casino') for (const [i, b] of sb.entries()) if (b && (b.b < GROUND - 9 || b.b > GROUND + 14)) fails.push(`casino/${p}: shoe ${i} lifted under the floor-length gown (sole y ${Math.round(b.b)})`);
+      }
+      for (const t of [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4]) {
+        h.stop(true); h.setPose('idle', { snap: true }); h.snap(); h.play('winSmall'); h.step(t); n.frames++;
+        handOverEye(`${o}/winSmall@${t}`);
+      }
+      // the head crop keeps the chin and both cheeks in its window in every pose
+      h.stop(true); h.setCrop('head');
+      for (const p of h.poses()) {
+        h.setPose(p, { snap: true }); h.snap();
+        const [x, y, w, hh] = svg().getAttribute('viewBox').split(/\s+/).map(Number), fb = artBox(el('face'));
+        if (fb && (fb.b > y + hh + 1 || fb.l < x - 1 || fb.r > x + w + 1)) fails.push(`${o}/${p}: face outside the head crop (face ${[fb.l, fb.t, fb.r, fb.b].map(Math.round)} vb ${[x, y, x + w, y + hh]})`);
+      }
+      h.setCrop('full');
+    }
+    h.stop(true); h.setOutfit('inspectrice'); h.setPose('idle', { snap: true }); h.snap();
+    return { ...n, fails };
+  });
+  if (results.checks.fails.length) process.exitCode = 1;
+}
 if (args.perf) {
   results.perf = await page.evaluate(() => {
     const h = window.__h; h.setPose('idle', { snap: true }); const seq = ['winBig', 'shock', 'lose', 'scatterTease', 'blowWhistle', 'impatient']; let n = 0, tot = 0, max = 0;

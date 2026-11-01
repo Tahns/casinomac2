@@ -12,7 +12,7 @@ import { bubbleWidth, placeBubble } from './bubble.js';
 
 export const SLOT_ID = 'heroine-slot';
 // crop windows; identical to CROPS in mambo_rig.js (a test compares them) so the static fallback can crop without the rig
-export const CROP_VB = Object.freeze({ full: [60, 30, 280, 556], bust: [86, 24, 226, 322], head: [96, 60, 160, 176] });
+export const CROP_VB = Object.freeze({ full: [60, 30, 280, 556], bust: [86, 24, 226, 322], head: [88, 52, 180, 214] });
 
 const MOTIONS = ['full', 'calm', 'still'];
 // how fast a jump may start per crop (rig units/s, peak = v^2 / 4800 art units): the full figure has 18% headroom above its box, the crops have none

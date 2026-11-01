@@ -4,20 +4,20 @@
   "files": {
     "mambo_art.js": {
       "source": "mambo_art.mjs",
-      "sourceSha": "5a32674ea3fa4bb0",
-      "shippedSha": "5a32674ea3fa4bb0",
+      "sourceSha": "801c3cd2be74fd23",
+      "shippedSha": "801c3cd2be74fd23",
       "patches": []
     },
     "mambo_outfits.js": {
       "source": "mambo_outfits.mjs",
-      "sourceSha": "836a4c08ee244eb2",
-      "shippedSha": "f3ec12944e624f62",
+      "sourceSha": "2e5b6e2eb2cd9ab8",
+      "shippedSha": "6105a771c127a04f",
       "patches": []
     },
     "mambo_rig.js": {
       "source": "mambo_rig.mjs",
-      "sourceSha": "8e6cbf85e1982deb",
-      "shippedSha": "1904c7bf7d082a0e",
+      "sourceSha": "d69bdbc4dfcd1504",
+      "shippedSha": "e1e26098ae1b19de",
       "patches": [
         "osFollow",
         "frameGuard",

@@ -34,7 +34,8 @@ export const Ease = {
 export const CROPS = {
   full: { vb: [0, 0, 400, 600], overflow: 'visible', lower: true },
   bust: { vb: [86, 24, 226, 322], overflow: 'hidden', lower: false },
-  head: { vb: [96, 60, 160, 176], overflow: 'hidden', lower: false },
+  // v2 round 1 (H3-04): wider and taller so the chin and the cheeks fit, and the window follows the head (track) so a dip or a lean never drops the mouth out
+  head: { vb: [88, 52, 180, 214], overflow: 'hidden', lower: false, track: true },
 };
 
 // ====================================================================== parameters
@@ -78,27 +79,31 @@ export const POSES = {
     uL: 0, lowL: 0.7, uR: 0.8, bLy: 8, bLr: 6, bRy: -5, mouth: 'grin',
     arx: 280, ary: 262, arb1: 62, arb2: 30, arr: 0, gr: 'fist', alx: 138, aly: 334, alb1: 12, alb2: 6, gl: 'fist', prop: 'L', acc: 62 },
   bigwin: { lean: 4, sho: -2, htilt: 8, turn: 0.9, uL: 1, uR: 1, stars: 1, wide: 0.12, mouth: 'laugh', cy: -34, cr: 14,
-    lax: -30, lay: -94, lsr: -40, lb1: 44, lb2: -34, rax: 12, ray: -52, rsr: 30, rb1: -34, rb2: 24, hipTilt: 4, hipX: -2, shr: 2,
+    lax: -30, lay: -70, lsr: -40, lb1: 40, lb2: -30, rax: 10, ray: 0, rsr: 8, rb1: -8, rb2: 6, hipTilt: 4, hipX: -2, shr: 2,
     alx: 108, aly: 132, alb1: -34, alb2: 8, alr: 0, gl: 'fist', prop: 'L', acc: 180, beam: 1,
     arx: 298, ary: 134, arb1: 34, arb2: -8, arr: 0, gr: 'fist', bLy: -6, bRy: -12, bLa: 13, bRa: 13, bLr: -8, bRr: -10, lookx: 0, looky: 0 },
   shock: { lean: -3, uy: -3, shr: 8, hy: -4, htilt: 3, turn: 0.6, uL: 1.1, uR: 1.1, wide: 0.5, pup: 0.4, lookx: 0, looky: 0, cy: -58, cr: 10, lax: 10, rax: -10, lsr: -2, rsr: 2,
-    alx: 140, aly: 226, alb1: -40, alb2: -12, alr: 0, gl: 'flat', arx: 256, ary: 226, arb1: 40, arb2: 12, arr: 0, gr: 'flat', mouth: 'oh', prop: '', bLy: -9, bRy: -12, bLr: 4, bRr: -4, bLa: 13, bRa: 14 },
+    alx: 140, aly: 226, alb1: -40, alb2: -12, alr: 0, gl: 'flat', arx: 268, ary: 236, arb1: 40, arb2: 12, arr: 0, gr: 'flat', mouth: 'oh', prop: '', bLy: -9, bRy: -12, bLr: 4, bRr: -4, bLa: 13, bRa: 14 },
   shrug: { shr: 9, htilt: 8, lean: -2, turn: 0.8, lookx: -0.8, looky: -0.7, uL: 0.5, uR: 0.6, bLy: -4, bLr: 14, bRy: -6, bRr: -16, lax: -6, rax: 6,
     alx: 92, aly: 246, alb1: -40, alb2: -4, alr: 0, gl: 'fist', prop: 'L', acc: 70, arx: 310, ary: 240, arb1: 38, arb2: 4, arr: 0, gr: 'palm', mouth: 'wry' },
   anticipation: { lean: 7, hx: 8, hy: 2, htilt: 5, turn: 1.1, hipTilt: -4, hipX: 4, lookx: 1, looky: 0.15, uL: 0.5, uR: 0.8, bRy: -8, bRr: -12, bRa: 14, bLy: 4, lax: -8, rax: 8, mouth: 'wry',
-    arx: 242, ary: 206, arb1: 36, arb2: 14, arr: 0, gr: 'point', alx: 152, aly: 312, alb1: 54, alb2: 24, alr: 0, gl: 'hip', prop: '' },
+    arx: 304, ary: 206, arb1: 30, arb2: 10, arr: -30, gr: 'point', alx: 152, aly: 312, alb1: 54, alb2: 24, alr: 0, gl: 'hip', prop: '' },   // v2 round 1 (H3-02): a raised finger beside the head, outside the face
   whistle: { lean: 2, htilt: -4, turn: 0.8, uL: 0.12, lowL: 0.8, bLy: 8, bLr: 6, lookx: 0.2, looky: 0, mouth: 'whistle',
-    arx: 244, ary: 202, arb1: 32, arb2: 12, arr: 0, gr: 'pinch', alx: 112, aly: 232, alb1: -34, alb2: -6, alr: 0, gl: 'fist', prop: 'L', acc: 150 },
+    arx: 246, ary: 246, arb1: 40, arb2: 10, arr: -80, gr: 'pinch',   // v2 round 1 (H3-02): pinched fingers at the lips, under the eye
+    alx: 112, aly: 232, alb1: -34, alb2: -6, alr: 0, gl: 'fist', prop: 'L', acc: 150 },
   impatient: { lean: -2, htilt: 7, turn: 0.9, hipTilt: 3, uL: 0.4, uR: 0.6, lookx: -0.9, looky: -0.4, bRy: -3, bLy: 6, mouth: 'wry', rax: 8, ray: -6, rsr: 22, prop: '',
     alx: 222, aly: 290, alb1: 22, alb2: 30, alr: 0, gl: 'relax', arx: 182, ary: 296, arb1: -22, arb2: -30, arr: 0, gr: 'relax' },
   laugh: { lean: 3, htilt: -9, hy: 2, turn: 0.8, joyL: 1, joyR: 1, uL: 0.1, uR: 0.1, lowL: 0.6, lowR: 0.6, bLy: -2, bRy: -6, bLa: 14, bRa: 14, mouth: 'laugh', lax: -6, rax: 6,
     alx: 212, aly: 306, alb1: 22, alb2: 18, alr: 0, gl: 'flat', arx: 190, ary: 302, arb1: -20, arb2: -18, arr: 0, gr: 'flat', prop: '' },
   salute: { lean: -1, htilt: -3, turn: 0.9, uL: 0, lowL: 0.7, uR: 0.9, bLy: 8, mouth: 'grin', lax: 0, rax: 0, lsr: -4, rsr: 4,
     alx: 162, aly: 128, alb1: -36, alb2: -22, alr: 0, gl: 'flat', arx: 249, ary: 302, arb1: -38, arb2: -22, arr: -8, gr: 'hip', prop: '', lookx: 0.1 },
-  curtsy: { lean: 12, hx: 6, hy: 4, htilt: -6, turn: 1.1, uy: 14, hipTilt: -6, hipX: 6, lookx: -0.2, looky: -0.7, uL: 0.5, uR: 0.8, bRy: -8, rax: -30, rsr: -10, lax: -14, mouth: 'smirk',
-    arx: 330, ary: 330, arb1: -22, arb2: 16, arr: 0, gr: 'open', alx: 168, aly: 140, alb1: -36, alb2: -22, alr: 0, gl: 'flat', prop: '' },
+  // v2 round 1 (I4): one hand lifts the skirt edge at the hip, the other arm opens out, a knee dip (it used to read as a hand on the cap)
+  curtsy: { lean: 6, hx: 4, hy: 4, htilt: -6, turn: 1.1, uy: 10, hipTilt: -6, hipX: 6, lookx: -0.2, looky: -0.7, uL: 0.5, uR: 0.8, bRy: -8, rax: -30, rsr: -10, lax: -14, mouth: 'smirk',
+    lb1: 24, lb2: -16, rb1: -24, rb2: 16,
+    arx: 322, ary: 296, arb1: -18, arb2: 12, arr: 0, gr: 'open', alx: 150, aly: 372, alb1: -20, alb2: -8, alr: 0, gl: 'pinch', prop: '' },
 };
-POSES.think = { ...POSES.anticipation, mouth: 'smirk', lookx: 0.9, looky: -0.5, hx: 3, lean: 4 };
+// think: the fist under the chin (v2 round 1, H3-02: the hand used to sit over her far eye)
+POSES.think = { ...POSES.anticipation, mouth: 'smirk', lookx: 0.9, looky: -0.5, hx: 3, lean: 4, arx: 224, ary: 282, arb1: 44, arb2: 12, arr: -165, gr: 'fist' };
 
 // ---------------------------------------------------------------------- moods (face baseline; poses override explicit channels)
 export const MOODS = {
@@ -119,7 +124,9 @@ function buildMarkup(outfitKey, pre, o) {
   // ---- head
   const H = buildHead(c, W);
   const capG = G(pre + 'cap', W.head ? W.head(c) : '');
-  const headInner = H.hairMass + H.curlL + H.curlR + H.face + H.maskUnder + H.features + G(pre + 'face-gear', W.gear ? W.gear(c) : '') + (W.capOver ? H.bangs + capG : capG + H.bangs);
+  // v2 round 1 (H3-07): the shock tuft goes over the cap (only outfits with a head piece lift one)
+  const tuft = W.head && W.head(c) ? H.tuft : '';
+  const headInner = H.hairMass + H.curlL + H.curlR + H.face + H.maskUnder + H.features + G(pre + 'face-gear', W.gear ? W.gear(c) : '') + (W.capOver ? H.bangs + capG : capG + H.bangs) + tuft;
   const head = G(pre + 'head', `<g id="${pre}head-t">${headInner}</g>`);
   // ---- arms
   const arm = (side) => {
@@ -139,7 +146,8 @@ function buildMarkup(outfitKey, pre, o) {
   const skirt = G(`${pre}skirt`, `<g id="${pre}skirt-t">${W.skirt(c)}</g>`);
   const shoes = G(`${pre}shoes`, shoe('L') + shoe('R'));
   const legs = G(`${pre}legs`, leg('L') + leg('R'));
-  const lowerBlock = W.shoesUnder ? legs + shoes + skirt : legs + skirt + shoes;
+  // v2 round 1 (H3-01): a floor-length gown never shows the leg: no leg is drawn, only the toes peek out under the hem
+  const lowerBlock = W.shoesUnder ? shoes + skirt : legs + skirt + shoes;
   const torso = G(`${pre}torso`, `<g id="${pre}torso-t"><g transform="translate(0 ${-TORSO_LIFT})">${W.torso(c)}</g></g>`);
   const body =
     `<ellipse id="${pre}shadow" cx="200" cy="${GROUND + 3}" rx="92" ry="11" fill="${INK}" opacity=".26"/>` +
@@ -208,10 +216,12 @@ export function createHeroine(container, opts = {}) {
     markup = true;
     applyCrop();
   }
-  function vbOf() { const [x, y, w, h] = CROPS[cropName].vb; return `${mirrored ? 400 - x - w : x} ${y} ${w} ${h}`; }
+  const vbOff = [0, 0]; let vbKey = '';
+  function vbOf() { const [x, y, w, h] = CROPS[cropName].vb; const ox = vbOff[0], oy = vbOff[1]; return `${f(mirrored ? 400 - x - w - ox : x + ox)} ${f(y + oy)} ${w} ${h}`; }
   function applyCrop() {
     if (!svg) return;
-    svg.setAttribute('viewBox', vbOf()); svg.style.overflow = CROPS[cropName].overflow;
+    if (!CROPS[cropName].track) { vbOff[0] = 0; vbOff[1] = 0; }
+    vbKey = vbOf(); svg.setAttribute('viewBox', vbKey); svg.style.overflow = CROPS[cropName].overflow;
     const low = CROPS[cropName].lower !== false;
     for (const n of ['lower', 'shadow']) if (E[n]) E[n].setAttribute('display', low ? 'inline' : 'none');
     if (E.mirror) E.mirror.setAttribute('transform', mirrored ? 'translate(400 0) scale(-1 1)' : '');
@@ -226,7 +236,7 @@ export function createHeroine(container, opts = {}) {
     }
     const ph = dis.prop;
     if (E.prop) { const slot = ph ? E[`prop-slot-${ph.toLowerCase()}`] : E['prop-store']; if (slot && E.prop.parentNode !== slot) slot.appendChild(E.prop); }
-    const p2 = (W.prop2On && W.prop2On[poseName]) || dis.prop2 || '';
+    const p2 = (W.prop2On && W.prop2On[dis._pose || poseName]) || dis.prop2 || '';
     const ph2 = p2 && p2 !== ph ? p2 : '';
     if (E.prop2) { const slot = ph2 ? E[`prop-slot-${ph2.toLowerCase()}`] : E['prop-store']; if (slot && E.prop2.parentNode !== slot) slot.appendChild(E.prop2); dis._p2 = ph2; }
     const lay = (side, which) => { const parent = which === 'back' ? E['arms-back'] : E['arms-front']; const el = E[`arm-${side}`]; if (parent && el.parentNode !== parent) parent.appendChild(el); };
@@ -244,12 +254,38 @@ export function createHeroine(container, opts = {}) {
     for (const k of Object.keys(overrides)) { if (k in base) base[k] = overrides[k]; else if (k in disc) disc[k] = overrides[k]; }
     return { base, disc };
   }
+  // v2 round 1 (H3-03): glove and prop swaps wait for the arm. A new glove shows once its hand has covered 65% of the way to its target, the
+  // prop changes hands once the receiving hand has (the hand that holds it keeps its grip until then), and the beam fades in only after the
+  // prop hand has arrived. Before, the flashlight jumped to the far hand on frame 0 and its beam swept across her face.
+  const pend = { gl: null, gr: null, prop: null, t: 0 }, armStart = { l: 0, r: 0 }, armTgt = { l: [NaN, NaN], r: [NaN, NaN] };
+  const armDist = (s) => { const p = s === 'l' ? 'al' : 'ar'; return Math.hypot(T[IX[p + 'x']] - X[IX[p + 'x']], T[IX[p + 'y']] - X[IX[p + 'y']]); };
+  const armReady = (s) => armStart[s] < 24 || armDist(s) <= armStart[s] * 0.35 || pend.t > 0.45;
+  const armProg = (s) => (armStart[s] < 24 ? 1 : clamp(1 - armDist(s) / armStart[s], 0, 1));
+  function settleDiscrete(dt) {
+    if (pend.gl === null && pend.gr === null && pend.prop === null) return;
+    pend.t += dt; let ch = false;
+    if (pend.prop !== null && armReady((pend.prop || dis.prop || 'l').toLowerCase())) { dis.prop = pend.prop; dis._pose = poseName; pend.prop = null; ch = true; }
+    for (const s of ['l', 'r']) {
+      const k = s === 'l' ? 'gl' : 'gr';
+      if (pend[k] !== null && armReady(s) && !(pend.prop !== null && (dis.prop || '').toLowerCase() === s)) { dis[k] = pend[k]; pend[k] = null; ch = true; }
+    }
+    if (ch) applyDiscrete();
+  }
   function applyTargets(snap) {
     if (snap) snapThumbs = true;
     const { base, disc } = composeTargets();
     NAMES.forEach((n, i) => { if (n === 'lookx' || n === 'looky') return; T[i] = base[n]; if (snap || reduced) { X[i] = T[i]; V[i] = 0; D[i] = T[i]; } });
     if (!look.target) { look.tx = base.lookx; look.ty = base.looky; }
-    Object.assign(dis, { gl: disc.gl, gr: disc.gr, prop: disc.prop, prop2: disc.prop2, layL: disc.layL, layR: disc.layR });
+    for (const s of ['l', 'r']) { const p = s === 'l' ? 'al' : 'ar', tx = T[IX[p + 'x']], ty = T[IX[p + 'y']]; if (tx !== armTgt[s][0] || ty !== armTgt[s][1]) { armTgt[s] = [tx, ty]; armStart[s] = armDist(s); } }
+    Object.assign(dis, { prop2: disc.prop2, layL: disc.layL, layR: disc.layR });
+    if (snap || reduced) { Object.assign(dis, { gl: disc.gl, gr: disc.gr, prop: disc.prop, _pose: poseName }); pend.gl = pend.gr = pend.prop = null; }
+    else {
+      let fresh = false;
+      for (const k of ['gl', 'gr', 'prop']) { if (disc[k] === dis[k]) pend[k] = null; else if (disc[k] !== pend[k]) { pend[k] = disc[k]; fresh = true; } }
+      if (fresh) pend.t = 0;
+      if (pend.prop === null) dis._pose = poseName;
+      settleDiscrete(0);
+    }
     setMouth(disc.mouth, snap || reduced ? 0 : undefined);
     applyDiscrete();
   }
@@ -402,7 +438,7 @@ const f2 = (n) => Math.round(n * 100) / 100;
     else if (name === 'burstLines') for (let i = 0; i < (o.n ?? 6); i++) { const a = -Math.PI / 2 + (i - (o.n ?? 6) / 2 + 0.5) * 0.36, r0 = 120 + rr(0, 14); spawn('dash', { x: hx + Math.cos(a) * r0, y: hy - 60 + Math.sin(a) * r0 * 0.9, rot: (a * 180) / Math.PI, life: 0.45, len: 20 + rr(0, 12) }); }
     else if (name === 'sweat') { spawn('drop', { x: hx + 62, y: hy - 70, vx: 40, vy: -70, g: 520, life: 0.8 }); spawn('drop', { x: hx - 58, y: hy - 56, vx: -50, vy: -60, g: 520, life: 0.8, s: 0.8 }); }
     else if (name === 'puff') spawn('puff', { x: hx + 54, y: hy - 4, vx: 30, vy: -26, life: 1.1, s: 0.9 });
-    else if (name === 'confetti') for (let i = 0; i < (o.n ?? 26); i++) spawn('conf', { x: hx + rr(-20, 20), y: hy - 70, vx: rr(-170, 170), vy: rr(-330, -120), g: 520, life: rr(0.9, 1.5), rot: rr(0, 360), vr: rr(-500, 500), col: [PAL.gold, PAL.brick, PAL.turq, PAL.white, PAL.orange][i % 5] });
+    else if (name === 'confetti') for (let i = 0; i < (o.n ?? 26); i++) spawn('conf', { x: 200 + rr(-150, 150), y: hy - 150 + rr(-30, 20), vx: rr(-60, 60), vy: rr(-160, 20), g: 420, delay: rr(0, 0.25), life: rr(0.9, 1.5), rot: rr(0, 360), vr: rr(-500, 500), col: [PAL.gold, PAL.brick, PAL.turq, PAL.white, PAL.orange][i % 5] });
     else if (name === 'notes') for (let i = 0; i < 3; i++) spawn('note', { x: hx + 70, y: hy - 10, vx: 40 + i * 12, vy: -50 - i * 14, life: 1, delay: i * 0.18, rot: rr(-20, 20) });
     else if (name === 'ring') spawn('ring', { x: hx, y: hy - 20, life: 0.5 });
     else if (name === 'chips') for (let i = 0; i < (o.n ?? 8); i++) spawn('chip', { x: hx + rr(-20, 20), y: hy - 60, vx: rr(-180, 180), vy: rr(-300, -120), g: 560, life: rr(1, 1.5), vr: rr(-500, 500), col: [PAL.brick, INK, PAL.cream][i % 3] });
@@ -551,6 +587,11 @@ const f2 = (n) => Math.round(n * 100) / 100;
     const lift = clamp(-ry / 260, 0, 1);
     setE('shadow', 'transform', `translate(${f(d('hipX') * 0.5)} 0) scale(${f2(1 - lift * 0.45)} 1)`);
     setE('shadow', 'opacity', f2(0.26 * (1 - lift * 0.6)));
+    if (CROPS[cropName].track) {   // the head crop follows the head (body shift, lean about the waist, head offset, jump)
+      vbOff[0] = clamp(d('rx') + d('ux') + d('hipX') * 0.55 + d('hx') + 130 * Math.sin(rad2(d('lean'))), -48, 48);
+      vbOff[1] = clamp(ry + d('uy') + d('hy') + 130 * (1 - Math.cos(rad2(d('lean')))), -60, 48);
+      const v = vbOf(); if (v !== vbKey) { vbKey = v; svg.setAttribute('viewBox', v); }
+    }
     // ---- lower body (skipped entirely in the waist-up crops)
     const lowerOn = CROPS[cropName].lower !== false;
     const hipX = d('hipX') + sway * 1.2, tilt = d('hipTilt') + sway * 0.5;
@@ -571,13 +612,14 @@ const f2 = (n) => Math.round(n * 100) / 100;
     for (const [s, root, A] of [['l', rootL, REST.ankleL], ['r', rootR, REST.ankleR]]) {
       const p = s;
       // floor-length gown (shoesUnder): the feet stay under the flare, only the toes peek out
-      const ax = W.shoesUnder ? clamp(A[0] + d(p + 'ax') * 0.3, 168, 232) : A[0] + d(p + 'ax');
+      const ax = W.shoesUnder ? clamp(A[0] + d(p + 'ax') * 0.15, 168, 232) : A[0] + d(p + 'ax');
       const ay = W.shoesUnder ? A[1] : W.legs.fromHip ? A[1] + d(p + 'ay') : Math.max(A[1] + d(p + 'ay'), root[1] + 42);   // feet never climb above the hem
       const cv = limb(root, [ax, ay], d(p + 'b1') * bk, d(p + 'b2') * bk), dd = tubeD(cv, legW);
       setE(`leg-${s}-ink`, 'd', dd); setE(`leg-${s}-fill`, 'd', dd);
       if (E[`leg-${s}-sh`]) setE(`leg-${s}-sh`, 'd', cubicD(limb([root[0] - 3, root[1] + 6], [ax - 3, ay - 6], d(p + 'b1') * 0.8 * bk, d(p + 'b2') * 0.8 * bk)));
       const flip = d(p + 'sf');
-      setE(`shoe-${s}-t`, 'transform', `translate(${f(ax)} ${f(ay)}) rotate(${f(d(p + 'sr'))}) scale(${f2(flip * 0.88)} 0.88)`);
+      const sr = W.shoesUnder ? clamp(d(p + 'sr'), -6, 6) : d(p + 'sr');   // under the gown the shoe never tips past the hem
+      setE(`shoe-${s}-t`, 'transform', `translate(${f(ax)} ${f(ay)}) rotate(${f(sr)}) scale(${f2(flip * 0.88)} 0.88)`);
     }
     }
     // ---- upper body
@@ -597,7 +639,7 @@ const f2 = (n) => Math.round(n * 100) / 100;
     setE('hair-curl-l', 'transform', `rotate(${f(sec.curlL.x)} -80 -48)`);
     setE('hair-curl-r', 'transform', `rotate(${f(sec.curlR.x)} 30 -30)`);
     setE('hair-front', 'transform', `rotate(${f(sec.bangs.x)} 10 -110)`);
-    if (E['hair-tuft']) setE('hair-tuft', 'opacity', f2(clamp(-d('cy') / 24, 0, 1)));
+    if (E['hair-tuft']) setE('hair-tuft', 'opacity', f2(clamp((-d('cy') - 40) / 18, 0, 1)));   // hidden in bigwin (cy -34), up in shock
     setE('cap', 'transform', `translate(0 ${f(d('cy'))}) rotate(${f(d('cr') + sec.cap.x)} -30 -110)`);
     const L = faceLayout(turn);
     setE('nose-s', 'transform', `translate(${f(L.nose[0])} ${f(L.nose[1])})`);
@@ -651,7 +693,9 @@ const f2 = (n) => Math.round(n * 100) / 100;
         setE('prop2', 'transform', `translate(${gp[0]} ${gp[1]}) rotate(${f(0 - ang)})`);
       }
     }
-    if (E.beam) setE('beam', 'opacity', f2(clamp(d('beam'), 0, 1)));
+    // the beam only once the prop has reached its hand (H3-03)
+    const beamK = pend.prop !== null ? 0 : clamp((armProg((dis.prop || 'l').toLowerCase()) - 0.65) / 0.3, 0, 1);
+    if (E.beam) setE('beam', 'opacity', f2(clamp(d('beam'), 0, 1) * beamK));
     // ---- whistle chain (inspectrice)
     if (E.chain) renderChain(d, shr);
     // ---- scarf (vault)
@@ -698,14 +742,21 @@ const f2 = (n) => Math.round(n * 100) / 100;
     updateTweens(dt); updateTimed(dt); updateBlink(dt); updateClip(dt); updateDirector(dt);
     if (mouthS.t < 1) mouthS.t = Math.min(1, mouthS.t + dt / Math.max(0.001, mouthS.dur));
     if (reduced) { for (let i = 0; i < NP; i++) { X[i] = T[i]; V[i] = 0; } }
-    else { acc += dt; let n = 0; while (acc >= FIX && n < 10) { stepFixed(FIX); acc -= FIX; n++; } if (n === 10) acc = 0; }
+    else { acc += dt; let n = 0; while (acc >= FIX && n < 30) { stepFixed(FIX); acc -= FIX; n++; } if (n === 30) acc = 0; }
+    settleDiscrete(dt);
     // mouth mixing uses the eased `t`
     updateFx(dt);
   }
+  // v2 round 1 (I3 / K5): at rest the loop ticks on a idleHz timer instead of every vsync (update + springs ran 60 times a second for a figure
+  // drawn 12 times a second); anything that starts motion wakes the rAF loop again (wake() wraps the public API below)
+  let tmo = 0;
+  const isBusy = () => !!clipS.cur || tweens.length > 0 || fxP.length > 0 || !grounded || spinS.active || pend.gl !== null || pend.gr !== null || pend.prop !== null;
+  function wake() { if (tmo) { clearTimeout(tmo); tmo = 0; } if (!raf && O.raf && O.autoplay && !destroyed) raf = requestAnimationFrame(frame); }
   function frame(now) {
     raf = 0; if (destroyed) return;
     if (!paused) {
-      const dt = Math.min(0.05, last ? (now - last) / 1000 : 1 / 60) * speed; last = now;
+      // a rest frame comes every 1000 / idleHz ms: dt covers it (busy frames keep the 0.05 s cap)
+      const dt = Math.min(isBusy() || !(O.idleHz > 0) ? 0.05 : 0.2, last ? (now - last) / 1000 : 1 / 60) * speed; last = now;
       // at rest (no clip, tween, particle, jump or spin) the figure is drawn on the 12 fps limited-animation grid only (opts.idleHz, 0 = every
       // frame): breathing, blinks and saccades keep their timing, the SVG is written 12 times a second instead of 60 (WP5 frame budget)
       const t0 = performance.now(); update(dt);
@@ -715,9 +766,11 @@ const f2 = (n) => Math.round(n * 100) / 100;
       const ms = performance.now() - t0;
       stat.frames++; stat.avg += (ms - stat.avg) * 0.05; if (stat.frames > 30) stat.max = Math.max(stat.max * 0.995, ms);
     } else last = 0;
-    if (O.raf) raf = requestAnimationFrame(frame);
+    if (!O.raf) return;
+    if (O.idleHz > 0 && !paused && !isBusy()) tmo = setTimeout(() => { tmo = 0; frame(performance.now()); }, 1000 / O.idleHz);
+    else raf = requestAnimationFrame(frame);
   }
-  const onVis = () => { if (document.hidden) { paused = true; } else { paused = false; last = 0; } };
+  const onVis = () => { if (document.hidden) { paused = true; } else { paused = false; last = 0; wake(); } };
 
   // ====================================================================== public API
   const api = {
@@ -738,8 +791,9 @@ const f2 = (n) => Math.round(n * 100) / 100;
     stats() { return { frames: stat.frames, avgMs: stat.avg, maxMs: stat.max, clip: clipS.cur ? clipS.cur.name : '' }; },
     state: () => ({ ...Object.fromEntries(NAMES.map((n, i) => [n, X[i]])), ry, sec: Object.fromEntries(Object.keys(sec).map((k) => [k, sec[k].x])) }),
     clips: () => Object.keys(clipDefs), poses: () => Object.keys(POSES), outfits: () => OUTFIT_KEYS.slice(), moods: () => Object.keys(MOODS), visemes: () => VISEME_NAMES.slice(),
-    destroy() { destroyed = true; if (raf) cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', onVis); if (mq && mq.removeEventListener) mq.removeEventListener('change', onMq); container.innerHTML = ''; svg = null; },
+    destroy() { destroyed = true; if (raf) cancelAnimationFrame(raf); if (tmo) clearTimeout(tmo); document.removeEventListener('visibilitychange', onVis); if (mq && mq.removeEventListener) mq.removeEventListener('change', onMq); container.innerHTML = ''; svg = null; },
   };
+  for (const k of ['setLook', 'setMood', 'setPose', 'setCrop', 'setOutfit', 'play', 'wink', 'blink', 'impulse', 'fx', 'setMouth', 'set', 'clear', 'setSpeed', 'resume']) { const fn = api[k]; api[k] = (...a) => { const r = fn(...a); wake(); return r; }; }
   const onMq = (e) => { reduced = O.reduced ?? e.matches; applyTargets(true); };
   if (mq && mq.addEventListener) mq.addEventListener('change', onMq);
   document.addEventListener('visibilitychange', onVis);
@@ -766,7 +820,7 @@ export const CLIPS = {
     { at: 1.8, look: { nx: 0.8, ny: 0.1, turn: 0.8 }, set: { lean: 14, hx: 18, bRy: -15 }, mouth: 'oh' } ] },
   winSmall: { dur: 1.6, events: [
     { at: 0, pose: 'smallwin', impulse: { sq: -1.2 }, wink: 'L', winkDur: 0.7, cue: 'winSmall' }, { at: 0.12, impulse: { jump: 520, sq: 1.2 }, fx: 'sparkles', fxOpts: { n: 3 } },
-    { at: 0.3, set: { arx: 266, ary: 164 } }, { at: 0.52, set: { arx: 262, ary: 190 } }, { at: 0.8, mouth: 'smirk' }, { at: 1.25, look: 'player' } ] },
+    { at: 0.3, set: { arx: 300, ary: 176 } }, { at: 0.52, set: { arx: 304, ary: 214 } }, { at: 0.8, mouth: 'smirk' }, { at: 1.25, look: 'player' } ] },
   winBig: { dur: 2.8, endPose: 'idle', tracks: {
     pose: [[0, 'anticipation', { set: { sq: -0.2, uy: 14, arx: 250, ary: 360, alx: 150, aly: 360, hipTilt: 0, lean: 0 } }], [0.14, 'bigwin']],
     mouth: [[0, 'grin'], [1.9, 'teeth']], cue: [[0, 'winBig']],
@@ -789,7 +843,7 @@ export const CLIPS = {
   freeSpinEnd: { dur: 2.6, endPose: 'idle', events: [ { at: 0, pose: 'curtsy', cue: 'freeSpinEnd' }, { at: 0.5, fx: 'sparkles', fxOpts: { n: 5 } }, { at: 1.4, set: { lean: 6, uy: 0 } }, { at: 2.0, look: 'player' } ] },
   curtsy: { dur: 2.4, endPose: 'idle', events: [ { at: 0, pose: 'curtsy' }, { at: 0.5, fx: 'sparkles', fxOpts: { n: 4 } }, { at: 1.3, set: { lean: 4, uy: 4 } } ] },
   meterMilestone: { dur: 1.8, endPose: 'idle', events: [
-    { at: 0, pose: 'point', look: 'meter', set: { arx: 318, ary: 168, arr: -60, arb1: -26, arb2: 14, prop: '', beam: 0, turn: 0.6 }, cue: 'meterMilestone' }, { at: 0.2, fx: 'ring' }, { at: 1.2, look: 'player' } ] },
+    { at: 0, pose: 'point', look: 'meter', set: { arx: 318, ary: 168, arr: -60, arb1: -26, arb2: 14, prop: '', gr: 'point', beam: 0, turn: 0.6 }, cue: 'meterMilestone' }, { at: 0.2, fx: 'ring' }, { at: 1.2, look: 'player' } ] },
   checkFlashlight: { dur: 2.6, events: [
     { at: 0, set: { alx: 190, aly: 252, alb1: 40, alb2: 30, acc: 150, lookx: -0.2, looky: 0.6, turn: 0.35, htilt: -4 }, look: 'hand' },
     { at: 0.5, set: { beam: 1 } }, { at: 0.7, set: { beam: 0 } }, { at: 0.95, set: { beam: 1 } }, { at: 1.25, set: { beam: 0 }, mouth: 'smirk' }, { at: 1.6, look: 'player' } ] },

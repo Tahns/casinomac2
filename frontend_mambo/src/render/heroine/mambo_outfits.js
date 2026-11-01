@@ -41,7 +41,7 @@ const inspectrice = {
   sleeve: { fill: PAL.navyJ, trim: PAL.mustard, trimAt: [0.8, 0.9], gloveFrom: null, tex: true },
   glove: PAL.white, cuff: PAL.white,
   legs: { fill: INK, w: 13, shine: '#7A5646' },
-  shoe: { base: PAL.white },
+  shoe: { kind: 'pump', base: PAL.navyJ, trim: PAL.navyLight },
   lidFill: PAL.eyeshadow, propKind: 'flashlight', whistle: true, accBase: 90, accGain: 1, hairTop: () => '', capOver: false,
   skirt(c) { // pencil skirt: waist tucked under the peplum, hips on the S-curve, narrow hem, front fold line
     const d = garmentD(292, 447, { eB: (y) => (y > 430 ? 1 : 0), eF: (y) => (y > 430 ? 1 : 0), hem: 5 });
@@ -91,7 +91,7 @@ const inspectrice = {
 const casino = {
   key: 'casino', label: 'B. Casino evening', accent: PAL.brick,
   sleeve: { fill: PAL.brick, trim: null, gloveFrom: 0.52, tex: true }, glove: PAL.white, cuff: PAL.white,
-  legs: { fill: INK, w: 13 }, shoe: { base: PAL.white }, shoesUnder: true,
+  legs: { fill: INK, w: 13 }, shoe: { kind: 'pump', base: '#8E1F1B', trim: PAL.gold }, shoesUnder: true,
   lidFill: '#1E1411', lidShadowOp: 0, accBase: 180, accGain: 0.5, capOver: false,
   hairTop(c) { // big 60s wave on top (no hat)
     return part(c, 'M-86 -104C-84 -140 -52 -162 -14 -160C24 -158 44 -142 44 -118C30 -128 8 -134 -12 -126C-34 -118 -58 -112 -86 -104Z', PAL.hair, { shade: 'M-96 -170L-20 -170L-20 -100L-96 -100Z' })
@@ -100,9 +100,11 @@ const casino = {
   skirt(c) { // fitted gown: pencil to the knee, mermaid flare to the floor (no slit), godet seams
     const fl = flare(446, 556, 126, 278, 1.9), RD = '#8E1F1B';
     const d = garmentD(290, 556, { extraYs: [470, 490, 512, 534, 548], eB: fl.eB, eF: fl.eF, hem: 9, hemShift: 6 });
+    // v2 round 1 (H3-10): the godet lines are clipped to the gown outline (they used to run past it at the flare and double the hem line)
+    c.defs.push(`<clipPath id="${c.pre}gown-clip"><path d="${d}"/></clipPath>`);
     return part(c, d, PAL.brick, { shade: shadeRight(290, 580), tex: true })
-      + line(spl([[SB(452) + 6, 452], [152, 510], [142, 552]]), 3, RD, ' opacity=".8"') + line(spl([[CL(452) - 2, 452], [CL(452) - 4, 510], [CL(452) - 8, 560]]), 3, RD, ' opacity=".8"')
-      + line(spl([[SF(452) - 6, 452], [250, 510], [260, 552]]), 3, RD, ' opacity=".8"')
+      + `<g clip-path="url(#${c.pre}gown-clip)">` + line(spl([[SB(452) + 8, 452], [154, 510], [146, 548]]), 3, RD, ' opacity=".8"') + line(spl([[CL(452) - 2, 452], [CL(452) - 4, 510], [CL(452) - 8, 548]]), 3, RD, ' opacity=".8"')
+      + line(spl([[SF(452) - 8, 452], [248, 510], [256, 548]]), 3, RD, ' opacity=".8"') + '</g>'
       + line(spl([[CL(312) - 5, 314], [CL(346) - 7, 350], [CL(404) - 9, 404], [CL(450) - 8, 450]]), 3, RD, ' opacity=".55"');
   },
   torso(c) { // fitted bodice, high gold collar, waist sash, brooch; closure line shifted right (3/4 turn)
@@ -139,8 +141,8 @@ const casino = {
 const COAT = '#FBF3DC';
 const lab = {
   key: 'lab', label: 'C. Laboratory', accent: PAL.turq,
-  sleeve: { fill: COAT, trim: '#E4D6AE', trimAt: [0.82, 0.9], gloveFrom: null }, glove: PAL.white, cuff: PAL.white,
-  legs: { fill: '#3A1A10', w: 13, shine: '#8A5A44' }, shoe: { base: PAL.white },
+  sleeve: { fill: PAL.glass, trim: PAL.turq, trimAt: [0.8, 0.9], gloveFrom: null }, glove: PAL.white, cuff: PAL.white,
+  legs: { fill: '#3A1A10', w: 13, shine: '#8A5A44' }, shoe: { kind: 'flat', base: PAL.turq, trim: COAT },
   lidFill: PAL.eyeshadow, accBase: 180, accGain: 0.3, capOver: false,
   hairTop(c) { // big curl on top
     return part(c, 'M-88 -104C-90 -146 -56 -170 -18 -168C16 -170 44 -154 50 -126C52 -112 44 -102 34 -98C32 -118 14 -134 -6 -130C-34 -126 -60 -116 -88 -104Z', PAL.hair, { shade: 'M-100 -176L-24 -176L-24 -100L-100 -100Z' })
@@ -196,7 +198,7 @@ const SUIT = PAL.mustard, LEATHER = '#7A4A2A';
 const vault = {
   key: 'vault', label: 'D. Vault / commando', accent: PAL.mustard, scarf: true,
   sleeve: { fill: SUIT, trim: LEATHER, trimAt: [0.8, 0.9], gloveFrom: null, tex: true }, glove: PAL.white, cuff: PAL.white,
-  legs: { fill: SUIT, w: 17, sock: '#5A3A22', fromHip: true }, shoe: { base: PAL.white },
+  legs: { fill: SUIT, w: 17, fromHip: true }, shoe: { kind: 'combat', base: LEATHER, trim: '#5A3A22' },
   lidFill: PAL.eyeshadow, accBase: 90, accGain: 1, capOver: true, hairTop: () => '',
   skirt(c) { // jumpsuit hips down to the leg tops, centre seam, thigh pockets
     const d = garmentD(290, 414, { hem: 3, hemShift: 2 });
@@ -248,7 +250,7 @@ const CAMEL = PAL.camel, BURG = PAL.burgundy;
 const trench = {
   key: 'trench', label: 'E. Trench and fedora', accent: BURG,
   sleeve: { fill: CAMEL, trim: '#8A5E34', trimAt: [0.78, 0.86], gloveFrom: null, tex: true }, glove: PAL.white, cuff: PAL.white,
-  legs: { fill: '#3A1A10', w: 13, shine: '#8A5A44' }, shoe: { base: PAL.white },
+  legs: { fill: '#3A1A10', w: 13, shine: '#8A5A44' }, shoe: { kind: 'boot', base: LEATHER, trim: '#4A2E1A' },
   lidFill: PAL.eyeshadow, accBase: 90, accGain: 1, capOver: true, hairTop: () => '',
   skirt(c) { // belted trench coat, flares to the hem, double row of buttons, storm flap
     const e = (y) => 2 + Math.max(0, y - 310) * 0.1;

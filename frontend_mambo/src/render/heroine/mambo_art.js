@@ -2,7 +2,7 @@
 // Hand-authored vector geometry (paths, ellipses, one dot pattern). No bitmaps, no <image>, no filters, no AI output:
 // the Higgsfield pictures in ./higgs are visual MODEL SHEETS only. Everything here is drawn in code.
 //
-// Style: 1930s-60s rubber-hose cartoon, noodle limbs without elbows, big white three-finger gloves, big round white shoes,
+// Style: 1930s-60s rubber-hose cartoon, noodle limbs without elbows, big white three-finger gloves, per-outfit heels or boots (v2 round 1; the puffy white shoe is the fallback),
 // big expressive head, uniform dark-brown outline, flat fills with a small print offset and halftone dots for shadows.
 // DOM-free: this module only builds markup strings and numbers (the runtime is mambo_rig.mjs).
 //
@@ -368,8 +368,41 @@ export function gloveKinds(c, W, side = 'x') {
 export const GLOVE_GRIP = Object.fromEntries(GLOVE_KIND_NAMES.map((k) => [k, GLOVE_DEFS[k].grip]));
 
 // ------------------------------------------------------------------ SHOES (local: leg entry at 0,0, toe toward +x, ground at y=+38)
+// v2 round 1 (I1): per-outfit footwear instead of one puffy white shoe. W.shoe.kind = 'pump' (closed mid heel, T-strap), 'boot' (ankle boot,
+// block heel), 'combat' (laced boot with a cuff band wrapping the trouser end), 'flat' (low flat with a strap). Same footprint and transform.
+const SHOE_KINDS = {
+  pump(c, W, base, trim) {
+    const legFill = (W.legs && W.legs.fill) || INK;
+    return part(c, 'M-15 22L-5 25L-7.5 45L-13 45Z', base, { sw: 3.8, mis: [1.2, 1] })                       // mid heel (behind the body)
+      + part(c, 'M-9 -4L10 -4C11 6 15 13 24 19L-12 20C-13 12 -12 4 -9 -4Z', legFill, { sw: 3.6, mis: [1, 0.8] }) // foot in the stocking
+      + part(c, 'M-13 11C-17 19 -16 25 -13 28C-4 30 6 33 16 37C28 42 40 45 50 44C58 43 61 36 55 31C48 26 38 21 28 19C21 21 13 21 6 17C0 15 -6 13 -13 11Z', base, { shade: 'M-20 30L66 26L66 52L-20 52Z' })
+      + part(c, 'M-10 1Q0 5 11 1L11.5 6.5Q0 10.5 -10.5 6.5Z', base, { sw: 3.2, mis: [1, 0.8] })            // ankle strap
+      + `<path d="M3 9L14 20" stroke="${INK}" stroke-width="6.4" stroke-linecap="round"/><path d="M3 9L14 20" stroke="${base}" stroke-width="2.6" stroke-linecap="round"/>`
+      + line('M24 25Q38 31 50 33', 2.2, trim || PAL.white, ' opacity=".6"');
+  },
+  boot(c, W, base, trim) {
+    return part(c, 'M-12 -12L12 -12L13 12C22 18 36 24 48 28C58 31 61 40 55 44L10 44C6 40 0 38 -5 40L-6 45L-14 45C-16 34 -15 20 -12 -12Z', base, { shade: 'M-20 24L66 18L66 52L-20 52Z' })
+      + part(c, 'M-13 -15L13 -15L13 -7L-13 -7Z', trim || INK, { sw: 3.4, mis: [1, 0.8] })
+      + line('M12 12C17 17 24 21 32 24', 2.4, INK, ' opacity=".55"') + `<path d="M8 44.5L56 44.5" stroke="${INK}" stroke-width="4.4" stroke-linecap="round"/>`;
+  },
+  combat(c, W, base, trim) {
+    return part(c, 'M-14 -20L13 -20L14 10C24 15 38 21 50 25C60 28 63 36 59 41L-15 41C-17 30 -17 8 -14 -20Z', base, { shade: 'M-20 20L66 14L66 50L-20 50Z' })
+      + part(c, 'M-17 39L61 39L60 47L-16 47Z', INK, { sw: 2.6, mis: [0.8, 0.8] })
+      + part(c, 'M-15.5 -25L14.5 -25L14.5 -16L-15.5 -16Z', trim || base, { sw: 3.4, mis: [1, 0.8] })        // cuff band around the trouser end
+      + line('M0 -10L11 -10M1 -2L12 -2M2 6L14 6M10 13L20 16', 2.6, PAL.cream, ' opacity=".85"');
+  },
+  flat(c, W, base, trim) {
+    const legFill = (W.legs && W.legs.fill) || INK;
+    return part(c, 'M-9 -4L10 -4C11 8 15 16 24 22L-12 24C-13 14 -12 4 -9 -4Z', legFill, { sw: 3.6, mis: [1, 0.8] })
+      + part(c, 'M-13 19C-17 28 -16 40 -9 44L48 44C58 44 61 36 55 31C47 26 36 24 26 22C16 24 3 23 -13 19Z', base, { shade: 'M-20 34L66 30L66 52L-20 52Z' })
+      + `<path d="M-4 20Q8 12 20 22" fill="none" stroke="${INK}" stroke-width="6" stroke-linecap="round"/><path d="M-4 20Q8 12 20 22" fill="none" stroke="${trim || base}" stroke-width="2.6" stroke-linecap="round"/>`
+      + `<path d="M-12 44.5L52 44.5" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>`;
+  },
+};
 export function shoeArt(c, W) {
   const base = (W.shoe && W.shoe.base) || PAL.white;
+  const kind = W.shoe && SHOE_KINDS[W.shoe.kind];
+  if (kind) return kind(c, W, base, W.shoe.trim);
   const body = 'M-26 12C-32 32 -18 44 8 44L34 44C56 44 62 28 58 16C54 2 36 -6 18 -6C0 -8 -18 -4 -26 12Z';
   let s = part(c, body, base, { shade: 'M-34 28L68 12L68 54L-34 54Z' });
   s += line('M30 -1Q26 16 38 36', 3.2, INK, ' opacity=".45"');
@@ -401,14 +434,16 @@ function hairParts(c, W) {
   const col = PAL.hair;
   // pass 2: waved page-boy: wide at the back, a wave that tucks in then flips out, the underside slants up toward the neck (no more block)
   const mass = part(c, 'M20 -122C16 -140 -2 -148 -30 -146C-60 -142 -88 -122 -94 -92C-98 -74 -96 -62 -90 -54C-85 -47 -91 -42 -94 -34C-101 -22 -90 -2 -68 0C-52 1 -43 -8 -35 -17L-22 -22L0 -22L26 -40C30 -70 26 -100 20 -122Z', col, { shade: 'M-100 -170L-34 -170L-34 10L-100 10Z', ht: 'ht' })
-    + line('M-83 -106C-91 -86 -84 -70 -78 -56C-74 -46 -80 -38 -75 -27', 3.6, PAL.hairHi, ' opacity=".85"') + line('M-66 -132C-80 -122 -88 -108 -89 -96', 3.2, PAL.hairHi, ' opacity=".7"')
-    + `<g id="${c.pre}hair-tuft" opacity="0">` + part(c, 'M-62 -128L-60 -158L-48 -142L-42 -166L-30 -148L-20 -164L-14 -146L-2 -156L2 -134L-2 -120L-58 -120Z', col, { sw: OL * 0.95 }) + line('M-52 -146L-48 -132M-26 -150L-24 -134', 2.8, PAL.hairHi) + `</g>`;
+    + line('M-83 -106C-91 -86 -84 -70 -78 -56C-74 -46 -80 -38 -75 -27', 3.6, PAL.hairHi, ' opacity=".85"') + line('M-66 -132C-80 -122 -88 -108 -89 -96', 3.2, PAL.hairHi, ' opacity=".7"');
+  // v2 round 1 (H3-07): the shock tuft is drawn OVER the lifted cap (see buildHead) with tall, narrow spikes, so it reads as hair standing up,
+  // not as a brown block under the cap
+  const tuft = `<g id="${c.pre}hair-tuft" opacity="0">` + part(c, 'M-58 -124L-57 -170L-49 -146L-41 -190L-33 -150L-24 -184L-17 -148L-7 -172L-3 -134L-8 -118L-52 -118Z', col, { sw: OL * 0.9 }) + line('M-49 -150L-47 -132M-33 -158L-31 -136M-17 -152L-16 -134', 2.6, PAL.hairHi) + `</g>`;
   // pass 2: flips drawn as crescents with a pointed tip (never a closed ring, so they cannot read as hoop earrings)
   const curlL = part(c, 'M-80 -48C-98 -50 -109 -36 -105 -21C-101 -7 -85 -3 -75 -12C-83 -12 -91 -19 -91 -28C-91 -35 -87 -41 -79 -43Z', col, { shade: 'M-112 -30L-86 -30L-86 -2L-112 -2Z', tex: true })
     + line('M-97 -37C-101 -28 -97 -16 -86 -13', 2.8, PAL.hairHi, ' opacity=".85"');
   const curlR = part(c, 'M28 -38C42 -48 60 -40 62 -26C63 -12 48 -6 38 -14C46 -15 51 -21 49 -27C47 -33 40 -33 34 -29Z', col, { sw: OL * 0.9, tex: true })
     + line('M50 -40C57 -35 58 -27 54 -21', 2.6, PAL.hairHi);
-  return { mass, curlL, curlR };
+  return { mass, curlL, curlR, tuft };
 }
 function bangsArt(c) {
   const col = PAL.hair;
@@ -460,7 +495,7 @@ export function buildHead(c, W) {
     + `<path id="${c.pre}brow-l" d="" fill="${INK}" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/><path id="${c.pre}brow-r" d="" fill="${INK}" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/>` + mouth);
   return {
     hairMass: G(c.pre + 'hair-mass', hb.mass + hairTop), maskUnder, curlL: G(c.pre + 'hair-curl-l', hb.curlL), curlR: G(c.pre + 'hair-curl-r', hb.curlR),
-    face: G(c.pre + 'face', face), features, bangs: G(c.pre + 'hair-front', bangsArt(c)),
+    face: G(c.pre + 'face', face), features, bangs: G(c.pre + 'hair-front', bangsArt(c)), tuft: hb.tuft,
   };
 }
 

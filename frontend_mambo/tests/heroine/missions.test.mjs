@@ -44,7 +44,7 @@ test('Still: the mission beats are a held static point, no clip', () => {
   for (const k of ['caseOpen', 'spotlight', 'layout']) { rig.played.length = 0; assert.equal(d.react(k), true, k); assert.equal(rig.played.length, 0, k); assert.equal(rig.pose, 'point', k); d.release(); }
 });
 
-test('missions: trigger dresses her for the mission (lab / trench / casino) behind the screen, end brings the inspectrice back', () => {
+test('missions: trigger dresses her for the mission (lab / trench / casino) behind the screen, end brings the inspectrice back at once (H2-08)', () => {
   assert.deepEqual({ ...MISSION_OUTFIT }, { briefing: 'lab', orders: 'trench', blackout: 'casino', fuse: 'vault' });
   for (const [mission, outfit] of [['briefing', 'lab'], ['orders', 'trench'], ['blackout', 'casino']]) {
     const { d, rig, clock } = setup();
@@ -52,8 +52,9 @@ test('missions: trigger dresses her for the mission (lab / trench / casino) behi
     assert.deepEqual(rig.played, ['outfitChange']); rig.applyOutfitEvents(); assert.equal(rig.outfit, outfit);
     rig.finish(); clock.advance(2100);
     assert.equal(d.react('end', { ratio: 0.5 }), true); assert.equal(rig.played.at(-1), 'freeSpinEnd');
+    assert.equal(rig.outfit, BASE_OUTFIT, 'H2-08: back in the base costume under the end card');
     rig.finish(); clock.advance(100);
-    assert.equal(rig.played.at(-1), 'outfitChange', 'the end card is followed by the change back'); rig.applyOutfitEvents(); assert.equal(rig.outfit, BASE_OUTFIT);
+    assert.equal(rig.played.at(-1), 'freeSpinEnd', 'no folding screen after the bow');
   }
 });
 

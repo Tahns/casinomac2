@@ -150,11 +150,12 @@ test('unknown costume: nothing happens', () => {
   assert.equal(rig.played.length, 0);
 });
 
-test('end: the bow, then the base costume comes back behind the screen (only when she is not already in it)', () => {
+test('end (H2-08): the base costume comes back at once under the end card, then the bow; no folding screen after it', () => {
   const { d, rig, clock } = setup({ outfit: 'casino' });
   assert.equal(d.react('end', { ratio: 5 }), true); assert.equal(rig.played[0], 'freeSpinEnd');
+  assert.equal(rig.outfit, 'inspectrice'); assert.ok(rig.log.some((l) => l[0] === 'outfit' && l[1] === 'inspectrice' && l[2] === false), 'instant swap');
   rig.finish();                                            // bow over
-  assert.equal(rig.played.length, 2); assert.equal(rig.clip.def.name, 'outfitChange'); assert.equal(rig.clip.def.events.find((e) => e.outfit).outfit, 'inspectrice');
+  assert.equal(rig.played.length, 1);
   const s = setup({ outfit: 'inspectrice' }); s.d.react('end'); s.rig.finish(); assert.deepEqual(s.rig.played, ['freeSpinEnd']);
   // a neutral debrief has no sparkles
   const n = setup(); n.d.react('end', { ratio: 0.5 }); assert.ok(n.rig.clip.def.events.every((e) => !e.fx && !e.wink));

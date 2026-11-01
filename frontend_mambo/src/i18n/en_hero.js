@@ -13,5 +13,13 @@ export const en_hero = {
   'mascot.fsEnd.5': 'Debrief done.',
   'mascot.big.2': 'Fabulous, darling.',
   'mascot.wire.2': 'Press and hum.',
+  // v2 round 1 (H2-11 / I7): one entry and one exit line per mission (render says 'mascot.fs.' + mission id at the trigger and
+  // 'mascot.fsEnd.' + mission id at the end; 'mascot.fs' with its variants stays the Briefing line)
+  'mascot.fs.briefing': 'Briefing time.',
+  'mascot.fs.orders': 'Sealed orders. Hush.',
+  'mascot.fs.blackout': 'Lights out, darling.',
+  'mascot.fsEnd.briefing': 'Lesson learned.',
+  'mascot.fsEnd.orders': 'Orders carried out.',
+  'mascot.fsEnd.blackout': 'Lights back on.',
 };
 export default en_hero;

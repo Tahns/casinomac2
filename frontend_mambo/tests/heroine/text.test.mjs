@@ -10,12 +10,18 @@ import { findRestricted } from '../text/restricted.mjs';
 
 const FRONT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
+const MISSION_LINE = /^mascot\.(fs|fsEnd)\.(briefing|orders|blackout)$/;
 test('en_hero: five reworded heroine lines, every key overrides an existing mascot key', () => {
-  const lines = new Set(Object.values(en_hero));
+  const re = Object.fromEntries(Object.entries(en_hero).filter(([k]) => !MISSION_LINE.test(k)));
+  const lines = new Set(Object.values(re));
   assert.equal(lines.size, 5, 'five distinct reworded lines (mascot.lose and mascot.lose.1 share one)');
-  assert.equal(Object.keys(en_hero).length, 6);
-  for (const k of Object.keys(en_hero)) { assert.ok(/^mascot\./.test(k), k); assert.ok(Object.prototype.hasOwnProperty.call(en, k), `${k} exists in en.js`); assert.notEqual(en_hero[k], en[k], k); }
+  assert.equal(Object.keys(re).length, 6);
+  for (const k of Object.keys(re)) { assert.ok(/^mascot\./.test(k), k); assert.ok(Object.prototype.hasOwnProperty.call(en, k), `${k} exists in en.js`); assert.notEqual(en_hero[k], en[k], k); }
   assert.equal(en_hero['mascot.lose'], en_hero['mascot.lose.1']);
+});
+test('en_hero (H2-11 / I7): one entry and one exit line per mission, short, distinct', () => {
+  for (const ev of ['fs', 'fsEnd']) for (const m of ['briefing', 'orders', 'blackout']) { const v = en_hero[`mascot.${ev}.${m}`]; assert.ok(v && v.length <= 24, `${ev}.${m}`); }
+  assert.equal(en_hero['mascot.fs.orders'], 'Sealed orders. Hush.'); assert.equal(en_hero['mascot.fs.blackout'], 'Lights out, darling.');
 });
 test('the nudges are gone from the merged table: no "Next one\'s the one", no "Same time tomorrow", no other variant of them', () => {
   const merged = Object.entries(EN).filter(([k]) => k.startsWith('mascot.'));

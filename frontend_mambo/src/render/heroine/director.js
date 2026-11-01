@@ -130,6 +130,9 @@ export function createDirector({
       const t = now();
       if (info && info.at) onInfo(info);
       if (p.mode === 'outfit') return doOutfit(p.outfit, info, t);
+      // v2 round 1 (H2-08): the costume returns to the base outfit at freeSpinEnd, instantly, while the end card dims the stage (it used to
+      // play its folding screen after the bow, when the round was already back to idle and a quick re-spin ran in the mission costume)
+      if (p.kind === 'end' && rigOutfit() !== BASE_OUTFIT) { guard(() => rig.setOutfit(BASE_OUTFIT, { animated: false })); trace('outfit', BASE_OUTFIT); }
       if (lock && t < lock.until) return false;                       // a costume change in progress is never cut
       if (cur && !cur.holding && t < cur.until) {
         if (p.prio < cur.prio) return false;
@@ -156,8 +159,7 @@ export function createDirector({
       const ck = p.accent ? 'kind:' + p.kind : p.clip;
       if (p.cooldown && p.prio < 4 && t - (lastAt[ck] || -1e9) < p.cooldown) return drop();
       if (p.kind === 'trigger' && p.outfit && p.outfit !== rigOutfit()) return doOutfit(p.outfit, info, t) || drop();
-      const then = p.kind === 'end' ? () => { if (rigOutfit() !== BASE_OUTFIT) doOutfit(BASE_OUTFIT, null, now()); } : null;
-      return startClip(p, info, t, then) || drop();
+      return startClip(p, info, t, null) || drop();
     });
   }
 
