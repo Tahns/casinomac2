@@ -24,6 +24,7 @@ import * as layersMod from './layers/index.js'; // optional exports read at run 
 import { settings } from '../settings.js';
 import { motion } from './motion.js';
 import { createCamera } from './camera.js';
+import { quality } from './quality.js';
 import { flash as flashGov } from './flash.js'; // WP10 integration: the ONE page flash budget (request WP5_to_WP4 item 2)
 import * as cel from './celebrate.js';
 
@@ -249,6 +250,16 @@ export function createRenderer(rootEl) {
       const size = Math.round(Math.min(260, Math.max(90, h || window.innerHeight * 0.3)));
       M.m = mod.createMascot(slot, { size, reduced: motion.reduced });
       M.m.setPose('idle');
+      // K5 round 2: on a device the quality governor has put to lite / calm the heroine draws her busy frames (clips, tweens, jumps) on a
+      // 24 / 12 Hz grid instead of every vsync, when the rig offers it (rig.setBusyHz, request FIX_render_to_heroine K5)
+      const rigHz = () => {
+        try {
+          const r = M.m && M.m.impl && typeof M.m.impl.rig === 'function' ? M.m.impl.rig() : null;
+          if (r && typeof r.setBusyHz === 'function') r.setBusyHz(quality.tier === 'full' ? 0 : quality.tier === 'lite' ? 24 : 12);
+        } catch (e) { /* ignore */ }
+      };
+      Promise.resolve(M.m.ready).then(rigHz, () => {});
+      M.offQ = quality.subscribe(rigHz);
     } catch (e) { M.m = null; }
   })();
 
@@ -1338,8 +1349,11 @@ export function createRenderer(rootEl) {
       // the book (missionAssigned), so the trigger telegram is skipped later on (fsTrigger)
       S.entranceDone = false;
       if (S.cost > 1 && typeof layersMod.entrance === 'function') {
+        // H2-01 round 2: Stage Door (mode bonus) books carry no missionAssigned event; they play The Briefing, so the entrance runs for
+        // every door round (any door book without a mission event falls back to the Briefing look, as fsTrigger does)
         const ma = S.book.find((e) => e && e.type === 'missionAssigned');
-        if (ma) { try { await layersMod.entrance(layerCtx, missionOf(ma)); S.entranceDone = true; trace('entrance', { mission: missionOf(ma) }); } catch (e) { console.error('entrance', e); } }
+        const mid = ma ? missionOf(ma) : 'briefing';
+        try { await layersMod.entrance(layerCtx, mid); S.entranceDone = true; trace('entrance', { mission: mid }); } catch (e) { console.error('entrance', e); }
       }
       for (const ev of events || []) {
         S.evi++;
@@ -1410,7 +1424,7 @@ export function createRenderer(rootEl) {
     mascot: { pose, say, react(kind, info) { try { return !!(M.m && typeof M.m.react === 'function' && M.m.react(kind, info)); } catch (e) { return false; } } },
     // the motion store and the camera (read-only store; other render modules may subscribe to the hit-stop with camera.onFreeze)
     motion, camera,
-    destroy() { S.destroyed = true; resetLayers(); camera.destroy(); try { if (M.m) M.m.destroy(); } catch (e) { /* ignore */ } clearTimeout(M.timer); clearInterval(sweepTimer); if (wire) wire.destroy(); if (meter) meter.destroy(); if (ro) ro.disconnect(); fx.clear(); },
+    destroy() { S.destroyed = true; resetLayers(); try { if (M.offQ) M.offQ(); } catch (e) { /* ignore */ } camera.destroy(); try { if (M.m) M.m.destroy(); } catch (e) { /* ignore */ } clearTimeout(M.timer); clearInterval(sweepTimer); if (wire) wire.destroy(); if (meter) meter.destroy(); if (ro) ro.disconnect(); fx.clear(); },
     // exposed for dev/test harness
     _banner: banner, _winBanner: winBanner, _shake: shake, _state: S, _round: round, _mascot: () => M.m, _fx: fx,
     _trace(on) { S.traceOn = on !== false; if (S.traceOn) S.traceLog.length = 0; return S.traceLog; },

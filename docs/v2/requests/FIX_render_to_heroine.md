@@ -32,3 +32,53 @@ Call `wake()` at the end of `play`, `setPose`, `fxPreset`, `impulse`, `wink`, `b
 when the page becomes visible; `destroy()` also does `clearTimeout(tmo)`. Then `node frontend_mambo/tools/sync_heroine.mjs` and the
 rig test (`python3 -m http.server 5731` in docs/research2, `node docs/research2/art/rig_test.mjs`).
 Expected: at rest 12 frames a second instead of 60 (rAF vsync), the stage repainted at most 12 times a second.
+
+---
+
+# FIX render -> heroine (round 2): K5 busy-frame cost and hidden rigs
+
+Measured by the render fixer (4x CPU, 1024x576, `node tests/e2e/perf_tumble.mjs --rate 4`): after render's round-2 fixes (backdrop
+canvases frozen to images, loading-screen rig destroyed once the veil is gone) the 30-cell tumble is p50 16.7 / p95 66.7 / p99 100 ms
+(was 33 / 83 / 133-183). The biggest DOM writer left is the game rig: about 20 000 of 22 500 attribute mutations of the tumble chain are
+`mambo2-*` (arms, legs, chain, whistle, hair, fx group), because a busy rig (clip, tween, particle, jump) renders on every vsync.
+`gaze.js pointOf` also calls getBoundingClientRect on the grid every aim (about 250 ms of the 4x profile, forced layouts).
+
+## 1. Optional busy-frame cap: `O.busyHz` + `api.setBusyHz(hz)` (docs/research2/art/mambo_rig.mjs, then tools/sync_heroine.mjs)
+
+render/index.js already calls `rig.setBusyHz(24)` on quality tier `lite` and `setBusyHz(12)` on `calm` (`0` on `full`) when the method
+exists (via `mascot.impl.rig()`), so nothing changes for a full-speed device. Snippet:
+
+```js
+// options: add busyHz: 0 next to idleHz
+const O = { /* ... */ idleHz: 12, busyHz: 0, /* ... */ ...opts };
+let busySlot = -1;
+// frame(): replace the render condition
+const busy = !!clipS.cur || tweens.length > 0 || fxP.length > 0 || !grounded || spinS.active;
+const slot = O.idleHz > 0 ? Math.floor(time * O.idleHz) : -2;
+const bslot = O.busyHz > 0 ? Math.floor(time * O.busyHz) : -2;
+if (busy) { if (bslot === -2 || bslot !== busySlot || !rendered) { busySlot = bslot; render(); } }
+else if (slot === -2 || slot !== idleSlot || !rendered) { idleSlot = slot; render(); }
+// api:
+setBusyHz(hz) { O.busyHz = Math.max(0, +hz || 0); },
+```
+
+(update() and the springs still run every frame, only the SVG write is on the grid, so timing does not change.)
+
+## 2. Pause a rig whose host is not displayed
+
+`heroine/index.js` pauses on `am:heroine-layout` mode `none` only. A rig whose host is `display:none` / `visibility:hidden` (or 0x0)
+keeps writing its SVG. Suggested in `frame()` of the rig (cheap, once per 500 ms):
+
+```js
+let visCheckAt = 0, hostHidden = false;
+// top of frame(), before update():
+if (now - visCheckAt > 500) { visCheckAt = now; const r = container.getBoundingClientRect(); hostHidden = !container.isConnected || r.width === 0 || r.height === 0 || getComputedStyle(container).visibility === 'hidden'; }
+if (hostHidden) { last = 0; raf = 0; tmo = setTimeout(() => { tmo = 0; frame(performance.now()); }, 500); return; }
+```
+
+(render/logo.js now destroys the loading-screen heroine itself once #loading is hidden, so the second rig `mambo1` is gone either way.)
+
+## 3. gaze.js: cache the grid rect per frame
+
+`pointOf()` reads `getBoundingClientRect()` of the grid on each aim; cache it for one animation frame (render/index.js does the same for
+the board, `rects()`), or read it from a ResizeObserver.

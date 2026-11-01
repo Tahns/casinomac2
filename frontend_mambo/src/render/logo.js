@@ -129,11 +129,53 @@ export function initLoading() {
   if (slot && !slot.dataset.m) {
     slot.dataset.m = '1';
     import('./mascot.js').then((mod) => {
+      if (loadingGone(slot)) { delete slot.dataset.m; return; } // the veil already left: no rig at all
       const size = Math.round(Math.min(220, Math.max(70, Math.min(window.innerWidth, window.innerHeight) * .34)));
       const reduced = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
       const m = mod.createMascot(slot, { size, reduced });
       if (m && m.setPose) m.setPose('think');
+      if (m) watchLoading(slot, m);
     }).catch(() => { /* mascot is optional on the loading screen */ });
   }
+}
+
+// K5: the loading-screen heroine is a second full rig (arm/leg paths rewritten ~44 times a second). Once #loading is hidden
+// (visibility:hidden / opacity 0 / display:none / [hidden] / detached) it is destroyed and its slot emptied; if the loading screen
+// comes back later, initLoading() draws a new one.
+function loadingGone(slot) {
+  if (!slot.isConnected) return true;
+  for (let e = slot; e && e.nodeType === 1; e = e.parentElement) {
+    if (e.hidden) return true;
+    const s = getComputedStyle(e);
+    if (s.display === 'none' || s.visibility === 'hidden' || +s.opacity === 0) return true;
+    if (e.id === 'loading') break;
+  }
+  return false;
+}
+function watchLoading(slot, m) {
+  const veil = document.getElementById('loading') || slot.parentElement;
+  let done = false, mo = null, iv = 0;
+  const stop = () => {
+    if (done) return; done = true;
+    if (mo) mo.disconnect(); clearInterval(iv);
+    if (veil) { veil.removeEventListener('transitionend', check); veil.removeEventListener('animationend', check); }
+    try { m.destroy(); } catch (e) { /* ignore */ }
+    slot.textContent = ''; delete slot.dataset.m;
+    if (veil && veil.isConnected && typeof MutationObserver !== 'undefined') {
+      // re-arm: the loading screen shown again gets a fresh heroine
+      const back = new MutationObserver(() => { if (!loadingGone(slot)) { back.disconnect(); initLoading(); } });
+      back.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      back.observe(veil, { attributes: true });
+    }
+  };
+  function check() { if (!done && loadingGone(slot)) stop(); }
+  if (veil) { veil.addEventListener('transitionend', check); veil.addEventListener('animationend', check); }
+  if (typeof MutationObserver !== 'undefined') {
+    mo = new MutationObserver(check);
+    mo.observe(document.body, { attributes: true, attributeFilter: ['class'], childList: true });
+    if (veil) mo.observe(veil, { attributes: true });
+  }
+  iv = setInterval(check, 500); // safety net for style changes no observer sees (a stylesheet rule switching on)
+  check();
 }
 try { initLoading(); } catch (e) { /* ignore */ }

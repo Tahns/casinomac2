@@ -263,7 +263,8 @@ const CSS = `
 #scene .mbs-lair{clip-path:circle(0% at 50% 50%);visibility:hidden}
 #scene .lay{position:absolute;inset:-4%;will-change:auto} /* K5: styles.css promotes the 3 parallax layers for good; only while they move (.mv) */
 #scene .lay.mv{will-change:transform}
-#scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#scene canvas,#scene img.mbs-pic{position:absolute;inset:0;width:100%;height:100%;display:block}
+#scene img.mbs-pic{pointer-events:none;user-select:none;-webkit-user-drag:none;max-width:none}
 #scene .mbs-blinds{position:absolute;inset:-12% -12%;opacity:.10;pointer-events:none;animation:mbsblind 60s steps(90,end) infinite alternate}
 #scene .mbs-blinds canvas{width:100%;height:100%}
 #scene .mbs-lair .mbs-blinds{opacity:.2}
@@ -297,6 +298,7 @@ html[data-quality="calm"] #scene .mbs-blinds,html[data-quality="calm"] #scene .m
 // compositing). The parallax layers are promoted (will-change) only while they actually move, and the parallax runs in Full motion
 // only (render/motion.js) and not on a device the quality governor has put to Calm. Calm / Still (html[data-motion]) and the
 // quality governor (html[data-quality]) switch the decorative loops off.
+const STATIC = ['sky', 'spark', 'blinds', 'fore', 'lair', 'lblinds', 'wedge']; // drawn once per size / palette (the dust canvas is live)
 export function createScene(app) {
   let host = app.querySelector('#scene');
   if (!host) { host = document.createElement('div'); host.id = 'scene'; app.insertBefore(host, app.firstChild); }
@@ -339,6 +341,33 @@ export function createScene(app) {
     run('lblinds', (c, w, h) => drawBlinds(c, w, h, PL.blind), size('lblinds', 1.24));
     const wc = cv('wedge'); const ws = Math.round(Math.min(900, Math.max(W, H) * .75)); wc.width = wc.height = ws; try { drawWedge(wc, ws, PL); } catch (e) { console.error('scene wedge', e); }
     sizeDust(W, H);
+    STATIC.forEach((k) => freeze(cv(k)));
+  }
+
+  // K5 round 2: the seven backdrop canvases are drawn once per size / palette but, as live canvases, each one stayed a canvas layer that
+  // the compositor commit carried on every frame of a tumble (main-thread Commit 8.4 s of a 4x-throttled tumble chain, 2 s without them).
+  // Once drawn, each is handed to an <img> of the same picture (PNG blob) and the canvas is taken out of the layout (display:none, its
+  // pixels kept for a redraw); a redraw shows the live canvas again until its new picture is decoded, so nothing ever blinks.
+  function freeze(c) {
+    if (!c || typeof c.toBlob !== 'function' || typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') return;
+    const gen = (c._gen = (c._gen || 0) + 1);
+    c.style.display = '';
+    if (c._img) c._img.style.display = 'none';
+    try {
+      c.toBlob((blob) => {
+        if (!blob || gen !== c._gen || !c.isConnected) return;
+        let img = c._img;
+        if (!img) { img = document.createElement('img'); img.className = 'mbs-pic'; img.alt = ''; img.setAttribute('aria-hidden', 'true'); img.draggable = false; c.after(img); c._img = img; }
+        const url = URL.createObjectURL(blob);
+        img.onload = () => {
+          if (gen !== c._gen) { URL.revokeObjectURL(url); return; }
+          if (img._url && img._url !== url) URL.revokeObjectURL(img._url);
+          img._url = url; img.style.display = ''; c.style.display = 'none';
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); };
+        img.src = url;
+      });
+    } catch (e) { /* a tainted or zero-size canvas stays live */ }
   }
 
   // ---- atomic-age twinkles (limited animation: ~7 fps, hard on/off steps) + CLUB sign flicker + lair embers
