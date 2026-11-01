@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findCorner, CORNER_CANDIDATES } from '../../src/ui/heroine_shell.js';
+import { findCorner, CORNER_CANDIDATES, landscapeCrop } from '../../src/ui/heroine_shell.js';
 
 const hit = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
 const R = (l, t, r, b) => ({ l, t, r, b });
@@ -45,4 +45,20 @@ test('findCorner: never overlaps, never leaves the view (fuzz)', () => {
     assert.ok(c.w <= view.w * 0.45 + 1 && c.h <= view.h * 0.3 + 1 && c.h <= 260);
   }
   assert.ok(found > 100, 'the fuzz finds spots too (' + found + ')');
+});
+
+test('corner candidates follow the rig crop windows (bust 226x322, head 180x214 since H3-04)', () => {
+  assert.equal(CORNER_CANDIDATES.find((c) => c.crop === 'bust').ratio, 226 / 322);
+  assert.equal(CORNER_CANDIDATES.find((c) => c.crop === 'head').ratio, 180 / 214);
+});
+test('landscapeCrop: full figure, waist-up under 140 px, waist-up kept in the 400x225 box (H2-17), face only below 48x52', () => {
+  assert.equal(landscapeCrop(220, 336), 'full');     // 1280x720
+  assert.equal(landscapeCrop(139, 207), 'full');     // 800x450
+  assert.equal(landscapeCrop(120, 139), 'bust');
+  assert.equal(landscapeCrop(90, 80), 'bust');
+  assert.equal(landscapeCrop(70, 57), 'bust');       // 400x225 measured slot: the costume shows
+  assert.equal(landscapeCrop(48, 52), 'bust');
+  assert.equal(landscapeCrop(47, 60), 'head');
+  assert.equal(landscapeCrop(70, 51), 'head');
+  assert.equal(landscapeCrop(0, 0), 'full');         // not laid out yet
 });

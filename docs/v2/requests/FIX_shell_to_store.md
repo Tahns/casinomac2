@@ -14,3 +14,10 @@ Ask:
    facing the title.
 3. Keep the closed palette and the ink outline weight of the game; no generative AI.
 4. Check at 100, 150 and 600 px wide that the title is legible and that the tile differs from the v1 tile at a glance.
+
+## Round 2 status (shell fixer): still open, handed to the store-art owner
+
+The 3:4 tile is still built only by `frontend_mambo/tools/art/gen_store_art_mambo.mjs` / `render_store_art.mjs` (not shell files), so the
+shell fixer cannot apply it. Owner of `tools/art/**`: please apply items 1-4 above (AGENT MAMBO lockup across the top third at >= 70 % of
+the tile width, heroine in the base inspectrice outfit, fully covered per [217], closed palette, no generative AI) and re-render
+`tools/art/store_v2/agent_mambo_tile_3x4.png`, then check it at 100, 150 and 600 px wide.

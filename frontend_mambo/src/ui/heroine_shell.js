@@ -4,23 +4,34 @@
 //  - the slot stays `hidden` (and the v1 #mascot-slot stays shown) until the slot has content (an <svg> or any element);
 //    when the rig arrives the slot is shown, #mascot-slot is hidden and <body> gets `has-heroine`;
 //  - landscape (aspect > 11/10): the slot is the grid area `mascot` of the left column (styles.css / ui.css), full figure;
-//    under 140 px high it asks for the waist-up crop (under 80 px the face crop) so she still reads;
+//    under 140 px high it asks for the waist-up crop so she still reads; under 80 px it keeps the waist-up crop while the box is
+//    at least 48x52 (H2-17: the costume is the mission cue, 400x225 gives about 70x57), else the face crop;
 //  - portrait (aspect <= 11/10): no vertical room is left for a full figure, so the slot becomes a waist-up (bust) or
 //    face (head) corner box placed in the largest free rectangle at the left edge that touches neither the grid frame, the
 //    logo, a HUD panel nor a visible button; when nothing fits the slot is hidden;
 //  - the decision is published as slot.dataset.mode ('left' | 'corner' | 'none'), slot.dataset.crop ('full' | 'bust' | 'head')
 //    and the event `am:heroine-layout` { mode, crop, rect } on the slot, so WP3 can call createHeroine / setCrop.
 //
-// Pure helper (unit tested): findCorner(obstacles, view, candidates).
+// Pure helpers (unit tested): findCorner(obstacles, view, candidates), landscapeCrop(w, h).
 
 export const PORTRAIT_QUERY = '(max-aspect-ratio: 11/10)';
-// ratio = width / height of the crop (rig viewBoxes: bust 226x322, head 160x176); hMin = smallest height that still reads
+// ratio = width / height of the crop (rig viewBoxes: bust 226x322, head 180x214 = CROPS.head [88,52,180,214], H3-04);
+// hMin = smallest height that still reads
 export const CORNER_CANDIDATES = Object.freeze([
   Object.freeze({ crop: 'bust', ratio: 226 / 322, hMin: 96 }),
-  Object.freeze({ crop: 'head', ratio: 160 / 176, hMin: 72 }),
+  Object.freeze({ crop: 'head', ratio: 180 / 214, hMin: 72 }),
 ]);
 const BUST_H = 140; // landscape box shorter than this -> waist-up crop
-const HEAD_H = 80;  // ... and shorter than this -> face-and-cap crop (a full body would be a speck)
+const HEAD_H = 80;  // ... and shorter than this -> face-and-cap crop, unless the box still holds a 48x52 bust (H2-17)
+const BUST_MIN_W = 48, BUST_MIN_H = 52;
+
+/** Pure. Crop for the landscape left-column box of w x h px: full figure, waist-up, or face. */
+export function landscapeCrop(w, h) {
+  if (!(h > 0)) return 'full';
+  if (h >= BUST_H) return 'full';
+  if (h >= HEAD_H) return 'bust';
+  return w >= BUST_MIN_W && h >= BUST_MIN_H ? 'bust' : 'head';
+}
 
 const hit = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
 
@@ -91,7 +102,7 @@ export function initHeroineShell({ doc = typeof document !== 'undefined' ? docum
       slot.hidden = false;
       slot.style.removeProperty('--hx'); slot.style.removeProperty('--hy'); slot.style.removeProperty('--hw'); slot.style.removeProperty('--hh');
       const r = slot.getBoundingClientRect();
-      publish('left', r.height > 0 && r.height < HEAD_H ? 'head' : r.height > 0 && r.height < BUST_H ? 'bust' : 'full', null);
+      publish('left', landscapeCrop(r.width, r.height), null);
       return;
     }
     const view = { w: win.innerWidth, h: win.innerHeight };

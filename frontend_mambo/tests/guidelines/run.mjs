@@ -582,6 +582,29 @@ async function main() {
     });
   }
 
+  // K5: once the loading veil is gone no second heroine rig may stay mounted (and animating) inside #loading.
+  // H2-17: at 400x225 the left-column box asks for the waist-up crop so the costume shows.
+  await check('LOADING-RIG', 'after load the loading-screen heroine is gone (no rig root under #loading, no DOM writes there at idle); 400x225 heroine uses the waist-up crop', async () => {
+    const out = []; let bad = false;
+    for (const vp of [{ name: '1280x720', width: 1280, height: 720 }, { name: '1024x576', width: 1024, height: 576 }, { name: '425x812', width: 425, height: 812, touch: true }, { name: '400x225', width: 400, height: 225 }]) {
+      const s = await sess({}, { viewport: vp });
+      await sleep(1200);
+      const r = await s.page.evaluate(async () => {
+        const ld = document.getElementById('mb-ld-mascot');
+        let writes = 0; const mo = new MutationObserver((l) => { writes += l.length; });
+        if (ld) mo.observe(ld, { attributes: true, subtree: true, childList: true, characterData: true });
+        await new Promise((res) => setTimeout(res, 1500)); mo.disconnect();
+        const slot = document.getElementById('heroine-slot');
+        return { roots: document.querySelectorAll('#loading [id$=-root]').length, svgs: document.querySelectorAll('#loading .heroine-wrap, #mb-ld-mascot svg').length, writes, mode: slot?.dataset.mode, crop: slot?.dataset.crop };
+      });
+      const cropBad = vp.name === '400x225' && r.mode === 'left' && r.crop !== 'bust';
+      if (r.roots || r.svgs || r.writes || cropBad) bad = true;
+      out.push(`${vp.name}: ${J(r)}${cropBad ? ' (expected the bust crop)' : ''}`);
+      await s.close();
+    }
+    return [bad ? FAIL : PASS, ...out];
+  });
+
   // ---------------- global ----------------
   await check('EXT', 'no requests to external hosts (all sessions)', async () => {
     const ext = allSessions.flatMap((s) => s.externalReqs()).filter((r) => !/example\.com|rgs\.test/.test(r.url)).map((r) => r.url);
