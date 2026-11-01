@@ -363,38 +363,65 @@ html[data-mbclock] .cell.dim .mb *,html[data-mbclock] .cell.adim .mb *{animation
 let clockTimer = 0;
 const clockSeen = new WeakMap(); // animation -> { skip } | { offs }
 const clockOf = new WeakMap();   // element -> the --mbclk (ms) written on it
+// K5 / H4-F5: the walk (getAnimations subtree + getTiming / getKeyframes / playState per animation, each read may flush style) only runs
+// when the board changed: a MutationObserver on #game (cells added / moved / removed, class changes such as .win / .dim) drops the
+// cache. Between changes a tick is arithmetic on the cached { element, phase, duration, offsets } records plus the --mbclk writes that
+// are due. Calm / Still / quality lite+calm remove the loops in CSS: no walk at all then.
+let clockCache = null, clockObs = null, clockHost = null;
+const LOOPS_OFF = /^(calm|still)$/;
+function loopsOff() {
+  try { const d = document.documentElement.dataset; return LOOPS_OFF.test(d.motion || '') || d.quality === 'lite' || d.quality === 'calm'; } catch (e) { return false; }
+}
+function watchHost(host) {
+  if (host === clockHost) return;
+  clockHost = host; clockCache = null;
+  try { if (clockObs) clockObs.disconnect(); } catch (e) { /* ignore */ }
+  clockObs = null;
+  if (!host || typeof MutationObserver === 'undefined') return;
+  try { clockObs = new MutationObserver(() => { clockCache = null; }); clockObs.observe(host, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }); } catch (e) { clockObs = null; }
+}
+function buildClockCache(host) {
+  let list = [];
+  try { list = host && host.getAnimations ? host.getAnimations({ subtree: true }) : document.getAnimations(); } catch (e) { list = []; }
+  const recs = [];
+  for (const a of list) {
+    let rec = clockSeen.get(a);
+    if (!rec) {
+      const el = a.effect && a.effect.target;
+      const ok = typeof a.animationName === 'string' && el && el.closest && el.closest('.mb');
+      rec = ok ? { offs: null } : { skip: true };
+      clockSeen.set(a, rec);
+    }
+    if (rec.skip) continue;
+    try { // reads only: the animation stays owned by CSS
+      if (a.playState !== 'paused') continue; // running = clock CSS not applied yet; idle = removed by CSS
+      const el = a.effect.target, tm = a.effect.getTiming();
+      if (tm.iterations !== Infinity || !(Number(tm.duration) > 0)) continue;
+      if (!rec.offs) rec.offs = [...new Set(a.effect.getKeyframes().map((kf) => kf.computedOffset))].sort((x, y) => x - y);
+      const phase = (Number(tm.delay) || 0) + (clockOf.get(el) || 0); // delay = phase - clock
+      recs.push({ el, phase, dur: Number(tm.duration), offs: rec.offs });
+    } catch (e) { rec.skip = true; }
+  }
+  return recs;
+}
 function idleTick() {
   clockTimer = 0;
   const g = IDLE_CLOCK.gridMs, now = performance.now(), T = Math.floor(now / g) * g;
   let next = now + IDLE_CLOCK.maxWaitMs;
-  if (!document.hidden && typeof document.getAnimations === 'function') {
-    let list = [];
-    // the board only (Element.getAnimations subtree): the scene, logo and HUD animations are not walked on every tick
+  if (!document.hidden && typeof document.getAnimations === 'function' && !loopsOff()) {
+    // the board only (Element.getAnimations subtree): the scene, logo and HUD animations are not walked
     const host = document.getElementById('game');
-    try { list = host && host.getAnimations ? host.getAnimations({ subtree: true }) : document.getAnimations(); } catch (e) { list = []; }
+    watchHost(host);
+    const ctxKey = (document.body ? document.body.className : '') + '|' + (document.documentElement.className || ''); // page state outside #game (fs-mode, ...)
+    if (!clockCache || !clockObs || clockCache.key !== ctxKey) { clockCache = buildClockCache(host); clockCache.key = ctxKey; }
     const writes = [];
-    for (const a of list) {
-      let rec = clockSeen.get(a);
-      if (!rec) {
-        const el = a.effect && a.effect.target;
-        const ok = typeof a.animationName === 'string' && el && el.closest && el.closest('.mb');
-        rec = ok ? { offs: null } : { skip: true };
-        clockSeen.set(a, rec);
-      }
-      if (rec.skip) continue;
-      try { // reads only: the animation stays owned by CSS
-        if (a.playState !== 'paused') continue; // running = clock CSS not applied yet; idle = removed by CSS
-        const el = a.effect.target, tm = a.effect.getTiming();
-        if (tm.iterations !== Infinity) continue;
-        if (!rec.offs) rec.offs = [...new Set(a.effect.getKeyframes().map((kf) => kf.computedOffset))].sort((x, y) => x - y);
-        const cur = clockOf.get(el) || 0;
-        const phase = (Number(tm.delay) || 0) + cur;            // delay = phase - clock
-        const was = loopStep(cur - phase, tm.duration, rec.offs), now1 = loopStep(T - phase, tm.duration, rec.offs);
-        if (!was || !now1) continue;
-        if (was.key !== now1.key) writes.push([el, T]);
-        const nx = now1.next + phase;                            // document time of the next change
-        if (nx < next) next = nx;
-      } catch (e) { rec.skip = true; }
+    for (const r of clockCache) {
+      const cur = clockOf.get(r.el) || 0;
+      const was = loopStep(cur - r.phase, r.dur, r.offs), now1 = loopStep(T - r.phase, r.dur, r.offs);
+      if (!was || !now1) continue;
+      if (was.key !== now1.key) writes.push([r.el, T]);
+      const nx = now1.next + r.phase;                            // document time of the next change
+      if (nx < next) next = nx;
     }
     for (const [el, t] of writes) { if (clockOf.get(el) !== t) { clockOf.set(el, t); el.style.setProperty('--mbclk', (t / 1000).toFixed(3) + 's'); } }
   }

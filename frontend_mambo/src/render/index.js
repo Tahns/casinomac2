@@ -20,6 +20,7 @@ import { audio } from '../audio.js';
 import { applyI18n, t, EN } from '../i18n/index.js';
 import * as geo from './geo.js';
 import { dispatch as dispatchLayers, resetLayers } from './layers/index.js';
+import * as layersMod from './layers/index.js'; // optional exports read at run time (entrance: H2-01)
 import { settings } from '../settings.js';
 import { motion } from './motion.js';
 import { createCamera } from './camera.js';
@@ -82,6 +83,25 @@ html:not([data-motion="full"]) .cell.sct:not(.win):not(.dim):not(.fuse):not(.adi
 .board-wrap.rows6 .board{height:calc(var(--cell)*6)}
 .board.rows6 .slot,.board.rows6 .cell{top:calc(var(--r)*16.6667%);height:16.6667%}
 .board.rows6 .popups .pop{top:calc((var(--r) + .5)*16.6667%)}
+/* render fixes round 1 (docs/v2/G2G3 + H1/H2 reviews). styles.css belongs to WP1: these rules come later in the cascade and win.
+   H1-02: the win amounts above the wire / fuse layers (5), under the POW! stars (7) and the chips (8) */
+.popups{z-index:6}
+/* H1-01: a popup on a cell another popup already took stacks half a cell higher; H1-02: a popup on the bottom row ends above the tally */
+.popups .pop{margin-top:calc(var(--cell)*var(--dy,0)*-1)}
+.popups .pop.lo{margin-top:calc(var(--cell)*(var(--dy,0)*-1 - .3))}
+/* H1-07 / H2-14 / I4: the COMBO chip sits on the top-right lip of the frame, never over a row-0 cell, the envelope or the dial */
+.chip.combo{left:auto;right:calc(var(--cell)*.12);top:auto;bottom:calc(100% - var(--cell)*.13);font-size:calc(var(--cell)*.21);padding:calc(var(--cell)*.05) calc(var(--cell)*.16)}
+/* H2-03 / I8: the FREE SPINS plate stands on the top lip of the frame (its bottom edge above row 0), smaller, bump at most x1.08 */
+.chip.fsc{top:auto;bottom:calc(100% - var(--cell)*.13);font-size:calc(var(--cell)*.24);padding:calc(var(--cell)*.06) calc(var(--cell)*.22)}
+.chip.fsc.bump{animation:amfscbump .3s steps(3,end)}
+@keyframes amfscbump{0%{transform:translateX(-50%) scale(1)}40%{transform:translateX(-50%) scale(1.08)}100%{transform:translateX(-50%) scale(1)}}
+@media (max-height:360px){.chip.fsc,.chip.combo{font-size:calc(var(--cell)*.2);padding:calc(var(--cell)*.04) calc(var(--cell)*.16);bottom:calc(100% - var(--cell)*.16)}}
+/* H2-13: the symbol layer is clipped to the frame: a dropping reel never hangs below the bottom border (sides keep room for the squash) */
+.cells{clip-path:inset(0 -30px calc(var(--cell)*-.05) -30px)}
+/* I2: the trigger telegram of a base round names the mission in its colour */
+.banner.fs.m-briefing{--burst:var(--burst-teal)}
+.banner.fs.m-orders{--burst:var(--burst-lemon)}
+.banner.fs.m-blackout{--burst:var(--burst-cream);--ttl:var(--indigo)}
 `;
 function ensureCss() {
   if (typeof document === 'undefined' || !document.head || document.getElementById(CSS_ID)) return;
@@ -446,7 +466,8 @@ export function createRenderer(rootEl) {
     cue('stamp');
     audioMeter(v);
     try {
-      if (motion.particles > 0) { const r = appRect(), p = cellCenter(1.2, 0.2); fxm.burstBubble(p.x, p.y, Math.min(r.width, r.height) * .22, t('meter.start')); }
+      // H2-16: the MISSION START burst is centred on the board and its word never runs wider than the board (it ran over the HUD)
+      if (motion.particles > 0) { const r = appRect(), { b } = rects(), p = cellCenter((COLS - 1) / 2, (S.rows - 1) / 2); fxm.burstBubble(p.x, p.y, Math.min(r.width, r.height, b.width) * .22, t('meter.start'), { maxW: b.width * .9 }); }
     } catch (e) { /* ignore */ }
     return sleep(450);
   }
@@ -517,6 +538,10 @@ export function createRenderer(rootEl) {
   function popup(r, c, html, delay = 0, val = null, o = {}) {
     const quiet = o.kind === 'quiet';
     const p = document.createElement('div'); p.className = 'pop' + (quiet ? ' q' : (val != null && val >= 5 ? ' big' : '')); p.style.setProperty('--c', c); p.style.setProperty('--r', r); p.innerHTML = html;
+    // H1-01 stacking offset (a second popup on a taken cell) and H1-02: a popup on the bottom row of the frame is lifted so its box ends
+    // above the WIN tally (bottom-centre chip), which would otherwise cover the amount
+    if (o.dy) p.style.setProperty('--dy', o.dy);
+    if (r >= S.rows - 1) p.classList.add('lo');
     popsEl.appendChild(p);
     if (val != null && !quiet && !motion.reduced) { p.firstChild.nodeValue = S.fmt(0); countUp(p, val, o.countMs || 480, delay + 80); }
     let frames, dur, easing;
@@ -703,17 +728,23 @@ export function createRenderer(rootEl) {
       },
       popup: (po) => {
         if (banked) return; // a filed (banked) amount is never shown as a win
-        groups.forEach((g) => {
+        // H1-01: one cell per popup (two clusters of a step can share meta.overlay, even a cell outside the cluster)
+        const spots = geo.placePopups(groups.map((g) => {
+          const o = g.w.meta && g.w.meta.overlay ? [g.w.meta.overlay.reel, posRow(g.w.meta.overlay)] : null;
+          return { overlay: o && has(o[0], o[1]) ? o : null, cells: g.cells };
+        }));
+        groups.forEach((g, gi) => {
           const w = g.w;
-          let ov = (w.meta && w.meta.overlay) ? [w.meta.overlay.reel, posRow(w.meta.overlay)] : null;
-          if (!ov || !has(ov[0], ov[1])) ov = g.cells[Math.floor(g.cells.length / 2)];
-          if (!ov || !has(ov[0], ov[1])) return;
+          const sp = spots[gi];
+          if (!sp || !has(sp.c, sp.r)) return;
+          const ov = [sp.c, sp.r];
+          const pso = { ...po, dy: sp.dy };
           const gmv = w.meta && Number(w.meta.globalMult) > 1 ? Number(w.meta.globalMult) : 0;
           // Ballroom Blackout: a cluster under the spotlight window (meta.lit) is paid x lensMult on top of the dial (win already includes it)
           const lens = w.meta && w.meta.lit && Number(w.meta.lensMult) > 1 ? Number(w.meta.lensMult) : 0;
           const tags = [gmv ? `x${gmv}` : '', lens ? `x${lens}` : ''].filter(Boolean).join(' ');
           const cm = tags ? `<small>${tags}</small>` : '';
-          popup(ov[1], ov[0], `${S.fmt((w.win || 0) / 100)}${cm}`, g.wi * 120, (w.win || 0) / 100, po);
+          popup(ov[1], ov[0], `${S.fmt((w.win || 0) / 100)}${cm}`, g.wi * 120, (w.win || 0) / 100, pso);
         });
       },
       ledgerTick: () => { if (!banked) cue('ledgerTick', { quiet: true }); }, // a filed step has the envelope's own neutral cue (WP6)
@@ -975,7 +1006,8 @@ export function createRenderer(rootEl) {
             stampEl.style.opacity = '1';
           }
           if (o.coins && !S.destroyed) { const r = appRect(); fxm.coins(r.width / 2, r.height * .62, Math.min(r.width, r.height), 36, 1.2); if (target >= 30) fxm.coinRain(target >= 100 ? 60 : 36, Math.min(r.width, r.height)); cue('shower', { n: target >= 50 ? 32 : 16 }); }
-          const t1 = performance.now(); const hold = T(o.hold != null ? o.hold : 1400);
+          // o.holdFloor: real ms the hold never goes under (turbo scales the hold; the replay fast-forward ignores the floor)
+          const t1 = performance.now(); const hold = Math.max(T(o.hold != null ? o.hold : 1400), S.skip ? 0 : Number(o.holdFloor) || 0);
           await new Promise((res) => { const w = (now) => { if (S.destroyed || tapped && now - t1 > T(220) || now - t1 > hold) res(); else requestAnimationFrame(w); }; requestAnimationFrame(w); });
           await Promise.all([anim(el, [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: debrief ? 'scale(1)' : 'scale(1.1)' }], { duration: debrief ? 250 : 320, fill: 'forwards' }), anim(dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 320, fill: 'forwards' }), anim(rays, [{ opacity: 1 }, { opacity: 0 }], { duration: 320, fill: 'forwards' })]);
         } catch (e) { console.error('banner', e); } finally {
@@ -1020,10 +1052,15 @@ export function createRenderer(rootEl) {
     sc.forEach((cell) => { cell.el.classList.add('fuse'); const p = cellCenter(cell.c, cell.r); fxm.glow(p.x, p.y, p.size * 1.3, '240,71,47', 1.0); fxm.sparks(p.x, p.y, FX_COLORS.lemon, p.size * .35, 14, 6); });
     cellsEl.querySelectorAll('.cell:not(.fuse)').forEach((e) => e.classList.add('dim'));
     shake(.8, 700);
-    await sleep(1100);
+    // a door round (cost > 1) already paid for the feature and knows its mission: the scatter "shock" hold is shortened (I1)
+    const door = S.cost > 1;
+    await sleep(door ? 450 : 1100);
     // detonate
     cue('stamp'); flash(.95, 900, FX_COLORS.cream); shake(2.6, 1100);
     M.intro = true; pose('plunger');
+    const ma = peekEvent('missionAssigned');
+    const mid = ma ? missionOf(ma) : 'briefing';
+    showMission(mid); // H2-02: the mission palette from the first lair frame (old books without missionAssigned play The Briefing)
     setBonusMode(true); // palette swap hides under the flash
     { const r0 = appRect(); fxm.ring(r0.width / 2, r0.height / 2, Math.max(r0.width, r0.height) * .7, '255,210,63', 1.0, 18); fxm.smoke(r0.width / 2, r0.height / 2, Math.min(r0.width, r0.height) * .3, 3, '251,241,217'); }
     const rect = appRect();
@@ -1048,9 +1085,16 @@ export function createRenderer(rootEl) {
     S.fsTotal = total; S.fsCur = 0;
     hook('onFreeSpinCounter', 0, total);
     chip(chipFs, fsText(0, total), true);
-    cue('fsStart'); say('mascot.fs', 2400, true);
-    // neutral title when the shell has one (WP6_to_WP4 item 2): the mission is only known at missionAssigned, the dossier names it
-    await banner({ title: hasKey('fs.incoming') ? t('fs.incoming') : t('fs.trigger'), sub: t('fs.start', { n: total }), kind: 'fs', hold: 2300, dimAmt: .92 });
+    cue('fsStart');
+    // the generic "briefing time" line only for The Briefing (H2-02: it was said on Coat Check / Service Stairs rounds too)
+    if (mid === 'briefing') say('mascot.fs', 2400, true);
+    // H2-01 / I1: a door round skips the telegram (the mission is known and the dossier names it next). I2: a base trigger names the
+    // mission of the book (look-ahead to missionAssigned) in the mission colour instead of the neutral MISSION INCOMING
+    if (!door) {
+      const named = ma ? tx('layers.mission.' + mid, { briefing: 'MISSION: THE BRIEFING', orders: 'MISSION: SEALED ORDERS', blackout: 'MISSION: BALLROOM BLACKOUT' }[mid]) : null;
+      const title = named || (hasKey('fs.incoming') ? t('fs.incoming') : t('fs.trigger'));
+      await banner({ title, sub: t('fs.start', { n: total }), kind: 'fs' + (ma ? ' m-' + mid : ''), hold: 2300, dimAmt: .92 });
+    }
     M.intro = false; pose('dance');
   }
   async function fsRetrigger(ev) {
@@ -1072,12 +1116,25 @@ export function createRenderer(rootEl) {
   async function fsEnd(ev, tr) {
     const R = tr ? tr.next : (Number(ev.amount) || 0) / 100;
     clearWins();
-    const e = cel.endPlan('freeSpinEnd', { R, C: round.cost });
+    // H2-12: the last spin's tumble total and the combo chip do not stay under the end card
+    chip(chipTw, '', false); chip(chipCombo, '', false);
+    // H2-02: the mission palette stays up through the end card (the dossier layer clears <html data-mission> at freeSpinEnd; the scene
+    // keeps its latched palette until the lair has closed, this puts the attribute back for anything else that reads it)
+    if (S.inFs && S.mission && S.mission.id) showMission(S.mission.id);
+    // H1-03 / I6: after a wincap inside the feature the max win was already counted: no second staircase (endPlan capped)
+    const e = cel.endPlan('freeSpinEnd', { R, C: round.cost, capped: !!S.capped && !S.capDeferred });
     // subtitle: the Mission Meter level reached
     const meterSub = (S.gm || 1) > 1 ? `${t('label.meter')} x${S.gm}` : '';
     if (e.kind === 'filed') {
       react('end', rinfo({ level: 0 }));
-      await countBanner({ kind: 'debrief', plan: e.plan, amount: R, title: tx('fs.report', 'MISSION REPORT'), stamp: e.stamp, hold: 300, dimAmt: .55, sub: meterSub, rays: false });
+      // I6: a door round names what it cost and what came back, in neutral words (social-safe: ROUND / RETURNED)
+      const doorSub = round.cost > 1 ? `${tx('fs.round', 'ROUND')} ${S.fmt(round.cost)} - ${tx('fs.returned', 'RETURNED')} ${S.fmt(R)}` : '';
+      // H2-04: the honest result stays readable (1.4 s after the stamp, never under 0.9 s in turbo); a tap after the stamp dismisses it
+      await countBanner({ kind: 'debrief', plan: e.plan, amount: R, title: tx('fs.report', 'MISSION REPORT'), stamp: e.stamp, hold: 1400, holdFloor: 900, dimAmt: .55, sub: [doorSub, meterSub].filter(Boolean).join(' - '), rays: false });
+    } else if (e.capped) {
+      M.celebrated = true; M.hadResult = true;
+      react('end', rinfo({ level: 3 }), () => pose('celebrate'));
+      await countBanner({ kind: 'win', plan: e.plan, amount: R, title: t('fs.end'), titleMode: 'sub', stamp: e.stamp, coins: false, rays: true, hi: true, hold: e.hold, sub: meterSub, dimAmt: .94 });
     } else {
       M.celebrated = true; M.hadResult = true;
       cue('fsEnd'); react('end', rinfo({ level: e.level }), () => pose('celebrate')); say(hasKey('mascot.fsEnd') ? 'mascot.fsEnd' : 'mascot.big', 2400, true);
@@ -1146,6 +1203,14 @@ export function createRenderer(rootEl) {
   // The dossier, the envelope and the spotlight are WP6 layers fed by the same events.
   const MISSION_KEYS = ['briefing', 'orders', 'blackout'];
   const OUTFIT = { briefing: 'lab', orders: 'trench', blackout: 'casino' };
+  const missionOf = (ev) => (MISSION_KEYS.includes(ev && ev.mission) ? ev.mission : 'briefing');
+  // the next event of a type in the book being played (look-ahead: the mission of a trigger is in the book before it is dispatched)
+  const peekEvent = (type) => { const b = S.book || []; for (let i = S.evi + 1; i < b.length; i++) if (b[i] && b[i].type === type) return b[i]; return null; };
+  // H2-02: the mission palette goes up BEFORE the lair iris opens (<html data-mission> for the scene and the layers, scene.setMission)
+  function showMission(id) {
+    try { if (id) document.documentElement.dataset.mission = id; } catch (e) { /* ignore */ }
+    try { if (scene && typeof scene.setMission === 'function') scene.setMission(id); } catch (e) { /* ignore */ }
+  }
   const DEFAULT_MISSION = Object.freeze({ id: 'briefing', payTiming: 'step', dialStart: 1, dialStep: 8, dialCap: 100, lens: null, fuseLen: 8, totalFs: 0 });
   S.mission = DEFAULT_MISSION;
   function onMission(ev) {
@@ -1232,9 +1297,13 @@ export function createRenderer(rootEl) {
       }
       case 'setTotalWin': hook('onTotal', (Number(ev.amount) || 0) / 100); return null;
       case 'wincap': {
+        S.capped = true;
         hook('onTotal', (Number(ev.amount) || WINCAP * 100) / 100);
         if (tr && tr.crossed) { M.hadResult = true; blackBeat({ chime: true }); }
         const x = Math.max(WINCAP, (Number(ev.amount) || 0) / 100);
+        // H1-03 / I6: inside a feature the end card that follows (freeSpinEnd) plays the ONE staircase, up to MISSION COMPLETE - MAX WIN
+        // with the DECLASSIFIED stamp; counting the max win here too played two staircases (~15 s against the 7.5 s budget)
+        if (S.inFs && peekEvent('freeSpinEnd')) { S.capDeferred = true; trace('wincapDeferred', { x }); return null; }
         await winBanner(x, { plan: cel.endPlan('wincap', { R: x, C: round.cost }).plan, max: true });
         return null;
       }
@@ -1263,7 +1332,17 @@ export function createRenderer(rootEl) {
       M.hadResult = false; M.celebrated = false; M.intro = false; M.base = 'think';
       react('spin', rinfo(), () => pose(S.inFs ? 'dance' : 'think'));
       let capped = false; // after the win cap the book still lists the remaining free spins (not evaluated): go straight to the end
+      S.capped = false; S.capDeferred = false; S.book = Array.isArray(events) ? events : []; S.evi = -1;
+      // H2-01 / I1: a door round (cost > 1) plays the Secret Entrance as soon as the play is confirmed, before the first reveal, when the
+      // dossier layer offers it (layers/index.js export `entrance(ctx, mission)`, request FIX_render_to_layers); the mission is known from
+      // the book (missionAssigned), so the trigger telegram is skipped later on (fsTrigger)
+      S.entranceDone = false;
+      if (S.cost > 1 && typeof layersMod.entrance === 'function') {
+        const ma = S.book.find((e) => e && e.type === 'missionAssigned');
+        if (ma) { try { await layersMod.entrance(layerCtx, missionOf(ma)); S.entranceDone = true; trace('entrance', { mission: missionOf(ma) }); } catch (e) { console.error('entrance', e); } }
+      }
       for (const ev of events || []) {
+        S.evi++;
         if (S.destroyed) break;
         if (capped && ev && ev.type !== 'freeSpinEnd' && ev.type !== 'finalWin') continue;
         try {
@@ -1273,8 +1352,9 @@ export function createRenderer(rootEl) {
           await handle(ev, tr);
           if (lw) await lw;
         } catch (e) { console.error('render event', ev && ev.type, e); }
-        if (ev && ev.type === 'wincap') capped = true;
+        if (ev && ev.type === 'wincap') { capped = true; S.capped = true; }
       }
+      S.book = []; S.evi = -1;
       S.skip = false; S.skipK = 0.04;
       resetLayers();
       geo.setLayout(null);

@@ -107,7 +107,7 @@ export function createFx(app) {
   // comic burst bubble: spiky cream starburst with ink outline and a coral word that pops in (steps) and floats up a little
   function burstBubble(x, y, size, word, opts = {}) {
     const txt = word != null ? word : safeT(['fx.pow', 'fx.boom', 'fx.wow'][Math.floor(Math.random() * 3)], 'POW!');
-    add({ t: 'bubble', x, y, r: size, text: txt, rot: opts.rot != null ? opts.rot : rnd(-.25, .25), life: opts.life || .75, age: 0, fill: opts.fill || PAPER, ink: opts.color || FX_COLORS.coral, spikes: 11 + Math.floor(rnd(0, 4)) });
+    add({ t: 'bubble', x, y, r: size, text: txt, rot: opts.rot != null ? opts.rot : rnd(-.25, .25), life: opts.life || .75, age: 0, fill: opts.fill || PAPER, ink: opts.color || FX_COLORS.coral, spikes: 11 + Math.floor(rnd(0, 4)), maxW: Number(opts.maxW) > 0 ? Number(opts.maxW) : 0 });
   }
   // confetti: little flat paper rectangles that flutter (stepped x-scale) down with the new palette
   function confetti(x, y, size, n = 24, opts = {}) {
@@ -229,7 +229,9 @@ export function createFx(app) {
         ctx.save(); ctx.translate(p.x, yy); ctx.rotate(p.rot); ctx.globalAlpha = k > .8 ? Math.max(0, 1 - (k - .8) / .2) : 1;
         ctx.save(); ctx.translate(rr * .09, rr * .1); spiky(rr, p.spikes, .72); ctx.fillStyle = INK; ctx.fill(); ctx.restore(); // offset shadow
         spiky(rr, p.spikes, .72); ctx.fillStyle = p.fill; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, rr * .09); ctx.fill(); ctx.stroke();
-        const fs = Math.max(8, rr * (p.text.length > 4 ? .5 : .62)); ctx.font = `900 ${fs}px ${DISP}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        let fs = Math.max(8, rr * (p.text.length > 4 ? .5 : .62)); ctx.font = `900 ${fs}px ${DISP}`;
+        // opts.maxW (H2-16): the word never runs wider than the box it belongs to (the board for MISSION START)
+        if (p.maxW) { const w = ctx.measureText(p.text).width + fs * .4; if (w > p.maxW) { fs = Math.max(8, fs * p.maxW / w); ctx.font = `900 ${fs}px ${DISP}`; } } ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.lineWidth = Math.max(2, fs * .2); ctx.strokeStyle = INK; ctx.strokeText(p.text, 0, rr * .04); ctx.fillStyle = p.ink; ctx.fillText(p.text, 0, rr * .04);
         ctx.restore();
     }

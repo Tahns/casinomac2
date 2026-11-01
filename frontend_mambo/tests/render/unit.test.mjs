@@ -321,3 +321,41 @@ test('hit-stop: never in Calm or Still, never longer than 200 ms, a throwing ani
   assert.ok(Date.now() - t0 < 600, 'capped at 200 ms');
   assert.equal(doc.anims[1].playState, 'running');
 });
+
+// ---------- render fixes round 1 ----------
+import fs from 'node:fs';
+import { placePopups, setLayout, toGeo } from '../../src/render/geo.js';
+import { CAPPED_END_HOLD_MS } from '../../src/render/celebrate.js';
+const FIXB = new URL('../../fixtures/books_base_sample.jsonl', import.meta.url);
+const baseBook = (id) => fs.readFileSync(FIXB, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).find((b) => b.id === id);
+test('H1-01 popups: two clusters sharing meta.overlay (base book 5314) get distinct cells, each inside its own cluster', () => {
+  const b = baseBook(5314);
+  assert.ok(b, 'book 5314 in fixtures/books_base_sample.jsonl');
+  setLayout(b.events.find((e) => e.type === 'layout') || null);
+  const wi = b.events.find((e) => e.type === 'winInfo');
+  const groups = wi.wins.map((w) => ({ overlay: w.meta && w.meta.overlay ? [w.meta.overlay.reel, toGeo(w.meta.overlay.reel, w.meta.overlay.row)] : null, cells: w.positions.map((p) => [p.reel, toGeo(p.reel, p.row)]).filter((p) => p[1] >= 0) }));
+  assert.equal(groups.length, 2);
+  assert.deepEqual(groups[0].overlay, groups[1].overlay, 'the book really shares the overlay cell');
+  const spots = placePopups(groups);
+  assert.notEqual(spots[0].c + ',' + spots[0].r, spots[1].c + ',' + spots[1].r, 'distinct centres');
+  assert.ok(!(spots[0].r === spots[1].r && Math.abs(spots[0].c - spots[1].c) <= 1), 'the two boxes do not overlap (not side by side on one row)');
+  spots.forEach((s, i) => { assert.equal(s.dy, 0); assert.ok(groups[i].cells.some((p) => p[0] === s.c && p[1] === s.r), `popup ${i} on a cell of its cluster`); });
+  setLayout(null);
+});
+test('H1-01 popups: the overlay is kept when free and in the cluster; a group with every cell taken stacks half a cell higher', () => {
+  const a = { overlay: [1, 1], cells: [[0, 0], [1, 1], [2, 2]] };
+  assert.deepEqual(placePopups([a])[0], { c: 1, r: 1, dy: 0 });
+  const one = { overlay: [3, 3], cells: [[3, 3]] };
+  const s = placePopups([one, { overlay: [3, 3], cells: [[3, 3]] }, { overlay: null, cells: [[3, 3]] }]);
+  assert.deepEqual(s.map((x) => x.dy), [0, 0.5, 1]);
+  assert.deepEqual(placePopups([{ overlay: null, cells: [] }]), [null]);
+});
+test('H1-03 / I6: a feature that hit the win cap ends without a second staircase (capped end card: no count, MAX WIN, DECLASSIFIED)', () => {
+  const e = endPlan('freeSpinEnd', { R: 5000, C: 1, capped: true });
+  assert.equal(e.kind, 'declassified'); assert.equal(e.stamp, 'declassified'); assert.equal(e.capped, true);
+  assert.equal(e.plan.steps.length, 0); assert.equal(e.plan.finalKey, 'win.max'); assert.equal(e.plan.target, 5000);
+  assert.ok(e.hold === CAPPED_END_HOLD_MS && e.hold <= 2000);
+  // without the cap flag the end card is the one staircase, and it ends on MAX WIN within the 7.5 s budget
+  const one = endPlan('freeSpinEnd', { R: 5000, C: 100 });
+  assert.equal(one.plan.finalKey, 'win.max'); assert.ok(one.plan.totalMs <= STAIRCASE_MAX_MS);
+});

@@ -10,7 +10,7 @@
 import { hasKey } from '../i18n/index.js';
 import { quality } from './quality.js';
 const COLS = 6, ROWS = 5, NS = 'http://www.w3.org/2000/svg';
-const MAX_SMOKE = 14;
+const MAX_SMOKE = 5; // K5 / H4-F7: each live puff is a compositor layer (was 14: up to 14 layers of smoke on a long wire)
 export const WIRE_TIMING = Object.freeze({ fps: 12, drawMs: 450, hopMs: 300, rampMs: 600, hitStopMs: 100, flashPeak: 0.6, flashMs: 200 });
 const FRAME = 1000 / WIRE_TIMING.fps;
 /** Pure: stepped (12 fps) progress 0..1 of an animation of length dur after elapsed ms. */
@@ -388,7 +388,9 @@ export function createWire(ctx) {
       let host = null;
       try { host = ctx.cellEl ? ctx.cellEl(p.reel, p.row) : null; } catch (e) { host = null; }
       void host; // v1 whitened the cell with a filter animation (a flash per cell, a compositor layer each): the cream break flash of fx.breakCell replaces it
-      burstStar(p, i < 3 ? words[i % words.length] : '', 0);
+      // K5 / H4-F7: the DOM POW! stars (one compositor layer each) only on the first three cells, the ones with a word; the other cells
+      // get the canvas stars of fx.breakCell (a 36-cell Annex blast promoted 4 stars + 12 dust puffs = 16 layers over the 45 budget)
+      if (i < 3) burstStar(p, words[i % words.length], 0);
       let col = PAL[0]; try { if (ctx.symColor) col = ctx.symColor(p.reel, p.row) || col; } catch (e) { /* ignore */ }
       let done = false;
       try {
@@ -399,7 +401,7 @@ export function createWire(ctx) {
       } catch (e) { done = false; }
       if (!done) localBreak(p, col);
       hideCell(p);
-      dustCloud(p);
+      if (!done) dustCloud(p); // fx.breakCell already draws the dust on the canvas: the DOM puffs are the fallback only
       try { const c = ctx.cellCenter(p.reel, p.row); if (ctx.fx && !still) ctx.fx.sparks(c.x, c.y, '#FFD23F', c.size * .3, 6, 5); } catch (e) { /* ignore */ }
     })());
     await Promise.all(jobs);

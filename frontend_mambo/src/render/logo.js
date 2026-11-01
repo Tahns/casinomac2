@@ -105,6 +105,9 @@ const CSS = `
 .logo .lghand{animation:mblghand 6s steps(12,end) infinite}
 @keyframes mblghand{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.logo .lgstar,.logo .lghand{animation:none!important}}
+/* K5 / H4-F7: the twinkles and the clock hand are idle life; while a round plays (body.state-playing etc.) they rest, which frees their
+   4-5 compositor layers for the board (the 36-cell Annex tumble ran over the 45-layer budget) */
+body[class*="state-"]:not(.state-idle) .logo .lgstar,body[class*="state-"]:not(.state-idle) .logo .lghand{animation:none}
 `;
 
 export function buildLogo(host) {

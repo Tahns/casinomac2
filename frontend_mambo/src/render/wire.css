@@ -51,7 +51,8 @@
 .wr-dust{position:absolute;z-index:6;border-radius:50%;background:#FBF1D9;border:2px solid #14102B}
 .wr-shield{position:absolute;z-index:6;border:calc(var(--u)*.05) solid #6FA7D9;border-radius:50%;box-shadow:0 0 0 2px #14102B inset,0 0 0 2px #14102B}
 .wr-cap{position:absolute;left:50%;top:3%;transform:translateX(-50%);z-index:8;pointer-events:none;padding:.15em .6em;border:3px solid #14102B;border-radius:999px;background:#FFD23F;color:#14102B;font:900 clamp(11px,3.4vmin,26px)/1.1 "Futura","Century Gothic","Arial Black",sans-serif;letter-spacing:.06em;box-shadow:3px 3px 0 #F0472F;animation:wrcap 2.1s steps(8,end) 1 forwards;white-space:nowrap}
-.wr-cap.defuse{background:#F0472F;color:#FBF1D9;box-shadow:3px 3px 0 #14102B;top:auto;bottom:3%}
+.wr-cap.defuse{background:#F0472F;color:#FBF1D9;box-shadow:3px 3px 0 #14102B}
+/* H1-08: DEFUSE! keeps the caption slot at the top of the board: the bottom centre is the WIN tally's */
 @keyframes wrcap{0%{opacity:0;transform:translateX(-50%) scale(.4) rotate(-6deg)}15%{opacity:1;transform:translateX(-50%) scale(1.15) rotate(3deg)}25%,80%{opacity:1;transform:translateX(-50%) scale(1) rotate(-2deg)}100%{opacity:0;transform:translateX(-50%) scale(1)}}
 @media (prefers-reduced-motion:reduce){
   .wr-spark-in,.wr-bomb.hot .wr-bomb-in{animation:none!important}

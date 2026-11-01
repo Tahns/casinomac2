@@ -98,5 +98,37 @@ export function cellsOf(reel) { const c = reelOf(reel); return c < 0 ? [] : layo
 /** Symbols a `reveal.board[reel]` column carries: present cells + top pad + bottom pad. */
 export function revealLength(reel) { return cellsOf(reel).length + 2; }
 
-export const geo = { setLayout, getLayout, resetLayout, toGeo, toPadded, toGeoPos, toPaddedPos, hasCell, cellsOf, revealLength, isValidLayout, FLOOR_PLANS };
+/** Pure: where the win popups of ONE winInfo step go (H1-01). groups = [{ overlay: [c, r] | null, cells: [[c, r], ...] }] in geometric
+ *  rows. A popup is about 1.4 cells wide and 0.4 high, so two popups clash on the same row less than two columns apart. Each group
+ *  takes, in order: its `meta.overlay` when that cell is one of its own and clashes with no earlier popup; else its cell nearest its
+ *  centroid that clashes with none; else its nearest cell no popup sits on; else it stacks on its best cell with dy = 0.5 cell per
+ *  popup already there (two amounts never print on top of each other). Returns [{ c, r, dy }] (null for a group with no cell). */
+export function placePopups(groups) {
+  const used = new Map(); // 'c,r' -> popups placed there
+  const placed = [];
+  const key = (p) => p[0] + ',' + p[1];
+  const clash = (p) => placed.some((u) => u[1] === p[1] && Math.abs(u[0] - p[0]) <= 1);
+  return (groups || []).map((g) => {
+    const cells = (g && Array.isArray(g.cells) ? g.cells : []).filter((p) => Array.isArray(p) && p.length >= 2);
+    const ov = g && Array.isArray(g.overlay) ? g.overlay : null;
+    const inCells = ov && cells.some((p) => p[0] === ov[0] && p[1] === ov[1]);
+    let byDist = [];
+    if (cells.length) {
+      const mx = cells.reduce((a, p) => a + p[0], 0) / cells.length, my = cells.reduce((a, p) => a + p[1], 0) / cells.length;
+      byDist = cells.slice().sort((a, b) => (Math.hypot(a[0] - mx, a[1] - my) - Math.hypot(b[0] - mx, b[1] - my)) || (a[0] - b[0]) || (a[1] - b[1]));
+    }
+    let pick = null;
+    if (inCells && !clash(ov)) pick = ov;
+    if (!pick) pick = byDist.find((p) => !clash(p)) || null;
+    if (!pick && inCells && !used.has(key(ov))) pick = ov;
+    if (!pick) pick = byDist.find((p) => !used.has(key(p))) || null;
+    if (!pick) pick = inCells ? ov : byDist[0] || ov; // every cell taken: stack (or, with no cell list, the overlay as given)
+    if (!pick) return null;
+    const n = used.get(key(pick)) || 0;
+    used.set(key(pick), n + 1); placed.push(pick);
+    return { c: pick[0], r: pick[1], dy: n * 0.5 };
+  });
+}
+
+export const geo = { placePopups, setLayout, getLayout, resetLayout, toGeo, toPadded, toGeoPos, toPaddedPos, hasCell, cellsOf, revealLength, isValidLayout, FLOOR_PLANS };
 export default geo;

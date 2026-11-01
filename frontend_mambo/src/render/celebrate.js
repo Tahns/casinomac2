@@ -218,13 +218,17 @@ export function guardPose(name, lvl) {
  *   kind 'staircase'   banner with the tier staircase (setWin at L3: spin >= 15C in the base game, 50C inside free spins; wincap always)
  *   kind 'filed'       neutral Debrief (freeSpinEnd with R <= C): card 250 ms, count 600 ms, stamp FILED, no rays, coins or cheer
  *   kind 'declassified' freeSpinEnd with R > C: stamp DECLASSIFIED + the staircase (a single count below 15C)
+ *   capped (freeSpinEnd after the wincap banner already counted the max win inside the feature, H1-03 / I6): no second staircase; the
+ *   final amount, the MAX WIN tier word and the DECLASSIFIED stamp land at once (steps [], hold CAPPED_END_HOLD_MS)
  */
-export function endPlan(type, { R, C, spinX, inFs } = {}) {
+export const CAPPED_END_HOLD_MS = 1500;
+export function endPlan(type, { R, C, spinX, inFs, capped } = {}) {
   const c = Number(C) > 0 ? Number(C) : 1;
   const r = Number(R) || 0;
   const lvl = level(r, c);
   if (type === 'wincap') return { kind: 'staircase', stamp: null, plan: tierPlan(Math.max(WINCAP, r), c), level: 3 };
   if (type === 'freeSpinEnd') {
+    if (capped) { const t = Math.max(WINCAP, r); return { kind: 'declassified', stamp: 'declassified', capped: true, hold: CAPPED_END_HOLD_MS, plan: { target: t, cost: c, steps: [], totalMs: 0, tiers: 0, finalKey: 'win.max' }, level: 3 }; }
     if (lvl === 0) return { kind: 'filed', stamp: 'filed', plan: { target: Math.max(0, r), cost: c, steps: [{ type: 'count', from: 0, to: Math.max(0, r), ms: 600, tier: -1 }], totalMs: 600, tiers: 0, finalKey: null }, level: 0 };
     return { kind: 'declassified', stamp: 'declassified', plan: tierPlan(r, c), level: lvl };
   }

@@ -26,7 +26,8 @@ const MISSION_FS = {
   orders: { ...LAIR, bg: '#3B1F52', wall: '#9A7BD0', ring: '#E8A92B', seam: '#14102B', lamp: '#F08A2B', blind: '#E8A92B', wedge: '#E8A92B' },  // hat-check room: aubergine and brass
   blackout: { ...LAIR, bg: '#14102B', wall: '#2B2A6B', ring: '#9A7BD0', seam: '#1D1B4F', lamp: '#FBF1D9', blind: '#9A7BD0', wedge: '#FBF1D9' },  // ballroom in the dark: ink, indigo, cream spot
 };
-const missionFs = () => { try { return MISSION_FS[document.documentElement.dataset.mission] || LAIR; } catch (e) { return LAIR; } };
+const missionFs = (id) => MISSION_FS[id] || LAIR;
+const missionAttr = () => { try { return document.documentElement.dataset.mission || ''; } catch (e) { return ''; } };
 
 function rng(seed) {
   let a = seed >>> 0;
@@ -260,7 +261,7 @@ const CSS = `
 #scene{background:#181640}
 #scene .mbs-grp{position:absolute;inset:0;overflow:hidden}
 #scene .mbs-lair{clip-path:circle(0% at 50% 50%);visibility:hidden}
-#scene .lay{position:absolute;inset:-4%}
+#scene .lay{position:absolute;inset:-4%;will-change:auto} /* K5: styles.css promotes the 3 parallax layers for good; only while they move (.mv) */
 #scene .lay.mv{will-change:transform}
 #scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #scene .mbs-blinds{position:absolute;inset:-12% -12%;opacity:.10;pointer-events:none;animation:mbsblind 60s steps(90,end) infinite alternate}
@@ -321,12 +322,13 @@ export function createScene(app) {
   const cv = (k) => host.querySelector(`canvas[data-l="${k}"]`);
   const lairEl = host.querySelector('.mbs-lair');
   let lastW = 0, lastH = 0, timer = 0, P = null, PL = null;
+  let missionNow = missionAttr(); // the mission palette the lair is drawn in (latched, see applyMission)
 
   function draw(force) {
     const rect = host.getBoundingClientRect();
     const W = Math.max(2, Math.round(rect.width)), H = Math.max(2, Math.round(rect.height));
     if (!force && W === lastW && H === lastH) return;
-    lastW = W; lastH = H; P = pal(host, '', BASE); PL = pal(host, 'fs-', missionFs());
+    lastW = W; lastH = H; P = pal(host, '', BASE); PL = pal(host, 'fs-', missionFs(missionNow));
     const sc = Math.min(window.devicePixelRatio || 1, 1.5);
     const size = (k, f) => { const c = cv(k); c.width = Math.round(W * f * sc); c.height = Math.round(H * f * sc); return c; };
     const run = (name, fn, c, ...a) => { try { fn(c, c.width, c.height, ...a); } catch (e) { console.error('scene', name, e); } };
@@ -342,7 +344,7 @@ export function createScene(app) {
   // ---- atomic-age twinkles (limited animation: ~7 fps, hard on/off steps) + CLUB sign flicker + lair embers
   const dust = host.querySelector('.dustc'); const dctx = dust.getContext('2d');
   let DW = 1, DH = 1; const motes = [];
-  function sizeDust(W, H) { DW = W; DH = H; dust.width = W; dust.height = H; }
+  function sizeDust(W, H) { DW = W; DH = H; dust.width = W; dust.height = H; dustKey = ''; dustDirty = false; }
   const r0 = rng(31);
   const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const COLS = ['lemon', 'lilac', 'cream', 'flamingo'];
@@ -350,7 +352,7 @@ export function createScene(app) {
     const edge = r0() < .65;
     motes.push({ x: edge ? (r0() < .5 ? r0() * .22 : .78 + r0() * .22) : r0(), y: .04 + r0() * .6, s: .6 + r0() * .8, ph: r0() * 10, kind: i % 3, col: COLS[i % 4], rot: r0() * TAU });
   }
-  let lt = 0, running = true; let sceneLair = false;
+  let lt = 0, running = true; let sceneLair = false; let dustKey = '', dustDirty = true;
   // one setTimeout per 140 ms step (was a rAF loop waking every vsync only to skip 7 frames of 8)
   function loop() {
     if (!running) return;
@@ -358,19 +360,29 @@ export function createScene(app) {
     const now = performance.now();
     if (document.hidden) return;
     lt = now;
-    dctx.clearRect(0, 0, DW, DH);
+    // K5 / H4-F5: the full-viewport canvas is only cleared and redrawn when what it shows changes (the set of lit motes and their
+    // step, the CLUB rim, the palette); an unchanged or empty-again frame costs no raster, no upload and no commit
+    const club = !sceneLair && cv('sky')._club;
+    const clubOn = !!club && Math.floor(now / 700) % 6 !== 5 && Math.floor(now / 140) % 2 === 0;
+    let key = (sceneLair ? 'L' : 'B') + (clubOn ? 'c' : ''); // a resize or a palette redraw (draw -> sizeDust) resets dustKey
+    for (let i = 0; i < motes.length; i++) { const t = Math.floor((now / 140 + motes[i].ph * 3)) % 9; if (t <= 1) key += ',' + i + ':' + t; }
+    if (key === dustKey) return;
+    dustKey = key;
+    if (dustDirty) dctx.clearRect(0, 0, DW, DH);
+    dustDirty = false;
     const u = Math.min(DW, DH) / 600; const pc = (sceneLair ? PL : P) || (P = pal(host, '', BASE));
     for (const m of motes) {
       const t = Math.floor((now / 140 + m.ph * 3)) % 9; // on for 2 of 9 steps
       if (t > 1) continue;
+      dustDirty = true;
       const col = sceneLair ? (PL ? PL.lemon : '#FFD23F') : pc[m.col] || pc.cream;
       sparkle(dctx, m.x * DW, m.y * DH, (t === 0 ? 7 : 10) * u * 1.5 * m.s, col, m.kind, m.kind === 0 ? 0 : m.rot);
     }
     // CLUB neon flicker: a lemon-cream overlay rim blinking in hard steps, base scene only
-    const club = !sceneLair && cv('sky')._club;
     if (club) {
       const k = lastW ? (lastW * 1.08 / (cv('sky').width || 1)) : 1;
-      if (Math.floor(now / 700) % 6 !== 5 && Math.floor(now / 140) % 2 === 0) {
+      if (clubOn) {
+        dustDirty = true;
         dctx.strokeStyle = '#FBF1D9'; dctx.lineWidth = Math.max(1.4, 2 * u); dctx.globalAlpha = .9;
         const x = club.x * k - lastW * .04, y = club.y * k - lastH * .04, w = club.w * k, h = club.h * k; dctx.beginPath(); dctx.rect(x - 3 * u, y - 3 * u, w + 6 * u, h + 6 * u); dctx.stroke(); dctx.globalAlpha = 1;
       }
@@ -406,9 +418,9 @@ export function createScene(app) {
     if (irisAnim) { try { irisAnim.cancel(); } catch (e) { /* ignore */ } irisAnim = null; }
     const open = 'circle(150% at 50% 50%)', shut = 'circle(0% at 50% 50%)';
     if (on) lairEl.style.visibility = 'visible';
-    if (instant || reduce || !lairEl.animate) { lairEl.style.clipPath = on ? open : shut; if (!on) lairEl.style.visibility = 'hidden'; return; }
+    if (instant || reduce || !lairEl.animate) { lairEl.style.clipPath = on ? open : shut; if (!on) { lairEl.style.visibility = 'hidden'; settleMission(); } return; }
     irisAnim = lairEl.animate(on ? [{ clipPath: shut }, { clipPath: open }] : [{ clipPath: open }, { clipPath: shut }], { duration: 750, easing: 'steps(12,end)', fill: 'forwards' });
-    irisAnim.onfinish = () => { lairEl.style.clipPath = on ? open : shut; if (!on) lairEl.style.visibility = 'hidden'; try { irisAnim.cancel(); } catch (e) { /* ignore */ } irisAnim = null; };
+    irisAnim.onfinish = () => { lairEl.style.clipPath = on ? open : shut; if (!on) lairEl.style.visibility = 'hidden'; try { irisAnim.cancel(); } catch (e) { /* ignore */ } irisAnim = null; if (!on) settleMission(); };
   }
   const isFs = () => document.body.classList.contains('fs-mode') || app.classList.contains('fs-mode');
   let mo = null;
@@ -417,10 +429,14 @@ export function createScene(app) {
     mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     mo.observe(app, { attributes: true, attributeFilter: ['class'] });
   }
-  // redraw the lair canvases when the mission changes (the palette swap happens while the dossier covers the board)
-  let missionNow = document.documentElement.dataset.mission || '';
+  // redraw the lair canvases when the mission changes. H2-02: the palette is LATCHED for the whole feature: a new mission applies at once
+  // (the renderer sets it before the lair iris opens, scene.setMission), but a cleared one only once the lair is closed, so the mission
+  // colours show from the first lair frame to the last one of the closing iris (no teal flash under the Debrief or the exit wipe)
+  function applyMission(m) { if (m === missionNow) return; missionNow = m; lastW = 0; draw(true); }
+  function settleMission() { if (!sceneLair && !irisAnim) applyMission(missionAttr()); }
+  function onMissionAttr() { const m = missionAttr(); if (m) applyMission(m); else settleMission(); }
   if (typeof MutationObserver !== 'undefined') {
-    const mm = new MutationObserver(() => { const m = document.documentElement.dataset.mission || ''; if (m === missionNow) return; missionNow = m; lastW = 0; draw(true); });
+    const mm = new MutationObserver(onMissionAttr);
     mm.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mission'] });
     const prev = mo; mo = { disconnect() { mm.disconnect(); if (prev) prev.disconnect(); } };
   }
@@ -431,6 +447,8 @@ export function createScene(app) {
     host,
     redraw() { lastW = 0; draw(true); },
     setLair(on, instant) { setLair(!!on, !!instant); },
+    // the mission palette of the lair ('briefing' | 'orders' | 'blackout'); '' / null = back to the default once the lair is closed
+    setMission(id) { const m = typeof id === 'string' ? id : ''; if (m) applyMission(m); else settleMission(); },
     shakeTargets() { return [host]; },
     destroy() { running = false; if (ro) ro.disconnect(); if (mo) mo.disconnect(); },
   };
