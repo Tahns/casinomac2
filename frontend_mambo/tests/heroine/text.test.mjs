@@ -11,8 +11,10 @@ import { findRestricted } from '../text/restricted.mjs';
 const FRONT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const MISSION_LINE = /^mascot\.(fs|fsEnd)\.(briefing|orders|blackout)$/;
+// v2 round 2 (H2-11): the generic entry pool, made mission-neutral
+const FS_POOL = /^mascot\.fs(\.[1-5])?$/;
 test('en_hero: five reworded heroine lines, every key overrides an existing mascot key', () => {
-  const re = Object.fromEntries(Object.entries(en_hero).filter(([k]) => !MISSION_LINE.test(k)));
+  const re = Object.fromEntries(Object.entries(en_hero).filter(([k]) => !MISSION_LINE.test(k) && !FS_POOL.test(k)));
   const lines = new Set(Object.values(re));
   assert.equal(lines.size, 5, 'five distinct reworded lines (mascot.lose and mascot.lose.1 share one)');
   assert.equal(Object.keys(re).length, 6);
@@ -22,6 +24,12 @@ test('en_hero: five reworded heroine lines, every key overrides an existing masc
 test('en_hero (H2-11 / I7): one entry and one exit line per mission, short, distinct', () => {
   for (const ev of ['fs', 'fsEnd']) for (const m of ['briefing', 'orders', 'blackout']) { const v = en_hero[`mascot.${ev}.${m}`]; assert.ok(v && v.length <= 24, `${ev}.${m}`); }
   assert.equal(en_hero['mascot.fs.orders'], 'Sealed orders. Hush.'); assert.equal(en_hero['mascot.fs.blackout'], 'Lights out, darling.');
+});
+test('H2-11: the generic entry pool (said on every door confirm) names no mission; each mission keeps its own line', () => {
+  for (const k of ['mascot.fs', 'mascot.fs.1', 'mascot.fs.2', 'mascot.fs.3', 'mascot.fs.4', 'mascot.fs.5']) {
+    assert.ok(hasKey(k), k); assert.doesNotMatch(t(k), /briefing|dossier|orders|sealed|blackout|ballroom|lights|coat|stairs/i, `${k}: ${t(k)}`);
+  }
+  assert.equal(t('mascot.fs.briefing'), 'Briefing time.');
 });
 test('the nudges are gone from the merged table: no "Next one\'s the one", no "Same time tomorrow", no other variant of them', () => {
   const merged = Object.entries(EN).filter(([k]) => k.startsWith('mascot.'));

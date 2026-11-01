@@ -7,7 +7,7 @@
 //   rig surface: play(def, { speed, hold, onEnd }), stop(), setPose(name, { snap }), setLook(target), setOutfit(key, { animated }),
 //                setReduced(bool), blink(kind), outfit (getter)
 import {
-  WHITELIST, GAGS, LEGACY_POSE, STILL_HOLD, BASE_OUTFIT, OUTFITS, POSE_FIX, plan, buildClip, clipDuration, hasPose, pickOutfit,
+  WHITELIST, GAGS, LEGACY_POSE, STILL_HOLD, BASE_OUTFIT, OUTFITS, POSE_FIX, KINDS, plan, buildClip, clipDuration, hasPose, pickOutfit,
 } from './clips.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -137,6 +137,10 @@ export function createDirector({
       if (cur && !cur.holding && t < cur.until) {
         if (p.prio < cur.prio) return false;
         if (p.prio === cur.prio && p.kind === cur.kind) return false;
+        // v2 round 2 (NEW-glove-over-face-boom): a legacy v1 pose never cuts a real reaction. The wire calls pose('shock') then
+        // pose('plunger') right after react('blast'); 'plunger' maps to the mission trigger (prio 4), so the blast used to play the
+        // free-spin salute and wink, the saluting arm across her eye, instead of the shock
+        if (info && info.legacy && KINDS[cur.kind] && KINDS[cur.kind].real) return false;
       }
       if (p.effective !== 'dead' && p.effective !== 'fizzle') deadStreak = 0;
       switch (p.mode) {

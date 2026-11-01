@@ -8,7 +8,7 @@
 // rejects and mascot.js falls back to the v1 character. No module of the animated path is imported statically here, so a failure of
 // any of them is caught here.
 import { createGaze } from './gaze.js';
-import { bubbleWidth, placeBubble } from './bubble.js';
+import { bubbleWidth, placeBubble, intersects } from './bubble.js';
 
 export const SLOT_ID = 'heroine-slot';
 // crop windows; identical to CROPS in mambo_rig.js (a test compares them) so the static fallback can crop without the rig
@@ -124,23 +124,72 @@ export async function createHeroineMascot(host, opts = {}) {
   bub.className = 'hero-bubble' + (slotMode ? '' : ' hero-bubble-fixed');
   bub.setAttribute('aria-hidden', 'true'); bub.hidden = true;
   bubHost.appendChild(bub);
-  let bubTimer = 0;
+  let bubTimer = 0, bubWatch = 0;
   const rectOf = (el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height }; };
-  function hideSay() { clearTimeout(bubTimer); bub.hidden = true; }
+  // v2 round 2 (NEW-bubble-hides-face-portrait): the live rectangle of her head (the rig's head group: hair, cap, face, chin), clipped to
+  // the svg in the crops that clip; the static picture has no head group, so its head is the head crop window mapped to the box
+  function headRect() {
+    try {
+      const svg = stage.firstElementChild; if (!svg || !svg.getBoundingClientRect) return null;
+      const sr = rectOf(svg);
+      let r = null;
+      const g = svg.querySelector('[id$="head-t"]');
+      if (g && g.getBoundingClientRect) { const b = rectOf(g); if (b.width > 0 && b.height > 0) r = b; }
+      if (!r) {
+        const vb = CROP_VB[currentCrop], hw = CROP_VB.head, k = Math.min(sr.width / vb[2], sr.height / vb[3]);
+        const ox = sr.left + (sr.width - vb[2] * k) / 2, oy = sr.top + (sr.height - vb[3] * k);
+        r = { left: ox + (hw[0] - vb[0]) * k, top: oy + (hw[1] - vb[1]) * k, width: hw[2] * k, height: hw[3] * k };
+      }
+      if (currentCrop !== 'full') {   // the crop clips the figure: what is outside the svg is not drawn
+        const l = Math.max(r.left, sr.left), t = Math.max(r.top, sr.top), rr = Math.min(r.left + r.width, sr.left + sr.width), b = Math.min(r.top + r.height, sr.top + sr.height);
+        r = rr > l && b > t ? { left: l, top: t, width: rr - l, height: b - t } : null;
+      }
+      return r;
+    } catch (e) { return null; }
+  }
+  // what the bubble must never cover: buttons and the HUD plates / ledger next to her box (the grid is right of her column)
+  const AVOID_SEL = 'button, [role="button"], .stat, #ledger, .board-wrap';
+  function avoidRects() {
+    if (!slotMode) return [];
+    const out = [];
+    try { for (const el of app.querySelectorAll(AVOID_SEL)) { if (el.closest && el.closest('#' + SLOT_ID)) continue; const r = rectOf(el); if (r.width > 0 && r.height > 0) out.push(r); } } catch (e) { /* ignore */ }
+    return out;
+  }
+  function stopWatch() { if (bubWatch) { clearInterval(bubWatch); bubWatch = 0; } }
+  function hideSay() { clearTimeout(bubTimer); stopWatch(); bub.hidden = true; }
+  function place() {
+    const slot = rectOf(slotMode ? host : wrap);
+    const frame = slotMode ? rectOf(app) : { left: 0, top: 0, width: win.innerWidth, height: win.innerHeight };
+    bub.style.width = bubbleWidth(slot) + 'px';
+    const head = headRect(), avoid = avoidRects();
+    // a long line that does not fit next to her face is tried once more in the compact type (smaller, tighter); then it is not shown
+    bub.classList.remove('compact');
+    let pos = placeBubble(slot, frame, { h: bub.offsetHeight }, { head, avoid });
+    if (!pos) { bub.classList.add('compact'); pos = placeBubble(slot, frame, { h: bub.offsetHeight }, { head, avoid }); }
+    if (!pos) return false;
+    bub.style.left = pos.left + 'px'; bub.style.top = pos.top + 'px'; bub.style.setProperty('--tail-x', pos.tailX + 'px');
+    bub.classList.toggle('tail-down', pos.tail === 'down');
+    return true;
+  }
   function say(text, ms = 2200) {
     if (destroyed) return;
-    clearTimeout(bubTimer);
+    clearTimeout(bubTimer); stopWatch();
     bub.textContent = String(text == null ? '' : text);
     if (!bub.textContent) { bub.hidden = true; return; }
     try {
-      const slot = rectOf(slotMode ? host : wrap);
-      const frame = slotMode ? rectOf(app) : { left: 0, top: 0, width: win.innerWidth, height: win.innerHeight };
-      bub.hidden = false; bub.style.width = bubbleWidth(slot) + 'px';
-      const pos = placeBubble(slot, frame, { h: bub.offsetHeight });
-      if (!pos) { bub.hidden = true; return; }
-      bub.style.left = pos.left + 'px'; bub.style.top = pos.top + 'px'; bub.style.setProperty('--tail-x', pos.tailX + 'px');
+      bub.hidden = false;
+      if (!place()) { bub.hidden = true; return; }
       bub.classList.remove('pop'); void bub.offsetWidth; bub.classList.add('pop');
       if (ms > 0) bubTimer = setTimeout(hideSay, ms);
+      // she moves while she talks (a dip, a lean, a jump): when her head comes near the bubble, the bubble moves (or goes)
+      bubWatch = setInterval(() => {
+        try {
+          if (destroyed || bub.hidden) { stopWatch(); return; }
+          const h = headRect(); if (!h) return;
+          const b = rectOf(bub), pad = { left: h.left - 2, top: h.top - 2, width: h.width + 4, height: h.height + 4 };
+          if (intersects(b, pad) && !place()) hideSay();
+        } catch (e) { stopWatch(); }
+      }, 120);
     } catch (e) { bub.hidden = true; }
   }
 
@@ -192,7 +241,7 @@ export async function createHeroineMascot(host, opts = {}) {
     get outfit() { try { return rig ? rig.outfit : null; } catch (e) { return null; } },
     destroy() {
       if (destroyed) return;
-      destroyed = true; clearTimeout(bubTimer);
+      destroyed = true; clearTimeout(bubTimer); stopWatch();
       for (const f of offs.splice(0)) { try { f(); } catch (e) { /* ignore */ } }
       try { if (director) director.destroy(); } catch (e) { /* ignore */ }
       try { if (rig) rig.destroy(); } catch (e) { /* ignore */ }

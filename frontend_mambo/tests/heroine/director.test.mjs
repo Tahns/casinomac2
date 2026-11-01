@@ -267,3 +267,13 @@ test('every kind of the table has a defined behaviour in the director (no kind i
     assert.ok(rig.log.length > 0 || e.mode === 'release', k);
   }
 });
+
+test('v2 round 2 (NEW-glove-over-face-boom): the wire\'s legacy shock / plunger poses never cut the blast; a real trigger still can', () => {
+  const { d, rig, clock } = setup();
+  assert.equal(d.react('blast', {}), true); assert.deepEqual(rig.played, ['shock']);
+  d.setPose('shock'); d.setPose('plunger');
+  assert.deepEqual(rig.played, ['shock'], 'no salute / wink over the shock');
+  assert.equal(d.react('trigger', { mission: 'orders', outfit: 'inspectrice' }), true, 'a real trigger (prio 4) still cuts it');
+  clock.advance(5000);
+  const s = setup(); s.d.setPose('plunger'); assert.equal(s.rig.played[0], 'freeSpinStart', 'plunger outside a blast is still the trigger salute');
+});

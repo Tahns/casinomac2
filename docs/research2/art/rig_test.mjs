@@ -146,13 +146,37 @@ if (args.checks) {   // v2 round 1 (I6): machine checks of the defects found in 
       }
       return tot ? hit / tot : 0;
     };
+    // v2 round 2 (NEW-glove-over-face-boom): the sleeve counts too (a raised arm across the face hides the eye as well as the glove does)
+    const sleeve = (s) => { const g = el(`arm-${s}-ink`); return g && g.getAttribute('d') ? { querySelectorAll: () => [g] } : null; };
+    // a closed (winking) eye has no sclera to sample: the eye area is sampled once with the eyes open, in head coordinates, and carried by the head
+    let eyePts = null;
+    const learnEyes = () => {
+      const head = el('head-t'); eyePts = {};
+      for (const eye of ['eye-l', 'eye-r']) {
+        const sc = el(eye + '-sclera'); if (!sc || !head) continue;
+        const b = sc.getBBox(), M = head.getScreenCTM().inverse().multiply(sc.getScreenCTM()), pts = [];
+        for (let i = 0; i <= 8; i++) for (let j = 0; j <= 10; j++) { const pt = new DOMPoint(b.x + (b.width * i) / 8, b.y + (b.height * j) / 10); if (sc.isPointInFill(pt)) pts.push(pt.matrixTransform(M)); }
+        eyePts[eye] = pts;
+      }
+    };
+    const coverArea = (eye, glove) => {
+      const head = el('head-t'), pts = eyePts && eyePts[eye]; if (!head || !pts || !pts.length || !glove) return 0;
+      const paths = [...glove.querySelectorAll('path')].filter((q) => shown(q, glove) && q.getAttribute('fill') && q.getAttribute('fill') !== 'none');
+      const M = head.getScreenCTM(); let hit = 0;
+      for (const p of pts) { const sp = p.matrixTransform(M); if (paths.some((q) => q.isPointInFill(sp.matrixTransform(q.getScreenCTM().inverse())))) hit++; }
+      return hit / pts.length;
+    };
     const handOverEye = (tag) => {
-      for (const s of ['l', 'r']) for (const eye of ['eye-l', 'eye-r']) { const k = cover(eye, visGlove(s)); if (k > 0.1) fails.push(`${tag}: hand-${s} covers ${Math.round(100 * k)}% of ${eye}`); }
+      for (const s of ['l', 'r']) for (const eye of ['eye-l', 'eye-r']) {
+        const k = Math.max(cover(eye, visGlove(s)), coverArea(eye, visGlove(s))); if (k > 0.1) fails.push(`${tag}: hand-${s} covers ${Math.round(100 * k)}% of ${eye}`);
+        const a = Math.max(cover(eye, sleeve(s)), coverArea(eye, sleeve(s))); if (a > 0.1) fails.push(`${tag}: arm-${s} covers ${Math.round(100 * a)}% of ${eye}`);
+      }
     };
     const GROUND = 566;
     for (const o of h.outfits()) {
       h.setCrop('full'); h.setOutfit(o); h.stop(true);
       if (o === 'casino' && (el('leg-l') || el('leg-r'))) fails.push('casino: legs are drawn under the gown');
+      h.setPose('idle', { snap: true }); h.snap(); learnEyes();
       for (const p of h.poses()) {
         h.setPose(p, { snap: true }); h.snap(); n.poses++;
         handOverEye(`${o}/${p}`);
@@ -163,6 +187,11 @@ if (args.checks) {   // v2 round 1 (I6): machine checks of the defects found in 
       for (const t of [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4]) {
         h.stop(true); h.setPose('idle', { snap: true }); h.snap(); h.play('winSmall'); h.step(t); n.frames++;
         handOverEye(`${o}/winSmall@${t}`);
+      }
+      // v2 round 2 (NEW-glove-over-face-boom): the wire-blast reaction (shock) and the mission salute (freeSpinStart), frame by frame
+      for (const c of ['shock', 'freeSpinStart']) for (const t of [0.05, 0.1, 0.2, 0.3, 0.45, 0.6, 0.8, 1.0, 1.3, 1.6]) {
+        h.stop(true); h.setPose('idle', { snap: true }); h.snap(); h.play(c); h.step(t); n.frames++;
+        handOverEye(`${o}/${c}@${t}`);
       }
       // the head crop keeps the chin and both cheeks in its window in every pose
       h.stop(true); h.setCrop('head');

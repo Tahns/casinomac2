@@ -95,8 +95,9 @@ export const POSES = {
     alx: 222, aly: 290, alb1: 22, alb2: 30, alr: 0, gl: 'relax', arx: 182, ary: 296, arb1: -22, arb2: -30, arr: 0, gr: 'relax' },
   laugh: { lean: 3, htilt: -9, hy: 2, turn: 0.8, joyL: 1, joyR: 1, uL: 0.1, uR: 0.1, lowL: 0.6, lowR: 0.6, bLy: -2, bRy: -6, bLa: 14, bRa: 14, mouth: 'laugh', lax: -6, rax: 6,
     alx: 212, aly: 306, alb1: 22, alb2: 18, alr: 0, gl: 'flat', arx: 190, ary: 302, arb1: -20, arb2: -18, arr: 0, gr: 'flat', prop: '' },
+  // v2 round 2 (NEW-glove-over-face-boom): the saluting glove goes to the outer side of the cap brim, so neither the swing up nor the hold crosses her eye
   salute: { lean: -1, htilt: -3, turn: 0.9, uL: 0, lowL: 0.7, uR: 0.9, bLy: 8, mouth: 'grin', lax: 0, rax: 0, lsr: -4, rsr: 4,
-    alx: 162, aly: 128, alb1: -36, alb2: -22, alr: 0, gl: 'flat', arx: 249, ary: 302, arb1: -38, arb2: -22, arr: -8, gr: 'hip', prop: '', lookx: 0.1 },
+    alx: 142, aly: 134, alb1: -44, alb2: -22, alr: 0, gl: 'flat', arx: 249, ary: 302, arb1: -38, arb2: -22, arr: -8, gr: 'hip', prop: '', lookx: 0.1 },
   // v2 round 1 (I4): one hand lifts the skirt edge at the hip, the other arm opens out, a knee dip (it used to read as a hand on the cap)
   curtsy: { lean: 6, hx: 4, hy: 4, htilt: -6, turn: 1.1, uy: 10, hipTilt: -6, hipX: 6, lookx: -0.2, looky: -0.7, uL: 0.5, uR: 0.8, bRy: -8, rax: -30, rsr: -10, lax: -14, mouth: 'smirk',
     lb1: 24, lb2: -16, rb1: -24, rb2: 16,

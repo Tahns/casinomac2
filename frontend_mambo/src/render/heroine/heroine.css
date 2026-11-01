@@ -24,6 +24,12 @@
 .hero-bubble::before, .hero-bubble::after { content: ""; position: absolute; width: 0; height: 0; left: var(--tail-x, 50%); }
 .hero-bubble::before { bottom: 100%; margin-left: -9px; border: 9px solid transparent; border-bottom: 14px solid #14102B; border-top: 0; }
 .hero-bubble::after { bottom: 100%; margin: 0 0 -3px -6px; border: 7px solid transparent; border-bottom: 11px solid #FBF1D9; border-top: 0; }
+/* v2 round 2: the compact type for a long line next to the portrait bust (never over her face) */
+.hero-bubble.compact { font-size: 11px; letter-spacing: .02em; padding: .2em .4em .26em; border-width: 2px; }
+/* v2 round 2: a bubble above her cap points down at her head */
+.hero-bubble.tail-down { transform-origin: 50% 100%; }
+.hero-bubble.tail-down::before { bottom: auto; top: 100%; border: 9px solid transparent; border-top: 14px solid #14102B; border-bottom: 0; }
+.hero-bubble.tail-down::after { bottom: auto; top: 100%; margin: -3px 0 0 -6px; border: 7px solid transparent; border-top: 11px solid #FBF1D9; border-bottom: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .hero-bubble.pop { animation: hero-pop .3s steps(3) 1; }
 }

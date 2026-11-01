@@ -21,5 +21,14 @@ export const en_hero = {
   'mascot.fsEnd.briefing': 'Lesson learned.',
   'mascot.fsEnd.orders': 'Orders carried out.',
   'mascot.fsEnd.blackout': 'Lights back on.',
+  // v2 round 2 (H2-11): the generic entry pool is said on EVERY door confirm (main.js) and by the render for The Briefing; until the render
+  // says 'mascot.fs.' + mission id (docs/v2/requests/FIX_heroine_to_render.md), no line of the pool may name one mission ("Briefing time.",
+  // "Lights, dossier, action." were heard on Coat Check / Service Stairs rounds). The mission lines live in mascot.fs.<id> above.
+  'mascot.fs': 'Into the lair!',
+  'mascot.fs.1': 'Into the lair!',
+  'mascot.fs.2': "Let's mambo.",
+  'mascot.fs.3': 'New file, new rules.',
+  'mascot.fs.4': 'On the case.',
+  'mascot.fs.5': 'Showtime, darling.',
 };
 export default en_hero;

@@ -281,6 +281,26 @@ for (const vp of VIEWPORTS) {
   liveInfo[vp.name].painted = painted;
   check(`D3 ${vp.name}: the painted figure (idle) is inside her box${geo.crop === 'full' ? ' and clear of its left, right and bottom edge' : ' (crop ' + geo.crop + ': cut by design at the waist)'}`, painted && painted.w > 10 && painted.l >= geo.box.l - 0.5 && painted.r <= geo.box.r + 0.5 && painted.b <= geo.box.b + 0.5 && painted.t >= geo.box.t - 0.5 - (geo.crop === 'full' ? geo.box.h * 0.18 : 0) && (geo.crop !== 'full' || (painted.l >= geo.box.l + 1 && painted.r <= geo.box.r - 1 && painted.b <= geo.box.b - 1)), JSON.stringify(painted) + ' box ' + JSON.stringify({ l: Math.round(geo.box.l), t: Math.round(geo.box.t), r: Math.round(geo.box.r), b: Math.round(geo.box.b) }));
 
+  // v2 round 2 (NEW-bubble-hides-face-portrait): the speech bubble never covers her face (the rig's head group) nor a button / HUD plate
+  const bubGeo = await page.evaluate(async () => {
+    const { mascotOf } = await import('/src/render/mascot.js');
+    const slot = document.getElementById('heroine-slot'), m = mascotOf(slot), out = [];
+    const R = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; };
+    const hit = (a, b) => a.l < b.r - 0.5 && a.r > b.l + 0.5 && a.t < b.b - 0.5 && a.b > b.t + 0.5;
+    for (const line of ['LIGHTS, DOSSIER, ACTION.', 'DEFUSING!', 'SEALED ORDERS. HUSH.']) {
+      m.say(line, 0); await new Promise((r) => setTimeout(r, 350));
+      const bub = document.querySelector('.hero-bubble'), g = slot.querySelector('[id$="head-t"]');
+      if (!bub || bub.hidden || !g) { out.push({ line, shown: false }); continue; }
+      const b = R(bub); let h = R(g); const sv = R(slot.querySelector('svg'));
+      if (slot.dataset.crop !== 'full') h = { l: Math.max(h.l, sv.l), t: Math.max(h.t, sv.t), r: Math.min(h.r, sv.r), b: Math.min(h.b, sv.b) };
+      const btn = [...document.querySelectorAll('#app button, #hud-info .stat, #ledger')].filter((e) => e.getBoundingClientRect().width > 0 && !e.closest('[hidden]')).filter((e) => hit(b, R(e))).map((e) => e.id || e.className);
+      out.push({ line, shown: true, face: hit(b, h), btn });
+    }
+    m.hideSay && m.hideSay();
+    return out;
+  });
+  check(`D5 ${vp.name}: the speech bubble never covers her face nor a button / HUD plate (${bubGeo.filter((x) => x.shown).length}/3 lines shown)`, bubGeo.every((x) => !x.shown || (!x.face && x.btn.length === 0)), JSON.stringify(bubGeo));
+
   // the reactions in the live page (clips sped up with info.speed to keep the run short), live frame cost sampled every frame
   const live = await page.evaluate(async () => {
     const { mascotOf } = await import('/src/render/mascot.js');
