@@ -2,7 +2,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { outlineOf, outlineLength, createBeam, createBank, litByWindow, missionKey, OUTFIT_OF, DOOR_OF, windowCells, fmtX } from '../../src/render/layers/logic.js';
+import { outlineOf, outlineLength, createBeam, createBank, litByWindow, missionKey, OUTFIT_OF, DOOR_OF, windowCells, fmtX, fmtAmt, parkEnvelope } from '../../src/render/layers/logic.js';
+import { formatMoney } from '../../src/money.js';
 import { FLOOR_PLANS, setLayout, toGeo, resetLayout } from '../../src/render/geo.js';
 import { en_layers } from '../../src/i18n/en_layers.js';
 import { t, setSocial, EN } from '../../src/i18n/index.js';
@@ -184,4 +185,56 @@ test('dispatcher: our layers attach only for a real player ctx; reset is safe tw
     if (r) await r;
   }
   resetLayers(); resetLayers();
+});
+
+// ---- K3: the Sealed Orders amounts in the HUD money format (ctx.fmt takes a multiple of the play amount) ----
+test('orders: fmtAmt uses the HUD formatter (USD bet 2, JPY, social coins) and falls back to the bare amount', () => {
+  const usd2 = (x) => '$' + (x * 2).toFixed(2);
+  assert.equal(fmtAmt(usd2, 250), '$5.00');
+  assert.equal(fmtAmt((x) => '¥' + Math.round(x * 100), 250), '¥250');
+  assert.equal(fmtAmt((x) => (x * 1).toFixed(2) + ' SC', 120), '1.20 SC');
+  assert.equal(fmtAmt(null, 120), '1.20');
+  assert.equal(fmtAmt(() => 'NaN', 120), '1.20');
+  assert.equal(fmtAmt(() => { throw new Error('x'); }, 2640), '26.40');
+  // the real formatter as main.js wires it: x (multiple of the play amount) * bet in micro units
+  const fm = (bet, cur, o) => (x) => formatMoney(Math.round(x * bet), cur, o);
+  assert.equal(fmtAmt(fm(2000000, 'USD'), 250), '$5.00');
+  assert.equal(fmtAmt(fm(100000000, 'JPY'), 250), '¥250');
+  const sc = fmtAmt(fm(1000000, 'XSC', { social: true }), 250);
+  assert.equal(sc, '2.50 SC');
+  assert.deepEqual(findRestricted(t('layers.bank', { x: sc })), []);
+});
+
+// ---- K4: the parked envelope never overlaps a cell (its top is under the board's bottom edge, tilt included) ----
+test('orders: parkEnvelope keeps the envelope under the cell area at every viewport', () => {
+  const cases = [
+    // board (cell area) in wrap px, room under the board in px, cell px  (1280x720, 1024x576, 425x812, 400x225 measured)
+    [{ left: 18, top: 18, width: 706, height: 588 }, 66, 117.7],
+    [{ left: 14, top: 14, width: 555, height: 462 }, 57, 92.5],
+    [{ left: 9, top: 10, width: 393, height: 327 }, 351, 65.4],
+    [{ left: 6, top: 6, width: 240, height: 199 }, 13, 40],
+  ];
+  for (const [board, room, cell] of cases) {
+    const p = parkEnvelope(board, room, cell, 0);
+    assert.equal(p.mode, 'below');
+    const tilt = Math.ceil(p.width * Math.sin(6 * Math.PI / 180) / 2 + 1);
+    assert.ok(p.top - tilt >= board.top + board.height, JSON.stringify({ board, p }));
+    assert.ok(p.height <= Math.max(20, cell * 0.62) + 0.5 && p.height >= 20, 'size ' + p.height);
+    assert.ok(p.left >= board.left && p.left + p.width <= board.left + board.width, 'inside the board column');
+  }
+  // 400x225: 13 px under the board, 80 px to its right: parked beside the board's lower-right corner, outside the frame
+  const sb = { left: 6, top: 6, width: 240, height: 199 };
+  const q = parkEnvelope(sb, 13, 40, 80);
+  assert.equal(q.mode, 'side');
+  assert.ok(q.left >= sb.left + sb.width + 40 * 0.15, 'outside the frame lip ' + q.left);
+  assert.ok(q.top + q.height + 20 <= sb.top + sb.height + 13, 'plate room under the envelope, inside the viewport');
+});
+
+test('blackout: upcoming() lists the next route windows only (I4)', () => {
+  const B = createBeam();
+  B.onRoute({ route: [{ reel: 0, row: 0 }, { reel: 2, row: 1 }, { reel: 4, row: 3 }] });
+  assert.deepEqual(B.upcoming(2), [{ reel: 2, row: 1 }, { reel: 4, row: 3 }]);
+  B.step(); assert.deepEqual(B.upcoming(2), [{ reel: 4, row: 3 }]);
+  B.step(); assert.deepEqual(B.upcoming(2), []);
+  B.reset(); assert.deepEqual(B.upcoming(2), []);
 });

@@ -2,7 +2,10 @@
 //   - every free-spin board opens dark: an ink dim over the board (symbols stay readable, about 50 %), cue lightsOut on the first one
 //   - lightRoute (right after the reveal, before any outcome): a 2x2 window of light at route[0], with a cone from a lamp above the frame
 //   - each tumbleBoard moves the window to the next route entry (stepped 250 ms, cue spotlightStep); after the last entry it stays
-//   - winInfo with meta.lit: an "x4" tag on each lit cluster. The layer re-computes `lit` from its own window and counts mismatches
+//   - the next 1-2 route windows are drawn as faint dotted outlines (I4), so the route reads as a mechanic; the route is in the book
+//     before any outcome, nothing is revealed early
+//   - winInfo with meta.lit: an "x4" tag on the top-right corner of each lit cluster's overlay cell, UNDER the player's win pop (H2-05:
+//     .l-dark and .l-x4 sit below .popups, so the win pop is never dimmed or covered). The layer re-computes `lit` from its own window and counts mismatches
 //     (L.beam.mismatches, read by tests/layers): meta.lit must match the beam
 //   - the beam never persists between spins: it goes at setTotalWin / the next reveal / freeSpinEnd / reset
 import { createBeam } from './logic.js';
@@ -36,6 +39,7 @@ export function createBlackout() {
     dark.innerHTML = `<svg class="l-dark-svg" viewBox="0 0 ${cols} ${rows}" preserveAspectRatio="none" width="100%" height="100%" aria-hidden="true">
         <path class="l-dark-shade" fill-rule="evenodd" d="M0 0H${cols}V${rows}H0Z"/>
         <path class="l-dark-cone" d=""/>
+        <g class="l-dark-next"></g>
         <rect class="l-dark-win" x="0" y="0" width="2" height="2" rx=".12" visibility="hidden"/>
       </svg><div class="l-lamp">${lampSvg()}</div>`;
     const pops = ctx.board.querySelector('.popups');
@@ -50,6 +54,11 @@ export function createBlackout() {
     const win = beam.current();
     const { cols, rows } = geom(ctx);
     const shade = dark.querySelector('.l-dark-shade'), cone = dark.querySelector('.l-dark-cone'), box = dark.querySelector('.l-dark-win'), lamp = dark.querySelector('.l-lamp');
+    const nx = dark.querySelector('.l-dark-next');
+    if (nx) {
+      nx.innerHTML = win ? beam.upcoming(2).filter((p) => p && (p.reel !== win.reel || p.row !== win.row))
+        .map((p, i) => `<rect class="l-dark-ghost g${i}" x="${p.reel + 0.06}" y="${p.row + 0.06}" width="${beam.w - 0.12}" height="${beam.h - 0.12}" rx=".12"/>`).join('') : '';
+    }
     if (!win) { shade.setAttribute('d', `M0 0H${cols}V${rows}H0Z`); box.setAttribute('visibility', 'hidden'); cone.setAttribute('d', ''); return; }
     const x = win.reel, y = win.row, w = beam.w, hh = beam.h;
     shade.setAttribute('d', `M0 0H${cols}V${rows}H0Z M${x} ${y}V${y + hh}H${x + w}V${y}Z`);
@@ -103,12 +112,13 @@ export function createBlackout() {
       if (!ov) return;
       const g = toGeo(ov.reel, ov.row);
       const tag = h('div', 'l-x4', tagSvg(tx(t, 'layers.lit', `x${beam.mult}`, { n: Number(m.lensMult) || beam.mult })));
-      tag.style.left = `${((ov.reel + 0.5) / cols) * 100}%`;
-      tag.style.top = `${((Math.max(0, g) + 0.1) / rows) * 100}%`;
+      // on the top edge of the overlay cell, right corner (the win pop is centred on that cell, above us; the tag peeks out over it)
+      tag.style.left = `${((ov.reel + 0.95) / cols) * 100}%`;
+      tag.style.top = `${((Math.max(0, g) + 0.04) / rows) * 100}%`;
       tag.dataset.ok = res[i] ? String(res[i].ok) : '';
       ctx.board.appendChild(tag);
       tags.push(tag);
-      anim(ctx, tag, [{ transform: 'translate(-50%,-50%) scale(1.8)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }], { duration: 167, easing: 'steps(2,end)' });
+      anim(ctx, tag, [{ transform: 'translate(-100%,-70%) scale(1.8)', opacity: 0 }, { transform: 'translate(-100%,-70%) scale(1)', opacity: 1 }], { duration: 167, easing: 'steps(2,end)' });
     });
     return null;
   }

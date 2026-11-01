@@ -1,7 +1,10 @@
 // Agent Mambo v2 layer DOSSIER CUTSCENE + COSTUME SCREEN + ENTRANCE TRANSITION (WP6), SYNTHESIS 5 #13 (J17).
 //   missionAssigned (or, in a book without one, the first event after freeSpinTrigger: v1 / `bonus` books play The Briefing):
-//   1. a door book (ctx.cost > 1): the door of the mission (Stage Door / Coat Check / Service Stairs) fills the board, its keyhole
-//      irises open (<= 1.0 s, cue doorCreak; Rule P: <= 1.2 s)
+//   1. a door book (ctx.cost > 1): the door of the mission (Stage Door / Coat Check / Service Stairs) fills the board, its name is held
+//      long enough to be read (H2-06: fade 167 ms + hold 320 ms), then the keyhole irises open (8 x 55 ms, cue doorCreak). The door is
+//      deadline-based (H2-07): every step jumps to where the clock says it should be and the door is gone by 1.05 s whatever the CPU
+//      load (Rule P: <= 1.2 s). The player plays it right after CONFIRM through entrance(ctx, mission) (H2-01, FIX_render_to_layers);
+//      a door book played by another caller still gets it in front of the dossier
 //   2. the dossier: folder arcs in (417 ms), TOP SECRET stamp (125 ms + hit-stop 100 ms), the cover opens on the mission sheet:
 //      MISSION: <name>, one line of rules, the spins; held to about 3.0 s in all (2.6-3.4 s); tap / click / Enter / Space / Escape
 //      skips, but only after 1.2 s (Rule P)
@@ -18,7 +21,7 @@ export const SKIP_AFTER_MS = 1200;
 export const DOSSIER_MS = 3000;
 
 export function createDossier() {
-  let pending = false, shown = false, cut = null, screen = null, token = 0, offKeys = null;
+  let pending = false, shown = false, cut = null, screen = null, token = 0, offKeys = null, entered = false, fsN = 0;
   const L = { id: 'dossier', log: [] };
 
   function clear() {
@@ -42,29 +45,74 @@ export function createDossier() {
   // ---- 1. the door and the keyhole iris ----
   async function door(ctx, m, alive) {
     if (!cut) return;
+    const t0 = Date.now();
     const label = tx(t, 'layers.door.' + DOOR_OF[m], { stage: 'STAGE DOOR', coat: 'COAT CHECK', stairs: 'SERVICE STAIRS' }[DOOR_OF[m]]);
     const col = { briefing: P.aubergine, orders: P.tealDk, blackout: P.indigo }[m] || P.aubergine;
     const d = h('div', 'l-door', doorSvg(label, col) + `<svg class="l-iris" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <path class="l-iris-mask" fill-rule="evenodd" d="M-500 -500H500V500H-500Z ${scaledKeyhole(8)}"/></svg>`);
     d.dataset.door = DOOR_OF[m];
     cut.appendChild(d);
-    const dur = 900;
-    play(ctx, 'doorCreak', { dur: Math.min(1.1, Math.max(0.3, Tm(ctx, dur) / 1000)) });
+    // schedule (scaled by ctx.T): fade in, hold the labelled door, iris; hard end at tEnd
+    const tFade = Tm(ctx, 167), tHold = Tm(ctx, 320), steps = isCalm(ctx) ? 3 : 8, per = Tm(ctx, 440) / steps;
+    let tIris = t0 + tFade + tHold; const tEnd = t0 + Math.min(Tm(ctx, 1050), tFade + tHold + per * steps + Tm(ctx, 40));
+    play(ctx, 'doorCreak', { dur: Math.min(1.1, Math.max(0.3, (tEnd - t0) / 1000)) });
     L.log.push({ t: 'door', m });
-    if (isStill(ctx)) { await wait(ctx, 400, alive); d.remove(); return; }
-    await anim(ctx, d, [{ opacity: 0 }, { opacity: 1 }], { duration: 167, easing: 'steps(2,end)' });
-    if (!alive()) return;
-    // the keyhole iris: the door panel goes, an ink sheet with a growing keyhole hole is left, then that goes too
+    let held = 0;
+    const done = (why) => { d.remove(); L.log.push({ t: 'doorEnd', m, ms: Date.now() - t0, held, why }); };
+    if (isStill(ctx)) { await sleepUntil(t0 + Tm(ctx, 400) + tHold, alive); return done('still'); }
+    await Promise.race([anim(ctx, d, [{ opacity: 0 }, { opacity: 1 }], { duration: 167, easing: 'steps(2,end)' }), sleepUntil(t0 + tFade + 34, alive)]);
+    d.style.opacity = '1';
+    if (!alive()) return done('reset');
+    // hold the door with its name on it (it is read: STAGE DOOR / COAT CHECK / SERVICE STAIRS)
+    // counted from the moment it is fully on screen (a janky first frame does not eat the hold); the iris is squeezed instead, and
+    // the hard end tEnd never moves
+    const tSeen = Date.now();
+    tIris = Math.max(tIris, Math.min(tSeen + tHold, tEnd - per * steps * 0.5));
+    await sleepUntil(tIris, alive);
+    held = Date.now() - tSeen;
+    if (!alive() || Date.now() >= tEnd) return done(alive() ? 'deadline' : 'reset');
+    // the keyhole iris: the door panel goes, an ink sheet with a growing keyhole hole is left, then that goes too. Each step is the one
+    // the clock asks for (a late timer skips steps instead of adding up)
     const svg = d.querySelector('.l-door-svg'); if (svg) svg.style.visibility = 'hidden';
     const iris = d.querySelector('.l-iris'); if (iris) iris.style.visibility = 'visible';
     const mask = d.querySelector('.l-iris-mask');
-    const steps = isCalm(ctx) ? 3 : 8, per = Tm(ctx, 600) / steps;
-    for (let i = 1; i <= steps && alive(); i++) {
-      mask.setAttribute('d', `M-500 -500H500V500H-500Z ${scaledKeyhole(8 + (i / steps) ** 2 * 140)}`);
-      await new Promise((r) => setTimeout(r, per));
+    for (;;) {
+      const now = Date.now();
+      if (!alive() || now >= tEnd) break;
+      const i = Math.min(steps, Math.floor((now - tIris) / per) + 1);
+      if (mask) mask.setAttribute('d', `M-500 -500H500V500H-500Z ${scaledKeyhole(8 + (i / steps) ** 2 * 140)}`);
+      if (i >= steps) { await sleepUntil(Math.min(tEnd, tIris + per * steps), alive); break; }
+      await sleepUntil(Math.min(tEnd, tIris + per * i), alive);
     }
-    d.remove();
+    return done(alive() ? 'end' : 'reset');
   }
+  // resolves at the wall-clock time t (or at once when the layer was reset)
+  function sleepUntil(t, alive) {
+    return new Promise((r) => {
+      const tick = () => { const left = t - Date.now(); if (left <= 0 || !alive()) r(); else setTimeout(tick, Math.min(50, left)); };
+      tick();
+    });
+  }
+
+  // H2-01: the Secret Entrance right after CONFIRM (the player calls it before the first event of a door book); the dossier then
+  // comes without a second door
+  L.entrance = async (ctx, mission) => {
+    if (!ctx) return;
+    const m = missionKey(mission);
+    clear();
+    const my = token;
+    const alive = () => my === token;
+    setMission(m);
+    cut = overlay(ctx);
+    if (!cut) return;
+    cut.dataset.mission = m;
+    cut.classList.add('l-cut-door');
+    L.log.push({ t: 'entrance', m });
+    await door(ctx, m, alive);
+    if (!alive()) return;
+    if (cut) { cut.remove(); cut = null; }
+    entered = true;
+  };
   const scaledKeyhole = (s) => keyholePath(Math.max(0.01, s));
 
   // ---- 3. the costume change ----
@@ -110,11 +158,13 @@ export function createDossier() {
     if (!cut) { costume(ctx, m); return; }
     cut.dataset.mission = m;
     L.log.push({ t: 'cut', m, cost: ctx.cost });
-    if (Number(ctx.cost) > 1) await door(ctx, m, alive);
+    if (Number(ctx.cost) > 1 && !entered) await door(ctx, m, alive);
+    entered = false;
     if (!alive()) return;
     const name = tx(t, 'layers.mission.' + m, { briefing: 'MISSION: THE BRIEFING', orders: 'MISSION: SEALED ORDERS', blackout: 'MISSION: BALLROOM BLACKOUT' }[m]);
     const brief = tx(t, 'layers.brief.' + m, '');
     const n = Number(ev && ev.totalFs) || 0;
+    L.log.push({ t: 'spins', m, n });
     const fol = h('div', 'l-dos ' + m, dossierSvg(missionIcon(m))
       + `<div class="l-dos-text"><b class="l-dos-name">${esc(name)}</b><span class="l-dos-brief">${esc(brief)}</span>${n ? `<i class="l-dos-n">${esc(tx(t, 'layers.spins', `${n} FREE SPINS`, { n }))}</i>` : ''}</div>`
       + `<div class="l-dos-stamp">${stampSvg(tx(t, 'layers.topSecret', 'TOP SECRET'), 'coral', { rot: -9, tall: true })}</div>`
@@ -210,23 +260,27 @@ export function createDossier() {
 
   L.onEvent = (ev, ctx) => {
     if (!ev || !ctx) return null;
-    if (ev.type === 'freeSpinEnd') { setMission(null); return null; }
-    if (ev.type === 'freeSpinTrigger') { if (!shown) pending = true; return null; }
+    // FIX_render_to_layers 2: the mission stays on <html> through the Debrief card; L.reset (end of the book) clears it
+    if (ev.type === 'freeSpinEnd') return null;
+    if (ev.type === 'freeSpinTrigger') { if (!shown) { pending = true; fsN = Number(ev.totalFs) || 0; } return null; }
     if (ev.type === 'missionAssigned') { pending = false; return cutscene(ev, ctx); }
-    if (pending) { pending = false; return cutscene({ mission: 'briefing', totalFs: null }, ctx); }
+    // a book without missionAssigned (v1 / bonus): The Briefing, with the spins of its freeSpinTrigger (H2-10)
+    if (pending) { pending = false; return cutscene({ mission: 'briefing', totalFs: fsN || null }, ctx); }
     if (ev.type === 'finalWin') { if (shown) { const my = token; setTimeout(() => { if (my === token || !shown) backToBase(ctx); }, Tm(ctx, 3200)); } return null; }
     return null;
   };
-  L.reset = () => { pending = false; shown = false; clear(); setMission(null); };
+  L.reset = () => { pending = false; shown = false; entered = false; fsN = 0; clear(); setMission(null); };
   return L;
 }
 
-/** the folding screen for the fallback costume change (three hinged panels, plum and lilac, brass trim, poof cloud) */
+/** the folding screen for the fallback costume change (three hinged panels, aubergine and dim plum, brass trim, poof cloud) */
 function screenSvg() {
   let s = '';
   for (let i = 0; i < 3; i++) {
     const x = i * 40, top = i % 2 ? 14 : 6;
-    s += `<path d="M${x} ${top}L${x + 40} ${top + (i % 2 ? -6 : 6)}V196H${x}Z" fill="${i % 2 ? P.lilac : P.aubergine}" stroke="${P.ink}" stroke-width="4" stroke-linejoin="round"/>`
+    // H2-15: plum / aubergine panels (a lilac one vanished into the lilac Sealed Orders scene), brass trim on each
+    s += `<path d="M${x} ${top}L${x + 40} ${top + (i % 2 ? -6 : 6)}V196H${x}Z" fill="${i % 2 ? P.inkDim : P.aubergine}" stroke="${P.ink}" stroke-width="4" stroke-linejoin="round"/>`
+      + `<path d="M${x + 5} ${top + 24}V186H${x + 35}V${top + 24 + (i % 2 ? -6 : 6)}" fill="none" stroke="${P.brass}" stroke-width="2.5" stroke-linejoin="round"/>`
       + `<path d="M${x + 6} ${top + 14}H${x + 34}" stroke="${P.brass}" stroke-width="3" stroke-linecap="round"/>`;
   }
   return `<svg viewBox="-4 -4 128 206" preserveAspectRatio="xMidYMax meet" width="100%" height="100%" aria-hidden="true">${s}</svg>

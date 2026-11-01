@@ -128,6 +128,8 @@ export function createBeam() {
       return !!before && !!after && (before.reel !== after.reel || before.row !== after.row);
     },
     current() { return B.route ? B.route[Math.min(B.k, B.route.length - 1)] : null; },
+    /** the next n route windows after the current one (I4: drawn as faint outlines; the route is public before any outcome) */
+    upcoming(n = 2) { return B.route ? B.route.slice(B.k + 1, B.k + 1 + n) : []; },
     /** check every win of a winInfo against the window; returns [{ lit (book), beam (ours), ok }] */
     check(ev, toGeo) {
       const out = [];
@@ -166,3 +168,35 @@ export function createBank() {
 
 /** 1.2 -> "1.20", 26.4 -> "26.40" (amounts of the books are integers in 1/100 x of the play amount) */
 export const fmtX = (x100) => (Math.round(Number(x100) || 0) / 100).toFixed(2);
+
+/**
+ * A book amount (1/100 x of the play amount) in the HUD format (K3): `fmt` is the player's number format (ctx.fmt, which takes a
+ * multiple of the play amount and gives "$2.40", "¥240", "2.40 SC" ... and the social wording); without one, the bare "2.40".
+ */
+export function fmtAmt(fmt, x100) {
+  const x = Math.round(Number(x100) || 0) / 100;
+  if (typeof fmt === 'function') {
+    try { const s = fmt(x); if (typeof s === 'string' && s && !/NaN|undefined/.test(s)) return s; } catch (e) { /* fall back */ }
+  }
+  return x.toFixed(2);
+}
+
+/**
+ * Where the Sealed Orders envelope is parked (K4): outside the cell area. All values in px of the board-wrap box. `board` is the cell
+ * area (the .board box) in wrap px, `room` the free px below the board inside the viewport, `side` the px from the board's right edge to
+ * the viewport's right edge, `cell` the cell size.
+ *   'below' (the usual case): under the board on the frame's lower-left lip, never taller than 0.62 cell nor than the room (min 20 px);
+ *            its top is always below the board's bottom edge (with room for the -6 deg tilt); the plate goes beside it
+ *   'side'  (a short landscape screen, less than 26 px under the board): beside the board's lower-right corner, outside the frame,
+ *            the plate under the envelope
+ */
+export function parkEnvelope(board, room, cell, side = 0) {
+  if (room < 26 && side >= cell * 0.3 + 30) {
+    const h = Math.round(Math.max(20, Math.min(cell * 0.5, 24))), w = Math.round(h * 132 / 136);
+    // the envelope and its plate (about 18 px) end 2 px above the viewport's bottom edge
+    return { mode: 'side', left: Math.round(board.left + board.width + cell * 0.15 + 3), top: Math.round(board.top + board.height + room - 2 - 18 - h - 2), width: w, height: h };
+  }
+  const want = Math.max(20, Math.min(cell * 0.62, Math.max(0, room - 4)));
+  const h = Math.round(want), w = Math.round(want * 132 / 136);
+  return { mode: 'below', left: Math.round(board.left + cell * 0.12), top: Math.ceil(board.top + board.height + 2 + w * 0.06), width: w, height: h };
+}

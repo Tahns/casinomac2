@@ -75,6 +75,10 @@ export function createBlueprint() {
     // the name stamp (on the frame, lower left), a stamp cue
     stamp = h('div', 'l-bp-stamp', stampSvg(tx(t, 'layers.plan', plan.name, { name: String(plan.name || plan.id).toUpperCase() }), 'steel', { rot: -6, paper: P.indigo }));
     stamp.dataset.plan = plan.id;
+    // K6: never on a cell: on a void cell of the plan when it has one (bottom row first, then the top row, leftmost), else on the frame's
+    // lower lip under the cell area (layers.css)
+    const vo = voidSpot(has, cols, plan.rows || rows); // the plan's own rows (the frame may still be the previous height)
+    if (vo) { stamp.classList.add('on-void'); stamp.style.setProperty('--sc', vo.reel); stamp.style.setProperty('--sr', vo.row); stamp.dataset.void = vo.reel + ',' + vo.row; }
     (ctx.wrap || ctx.board).appendChild(stamp);
     play(ctx, 'stamp', { vol: 0.5, pitch: 1.1 });
     // a neutral point at the board when a plan other than the default mezzanine is drawn (WP123_to_WP6 item 2)
@@ -90,6 +94,10 @@ export function createBlueprint() {
     if (L.last) L.last.ms = Math.round(now() - t0);
   }
   const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  function voidSpot(has, cols, rows) {
+    for (const y of [rows - 1, 0]) for (let x = 0; x < cols; x++) if (!has.has(x + ',' + y)) return { reel: x, row: y };
+    return null;
+  }
 
   // dash offset is not scaled again by ctx.T: dur already is the real duration
   function animRaw(el, frames, dur, easing) {

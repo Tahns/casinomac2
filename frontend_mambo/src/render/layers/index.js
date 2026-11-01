@@ -58,4 +58,15 @@ export function resetLayers() {
   }
 }
 
+/**
+ * H2-01: the Secret Entrance (door + keyhole iris) of a door round, played by the player right after CONFIRM, before the first event
+ * of the book (render/index.js playBook, request FIX_render_to_layers). Resolves when the door is gone (<= 1.2 s); null without one.
+ */
+export async function entrance(ctx, mission) {
+  if (!WP6.attached && realPlayer(ctx)) attachLayers();
+  const d = LAYERS.find((l) => l && l.id === 'dossier');
+  if (d && typeof d.entrance === 'function') return d.entrance(ctx, mission);
+  return null;
+}
+
 export default LAYERS;

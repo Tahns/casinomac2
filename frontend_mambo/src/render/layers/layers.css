@@ -11,35 +11,49 @@
 .l-bp-hole{stroke:var(--cream);stroke-width:.03;stroke-linecap:round;opacity:.45}
 .l-bp-line{fill:none;stroke:var(--cream);stroke-width:.075;stroke-linejoin:round;stroke-linecap:round}
 .l-bp-mis{fill:none;stroke:var(--steel);stroke-width:.075;stroke-linejoin:round;opacity:.85}
-.l-bp-stamp{position:absolute;z-index:9;left:calc(var(--cell,60px)*.22);bottom:calc(var(--cell,60px)*-.02);width:calc(var(--cell,60px)*1.7);height:calc(var(--cell,60px)*.52);
+/* K6: the plan name sits on the frame's lower lip, UNDER the cell area (the board ends at 5.15 cells in the wrap), never on a cell */
+.l-bp-stamp{position:absolute;z-index:9;left:calc(var(--cell,60px)*.3);top:calc(100% - var(--cell,60px)*.09);width:calc(var(--cell,60px)*1.3);height:calc(var(--cell,60px)*.4);
   pointer-events:none;background:var(--indigo);border-radius:calc(var(--cell,60px)*.1);box-shadow:0 0 0 2px var(--ink)}
 .l-bp-stamp svg{display:block}
+.l-bp-stamp.on-void{left:calc(var(--cell,60px)*(.15 + var(--sc,0) + .04));top:calc(var(--cell,60px)*(.15 + var(--sr,0) + .3));width:calc(var(--cell,60px)*.92);height:calc(var(--cell,60px)*.36);border-radius:calc(var(--cell,60px)*.08)}
 
-/* ---------- SEALED ORDERS ENVELOPE (inside .board-wrap, on the top-left corner of the frame, next to the dial badge) ---------- */
-.l-env{position:absolute;z-index:12;left:calc(var(--cell,60px)*.06);top:calc(var(--cell,60px)*-.56);width:calc(var(--cell,60px)*1.05);aspect-ratio:132/136;
-  transform:rotate(-6deg);pointer-events:none;transform-origin:50% 60%}
+/* ---------- SEALED ORDERS ENVELOPE (inside .board-wrap, parked UNDER the board on the lower-left lip, K4: never on a cell or the dial).
+   orders.js sets left / top / width / height in px (logic.js parkEnvelope) and --ecell (the cell size); the plate sits beside it. ---------- */
+.l-env{position:absolute;z-index:12;left:calc(var(--cell,60px)*.27);top:calc(var(--cell,60px)*5.2);width:calc(var(--cell,60px)*.6);height:calc(var(--cell,60px)*.62);
+  --ec:var(--ecell,var(--cell,60px));transform:rotate(-6deg);pointer-events:none;transform-origin:50% 60%}
 .l-env svg{display:block;overflow:visible}
 .l-env-flap{transform-box:fill-box;transform-origin:50% 0%}
 .l-env.open .l-env-flap{transform:scaleY(-1)}
-.l-env-plate{position:absolute;left:4%;right:4%;bottom:5%;display:flex;flex-direction:column;align-items:center;text-align:center}
+.l-env-plate{position:absolute;left:100%;top:50%;margin-left:calc(var(--ec)*.1);transform:translateY(-50%) rotate(6deg);display:flex;align-items:center}
+.l-env.side .l-env-plate{left:0;top:100%;margin:calc(var(--ec)*.06) 0 0;transform:rotate(6deg)}
+.l-env.side .l-env-plate span{font-size:10px;padding:.15em .35em}
+.l-env.side .l-env-pre{display:none}
+.l-env-pre{font-style:normal}
 .l-env-plate b{display:none}
-.l-env-plate span{font:900 calc(var(--cell,60px)*.105)/1 var(--num);color:var(--ink);white-space:nowrap;background:var(--cream);padding:.12em .3em;border-radius:.3em}
+.l-env-plate span{font:900 max(10px,calc(var(--ec)*.16))/1 var(--num);color:var(--ink);white-space:nowrap;background:var(--cream);padding:.18em .45em;border-radius:.3em;
+  border:2px solid var(--ink);box-shadow:2px 2px 0 var(--steel)}
 .l-env-plate span:empty{display:none}
+.l-env.forward .l-env-plate{visibility:hidden}
 .l-env-stamp{position:absolute;left:-8%;right:-8%;top:30%;height:34%;pointer-events:none}
 .l-env-stamp svg{display:block}
-.l-env-reveal{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:4%;white-space:nowrap;padding:.25em .55em;border-radius:.35em;
-  font:900 calc(var(--cell,60px)*.16)/1 var(--num);color:var(--ink);background:var(--cream);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--steel)}
-.l-env.forward .l-env-reveal{font-size:calc(var(--cell,60px)*.11)}
+.l-env-reveal{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:6%;white-space:nowrap;padding:.25em .55em;border-radius:.35em;
+  font:900 max(11px,calc(var(--ec)*.2))/1 var(--num);color:var(--ink);background:var(--cream);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--steel)}
+.l-env.forward .l-env-reveal{top:100%;bottom:auto;margin:4% 0 0;font-size:calc(max(11px,calc(var(--ec)*.2)) / var(--es,1.9));border-width:calc(3px / var(--es,1.9));box-shadow:calc(3px / var(--es,1.9)) calc(3px / var(--es,1.9)) 0 var(--steel)}
+.l-env-tag{position:absolute;left:50%;top:0;transform:translate(-50%,-150%);opacity:0;white-space:nowrap;pointer-events:none;padding:.15em .4em;border-radius:.2em;
+  font:900 max(9px,calc(var(--ec)*.13))/1 var(--num);color:var(--ink);background:var(--steel);border:2px solid var(--ink)}
 
 /* ---------- BALLROOM BLACKOUT (inside .board) ---------- */
-.l-dark{position:absolute;inset:0;z-index:7;pointer-events:none}
+/* z-index: above the cells (.cell.win 2), BELOW the win outlines (4) and the win pops (.popups 5): H2-05 */
+.l-dark{position:absolute;inset:0;z-index:3;pointer-events:none}
 .l-dark-svg{display:block;overflow:visible}
 .l-dark-shade{fill:var(--ink);opacity:.6}
 .l-dark-cone{fill:var(--cream);opacity:.14}
+.l-dark-ghost{fill:none;stroke:var(--cream);stroke-width:.035;stroke-dasharray:.02 .1;stroke-linecap:round;opacity:.38}
+.l-dark-ghost.g1{opacity:.2}
 .l-dark-win{fill:var(--cream);fill-opacity:.06;stroke:var(--cream);stroke-width:.05;stroke-dasharray:.16 .08}
 .l-lamp{position:absolute;top:calc(var(--cell,60px)*-.42);left:50%;width:calc(var(--cell,60px)*.62);height:calc(var(--cell,60px)*.42);transform:translateX(-50%);z-index:2}
 .l-lamp svg{display:block}
-.l-x4{position:absolute;z-index:9;width:calc(var(--cell,60px)*.66);height:calc(var(--cell,60px)*.4);transform:translate(-50%,-50%);pointer-events:none}
+.l-x4{position:absolute;z-index:4;width:calc(var(--cell,60px)*.56);height:calc(var(--cell,60px)*.34);transform:translate(-100%,-70%);pointer-events:none}
 .l-x4 svg{display:block}
 
 /* ---------- DOSSIER CUTSCENE + DOOR (over the board box, in #app) ---------- */
@@ -75,9 +89,15 @@
 .l-screen.poof .l-poof{visibility:visible}
 
 /* ---------- DEBRIEF TAB (pinned on top of the player's end-of-feature card) ---------- */
-.l-debrief{position:absolute;left:50%;top:0;transform:translate(-50%,0);margin-top:-1.7em;z-index:3;pointer-events:none;white-space:nowrap;
+/* H2-09: the tab always sits ON the card's top edge (bottom:100%), whatever the font sizes of the card and of the name */
+.l-debrief{position:absolute;left:50%;top:auto;bottom:100%;margin:0;transform:translate(-50%,0);z-index:3;max-width:96%;pointer-events:none;white-space:nowrap;
   padding:.45em 1.1em .5em;border:3px solid var(--ink);border-bottom:0;border-radius:.6em .6em 0 0;background:var(--brass);box-shadow:3px 0 0 var(--orange)}
-.l-debrief-name{font:900 clamp(10px,1.6vmin + 4px,20px)/1 var(--disp);letter-spacing:.06em;color:var(--ink)}
+.l-debrief-name{display:block;overflow:hidden;text-overflow:ellipsis;font:900 clamp(10px,1.6vmin + 4px,20px)/1 var(--disp);letter-spacing:.06em;color:var(--ink)}
+/* I3: the tab in the colour of the mission played (teal Briefing, lilac Orders, indigo Blackout): neutral, the same at R <= C and above */
+.l-debrief[data-mission="briefing"]{background:var(--teal);box-shadow:3px 0 0 var(--teal-dk,#0B6B61)}
+.l-debrief[data-mission="orders"]{background:var(--lilac);box-shadow:3px 0 0 var(--aubergine,#3B1F52)}
+.l-debrief[data-mission="blackout"]{background:var(--indigo);box-shadow:3px 0 0 var(--ink)}
+.l-debrief[data-mission="blackout"] .l-debrief-name{color:var(--cream)}
 
 /* Still: the end state, no travel (the JS already jumps to the last frame; this keeps CSS transitions off too) */
 html[data-motion="still"] .l-bp,html[data-motion="still"] .l-env,html[data-motion="still"] .l-dark,html[data-motion="still"] .l-dos,html[data-motion="still"] .l-x4{transition:none!important;animation:none!important}

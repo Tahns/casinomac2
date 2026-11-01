@@ -22,6 +22,7 @@ export const en_layers = {
   'layers.debriefText': 'Mission closed. Back to the base game.',
   'layers.envelope': 'ORDERS',
   'layers.bank': 'FILED {x}',
+  'layers.slip': '+{x}',
   'layers.reveal': '{bank} x{dial} = {x}',
   'layers.plan': '{name}',
   'layers.lit': 'x{n}',

@@ -63,6 +63,16 @@ const waitEvent = (page, type, n = 1, timeout = 120000) => page.waitForFunction(
 const waitDone = (page, timeout = 300000) => page.waitForFunction(() => window.__done === true, null, { timeout });
 const shot = async (page, name) => { fs.mkdirSync(SHOTS, { recursive: true }); const f = path.join(SHOTS, name + '.png'); await page.screenshot({ path: f }); return f; };
 async function slow(page, rate) { const c = await page.context().newCDPSession(page); await c.send('Animation.enable'); await c.send('Animation.setPlaybackRate', { playbackRate: rate }); return c; }
+// K4: the parked envelope (and its plate) against the cell area (.board box) and the Clearance Dial badge: px of overlap (0 = clear)
+const envOverlap = (page) => page.evaluate(() => {
+  const e = document.querySelector('.l-env'); const b = document.querySelector('.board');
+  if (!e || !b || e.classList.contains('forward')) return null;
+  const ov = (a, c) => Math.max(0, Math.min(a.right, c.right) - Math.max(a.left, c.left)) * Math.max(0, Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top));
+  const E = e.getBoundingClientRect(), B = b.getBoundingClientRect();
+  const pl = e.querySelector('.l-env-plate span'); const P = pl && pl.textContent ? pl.getBoundingClientRect() : null;
+  const dial = [...document.querySelectorAll('#meter-slot *')].filter((x) => /badge/i.test(String(x.className && x.className.baseVal != null ? x.className.baseVal : x.className))).map((x) => x.getBoundingClientRect());
+  return { cells: Math.round(ov(E, B) + (P ? ov(P, B) : 0)), dial: Math.round(dial.reduce((a, d) => a + ov(E, d), 0)), plate: pl ? pl.textContent : '' };
+});
 const errorsOk = (page, name) => check(`${name}: no console error`, page.__errors.length === 0, page.__errors.slice(0, 3).join(' | '));
 
 // spies (WP123_to_WP6): every audio.play(id, o) of the case cues and every heroine react(kind, info), recorded in window.__spy
@@ -96,9 +106,18 @@ async function secA(browser) {
     window.__bp = [];
     new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => {
       if (n.nodeType === 1 && n.classList.contains('l-bp')) window.__bp.push({ plan: n.dataset.plan, cells: n.querySelectorAll('.l-bp-cell').length, t: window.P.now() });
+      // K6: the plan stamp against the ACTIVE cells of its plan (the sheet's .l-bp-cell rects), measured once it has landed
+      if (n.nodeType === 1 && n.classList.contains('l-bp-stamp')) setTimeout(() => {
+        // measured after the stamp landed and a 5 <-> 6 row frame morph ended, against the symbol cells inside the board box
+        const S = n.getBoundingClientRect(), B = document.querySelector('.board').getBoundingClientRect();
+        const cells = [...document.querySelectorAll('.board .cell')].map((c) => c.getBoundingClientRect()).filter((c) => c.top >= B.top - 1 && c.bottom <= B.bottom + 1 && c.width > 0);
+        const ov = cells.reduce((a, c) => a + Math.max(0, Math.min(S.right, c.right) - Math.max(S.left, c.left)) * Math.max(0, Math.min(S.bottom, c.bottom) - Math.max(S.top, c.top)), 0);
+        (window.__stampOv = window.__stampOv || []).push({ plan: n.dataset.plan, ov: Math.round(ov), cells: cells.length, void: n.dataset.void || null, under: n.dataset.void ? null : S.top >= B.bottom - 1 });
+      }, 900);
     }))).observe(document.getElementById('app'), { childList: true, subtree: true });
   });
   const timesA = [];
+  const stampOvs = [];
   const heroA = await spy(page);
   check('A heroine found for the reaction spy', heroA);
   for (const id of ['atrium', 'lobby', 'annex', 'mezzanine']) {
@@ -116,6 +135,7 @@ async function secA(browser) {
     check(`A ${id}: draw + stamp within 0.5 s (+ frame slack 120 ms)`, r.last.ms != null && r.last.ms <= 620, `${r.last.ms} ms (draw ${r.last.drawMs} ms, budget ${r.last.total} ms)`);
     check(`A ${id}: fully inked and stamped when the reveal arrives`, !!tr && tr.ink && tr.ink.length > 0 && tr.ink.every((v) => Math.abs(v) < 0.001) && tr.bpStamp, JSON.stringify(tr && { ink: tr.ink, stamp: tr.bpStamp }));
     timesA.push(`${id} ${r.last.ms} ms`);
+    stampOvs.push(...(await page.evaluate(() => { const v = window.__stampOv || []; window.__stampOv = []; return v; })));
     check(`A ${id}: nothing left after the book`, r.left === 0);
     const ra = (await spied(page)).react.filter((x) => x.kind === 'layout').length;
     check(`A ${id}: heroine react('layout') ${id === 'mezzanine' ? 'not called (default plan)' : 'called once'}`, id === 'mezzanine' ? ra === 0 : ra === 1, ra + ' calls');
@@ -129,6 +149,7 @@ async function secA(browser) {
   check('A turbo: fully inked when the reveal arrives', !!g.rev && g.rev.ink.length > 0 && g.rev.ink.every((v) => Math.abs(v) < 0.001), JSON.stringify(g.rev && g.rev.ink));
   timesA.push(`turbo ${g.ms} ms`);
   console.log('A timings: ' + timesA.join(', '));
+  check('A K6 the plan stamp never covers an active cell of its plan', stampOvs.length >= 4 && stampOvs.every((o) => o.ov === 0 && o.under !== false), JSON.stringify(stampOvs));
   errorsOk(page, 'A');
   await page.close();
 }
@@ -152,7 +173,7 @@ async function secB(browser) {
   let last = 0;
   for (;;) {
     const s = await page.evaluate(() => ({ n: window.P.log.length, done: window.__done, env: window.__envProbe(), ev: window.P.log.filter((e) => e.kind === 'event').slice(-1)[0] }));
-    if (s.n !== last) { samples.push(s); last = s.n; }
+    if (s.n !== last) { s.ov = await envOverlap(page).catch(() => null); samples.push(s); last = s.n; }
     if (s.done) break;
     await page.waitForTimeout(15);
   }
@@ -173,6 +194,10 @@ async function secB(browser) {
   const fills = new Set(envs.flatMap((e) => e.slips));
   check('B slips are neutral (steel / lilac, never gold)', [...fills].every((f) => ['#6FA7D9', '#9A7BD0'].includes(String(f).toUpperCase())), [...fills].join(','));
   check('B the envelope never says WIN', envs.every((e) => !/\bWIN\b/i.test(e.text)));
+  const ovs = samples.map((x) => x.ov).filter(Boolean);
+  check('B K4 the parked envelope and its plate never cover a cell (no .l-env / .board intersection)', ovs.length > 3 && ovs.every((o) => o.cells === 0), JSON.stringify(ovs.filter((o) => o.cells).slice(0, 2)));
+  check('B K4 the envelope never covers the dial badge', ovs.every((o) => o.dial === 0), JSON.stringify(ovs.filter((o) => o.dial).slice(0, 2)));
+  check('B K3 the plate shows HUD money ($x.xx), not a bare multiple', ovs.some((o) => /^FILED \$\d+\.\d\d$/.test(o.plate)) && ovs.every((o) => !o.plate || /\$/.test(o.plate)), [...new Set(ovs.map((o) => o.plate))].slice(0, 4).join(' | '));
   const st = await page.evaluate(() => window.P.layers().orders.log.filter((x) => x.t === 'open'));
   const opens = b.events.filter((e) => e.type === 'caseOpen');
   check('B every caseOpen opened with bank == filed bank', st.length === opens.length && st.every((o, i) => o.bank === opens[i].bank && o.filed === opens[i].bank));
@@ -237,19 +262,29 @@ async function secC(browser) {
 async function secD(browser) {
   const page = await openPage(browser);
   const b = shortest('entrance_orders', (x) => hasEv(x, 'missionAssigned'));
+  // the door plays right after CONFIRM (entrance, H2-01): sample whether its NAME is on screen (door panel visible) every frame
+  await page.evaluate(() => {
+    window.__doorSeen = [];
+    const tick = () => { const s = document.querySelector('.l-door .l-door-svg'); if (s && getComputedStyle(s).visibility !== 'hidden' && parseFloat(getComputedStyle(s.closest('.l-door')).opacity) > 0.9) window.__doorSeen.push(performance.now()); if (!window.__doorStop) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
   await start(page, b.events, { cost: 100 });
-  await waitEvent(page, 'missionAssigned');
   const t0 = Date.now();
   await page.waitForSelector('.l-door', { timeout: 5000 }).catch(() => null);
   const door = await page.evaluate(() => { const d = document.querySelector('.l-door'); return d ? d.dataset.door : null; });
-  check('D door transition of the Coat Check door', door === 'coat', String(door));
+  check('D door transition of the Coat Check door (right after CONFIRM)', door === 'coat', String(door));
+  await page.waitForFunction(() => !document.querySelector('.l-door'), null, { timeout: 3000 }).catch(() => null);
+  const dd = await page.evaluate(() => { window.__doorStop = true; const s = window.__doorSeen; return { held: s.length ? Math.round(s[s.length - 1] - s[0]) : 0, end: window.P.layers().dossier.log.filter((x) => x.t === 'doorEnd') }; });
+  check('D H2-06 the labelled door is held >= 300 ms (layer clock) and seen on screen >= 200 ms (frames sampled)', dd.end[0] && dd.end[0].held >= 300 && dd.held >= 200, (dd.end[0] && dd.end[0].held) + ' ms held, ' + dd.held + ' ms sampled');
+  check('D H2-07 the door is gone within 1.2 s', dd.end.length === 1 && dd.end[0].ms <= 1200, JSON.stringify(dd.end));
+  await waitEvent(page, 'missionAssigned');
   await page.waitForSelector('.l-dos', { timeout: 5000 });
   const tDos = Date.now();
   // click before 1.2 s of the cutscene: ignored
   await page.mouse.click(640, 360);
   await page.waitForTimeout(150);
   const early = await page.evaluate(() => !!document.querySelector('.l-dos'));
-  check('D a tap before 1.2 s does not skip', early && Date.now() - t0 < 1200 + 1100);
+  check('D a tap before 1.2 s does not skip', early && Date.now() - tDos < 1200, (Date.now() - tDos) + ' ms after the dossier');
   const name = await page.evaluate(() => (document.querySelector('.l-dos-name') || {}).textContent);
   check('D dossier names the mission', name === 'MISSION: SEALED ORDERS', name);
   await page.waitForSelector('.l-dos.stamped', { timeout: 2000 }).catch(() => null);
@@ -279,6 +314,8 @@ async function secD(browser) {
   const ms = Date.now() - a;
   const n2 = await p2.evaluate(() => window.P.layers().dossier.log);
   check('D v1 bonus book (no missionAssigned) plays The Briefing dossier', n2.some((x) => x.t === 'cut' && x.m === 'briefing'));
+  const fsT = bb.events.find((e) => e.type === 'freeSpinTrigger');
+  check('D H2-10 the Briefing dossier names its spins', n2.some((x) => x.t === 'spins' && x.n === fsT.totalFs), JSON.stringify(n2.filter((x) => x.t === 'spins')));
   check('D door + dossier length 3.2-4.6 s (door <= 1.2 s, dossier 2.6-3.4 s)', ms >= 3200 && ms <= 4600, ms + ' ms');
   await p2.close();
   errorsOk(page, 'D');
@@ -317,12 +354,13 @@ async function secF(browser) {
     // orders: door, dossier, envelope sealed, opened
     let page = await openPage(browser, vp);
     await start(page, ord.events, { cost: 100 });
+    await page.waitForSelector('.l-door', { timeout: 5000 }); await page.waitForTimeout(260); await shot(page, `door_${tag}`);
     await waitEvent(page, 'missionAssigned');
-    await page.waitForSelector('.l-door', { timeout: 5000 }); await page.waitForTimeout(80); await shot(page, `door_${tag}`);
     await page.waitForSelector('.l-dos.open', { timeout: 6000 }); await page.waitForTimeout(250); await shot(page, `dossier_${tag}`);
     const fsWin = ord.events.findIndex((e, i) => e.type === 'winInfo' && ord.events.slice(0, i).some((x) => x.type === 'missionAssigned'));
     const nWin = ord.events.slice(0, fsWin + 1).filter((e) => e.type === 'winInfo').length;
     await waitEvent(page, 'winInfo', nWin); await page.waitForTimeout(450); await shot(page, `envelope_sealed_${tag}`);
+    { const o = await envOverlap(page); check(`F K4 envelope clear of the cells and the dial ${tag}`, !!o && o.cells === 0 && o.dial === 0, JSON.stringify(o)); }
     await waitEvent(page, 'caseOpen', 1); await page.waitForSelector('.l-env-reveal', { timeout: 4000 }); await page.waitForTimeout(220); await shot(page, `envelope_opened_${tag}`);
     errorsOk(page, `F orders ${tag}`);
     await page.close();
@@ -342,6 +380,9 @@ async function secF(browser) {
       if (await page.evaluate(() => !!document.querySelector('.l-dark-win[visibility=visible]'))) break;
     }
     await waitEvent(page, 'winInfo', nLit); await page.waitForSelector('.l-x4', { timeout: 4000 }).catch(() => null); await page.waitForTimeout(250); await shot(page, `spotlight_x4_${tag}`);
+    { // H2-05: the win pops paint above the dark board and the x4 tags (z order inside .board)
+      const z = await page.evaluate(() => { const zi = (s) => { const e = document.querySelector(s); return e ? Number(getComputedStyle(e).zIndex) || 0 : null; }; return { pops: zi('.popups'), dark: zi('.l-dark'), tag: zi('.l-x4') }; });
+      check(`F H2-05 win pops above the beam and the x4 tag ${tag}`, z.pops != null && z.dark != null && z.pops > z.dark && (z.tag == null || z.pops > z.tag), JSON.stringify(z)); }
     errorsOk(page, `F blackout ${tag}`);
     await page.close();
     // blueprint mid-draw and inked (animations slowed 10x so the frame can be caught)
