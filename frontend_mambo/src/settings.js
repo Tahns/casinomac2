@@ -28,6 +28,7 @@ const SPEC = {
   ledger: { def: true, ok: (v) => typeof v === 'boolean' },
   text: { def: 100, ok: (v) => TEXT_SIZES.includes(v) },   // reserved (P2)
   remind: { def: 0, ok: (v) => REMIND.includes(v) },       // reserved (cut candidate)
+  briefed: { def: false, ok: (v) => typeof v === 'boolean' }, // first-spin briefing card seen (SYNTHESIS 4 lever 8)
 };
 export const SETTING_KEYS = Object.freeze(Object.keys(SPEC));
 // read-only values derived from the stored ones, the OS media queries and the capabilities
@@ -252,7 +253,7 @@ export function createSettings(env = {}) {
     },
     /** Defaults for every stored setting (audio levels are reset through audio.js). */
     reset() {
-      for (const k of SETTING_KEYS) api.set(k, SPEC[k].def);
+      for (const k of SETTING_KEYS) if (k !== 'briefed') api.set(k, SPEC[k].def); // the briefing stays seen
       flush();
     },
     flush,

@@ -13,6 +13,7 @@ import { createLedger, createLedgerView } from './ui/ledger.js';
 import { createSettingsDialog } from './ui/settings_dialog.js';
 import { availableDoors, renderDoors } from './ui/doors.js';
 import { initHeroineShell } from './ui/heroine_shell.js';
+import { createBriefing } from './ui/briefing.js';
 import { trapTab, focusables, focusFirst } from './ui/dom.js';
 
 const $ = (id) => document.getElementById(id);
@@ -26,7 +27,7 @@ const S = {
   ledger: createLedger(), pacer: createPacer(), rulesData: null,
 };
 const fm = (micro) => formatMoney(micro, S.currency, { social: params.social });
-let ledgerView = null, settingsDialog = null;
+let ledgerView = null, settingsDialog = null, briefing = null;
 
 function setState(s) {
   S.state = s;
@@ -43,12 +44,22 @@ function setState(s) {
 }
 function setText(id, v) { const e = $(id); if (e) { e.textContent = v; if (e.classList.contains('val')) fitText(e); } }
 // Shrink long money strings to fit their panel (keeps the symbol; never ellipsized unless extreme).
+// Cached: nothing is measured again while the text length and the box width stay the same (a WIN update during a tumble,
+// the ledger's per-second tick); otherwise one read of the natural width and one write of the size that fits (no loop).
+const fitW = new WeakMap();
+const fitRO = typeof ResizeObserver !== 'undefined' ? new ResizeObserver((es) => { for (const en of es) fitW.set(en.target, en.target.clientWidth); }) : null;
 function fitText(e) {
+  let w = fitW.get(e); // box width from a ResizeObserver: no layout read on a WIN update or a ledger tick
+  if (w == null || !w) { w = e.clientWidth; fitW.set(e, w); if (fitRO) fitRO.observe(e); }
+  if (!w) return;
+  const key = e.textContent.length + '|' + Math.round(w);
+  if (e.dataset.fit === key) return;
+  e.dataset.fit = key;
   e.style.fontSize = '';
-  if (!e.clientWidth) return;
-  let fs = parseFloat(getComputedStyle(e).fontSize) || 14;
-  const min = fs * 0.55;
-  while (e.scrollWidth > e.clientWidth + 0.5 && fs > min) { fs *= 0.94; e.style.fontSize = fs.toFixed(1) + 'px'; }
+  const sw = e.scrollWidth;
+  if (sw <= w + 0.5) return;
+  const fs = parseFloat(getComputedStyle(e).fontSize) || 14;
+  e.style.fontSize = Math.max(fs * 0.55, (fs * w) / sw * 0.97).toFixed(1) + 'px';
 }
 function fitAll() { ['balance', 'bet', 'win'].forEach((id) => { const e = $(id); if (e) fitText(e); }); if (ledgerView) ledgerView.render(); }
 function renderBalance() { setText('balance', fm(S.balance)); if (ledgerView) ledgerView.render(); }
@@ -126,10 +137,15 @@ function onModalMutation(records) {
     else if (!open && was) noteClosed(m);
   }
 }
-function showMessage(text) {
+function setMessageTitle(text) {
+  const h = $('message-title'); if (!h) return;
+  h.textContent = text || ''; h.hidden = !text;
+  const m = $('modal-message'); if (m) { if (text) m.setAttribute('aria-labelledby', 'message-title'); else m.removeAttribute('aria-labelledby'); }
+}
+function showMessage(text, title) {
   return new Promise((res) => {
     const m = $('modal-message'); if (!m) { res(); return; }
-    setText('message-text', text); openModal(m);
+    setMessageTitle(title); setText('message-text', text); openModal(m);
     const ok = $('message-ok');
     const done = () => { closeModal(m); if (ok) ok.removeEventListener('click', done); res(); };
     if (ok) ok.addEventListener('click', done);
@@ -157,6 +173,7 @@ function confirmDoors(doors) {
     ok.addEventListener('click', yes); no.addEventListener('click', nope);
     openModal(m);
     no.focus({ preventScroll: true }); // [31]: the safe answer has the focus
+    try { host.scrollTop = 0; no.scrollIntoView({ block: 'nearest' }); } catch (e) { /* ignore */ }
   });
 }
 function fatal(err) {
@@ -165,6 +182,7 @@ function fatal(err) {
   const kind = (err && err.code && ({ ERR_AUTH: 'auth', ERR_IS: 'session', ERR_ATE: 'session', ERR_LOC: 'session', ERR_MAINTENANCE: 'maintenance' }[err.code])) || 'connection';
   // Unrecoverable: the dialog stays; its button reloads the game.
   const m = $('modal-message'), ok = $('message-ok');
+  setMessageTitle(t(kind === 'maintenance' ? 'err.title.maintenance' : 'err.title'));
   setText('message-text', t('err.' + kind)); openModal(m);
   if (ok) { ok.textContent = t('btn.reload'); ok.addEventListener('click', () => location.reload(), { once: true }); }
   return new Promise(() => {});
@@ -236,6 +254,7 @@ async function playRound(mode) {
     return false;
   }
   setState('betting');
+  if (briefing) briefing.dismiss(); // a round start closes the first-spin card (it never blocks a play)
   S.inFs = false;
   if (S.renderer && S.renderer.setCost) S.renderer.setCost(modeCost(mode));
   if (S.renderer && S.renderer.setMode) S.renderer.setMode(mode);
@@ -359,6 +378,7 @@ function settingsHost() {
     ledger: () => S.ledger.snapshot(),
     format: (micro) => fm(micro),
     rulesCtx: () => ({ currency: S.currency, formatMoney: fm }),
+    showBriefing: () => { if (briefing && S.state === 'idle' && !S.autoplay.active) briefing.show(); },
   };
 }
 
@@ -442,6 +462,7 @@ async function boot() {
   const root = $('game') || $('stage') || document.body;
   S.renderer = createRenderer(root);
   S.renderer.setTurbo(S.turbo);
+  briefing = createBriefing({ host: $('game'), settings, t, replay: !!params.replay });
   settingsDialog = createSettingsDialog({ el: $('modal-settings'), settings, audio, t, host: settingsHost() });
   ledgerView = createLedgerView({ el: $('ledger'), ledger: S.ledger, settings, t, format: fm, fit: fitText });
   settings.on('capabilities', () => { applyCaps(); if (ledgerView) ledgerView.render(); });
@@ -456,7 +477,7 @@ async function boot() {
     return showMessage(t('err.generic'));
   }
 
-  if (!params.sessionID || !params.rgsUrl) { setState('error'); return showMessage(t('err.noParams')); }
+  if (!params.sessionID || !params.rgsUrl) { setState('error'); return showMessage(t('err.noParams'), t('err.title.noParams')); }
   setState('authenticating');
   let auth;
   try { auth = await rgs.authenticate(); }
@@ -486,6 +507,8 @@ async function boot() {
     try { await settle(r); } catch (e) { return fatal(e); }
     setState('idle');
   }
+  // first visit: the briefing card (once; closing it, Escape or the first round marks it seen)
+  if (briefing && S.state === 'idle' && !modalOpen()) briefing.maybeShow(S.state);
 }
 
 boot().catch((e) => { console.error(e); try { fatal(e); } catch (x) { /* ignore */ } });

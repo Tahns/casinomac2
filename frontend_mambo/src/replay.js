@@ -9,18 +9,40 @@ const MICRO = 1_000_000;
 const HIDE = ['#btn-bet', '#btn-bet-minus', '#btn-bet-plus', '#btn-autoplay', '#btn-unleash', '#btn-menu', '#btn-turbo', '#btn-settings', '#ledger',
   '#modal-autoplay', '#modal-confirm', '.bet-controls', '.hud-bet', '#unleash-cost'];
 
+// Charter look (display font, 3 px ink border, hard ink shadow, palette tokens). The bar is docked in the control column
+// (#hud-ctrl: right column in landscape, bottom row in portrait), so it takes its own room and never covers the board.
 const STYLE = `
-body.replay #replay-ui{position:absolute;left:0;right:0;bottom:0;z-index:50;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 10px;padding:4px 8px;background:rgba(14,12,42,.82);color:#f6efe0;font:12px/1.25 system-ui,sans-serif;text-align:center;box-sizing:border-box}
-body.replay #replay-ui .rp-line{font-weight:600;white-space:normal}
-body.replay #replay-ui .rp-win{font-weight:700;color:#ffe45e}
-body.replay #replay-ui .rp-msg{width:100%}
-body.replay #replay-btn{font:700 13px system-ui,sans-serif;border:2px solid #ffe45e;background:#3b2f8f;color:#fff;border-radius:8px;padding:5px 18px;cursor:pointer;min-height:30px}
-body.replay #replay-btn[disabled]{opacity:.5;cursor:default}
-body.replay #replay-turbo{font:700 13px system-ui,sans-serif;border:2px solid #ffe45e;background:#2b2a6b;color:#fff;border-radius:8px;padding:5px 12px;cursor:pointer;min-height:30px}
-body.replay #replay-turbo[aria-pressed="true"]{background:#ffe45e;color:#1a1640}
-body.replay #replay-skip{font:700 13px system-ui,sans-serif;border:2px solid #ffe45e;background:#2b2a6b;color:#fff;border-radius:8px;padding:5px 12px;cursor:pointer;min-height:30px}
-body.replay #replay-skip[disabled]{opacity:.45;cursor:default}
-body.replay .rp-badge{position:absolute;top:4px;left:6px;z-index:50;font:700 11px system-ui,sans-serif;color:#ffe45e;background:rgba(14,12,42,.7);padding:2px 6px;border-radius:4px}
+body.replay #replay-ui{order:-1;flex:0 0 100%;display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0;max-width:100%;margin:0;padding:0;color:var(--ink);text-align:center;box-sizing:border-box;font-family:var(--ui)}
+body.replay #replay-ui .rp-line{padding:4px 6px;border:3px solid var(--ink);border-radius:10px;background:var(--cream);box-shadow:3px 3px 0 var(--ink);font-weight:800;font-size:clamp(10px,1.7vh,13px);line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+body.replay #replay-ui .rp-btns{display:flex;flex-direction:column;gap:7px}
+body.replay #replay-ui .rp-btn{min-height:34px;padding:5px 10px;border:3px solid var(--ink);border-radius:999px;font-family:var(--disp);font-weight:400;letter-spacing:.05em;font-size:clamp(12px,2.2vh,17px);color:var(--ink);background:var(--cream);box-shadow:3px 4px 0 var(--ink);cursor:pointer}
+body.replay #replay-ui .rp-btn:active:not([disabled]){transform:translate(3px,4px);box-shadow:0 0 0 var(--ink)}
+body.replay #replay-ui .rp-btn[disabled]{opacity:.5;cursor:default;box-shadow:none}
+body.replay #replay-btn{background:var(--lemon)}
+body.replay #replay-turbo[aria-pressed="true"]{background:var(--coral);color:var(--cream)}
+body.replay #replay-ui .rp-gear{align-self:center}
+body.replay #replay-ui .rp-win{padding:3px 6px;border:3px solid var(--ink);border-radius:10px;background:var(--cream);box-shadow:3px 3px 0 var(--coral),3px 3px 0 2px var(--ink);font-family:var(--num);font-weight:900;font-size:clamp(11px,2vh,16px);color:var(--coral-dk)}
+body.replay #replay-ui .rp-win:empty{display:none}
+body.replay #replay-ui .rp-msg{font-weight:800;font-size:clamp(10px,1.7vh,13px);color:var(--cream);text-shadow:1px 1px 0 var(--ink)}
+body.replay #replay-ui .rp-msg:empty{display:none}
+body.replay .rp-badge{position:absolute;top:4px;left:6px;z-index:50;padding:1px 8px;border:2px solid var(--ink);border-radius:8px;background:var(--lemon);color:var(--ink);font-family:var(--disp);font-size:11px;letter-spacing:.08em;box-shadow:2px 2px 0 var(--ink)}
+@media (max-aspect-ratio:11/10){
+  body.replay #replay-ui{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px 8px}
+  body.replay #replay-ui .rp-line{flex:1 1 100%}
+  body.replay #replay-ui .rp-btns{flex-direction:row;gap:8px}
+  body.replay #replay-ui .rp-win{flex:0 1 auto}
+  body.replay #replay-ui .rp-msg{flex:1 1 100%}
+}
+@media (orientation:landscape) and (max-height:360px){
+  body.replay #replay-ui{gap:4px}
+  body.replay #replay-ui .rp-line{padding:1px 3px;border-width:2px;font-size:8px;line-height:1.15;box-shadow:2px 2px 0 var(--ink)}
+  body.replay #replay-ui .rp-btns{gap:4px}
+  body.replay #replay-ui .rp-btn{min-height:26px;padding:1px 4px;border-width:2px;font-size:10px;box-shadow:2px 2px 0 var(--ink)}
+  body.replay #replay-ui .rp-gear{width:28px;height:28px;min-width:28px;border-width:2px;box-shadow:2px 2px 0 var(--ink)}
+  body.replay #replay-ui .rp-gear svg{width:18px;height:18px}
+  body.replay #replay-ui .rp-win{padding:1px 3px;border-width:2px;font-size:9px;box-shadow:2px 2px 0 var(--ink)}
+  body.replay #replay-ui .rp-msg{display:none}
+}
 @media (max-height:300px){body.replay .rp-badge{display:none}}
 `;
 
@@ -59,6 +81,9 @@ export async function startReplay(opts = {}) {
 
   let ui = doc.getElementById('replay-bar') || doc.getElementById('replay-ui');
   if (!ui) { ui = doc.createElement('div'); doc.body.appendChild(ui); }
+  // dock it in the control column (where SPIN normally is): it gets its own room instead of covering the board
+  const dock = doc.getElementById('hud-ctrl');
+  if (dock && ui.parentNode !== dock) dock.insertBefore(ui, dock.firstChild);
   ui.id = 'replay-ui';
   ui.hidden = false;
   ui.style.display = '';
@@ -69,15 +94,15 @@ export async function startReplay(opts = {}) {
   const winEl = mk('div', 'rp-win', '');
   const msgEl = mk('div', 'rp-msg', '');
   msgEl.setAttribute('role', 'status');
-  const btn = mk('button', '', t('replay.start'));
+  const btn = mk('button', 'rp-btn', t('replay.start'));
   btn.id = 'replay-btn';
   btn.type = 'button';
   btn.disabled = true;
   // Optional fast-forward for long bonus replays. Off by default: the replay plays exactly as it happened.
-  const turboBtn = mk('button', '', t('btn.turbo'));
+  const turboBtn = mk('button', 'rp-btn', t('btn.turbo'));
   turboBtn.id = 'replay-turbo';
   // SKIP: fast-forward the rest of the round (only while it plays); the result is the same, only the animation is shortened
-  const skipBtn = mk('button', '', t('btn.skip'));
+  const skipBtn = mk('button', 'rp-btn', t('btn.skip'));
   skipBtn.id = 'replay-skip';
   skipBtn.type = 'button';
   skipBtn.disabled = true;
@@ -95,9 +120,11 @@ export async function startReplay(opts = {}) {
   gearBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="6.4"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7"/></svg>';
   gearBtn.addEventListener('click', () => { if (typeof opts.openSettings === 'function') opts.openSettings(gearBtn); });
   (infoHost || ui).appendChild(lineEl);
-  ui.appendChild(btn);
-  ui.appendChild(turboBtn);
-  ui.appendChild(skipBtn);
+  const btns = mk('div', 'rp-btns');
+  btns.appendChild(btn);
+  btns.appendChild(turboBtn);
+  btns.appendChild(skipBtn);
+  ui.appendChild(btns);
   ui.appendChild(gearBtn);
   // jurisdiction `disabledSuperTurbo`: SKIP is the replay's super-fast level; without it only the one TURBO level is offered
   const syncCaps = () => { skipBtn.hidden = !settings.capabilities.superTurbo; turboBtn.hidden = !settings.capabilities.turbo; };

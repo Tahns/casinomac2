@@ -67,6 +67,11 @@ export const en_ui = {
   'door.fact.max': 'Max win {max}x',
   'door.fact.median': 'Median round {x}x',
   'door.fact.share': '{p} of rounds return more than the cost',
+  // the mission each door plays, one line under the door name (SYNTHESIS 2: Stage Door = Briefing, Coat Check = Sealed Orders,
+  // Service Stairs = Ballroom Blackout)
+  'door.mission.bonus': 'The Briefing: the Clearance Dial climbs in the lab',
+  'door.mission.entrance_orders': 'Sealed Orders: wins are filed in the envelope, opened at the end',
+  'door.mission.entrance_blackout': 'Ballroom Blackout: the spotlight multiplies lit clusters',
   'mode.entrance_orders': 'SECRET ENTRANCE: COAT CHECK',
   'mode.entrance_blackout': 'SECRET ENTRANCE: SERVICE STAIRS',
   // Clearance Dial (WP5_to_WP1 item 2; player-facing name, SYNTHESIS 0.2)
@@ -76,5 +81,18 @@ export const en_ui = {
   'meter.band.allegro': 'Allegro',
   'meter.band.presto': 'Presto',
   'fx.bam': 'BAM!',
+
+  // first-spin briefing card (SYNTHESIS 4 lever 8): once, skippable, shown again from Settings > Info
+  'briefing.title': 'YOUR BRIEFING',
+  'briefing.l1': 'Match 5 or more touching symbols. Wins tumble away and new symbols drop in.',
+  'briefing.l2': 'Each winning step lights the bomb-timer wire. 3 or more lit positions blast.',
+  'briefing.l3': '4 Classified Dossiers start the free spins, with one of three missions.',
+  'briefing.close': 'CLOSE',
+  'briefing.again': 'Show the briefing again',
+
+  // error dialog title plate
+  'err.title': 'CONNECTION LOST',
+  'err.title.maintenance': 'MISSION PAUSED',
+  'err.title.noParams': 'MISSING LINK',
 };
 export default en_ui;

@@ -58,15 +58,32 @@ export function createLedgerView({ el, ledger, settings, t, format, fit = null, 
   const netEl = el.querySelector('[data-ledger="net"]'), timeEl = el.querySelector('[data-ledger="time"]');
   let timer = 0;
   const on = () => settings.get('ledgerOn') !== false;
-  function render() {
+  let lastNet = null, lastTimeLen = -1, lastShow = null;
+  // the per-second tick only writes the TIME text: NET, the fit and the label are touched only when they change
+  // (no forced layout every second at idle, no per-second change of a screen reader label)
+  function render(force = false) {
     const show = on();
     el.hidden = !show;
+    const shown = show && lastShow !== true;
+    lastShow = show;
     if (!show) return;
     const s = ledger.snapshot();
-    if (netEl) netEl.textContent = formatNet(s.net, format);
-    if (timeEl) timeEl.textContent = formatElapsed(s.elapsedMs);
-    if (fit) { try { if (netEl) fit(netEl); if (timeEl) fit(timeEl); } catch (e) { /* ignore */ } }
-    el.setAttribute('aria-label', `${t('ledger.title')}: ${t('ledger.net')} ${netEl ? netEl.textContent : ''}, ${t('ledger.time')} ${timeEl ? timeEl.textContent : ''}`);
+    const netTxt = formatNet(s.net, format);
+    const timeTxt = formatElapsed(s.elapsedMs);
+    const netChanged = force === true || shown || netTxt !== lastNet;
+    if (netEl && netChanged) netEl.textContent = netTxt;
+    if (timeEl && timeEl.textContent !== timeTxt) timeEl.textContent = timeTxt;
+    if (fit) {
+      try {
+        if (netEl && netChanged) fit(netEl);
+        if (timeEl && (force === true || shown || timeTxt.length !== lastTimeLen)) fit(timeEl);
+      } catch (e) { /* ignore */ }
+    }
+    lastTimeLen = timeTxt.length;
+    if (netChanged) {
+      lastNet = netTxt;
+      el.setAttribute('aria-label', `${t('ledger.title')}: ${t('ledger.net')} ${netTxt}`);
+    }
   }
   function loop() {
     clearInterval(timer); timer = 0;
@@ -78,7 +95,7 @@ export function createLedgerView({ el, ledger, settings, t, format, fit = null, 
   if (doc && doc.addEventListener) doc.addEventListener('visibilitychange', vis);
   render(); loop();
   return {
-    render,
+    render: () => render(true),
     destroy() { clearInterval(timer); offs.forEach((f) => f()); if (doc && doc.removeEventListener) doc.removeEventListener('visibilitychange', vis); },
   };
 }

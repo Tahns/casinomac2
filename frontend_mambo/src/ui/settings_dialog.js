@@ -7,7 +7,7 @@
 // createSettingsDialog({ el, settings, audio, t, host }) -> { open(opener), close(), refresh(), el }
 //   host: { replay, openModal(el, opener), closeModal(el), getTurbo(), setTurbo(b), onTurbo(fn) -> off,
 //           autoplayState() -> 'ready'|'busy'|'active', openAutoplay(), stopAutoplay(), ledger() -> snapshot,
-//           format(micro) -> money string, rulesCtx() -> { currency, formatMoney } }
+//           format(micro) -> money string, rulesCtx() -> { currency, formatMoney }, showBriefing()? }
 import { h } from './dom.js';
 import { createTabs } from './tabs.js';
 import { formatElapsed, formatNet } from './ledger.js';
@@ -91,7 +91,11 @@ export function createSettingsDialog({ el, settings, audio, t, host }) {
     ui.rtp = h('p', { class: 'st-rtp', id: 'st-rtp', hidden: true });
     ui.rules = h('div', { class: 'st-rules', id: 'st-rules' });
     ui.version = h('p', { class: 'st-version', id: 'st-version' });
-    return [ui.rtp, ui.session, ui.rules, ui.version];
+    // first-spin briefing card, shown again on demand (host.showBriefing; absent in replay)
+    ui.briefing = typeof host.showBriefing === 'function' && !host.replay
+      ? h('button', { type: 'button', class: 'mbtn ghost st-btn st-brief', id: 'st-briefing', onclick: () => { api.close(); host.showBriefing(); } }, t('briefing.again'))
+      : null;
+    return [ui.rtp, ui.session, ui.briefing, ui.rules, ui.version];
   }
 
   // ------------------------------------------------------------------ build (once)

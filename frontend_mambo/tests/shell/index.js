@@ -6,3 +6,4 @@ import './input.test.mjs';
 import './heroine_shell.test.mjs';
 import './i18n.test.mjs';
 import './settings_shell.test.mjs';
+import './briefing.test.mjs';

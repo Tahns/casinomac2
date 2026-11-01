@@ -23,16 +23,28 @@ const num = (n) => {
 const commas = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 const pct = (r) => (Number.isFinite(Number(r)) ? (Number(r) * 100).toFixed(2) + '%' : '-');
 
-// Tiny inline glyphs (text/colour only, no assets).
+// Symbol pictures of the table: the real board art (render/symbols.js symbolMarkup, loaded by renderRules) at thumbnail size,
+// so a player can match the table to the board. Without it (unit tests, the settings Info tab before the art is loaded) a
+// small mark in the closed palette stands in (charter tokens; the Bow Tie is flamingo so it shows on cream).
+let symbolArt = null;
 const GLYPH = {
-  H1: ['#f4b942', '◆'], H2: ['#3fd0c9', '◆'], H3: ['#9b7bd8', '◆'], H4: ['#ff6b57', '◆'],
-  L1: ['#c9a27a', '●'], L2: ['#e8594f', '▲'], L3: ['#7fb8e0', '■'], L4: ['#f2e8c9', '◗'],
-  W: ['#ffe45e', '★'], S: ['#ff6b57', '✸'],
+  H1: ['var(--brass)', '◆'], H2: ['var(--teal)', '◆'], H3: ['var(--lilac)', '◆'], H4: ['var(--coral)', '◆'],
+  L1: ['var(--indigo)', '●'], L2: ['var(--coral-dk)', '▲'], L3: ['var(--steel)', '■'], L4: ['var(--flamingo)', '◗'],
+  W: ['var(--lemon)', '★'], S: ['var(--coral)', '✸'],
 };
 const glyph = (id) => {
-  const g = GLYPH[id] || ['#ccc', '●'];
+  if (typeof symbolArt === 'function') {
+    try { return `<span class="rl-glyph rl-sym" aria-hidden="true">${symbolArt(id)}</span>`; } catch (e) { /* fall back to the mark */ }
+  }
+  const g = GLYPH[id] || ['var(--ink-dim)', '●'];
   return `<span class="rl-glyph" style="color:${g[0]}" aria-hidden="true">${g[1]}</span>`;
 };
+/** Loads the board art once for the table thumbnails (browser only); harmless when it is missing. */
+export async function loadSymbolArt() {
+  if (symbolArt || typeof document === 'undefined') return symbolArt;
+  try { const m = await import('./render/symbols.js'); if (m && typeof m.symbolMarkup === 'function') symbolArt = m.symbolMarkup; } catch (e) { symbolArt = null; }
+  return symbolArt;
+}
 
 // The rules list the three doors side by side, so the Stage Door mode gets its door name here too (the main screen keeps 'SECRET ENTRANCE').
 function modeName(name) { const n = t.mode(name); return name === 'bonus' && /^SECRET ENTRANCE$/i.test(n) ? n + ': STAGE DOOR' : n; }
@@ -259,24 +271,37 @@ function planShape(l) {
 }
 
 // ---- DOM rendering -----------------------------------------------------
+// Same look as the settings dialog (charter): display-font pills, 3 px ink border, hard ink shadow, teal when selected.
 const STYLE = `
-.rules{display:flex;flex-direction:column;height:100%;max-height:100%;color:var(--fg,#f3ead7);font:14px/1.45 system-ui,sans-serif}
-.rules-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px}
-.rules-head h2{margin:0;font-size:1.1em}
+.rules{display:flex;flex-direction:column;height:100%;max-height:100%;color:var(--fg,var(--ink));font:14px/1.45 var(--ui,system-ui),sans-serif}
+.rules-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:.7em .9em .4em}
+.rules-head h2{margin:0;font-size:1.25em;font-family:var(--disp);font-weight:400;letter-spacing:.06em}
 .rules-head,.rules-tabs{flex:0 0 auto}
-.rules-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:0 8px 2px}
-.rules-tab{flex:0 0 auto;border:1px solid rgba(255,255,255,.25);background:transparent;color:inherit;border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit}
-.rules-tab[aria-selected=true]{background:rgba(255,215,0,.2);border-color:#ffd700}
-.rules-tab:focus-visible{outline:3px solid currentColor;outline-offset:2px}
-.rules-body{flex:1 1 auto;min-height:0;overflow:auto;padding:8px 12px;-webkit-overflow-scrolling:touch}
-.rules-close{border:1px solid rgba(255,255,255,.35);background:transparent;color:inherit;border-radius:6px;padding:4px 12px;cursor:pointer;font:inherit}
+.rules-tabs{display:flex;flex-wrap:wrap;gap:.4em;padding:.2em .9em .6em}
+.rules-tab{flex:0 0 auto;min-height:30px;border:3px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;padding:.2em .8em;cursor:pointer;font-family:var(--disp);font-weight:400;letter-spacing:.04em;font-size:.95em;box-shadow:2px 3px 0 var(--ink)}
+.rules-tab[aria-selected=true]{background:var(--teal);box-shadow:none;transform:translate(2px,3px)}
+.rules-tab:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.rules-body{flex:1 1 auto;min-height:0;overflow:auto;padding:.5em .9em 1.2em;border-top:3px solid var(--ink);background:rgba(255,255,255,.55);-webkit-overflow-scrolling:touch}
+.rules-close{min-height:28px;border:3px solid var(--ink);background:var(--lemon);color:var(--ink);border-radius:999px;padding:.25em 1em;cursor:pointer;font-family:var(--disp);font-weight:400;letter-spacing:.05em;box-shadow:3px 4px 0 var(--ink)}
+.rules-close:active{transform:translate(3px,4px);box-shadow:0 0 0 var(--ink)}
 .rules h3{margin:12px 0 4px;font-size:1.05em}
 .rl-table{border-collapse:collapse;width:100%;margin:6px 0}
-.rl-table th,.rl-table td{border:1px solid rgba(255,255,255,.2);padding:3px 6px;text-align:center}
+.rl-table th,.rl-table td{border:1px solid var(--ink-dim);padding:3px 6px;text-align:center}
 .rl-table tbody th{text-align:left}
 .rl-scroll{overflow-x:auto}
 .rl-glyph{font-size:1.2em;margin-right:4px}
-.rl-disclaimer{font-size:.85em;opacity:.85}
+.rl-sym{display:inline-block;width:28px;height:28px;margin-right:6px;vertical-align:middle;line-height:0}
+.rl-sym svg{width:100%;height:100%;display:block;padding:0!important;overflow:visible}
+.rl-sym svg *{animation:none!important}
+.rl-disclaimer{font-size:.85em}
+@media (max-height:360px){
+  .rules-head{padding:2px 8px}
+  .rules-head h2{font-size:12px}
+  .rules-tabs{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:2px 8px 5px;gap:4px;scrollbar-width:thin}
+  .rules-tab{min-height:24px;font-size:10px;padding:0 8px;box-shadow:2px 2px 0 var(--ink)}
+  .rules-body{padding:2px 8px 8px}
+  .rl-sym{width:20px;height:20px}
+}
 `;
 
 let dataPromise = null;
@@ -289,6 +314,7 @@ export function loadRulesData() {
 
 export async function renderRules(container, data, ctx) {
   const d = data === undefined ? await loadRulesData() : data;
+  await loadSymbolArt();
   const { sections } = buildRules(d, ctx || {});
   if (typeof document !== 'undefined' && !document.getElementById('rules-style')) {
     const st = document.createElement('style');

@@ -434,7 +434,23 @@ export async function runShellChecks() {
     note(st.focus === 'confirm-cancel', 'focus on Cancel'); note(J(st.cards) === '["bonus","entrance_orders","entrance_blackout"]', 'the FINAL data offers the three doors (Stage Door, Coat Check, Service Stairs): ' + J(st.cards)); note(st.radios === 0, 'nothing pre-selected');
     note(/100\.00/.test(st.text), 'real cost 100.00 shown: ' + snippet(st.text.replace(/\s+/g, ' '), 120)); note(!/\b\d+\s*(s|sec|seconds)\b|countdown|hurry|last chance|better odds/i.test(st.text), 'no countdown or pressure wording');
     note(plays(await mockLog()).length === 0, 'opening it sends no play');
+    const mis = await s.page.evaluate(() => [...document.querySelectorAll('#door-cards .door .door-mission')].map((e) => e.textContent.split(':')[0]));
+    note(J(mis) === '["The Briefing","Sealed Orders","Ballroom Blackout"]', 'each card names the mission its door plays: ' + J(mis));
     await s.close();
+    // every viewport: CANCEL and CONFIRM on screen without scrolling the page, the box does not need to scroll (H1-05 / H4-F2)
+    for (const vp of VIEWPORTS) {
+      const s2 = await sess({}, { viewport: vp });
+      await s2.click('#btn-unleash'); await s2.page.waitForSelector('#modal-confirm.open', { timeout: 3000 });
+      await s2.page.click('.door[data-mode=entrance_orders]', { timeout: 2000 }).catch(() => {});
+      const fit = await s2.page.evaluate(() => {
+        const box = document.querySelector('#modal-confirm .modal-box'); const vh = innerHeight;
+        const inView = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return r.top >= 0 && r.bottom <= vh; };
+        const mis = [...document.querySelectorAll('#door-cards .door-mission')].every((e) => e.getBoundingClientRect().height > 0);
+        return { sh: box.scrollHeight, ch: box.clientHeight, ok: inView('confirm-ok'), cancel: inView('confirm-cancel'), mis };
+      });
+      note(fit.sh <= fit.ch + 1 && fit.ok && fit.cancel && fit.mis, `${vp.name}: box scrollHeight ${fit.sh} <= clientHeight ${fit.ch}, CANCEL / CONFIRM in view ${fit.cancel}/${fit.ok}, mission lines shown ${fit.mis}`);
+      await s2.close();
+    }
     const base = JSON.parse(fs.readFileSync(path.join(FRONT, 'data/rules_data.json'), 'utf8')); void base;
     const doors = await doctoredRules();
     s = await sess({}, { routes: (ctx) => ctx.route('**/data/rules_data.json', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: J(doors) })) });
@@ -444,6 +460,40 @@ export async function runShellChecks() {
     await s.page.click('.door[data-mode=entrance_blackout]'); await s.page.click('#confirm-ok'); await sleep(1200);
     const pl = plays(await mockLog());
     note(pl.length === 1 && pl[0].body.mode === 'entrance_blackout', 'the chosen door is the mode played: ' + J(pl.map((p) => p.body.mode)));
+    await s.close();
+    return [bad ? FAIL : PASS, ...ev];
+  });
+
+  await check('BRIEF', 'first-spin briefing card (L8): once, CLOSE focused, Escape closes, never blocks a play, absent in replay, shown again from Info', async () => {
+    const ev = []; let bad = 0; const note = (ok, m) => { if (!ok) bad++; ev.push((ok ? 'ok   ' : 'FAIL ') + m); };
+    await mockCfg({ balance: 5000000000, force: 'loss' });
+    let s = await sess({});
+    await sleep(300);
+    let st = await s.page.evaluate(() => { const b = document.getElementById('briefing-card'); return { open: !!b && !b.hidden, focus: document.activeElement && document.activeElement.id, modal: !!document.querySelector('.modal.open'), inert: document.getElementById('hud-ctrl').hasAttribute('inert') }; });
+    note(st.open && st.focus === 'briefing-close' && !st.modal && !st.inert, 'first visit: card open, focus on CLOSE, not a modal, controls not inert: ' + J(st));
+    await s.page.keyboard.press('Escape'); await sleep(150);
+    st = await s.page.evaluate(() => ({ open: !document.getElementById('briefing-card').hidden, stored: localStorage.getItem('am_settings') }));
+    note(!st.open && /"briefed":true/.test(st.stored || ''), 'Escape closes it and marks it seen (inside am_settings): ' + J(st));
+    await s.close();
+    // a second session that never closed it: a play request goes through and closes the card
+    s = await sess({});
+    await s.click('#btn-bet'); await sleep(1500);
+    st = await s.page.evaluate(() => ({ open: !document.getElementById('briefing-card').hidden }));
+    note(plays(await mockLog()).length >= 1 && !st.open, 'SPIN with the card open plays at once and the card closes: ' + plays(await mockLog()).length + ' play(s)');
+    // reload: not shown again; Settings > Info shows it again
+    await s.page.reload({ waitUntil: 'load' }); await s.waitIdle(15000).catch(() => {}); await sleep(300);
+    st = await s.page.evaluate(() => { const b = document.getElementById('briefing-card'); return { open: !!b && !b.hidden }; });
+    note(!st.open, 'after it was seen, a reload does not show it');
+    await openSettings(s, VIEWPORTS[0]); await s.page.click('#st-tab-info'); await sleep(200);
+    await s.page.click('#st-briefing'); await sleep(200);
+    st = await s.page.evaluate(() => ({ open: !document.getElementById('briefing-card').hidden, focus: document.activeElement && document.activeElement.id }));
+    note(st.open && st.focus === 'briefing-close', 'Settings > Info > "Show the briefing again" opens it with the focus on CLOSE: ' + J(st));
+    await s.page.click('#briefing-close'); await sleep(100);
+    await s.close();
+    s = await sess({ replay: 'true', game: 'agent_mambo', version: '2', mode: 'base', event: '1', amount: '1000000', sessionID: null }, { noWait: true });
+    await sleep(2500);
+    st = await s.page.evaluate(() => { const b = document.getElementById('briefing-card'); return { open: !!b && !b.hidden }; });
+    note(!st.open, 'replay: no briefing card');
     await s.close();
     return [bad ? FAIL : PASS, ...ev];
   });

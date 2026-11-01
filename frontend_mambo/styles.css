@@ -82,7 +82,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
   box-shadow:var(--o) var(--o) 0 0 var(--coral),var(--o) var(--o) 0 calc(var(--fs)*.14) var(--ink);
   text-align:center;min-width:0;overflow:hidden}
 .stat::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(rgba(43,42,107,.3) 1.1px,transparent 1.5px) 0 0/5px 5px;-webkit-mask-image:linear-gradient(160deg,transparent 58%,#000);mask-image:linear-gradient(160deg,transparent 58%,#000)}
-.lbl{display:block;font-size:calc(var(--fs)*.72);letter-spacing:.12em;color:var(--ink);text-transform:uppercase;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl{display:block;font-size:max(9px,calc(var(--fs)*.72));letter-spacing:.12em;color:var(--ink);text-transform:uppercase;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .val{display:block;font-family:var(--num);font-size:calc(var(--fs)*1.45);font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hud-win .val{color:var(--coral-dk)}
 .hud-win.hot{animation:winhot .5s steps(3,end);background:var(--lemon)}
@@ -151,7 +151,7 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
   box-shadow:var(--o) calc(var(--o)*1.2) 0 var(--ink);min-width:0;font-family:var(--disp)}
 .unleash svg{flex:0 0 auto;width:calc(var(--fs)*1.5);height:calc(var(--fs)*1.5);fill:var(--coral);stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .u-txt{display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:0}
-.u-txt small{font-size:.78em;font-weight:900;color:var(--ink);letter-spacing:.02em;white-space:nowrap;font-family:var(--num)}
+.u-txt small{font-size:max(9px,.78em);font-weight:900;color:var(--ink);letter-spacing:.02em;white-space:nowrap;font-family:var(--num)}
 .u-txt small:empty{display:none}
 .unleash:hover:not(:disabled){transform:rotate(-1.5deg)}
 .unleash:active:not(:disabled){transform:translate(2px,3px);box-shadow:0 0 0 var(--ink)}
@@ -169,6 +169,8 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
   .unleash svg{display:none}
   .stat{padding:calc(var(--fs)*.25) calc(var(--fs)*.4)}
   .val{font-size:calc(var(--fs)*1.25)}
+  .lbl{font-size:max(7px,calc(var(--fs)*.72));letter-spacing:.05em;line-height:1}
+  .u-txt small{font-size:max(7px,.78em);letter-spacing:0}
   .mini{min-width:15px;min-height:15px;width:15px;height:15px}
   .stat{padding-left:3px;padding-right:3px}
   #mascot-slot{margin:0 2px 2px}
@@ -202,6 +204,9 @@ body.state-playing .spin svg,body.state-betting .spin svg{animation:spinrot .9s 
   .tools{display:flex;flex:0 0 100%;order:5;justify-content:center;gap:calc(var(--gap)*1.5)}
   #btn-menu{display:none}
   .tbtn{flex:0 0 var(--s)}
+  /* the heroine bust gets a left strip of the control rows (>= 120 x 150 px at 425 x 812); the cluster centres in the rest */
+  body.has-heroine:not(.replay) #hud-ctrl{padding-left:calc(min(28vw,124px) + var(--gap))}
+  body.has-heroine:not(.replay) .unleash{flex:0 0 min(86%,300px);margin:0 calc(50% - min(43%,150px))}
 }
 @media (max-aspect-ratio:11/10) and (max-height:620px){
   .spin{--sp:clamp(54px,16vw,90px)}
@@ -376,24 +381,20 @@ body.rendered:not(.state-booting):not(.state-authenticating) #loading *,body.sta
 .mbtn:active{transform:translate(3px,4px);box-shadow:0 0 0 var(--ink)}
 #modal-info .rules{--fg:var(--ink);width:min(940px,96vw);height:min(600px,94%);background:var(--cream);color:var(--ink);border:4px solid var(--ink);border-radius:18px;box-shadow:7px 8px 0 var(--coral),7px 8px 0 3px var(--ink);overflow:hidden;font-size:clamp(11px,2.3vmin,15px)}
 #modal-info .rules-head h2{font-family:var(--disp);letter-spacing:.06em;color:var(--coral-dk)}
-#modal-info .rules-close{border:3px solid var(--ink);background:var(--lemon);color:var(--ink);font-weight:900;box-shadow:2px 3px 0 var(--ink)}
-#modal-info .rules-tab{border:2px solid var(--ink);color:var(--ink);font-weight:800;background:#fff}
-#modal-info .rules-tab[aria-selected=true]{color:var(--ink);background:var(--teal);border-color:var(--ink)}
-#modal-info .rl-table th,#modal-info .rl-table td{border-color:rgba(20,16,43,.45)}
-#modal-info .rules-body{background:transparent}
+/* tabs, close button and body: src/rules.js STYLE (same pills as the settings dialog) */
 
 /* ---------- replay ---------- */
-body.replay #app{padding-bottom:clamp(54px,10vh,66px)}
+/* the replay controls (src/replay.js) are docked in #hud-ctrl: right column in landscape, bottom row in portrait */
 body.replay #hud-info,body.replay .only-play,body.replay #btn-menu{display:none!important}
-body.replay #hud-info .hud-win{display:block}
-body.replay #hud-ctrl{padding-top:var(--gap)}
-@media (max-aspect-ratio:11/10){body.replay #hud-ctrl{display:none}}
-#replay-bar:not([hidden]){position:absolute;left:0;right:0;bottom:0;z-index:50}
+body.replay #hud-ctrl{padding-top:var(--gap);align-content:center}
+@media (max-aspect-ratio:11/10){body.replay #hud-ctrl{align-content:flex-start;padding-top:calc(var(--gap)*1.4)}}
 
 /* ---------- loading ---------- */
-#loading{position:absolute;inset:0;z-index:100;display:grid;place-items:center;background:radial-gradient(rgba(154,123,208,.25) 1.6px,transparent 2.2px) 0 0/10px 10px,var(--indigo);transition:opacity .7s steps(4,end) .15s,visibility 0s linear .9s}
+#loading{position:absolute;inset:0;z-index:100;display:grid;place-items:center;background:radial-gradient(rgba(154,123,208,.25) 1.6px,transparent 2.2px) 0 0/10px 10px,var(--indigo);transition:opacity .25s steps(3,end),visibility 0s linear .25s}
 body.rendered:not(.state-booting):not(.state-authenticating) #loading{opacity:0;visibility:hidden;pointer-events:none}
 body.state-error #loading{opacity:0;visibility:hidden;pointer-events:none}
+/* a round never plays under the veil (H1-09): the moment a play starts the veil is gone */
+body:is(.state-betting,.state-playing,.state-settling) #loading{opacity:0!important;visibility:hidden!important;pointer-events:none;transition:none}
 .ld-inner{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,2.2vmin,18px);padding:0 16px;text-align:center}
 .ld-title{font-family:var(--disp);font-size:clamp(18px,7vmin,64px);letter-spacing:.05em;color:var(--lemon);-webkit-text-stroke:.14em var(--ink);paint-order:stroke fill;text-shadow:.05em .07em 0 var(--ink)}
 .ld-gem svg{width:clamp(28px,10vmin,80px);height:auto;animation:ldgem 1s steps(1,end) infinite;overflow:visible}
@@ -423,9 +424,7 @@ body.state-error #loading{opacity:0;visibility:hidden;pointer-events:none}
   .mbtn{padding:4px 10px}
   .fld,.chk{margin:1px 0}
   .fld select,.fld input{padding:2px 5px}
-  #modal-info .rules-tabs{flex:0 0 auto;padding-bottom:3px}
-  #modal-info .rules-head{padding:2px 8px}
-  #modal-info .rules-tab,#modal-info .rules-close{padding:2px 8px;font-size:10px}
+  #modal-info .rules-close{padding:1px 10px;font-size:10px;min-height:22px}
   .betrow .val{font-size:calc(var(--fs)*1.05)}
 }
 

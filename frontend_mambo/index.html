@@ -36,16 +36,16 @@
   <div id="meter-slot"></div>
 
   <section id="hud-info" class="hud-info" aria-label="Status">
-    <div class="stat hud-bal"><span class="lbl" data-i18n="label.balance">BALANCE</span><b id="balance" class="val">0.00</b></div>
+    <div class="stat hud-bal"><span class="lbl" data-i18n="label.balance">BALANCE</span><b id="balance" class="val">-</b></div>
     <div class="stat hud-bet">
       <span class="lbl" data-i18n="label.bet">BET</span>
       <div class="betrow bet-controls">
         <button id="btn-bet-minus" class="mini only-play" type="button" data-i18n-title="btn.betMinus"><svg viewBox="0 0 24 24"><path d="M5 12h14" /></svg></button>
-        <b id="bet" class="val">0.00</b>
+        <b id="bet" class="val">-</b>
         <button id="btn-bet-plus" class="mini only-play" type="button" data-i18n-title="btn.betPlus"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" /></svg></button>
       </div>
     </div>
-    <div class="stat hud-win"><span class="lbl" data-i18n="label.win">WIN</span><b id="win" class="val">0.00</b></div>
+    <div class="stat hud-win"><span class="lbl" data-i18n="label.win">WIN</span><b id="win" class="val">-</b></div>
     <div id="freespin-box" class="stat fsbox"><span class="lbl" data-i18n="label.freeSpins">FREE SPINS</span><b id="freespin-counter" class="val"></b></div>
     <!-- v2: session summary (net position, time played); shown while settings 'ledgerOn' (src/ui/ledger.js) -->
     <div id="ledger" class="stat ledger" role="group" hidden>
@@ -99,7 +99,7 @@
       <label class="fld"><span data-i18n="autoplay.spins">Number of spins</span>
         <select id="ap-count"><option>10</option><option>25</option><option>50</option><option>75</option><option>100</option><option>250</option><option>500</option></select></label>
       <label class="chk"><input type="checkbox" id="ap-stop-bigwin" checked><i></i><span data-i18n="autoplay.stopBigWin">Stop on a big win</span></label>
-      <label class="chk"><input type="checkbox" id="ap-stop-feature" checked><i></i><span data-i18n="autoplay.stopFeature">Stop when free spins start</span></label>
+      <label class="chk"><input type="checkbox" id="ap-stop-feature" checked><i></i><span data-i18n="autoplay.stopFeature">Stop when a mission (free spins) starts</span></label>
       <label class="fld"><span data-i18n="autoplay.stopBelow">Stop if balance falls below</span>
         <input type="number" id="ap-stop-below" min="0" step="1" value="0" inputmode="decimal"></label>
       <div class="modal-actions">
@@ -122,6 +122,7 @@
   </div>
   <div id="modal-message" class="modal" hidden role="alertdialog" aria-modal="true">
     <div class="modal-box">
+      <h2 id="message-title" hidden></h2>
       <p id="message-text"></p>
       <div class="modal-actions"><button id="message-ok" class="mbtn" type="button" data-i18n="btn.ok">OK</button></div>
     </div>

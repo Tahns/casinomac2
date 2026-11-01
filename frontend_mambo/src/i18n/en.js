@@ -3,7 +3,7 @@ export const en = {
   'game.title': 'Agent Mambo',
   'mode.base': 'Base Game',
   'mode.bonus': 'SECRET ENTRANCE',
-  'mode.freegame': 'Mission Briefing Free Spins',
+  'mode.freegame': 'Mission Free Spins',
 
   'btn.play': 'BET',
   'btn.spin': 'SPIN',
@@ -70,7 +70,7 @@ export const en = {
   'autoplay.title': 'AUTOPLAY',
   'autoplay.spins': 'Number of spins',
   'autoplay.stopBigWin': 'Stop on a big win',
-  'autoplay.stopFeature': 'Stop when the Mission Briefing free spins start',
+  'autoplay.stopFeature': 'Stop when a mission (free spins) starts',
   'autoplay.stopBelow': 'Stop if balance falls below',
   'autoplay.start': 'START AUTOPLAY',
   'autoplay.stop': 'STOP AUTOPLAY',
