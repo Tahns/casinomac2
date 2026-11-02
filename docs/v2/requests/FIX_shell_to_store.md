@@ -1,5 +1,7 @@
 # FIX shell -> store art (round 1): H4-F8 / I1, the 3:4 store tile has no title
 
+Status: done (38df028)
+
 Not in the shell's files (the tile is built by `frontend_mambo/tools/art/gen_store_art_mambo.mjs` / `render_store_art.mjs`, output
 `tools/art/store_v2/agent_mambo_tile_3x4.png`), so the shell fixer did not touch it.
 

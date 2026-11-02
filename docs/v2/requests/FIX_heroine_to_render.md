@@ -42,6 +42,8 @@ inspectrice at once, under the end card, before the bow; no folding screen plays
 
 # FIX heroine -> render (round 2): H2-11 still open, plus main.js (shell)
 
+Status: done (d832a8c)
+
 Status 2026-11-01: render/index.js:1090 and :1140 still say only the generic keys, and main.js:336 says the generic `'mascot.fs'` pool on every
 door confirm. Seen live: the Coat Check round at 425x812 said "LIGHTS, DOSSIER, ACTION." (verify1/shots/orders_425x812_t300.png).
 

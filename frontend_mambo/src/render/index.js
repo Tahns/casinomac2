@@ -1059,7 +1059,7 @@ export function createRenderer(rootEl) {
     const sc = scatterCells(ev);
     clearWins();
     cue('scatter', { n: 4 }); cue('stamp'); cue('rumble');
-    react('trigger', rinfo({ mission: ev.mission }), () => pose('shock')); say('mascot.shock', 2000, true);
+    react('trigger', rinfo({ mission: ev.mission }), () => pose('shock'));
     sc.forEach((cell) => { cell.el.classList.add('fuse'); const p = cellCenter(cell.c, cell.r); fxm.glow(p.x, p.y, p.size * 1.3, '240,71,47', 1.0); fxm.sparks(p.x, p.y, FX_COLORS.lemon, p.size * .35, 14, 6); });
     cellsEl.querySelectorAll('.cell:not(.fuse)').forEach((e) => e.classList.add('dim'));
     shake(.8, 700);
