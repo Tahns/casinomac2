@@ -22,11 +22,17 @@ export function createOrders() {
   const alive = (my) => () => my === token;
 
   const money = (ctx, x100) => fmtAmt(ctx && ctx.fmt, x100);
-  // the plate text; on a short screen (side parking) only its tail (the amount) shows, the head (FILED / bank x dial) is dropped by CSS
-  function setPlate(full, tail) {
+  // the parked tilt: -6 deg, upright on the top lip in portrait (layers.css .l-env.fit.top)
+  const tilt = () => (env && env.classList.contains('top') ? 0 : -6);
+  // the plate text. On a small screen (a fit box: side / top parking) the plate has two lines: the caps label (lbl: FILED, OPENED after the
+  // case opened) on its own line over the amount (the tail); the head of the full line (FILED / bank x dial =) is then drawn by CSS from
+  // data-lbl, so the plate's text stays the full line whatever the layout
+  function setPlate(full, tail, lbl) {
     if (!plate) return;
     const cut = tail && full.endsWith(tail) ? full.length - tail.length : 0;
-    plate.innerHTML = cut ? `<i class="l-env-pre">${esc(full.slice(0, cut))}</i>${esc(tail)}` : esc(full);
+    const head = cut ? full.slice(0, cut) : '';
+    const label = lbl || head.trim();
+    plate.innerHTML = cut ? `<i class="l-env-pre" data-lbl="${esc(label)}">${esc(head)}</i>${esc(tail)}` : esc(full);
   }
 
   // K4: park the envelope outside the cell area, inside the viewport, clear of #hud-info (logic.js parkEnvelope), sized to the room
@@ -46,12 +52,24 @@ export function createOrders() {
       if (hud && hud.top >= B.bottom - 2 && hud.left < B.right && hud.right > B.left) floor = Math.min(floor, hud.top - 3);
       const L = topLip(B, cell, { tuck: 3 });
       const lip = { left: (L.left - W.left) * k, right: (L.right - W.left) * k, top: (L.top - W.top) * k, bottom: (L.bottom - W.top) * k };
-      const plateW = plate && plate.textContent ? plate.offsetWidth : 0;
-      const p = parkEnvelope({ left: (B.left - W.left) * k, top: (B.top - W.top) * k, width: B.width * k, height: B.height * k },
-        (floor - B.bottom) * k, cell * k, (vw - 4 - B.right) * k, { portrait: isPortrait(), lip, plateW });
-      env.classList.toggle('side', p.mode === 'side');
-      env.classList.toggle('top', p.mode === 'top');
-      env.classList.toggle('tight', !!p.tight);
+      // the buttons right of the board (the menu button on a short landscape screen): the side spot stays clear of them
+      const avoid = [...document.querySelectorAll('#app button')].map((el) => (el.closest('.board-wrap') ? null : shownRect(el))).filter((r) => r && r.left >= B.right - 1)
+        .map((r) => ({ left: (r.left - W.left) * k, top: (r.top - W.top) * k, right: (r.right - W.left) * k, bottom: (r.bottom - W.top) * k }));
+      const board = { left: (B.left - W.left) * k, top: (B.top - W.top) * k, width: B.width * k, height: B.height * k };
+      const spot = () => parkEnvelope(board, (floor - B.bottom) * k, cell * k, (vw - 4 - B.right) * k,
+        { portrait: isPortrait(), lip, avoid, plateW: plate && plate.textContent ? plate.offsetWidth : 0, plateH: plate && plate.textContent ? plate.offsetHeight : 0 });
+      const apply = (p) => {
+        env.classList.toggle('side', p.mode === 'side');
+        env.classList.toggle('top', p.mode === 'top');
+        env.classList.toggle('fit', !!p.fit);
+        env.classList.toggle('stack', !!p.stack);
+        env.classList.toggle('tight', !!p.tight);
+      };
+      let p = spot();
+      // the compact plate (fit box) has another size than the wide one: measure it again in its own layout and park once more
+      const before = env.className;
+      apply(p);
+      if (env.className !== before) { p = spot(); apply(p); }
       env.dataset.park = p.mode;
       Object.assign(env.style, { left: p.left + 'px', top: p.top + 'px', width: p.width + 'px', height: p.height + 'px' });
       env.style.setProperty('--ecell', (cell * k).toFixed(1) + 'px');
@@ -80,10 +98,11 @@ export function createOrders() {
       window.addEventListener('resize', onR);
       offResize = () => window.removeEventListener('resize', onR);
       // the frame can change size under the envelope (a 5 <-> 6 row morph, the shell's layout): park again
-      if (typeof ResizeObserver === 'function') { try { ro = new ResizeObserver(onR); ro.observe(ctx.wrap); } catch (e) { ro = null; } }
+      // and the FREE SPINS / COMBO plates on the top lip change width with their text (10/10): the top-lip spot is measured again
+      if (typeof ResizeObserver === 'function') { try { ro = new ResizeObserver(onR); ro.observe(ctx.wrap); ctx.wrap.querySelectorAll('.chip.fsc, .chip.combo').forEach((c) => ro.observe(c)); } catch (e) { ro = null; } }
     }
     // pops up in its own spot (grows from 0.6: every frame stays inside the parked box, never across the cells or past the viewport)
-    anim(ctx, env, [{ transform: 'scale(.6) rotate(-14deg)', opacity: 0 }, { transform: 'scale(1) rotate(-6deg)', opacity: 1 }], { duration: 333, easing: 'steps(4,end)' });
+    anim(ctx, env, [{ transform: `scale(.6) rotate(${tilt() - 8}deg)`, opacity: 0 }, { transform: `scale(1) rotate(${tilt()}deg)`, opacity: 1 }], { duration: 333, easing: 'steps(4,end)' });
     return env;
   }
 
@@ -134,7 +153,7 @@ export function createOrders() {
     park(ctx); // after the plate text: the top-lip spot is checked against the plate width
     slipTag(ctx, amt);
     if (bank.slips === 1) { play(ctx, 'caseSeal'); stampOn(ctx, tx(t, 'layers.sealed', 'SEALED'), 'sealed'); }
-    else if (!isCalm(ctx) && env) anim(ctx, env, [{ transform: 'rotate(-6deg) scale(.9)' }, { transform: 'rotate(-6deg)' }], { duration: 167, easing: 'steps(2,end)' }); // a squeeze, never out of its box
+    else if (!isCalm(ctx) && env) anim(ctx, env, [{ transform: `rotate(${tilt()}deg) scale(.9)` }, { transform: `rotate(${tilt()}deg)` }], { duration: 167, easing: 'steps(2,end)' }); // a squeeze, never out of its box
     return null;
   }
 
@@ -175,7 +194,7 @@ export function createOrders() {
         const sc = Math.max(1.2, Math.min(4, (W.width / 6.3) * 1.9 / Math.max(1, E.width)));
         env.style.setProperty('--es', sc.toFixed(3));
         env.classList.add('forward');
-        await anim(ctx, env, [{ transform: 'translate(0,0) rotate(-6deg) scale(1)' }, { transform: `translate(${dx}px,${dy}px) rotate(0deg) scale(${sc})` }], { duration: 250, easing: 'steps(3,end)' });
+        await anim(ctx, env, [{ transform: `translate(0,0) rotate(${tilt()}deg) scale(1)` }, { transform: `translate(${dx}px,${dy}px) rotate(0deg) scale(${sc})` }], { duration: 250, easing: 'steps(3,end)' });
       } catch (e) { /* ignore */ }
     }
     if (!ok()) return;
@@ -193,7 +212,7 @@ export function createOrders() {
     if (!ok()) return;
     // back to its place under the board, still open, until the next spin; the plate beside it keeps the line (bank x dial = result)
     if (revealEl) { revealEl.remove(); revealEl = null; }
-    setPlate(line, '= ' + money(ctx, x));
+    setPlate(line, money(ctx, x), tx(t, 'layers.opened', 'OPENED'));
     if (env.classList.contains('forward')) {
       env.classList.remove('forward');
       env.style.transform = '';

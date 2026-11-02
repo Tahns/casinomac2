@@ -27,14 +27,27 @@
 .l-env-flap{transform-box:fill-box;transform-origin:50% 0%}
 .l-env.open .l-env-flap{transform:scaleY(-1)}
 .l-env-plate{position:absolute;left:100%;top:50%;margin-left:calc(var(--ec)*.1);transform:translateY(-50%) rotate(6deg);display:flex;align-items:center}
-.l-env.side .l-env-plate{left:0;top:100%;margin:calc(var(--ec)*.06) 0 0;transform:rotate(6deg)}
-.l-env.side .l-env-plate span{font-size:10px;padding:.15em .35em}
-.l-env.side .l-env-pre{display:none}
-/* portrait (K4 round 2): a small envelope on the frame's top lip, left of the FREE SPINS plate; the compact plate (the amount) beside it */
-.l-env.top .l-env-plate{margin-left:3px}
-.l-env.top .l-env-plate span{font-size:10px;padding:.15em .35em;border-width:1.5px;box-shadow:1.5px 1.5px 0 var(--steel)}
-.l-env.top.tight .l-env-plate span{font-size:9px;padding:.12em .3em}
-.l-env.top .l-env-pre{display:none}
+/* small screens (render round 2; logic.js parkEnvelope 'side' on a short landscape screen, 'top' on the frame's top lip in portrait): a FIT box.
+   The box is the envelope's body only (112:64, >= 22 px wide): the SVG keeps its proportions and its empty band above the body (where the
+   flap opens and the slips drop in) hangs outside the box. The compact plate has two lines: the FILED caps label (8 px, its own line,
+   drawn from data-lbl) over the amount. Parked open, the flap is tucked away (it would stand up over the meter / the cells). */
+.l-env.fit svg{position:absolute;left:-8.93%;top:-96.875%;width:117.86%;height:212.5%}
+.l-env.fit.open:not(.forward) .l-env-flap{visibility:hidden}
+.l-env.fit .l-env-stamp{left:-4%;right:-4%;top:4%;height:72%}
+.l-env.fit .l-env-plate{margin-left:3px}
+.l-env.fit.stack .l-env-plate{left:0;top:100%;margin:3px 0 0;transform:rotate(6deg)}
+.l-env.fit .l-env-plate span{display:flex;flex-direction:column;align-items:flex-start;font-size:10px;line-height:.9;padding:1px 3px 1.5px;border-width:1px;border-radius:2px;
+  box-shadow:1px 1px 0 var(--steel)}
+/* on the top lip (portrait) the envelope stands upright and the plate sits on the lip's floor, under the meter track (about 16 px high:
+   the ink outline is a ring shadow, it adds no height) */
+.l-env.fit.top{transform:none}
+.l-env.fit.top .l-env-plate{top:auto;bottom:0;transform:none}
+.l-env.fit.top .l-env-plate span{font-size:9px;line-height:.8;padding:.5px 2.5px 1px;border:0;box-shadow:0 0 0 1px var(--ink),1.5px 1.5px 0 1px var(--steel)}
+.l-env.fit.top .l-env-pre::before{font-size:7.5px;line-height:.85;margin-bottom:.5px}
+.l-env.fit.top.tight .l-env-plate{margin-left:-3px}
+.l-env.fit.top.tight .l-env-plate span{font-size:8.5px;padding:.5px 2px 1px}
+.l-env.fit .l-env-pre{display:block;font-size:0;line-height:0}
+.l-env.fit .l-env-pre::before{content:attr(data-lbl);display:block;font:900 8px/1 var(--num);letter-spacing:.06em;text-transform:uppercase;color:var(--coral-dk);margin-bottom:1px}
 .l-env-pre{font-style:normal}
 .l-env-plate b{display:none}
 .l-env-plate span{font:900 max(10px,calc(var(--ec)*.16))/1 var(--num);color:var(--ink);white-space:nowrap;background:var(--cream);padding:.18em .45em;border-radius:.3em;

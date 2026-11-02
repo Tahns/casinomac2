@@ -81,7 +81,11 @@ const boxProbe = (page, sel) => page.evaluate((sel) => {
   const out = (r) => (r ? Math.round(Math.max(0, -r.left) + Math.max(0, -r.top) + Math.max(0, r.right - innerWidth) + Math.max(0, r.bottom - innerHeight)) : 0);
   const R = (r) => (r ? [r.left, r.top, r.right, r.bottom].map(Math.round) : null);
   return { cells: Math.round(ov(E, B) + ov(P, B)), cell: Math.round(cells.reduce((a, c) => a + ov(E, c) + ov(P, c), 0)), dial: Math.round(dial.reduce((a, d) => a + ov(E, d), 0)),
-    hud: Math.round(ov(E, H) + ov(P, H)), out: out(E) + out(P), plate: pl ? pl.textContent : '', park: e.dataset.park || e.dataset.lip || e.dataset.void || 'low', E: R(E), P: R(P), H: R(H) };
+    hud: Math.round(ov(E, H) + ov(P, H)), out: out(E) + out(P), plate: pl ? pl.textContent : '', park: e.dataset.park || e.dataset.lip || e.dataset.void || 'low', E: R(E), P: R(P), H: R(H),
+    // render round 2 (small screens): the envelope's own box width (unrotated), the FILED caps label line (its ::before on a fit box), the FREE SPINS plate
+    ew: e.offsetWidth, fit: e.classList.contains('fit'), lbl: (() => { const pre = e.querySelector('.l-env-pre'); if (!pre) return null; const cs = getComputedStyle(pre), bs = getComputedStyle(pre, '::before');
+      return { shown: cs.display !== 'none', line: cs.display === 'block', text: e.classList.contains('fit') ? (bs.content || '').replace(/^"|"$/g, '') : pre.textContent.trim(), px: parseFloat(e.classList.contains('fit') ? bs.fontSize : cs.fontSize) }; })(),
+    fsc: (() => { const c = document.querySelector('.board-wrap .chip.fsc'); const r = c && c.textContent.trim() && !c.getAnimations().length ? c.getBoundingClientRect() : null; return Math.round(ov(E, r) + ov(P, r)); })() };
 }, sel);
 const envOverlap = (page) => boxProbe(page, '.l-env');
 const clearOf = (o) => !!o && o.cells === 0 && o.cell === 0 && o.dial === 0 && o.hud === 0 && o.out === 0;
@@ -459,6 +463,11 @@ async function secH(browser) {
     check(`H K4 envelope + plate inside the viewport, off #hud-info and the cells ${tag} (${env.length} samples, spot ${[...new Set(env.map((o) => o.park))].join('/')})`, env.length > 3 && bad.length === 0, JSON.stringify(bad.slice(0, 2)));
     check(`H K4 the FILED plate is readable during the feature ${tag}`, env.length > 3 && env.every((o) => o.P && /\$\d/.test(o.plate)), [...new Set(env.map((o) => o.plate))].slice(0, 3).join(' | '));
     if (vp[0] < vp[1]) check(`H K4 portrait: the envelope is parked on the top lip ${tag}`, env.every((o) => o.park === 'top'), [...new Set(env.map((o) => o.park))].join(','));
+    // render round 2 (FIX_render_to_layers small sizes): the envelope >= 22 px wide, FILED on its own line in caps of 7 px or more, off the FREE SPINS plate
+    check(`H K4 round 2: the envelope is at least 22 px wide ${tag}`, env.length > 3 && env.every((o) => o.ew >= 22), [...new Set(env.map((o) => o.ew + (o.fit ? ' fit' : '')))].join(','));
+    const lb = env.filter((o) => o.lbl && /FILED/.test(o.plate));
+    check(`H K4 round 2: the FILED label is shown, >= 7 px (its own line on a small screen) ${tag}`, lb.length > 3 && lb.every((o) => o.lbl.shown && o.lbl.text === 'FILED' && o.lbl.px >= 7 && (!o.fit || o.lbl.line)), JSON.stringify(lb.slice(-1).map((o) => o.lbl)));
+    check(`H K4 round 2: envelope + plate off the FREE SPINS plate ${tag}`, env.every((o) => o.fsc === 0), JSON.stringify(env.filter((o) => o.fsc).slice(0, 2).map((o) => [o.E, o.P, o.fsc])));
     // the plan stamps (Annex and Mezzanine have no void cell: lower lip / top lip / side spot), measured once landed (and a row morph over)
     const st = [];
     for (const [id, b] of plans) {

@@ -227,28 +227,49 @@ test('orders: parkEnvelope keeps the envelope under the cell area and above the 
   }
   // 400x225: 9 px down to the floor, 76 px to the viewport's right edge: beside the board's lower-right corner, outside the frame
   const sb = { left: 6, top: 6, width: 240, height: 199 };
-  const q = parkEnvelope(sb, 9, 40, 76, {});
+  // render round 2: a fit box (the envelope's body, >= 22 px wide) with the two-line plate (FILED over the amount) beside it when the row fits
+  const q = parkEnvelope(sb, 9, 40, 76, { plateW: 40, plateH: 23 });
   assert.equal(q.mode, 'side');
-  assert.ok(q.left >= sb.left + sb.width + 40 * 0.15, 'outside the frame lip ' + q.left);
-  assert.ok(q.top + q.height + 20 <= sb.top + sb.height + 9, 'plate room under the envelope, above the floor');
+  assert.equal(q.fit, true);
+  assert.ok(!q.stack, 'side by side ' + JSON.stringify(q));
+  assert.ok(q.width >= 22 && Math.abs(q.width / q.height - 112 / 64) < 0.1, 'body box ' + JSON.stringify(q));
+  assert.ok(q.left >= sb.left + sb.width + 1, 'outside the cell area ' + q.left);
+  assert.ok(q.left + q.width + 3 + 40 + 2 <= sb.left + sb.width + 76, 'the row ends inside the viewport ' + JSON.stringify(q));
+  assert.ok(q.top + q.height <= sb.top + sb.height + 9 - 2, 'above the floor ' + JSON.stringify(q));
+  // the menu button above the floor (400x225: wrap 272..306 x 147..181) is never under the envelope
+  const menu = { left: 272, top: 147, right: 306, bottom: 181 };
+  const hitM = (r) => Math.min(r.left + r.width + 1, menu.right) > Math.max(r.left - 1, menu.left) && Math.min(r.top + r.height + 2, menu.bottom) > Math.max(r.top - 2, menu.top);
+  const q1 = parkEnvelope(sb, 9, 40, 76, { plateW: 40, plateH: 23, avoid: [menu] });
+  assert.ok(!q1.stack && !hitM(q1), JSON.stringify(q1));
+  // a long amount: the plate goes under the envelope, which narrows to end left of the menu button (22 px at least)
+  const q2 = parkEnvelope(sb, 9, 40, 76, { plateW: 60, plateH: 23, avoid: [menu] });
+  assert.equal(q2.stack, true);
+  assert.ok(q2.width >= 22 && !hitM(q2), JSON.stringify(q2));
+  assert.ok(q2.top + q2.height + 3 + 23 <= sb.top + sb.height + 9, 'plate room under the envelope, above the floor ' + JSON.stringify(q2));
   // no room under the board nor beside it: the top lip
   const lip = { left: 60, right: 300, top: -20, bottom: 5 };
   assert.equal(parkEnvelope(sb, 9, 40, 10, { lip }).mode, 'top');
 });
 
 test('orders: parkEnvelope parks on the top lip in portrait (the HUD row starts under the board), clear of the cells', () => {
-  const tiltOf = (w) => Math.ceil(w * 0.06) + 1;
   // 425x812 in the game: cell area at wrap (9,10) 393 x 327, HUD 1 px under the frame (room 0), lip left of the FREE SPINS plate
   const board = { left: 9, top: 10, width: 393, height: 327 };
-  const lip = { left: 47, right: 107, top: -11, bottom: 9 };
-  const p = parkEnvelope(board, 0, 65.4, 0, { portrait: true, lip, plateW: 34 });
+  // (lip.top is tucked 3 px under the meter track's rim; render round 2: an upright fit box, the body >= 22 px wide)
+  const lip = { left: 42.9, right: 107, top: -10, bottom: 8.8 };
+  const p = parkEnvelope(board, 0, 65.4, 0, { portrait: true, lip, plateW: 33 });
   assert.equal(p.mode, 'top');
-  assert.ok(p.top + p.height + tiltOf(p.width) <= lip.bottom + 0.5, 'above the first cell row ' + JSON.stringify(p));
-  assert.ok(p.top - tiltOf(p.width) >= lip.top - 0.5, 'under the meter ' + JSON.stringify(p));
-  assert.ok(p.left >= lip.left && p.height >= 14 && p.height <= 24, JSON.stringify(p));
+  assert.equal(p.fit, true);
+  assert.ok(p.top + p.height <= lip.bottom + 0.5, 'above the first cell row ' + JSON.stringify(p));
+  assert.ok(p.top >= lip.top + 3 - 0.5, 'under the meter track ' + JSON.stringify(p));
+  assert.ok(p.left >= lip.left && p.width >= 22 && p.width <= 28, JSON.stringify(p));
+  assert.ok(p.left + p.width + 3 + 33 <= lip.right, 'the plate ends before the FREE SPINS plate ' + JSON.stringify(p));
   assert.equal(p.tight, false);
-  // a long plate does not fit before the FREE SPINS plate: smaller type
-  assert.equal(parkEnvelope(board, 0, 65.4, 0, { portrait: true, lip, plateW: 60 }).tight, true);
+  // a longer plate: the envelope narrows (never under 22 px), then the plate takes the smaller type
+  const p2 = parkEnvelope(board, 0, 65.4, 0, { portrait: true, lip, plateW: 38 });
+  assert.ok(p2.width >= 22 && p2.width < p.width && p2.left + p2.width + 3 + 38 <= lip.right, JSON.stringify(p2));
+  const p3 = parkEnvelope(board, 0, 65.4, 0, { portrait: true, lip, plateW: 60 });
+  assert.equal(p3.tight, true);
+  assert.equal(p3.width, 22);
   // portrait with plenty of room under the board still goes to the top lip (never where the HUD row starts)
   assert.equal(parkEnvelope(board, 300, 65.4, 0, { portrait: true, lip }).mode, 'top');
 });

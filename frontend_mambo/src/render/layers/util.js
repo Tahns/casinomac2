@@ -132,10 +132,17 @@ export const vpSize = () => ({ w: (typeof window !== 'undefined' && window.inner
 export function topLip(B, cell, o = {}) {
   const q = (s) => (typeof document !== 'undefined' ? [...document.querySelectorAll(s)] : []);
   const lip = { left: B.left, right: B.right - cell * 1.6, top: Math.max(0, B.top - cell * 0.9), bottom: B.top - 1 };
-  // the COMBO chip (top-right lip, shown during tumbles) and the FREE SPINS plate (top middle) close the stretch on the right
-  for (const c of q('.board .chip.combo, .board .chip.fsc')) {
+  // the COMBO chip (top-right lip, shown during tumbles) and the FREE SPINS plate (top middle) close the stretch on the right (both are
+  // children of .board-wrap, beside .board: render round 2, the old '.board .chip' never matched them)
+  for (const c of q('.board-wrap .chip.combo, .board-wrap .chip.fsc')) {
     const r = shownRect(c);
-    if (r && r.width > cell * 0.5 && (c.textContent || '').trim()) lip.right = Math.min(lip.right, r.left - 3);
+    if (!r || !(c.textContent || '').trim()) continue;
+    // its unscaled width around its client centre: the chip bumps (a scale about its centre) when its count changes, the lip must not
+    // follow the bump (the chip is centred by a translate, so offsetLeft is not its place either)
+    let left = r.left, width = r.width;
+    const op = c.offsetParent;
+    if (op && op.offsetWidth && c.offsetWidth) { const sx = op.getBoundingClientRect().width / op.offsetWidth; width = c.offsetWidth * sx; left = r.left + r.width / 2 - width / 2; }
+    if (width > cell * 0.5) lip.right = Math.min(lip.right, left - 3);
   }
   // the dial badge and the KEPT tag stand on the top-left corner in portrait: start right of them
   for (const el of q('#meter-slot .mm-badge, #meter-slot .mm-kept')) {

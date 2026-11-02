@@ -189,22 +189,35 @@ export function fmtAmt(fmt, x100) {
  * ({ left, top, right, bottom }, layers/util.js topLip), `o.portrait` the portrait shell, `o.plateW` the plate width.
  *   'below' (landscape): under the board on the frame's lower-left lip, 0.62 cell at most, shrunk to the room (min 18 px) so its
  *            tilted box ends above the floor; the plate goes beside it (right)
- *   'side'  (a short landscape screen): beside the board's lower-right corner, outside the frame, the plate under the envelope, the
- *            plate's bottom 2 px above the floor
+ *   'side'  (a short landscape screen): beside the board's lower-right corner, outside the frame, envelope and plate side by side above the
+ *            floor (o.plateW / o.plateH: the compact plate), or the plate under the envelope (`stack`) when the row is wider than the room
  *   'top'   (portrait, where the HUD row starts right under the board; and the last resort in landscape): on the frame's top lip, left
- *            of the FREE SPINS plate, a small envelope with the compact plate (the amount) beside it; `tight` = the plate needs the
- *            smaller type to fit before the FREE SPINS plate
+ *            of the FREE SPINS plate, the compact plate beside it; `tight` = the plate needs the smaller type to fit before the FREE SPINS plate
+ * 'side' and 'top' are `fit` boxes (render round 2, small screens): the box is the envelope's body only (FIT = 112:64, the SVG's empty band
+ * above the body hangs outside it, transparent), at least 22 px wide (24 when the room allows), and the compact plate has two lines: the
+ * FILED caps label (8 px) over the amount (layers.css .l-env.fit).
  */
+export const ENV_FIT = 112 / 64;
 export function parkEnvelope(board, room, cell, side = 0, o = {}) {
   const bottom = board.top + board.height;
   const tiltOf = (w) => Math.ceil(w * 0.06) + 1; // the -6 deg tilt pokes about 0.06 w past the box, top and bottom
+  const fitTilt = (w) => Math.ceil(w * 0.053 + 0.5); // the same for a fit box (w = 1.75 h): (w sin 6 + h cos 6 - h) / 2
   const lip = o.lip && o.lip.right > o.lip.left && o.lip.bottom > o.lip.top ? o.lip : null;
+  const plateW = o.plateW || 0, plateH = o.plateH || 0;
   const top = () => {
-    const free = lip.bottom - lip.top;
-    const h = Math.round(Math.max(14, Math.min(24, cell * 0.5, (free - 2) / 1.12))), w = Math.round(h * 132 / 136);
-    const t = tiltOf(w);
-    const tight = !!(o.plateW && lip.left + 1 + w + 4 + o.plateW > lip.right);
-    return { mode: 'top', left: Math.round(lip.left + 1), top: Math.round(lip.bottom - t - h), width: w, height: h, tight };
+    // upright on the lip (no tilt: the lip is about 19 px high), its top under the meter track's lower rim (o.tuck in topLip, 3 px) never
+    // higher; 28 px wide at most (h 16), narrowed down to 22 px when the plate needs the room before the FREE SPINS plate; still short:
+    // `tight` (the plate takes the smaller type and overlaps the envelope's right edge by 3 px, layers.css)
+    const free = lip.bottom - lip.top - 3;
+    let h = Math.max(12.6, Math.min(16, Math.floor(free))), w = Math.round(h * ENV_FIT);
+    const avail = lip.right - lip.left - 1 - plateW; // for the envelope and the gap
+    let tight = false;
+    if (plateW && w + 3 > avail) {
+      if (avail - 3 >= 22) w = Math.floor(avail - 3);
+      else { tight = true; w = Math.max(22, Math.min(w, Math.floor(avail + 3 + plateW * 0.06))); } // the smaller type: about 6 % narrower
+      h = Math.round(w / ENV_FIT * 10) / 10;
+    }
+    return { mode: 'top', fit: true, left: Math.round(lip.left + 1), top: Math.floor((lip.bottom - h - 0.5) * 10) / 10, width: w, height: h, tight };
   };
   if (o.portrait && lip) return top();
   const hb = Math.floor(Math.min(cell * 0.62, (room - 4) / 1.12));
@@ -213,9 +226,23 @@ export function parkEnvelope(board, room, cell, side = 0, o = {}) {
     return { mode: 'below', left: Math.round(board.left + cell * 0.12), top: Math.ceil(bottom + 2 + tiltOf(w)), width: w, height: hb };
   }
   if (side >= cell * 0.3 + 30) {
-    const h = Math.round(Math.max(20, Math.min(cell * 0.5, 24))), w = Math.round(h * 132 / 136);
-    // the envelope and its plate (about 18 px) end 2 px above the floor
-    return { mode: 'side', left: Math.round(board.left + board.width + cell * 0.15 + 3), top: Math.round(bottom + room - 2 - 18 - h - 2), width: w, height: h };
+    let h = Math.round(Math.max(13, Math.min(cell * 0.4, 16))), w = Math.round(h * ENV_FIT);
+    const t = fitTilt(w);
+    const left = Math.ceil(board.left + board.width + 2); // the tilt pokes about 1 px sideways
+    const floor = bottom + room - 2;
+    const avoid = (o.avoid || []).filter((r) => r && r.right > left && r.left < left + side);
+    const hit = (a) => avoid.some((r) => Math.min(a.right, r.right) > Math.max(a.left, r.left) && Math.min(a.bottom, r.bottom) > Math.max(a.top, r.top));
+    // side by side when the row fits the room right of the board (the plate's own tilt adds about 2 px) clear of the buttons there (o.avoid)
+    const rowH = Math.max(h + 2 * t, plateH + 2);
+    const row = { left, top: floor - rowH, right: left + w + 3 + plateW + 2, bottom: floor };
+    if (!plateW || (row.right <= board.left + board.width + side && !hit(row))) {
+      return { mode: 'side', fit: true, left, top: Math.round(floor - rowH + (rowH - h) / 2), width: w, height: h };
+    }
+    // else the plate under the envelope; a button above the plate (the menu): the envelope narrows to end left of it (22 px at least)
+    const envTop = (hh) => floor - (plateH || 20) - 3 - hh - t;
+    const b = avoid.filter((r) => hit({ left, top: envTop(h) - t, right: left + w + 1, bottom: envTop(h) + h + t }));
+    if (b.length) { w = Math.max(22, Math.min(w, Math.floor(Math.min(...b.map((r) => r.left)) - 1 - left - 1))); h = Math.round(w / ENV_FIT * 10) / 10; }
+    return { mode: 'side', fit: true, stack: true, left, top: Math.round(envTop(h)), width: w, height: h };
   }
   if (lip) return top();
   const w = Math.round(18 * 132 / 136);
