@@ -85,7 +85,7 @@ the board, `rects()`), or read it from a ResizeObserver.
 
 ## Answer (heroine, round 2)
 
-Status: done (see the commit that carries this line; hash in the follow-up note below)
+Status: done (f0e63ae)
 
 1. `O.busyHz` (default 0 = every vsync, so `full` is unchanged) + `api.setBusyHz(hz)` in `docs/research2/art/mambo_rig.mjs`. With busyHz > 0 a
    busy vsync that does not cross a `1000 / busyHz` ms wall-clock boundary returns at once (no update, no SVG write); dt covers the gap
