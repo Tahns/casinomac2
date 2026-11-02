@@ -1,16 +1,22 @@
 {
- "generated": "2026-10-30T19:48:48.336Z",
+ "generated": "2026-11-02T20:46:46.708Z",
  "source": "docs/research2/art/store/keyart.html",
- "sourceSha256": "f01cb82d980020f99f731d6e010130f694bbb4e720e17a1f56502edb0d03ff7f",
- "rigSha256": "2832ed797f0f39618fb5507a18cb38de6b6586adbe51a2d95106bb9e298f2ef9",
+ "sourceSha256": "47d85cbd14a11e8fb82a7aba6be737ca626bb275e22e94d594eb9601f6fd0783",
+ "rigSha256": "916abf5bf2c31915e9c009e8976d6bdba1dfc0f70893e04f1c0601a134a8872b",
  "outfit": "inspectrice",
  "files": [
   {
    "file": "tools/art/store_v2/agent_mambo_tile_3x4.png",
    "width": 1536,
    "height": 2048,
-   "bytes": 1460679,
-   "sha256": "2390dab264147903b914be8f17706b545c85ba3488bc52be0683f1072a9e20f2"
+   "bytes": 1282341,
+   "sha256": "f72ff2ab7ab0b360873b20a8d9ce9e6d93bf98a000eb62aae158f4256bfcab69"
+  },
+  {
+   "file": "tools/art/store_v2/agent_mambo_tile_3x4_preview_100.png",
+   "width": 100,
+   "height": 133,
+   "preview": true
   },
   {
    "file": "tools/art/store_v2/agent_mambo_tile_3x4_preview_150.png",
@@ -28,8 +34,8 @@
    "file": "tools/art/store_v2/agent_mambo_cover_16x9.png",
    "width": 1920,
    "height": 1080,
-   "bytes": 909116,
-   "sha256": "5527f9de3668a84191cde8ab51ff77e2510e8a5a27a4ee50f96736580eed79d4"
+   "bytes": 898366,
+   "sha256": "b12596e1f5f27a46bbcd54aad8c577195f3c218bafc35fa45b4c0d4025deb6e4"
   },
   {
    "file": "tools/art/store_v2/agent_mambo_cover_16x9_preview_320.png",
@@ -41,8 +47,8 @@
    "file": "tools/art/store_v2/agent_mambo_banner_2000x667.png",
    "width": 2000,
    "height": 667,
-   "bytes": 634013,
-   "sha256": "88423731ee41a8337e92c91b01a80209a0f5065c07e3dc5426f99c83bd0f5ee1"
+   "bytes": 630116,
+   "sha256": "1c757248b33568cbf74499826d31af06e7977a579e82b230887149c14f52d393"
   }
  ],
  "errors": []

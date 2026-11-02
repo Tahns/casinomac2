@@ -22,7 +22,7 @@ const OUT = path.resolve(arg('--out', path.join(HERE, 'store_v2')));
 const POSE = arg('--pose', '');
 // Stake asks for a game tile 3:4 and a cover 16:9 (docs/READINESS.md, items 1 and 2); the banner is the wide key art of docs/research2/art/store.
 const JOBS = [
-  { name: 'agent_mambo_tile_3x4', w: 1536, h: 2048, previews: [150, 300] },
+  { name: 'agent_mambo_tile_3x4', w: 1536, h: 2048, previews: [100, 150, 300] },
   { name: 'agent_mambo_cover_16x9', w: 1920, h: 1080, previews: [320] },
   { name: 'agent_mambo_banner_2000x667', w: 2000, h: 667, previews: [] },
 ];
