@@ -43,16 +43,22 @@ try {
       let last = 0, on = true;
       const loop = (t) => { if (last) fr.push([t, t - last]); last = t; if (on) requestAnimationFrame(loop); };
       requestAnimationFrame(loop);
+      // DOM mutations during the chain: all of them and those of the heroine rig (inside a .heroine-stage), so a rig change can be judged alone
+      const mut = { all: 0, rig: 0 };
+      const inRig = (n) => { const e = n && (n.nodeType === 1 ? n : n.parentElement); return !!(e && e.closest && e.closest('.heroine-stage')); };
+      const mo = new MutationObserver((l) => { mut.all += l.length; for (const m of l) if (inRig(m.target)) mut.rig++; });
+      mo.observe(document.body, { subtree: true, attributes: true, childList: true, characterData: true });
       await H.play(ev, { turbo: false });
-      on = false;
+      on = false; mo.disconnect();
+      const tier = document.documentElement.dataset.quality || '';
       const tumbles = H.marks.filter((m) => m.type === 'tumbleBoard');
       const t0 = tumbles[fromStep - 1] ? tumbles[fromStep - 1].t : (tumbles.length ? tumbles[tumbles.length - 1].t : 0);
       const tEnd = (H.marks.find((m) => m.type === 'setWin' && m.t > t0) || H.marks[H.marks.length - 1]).t;
-      return { all: fr.map((f) => f[1]), win: fr.filter((f) => f[0] >= t0 && f[0] <= tEnd).map((f) => f[1]), cb: H.canvasBytes(), steps: tumbles.length, winMs: tEnd - t0 };
+      return { all: fr.map((f) => f[1]), win: fr.filter((f) => f[0] >= t0 && f[0] <= tEnd).map((f) => f[1]), cb: H.canvasBytes(), steps: tumbles.length, winMs: tEnd - t0, mut, tier };
     }, { ev: book.events, fromStep });
     layers.stop();
     if (rate > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-    results.push({ book: book.label, steps: out.steps, windowMs: Math.round(out.winMs), frames: out.win.length, p50: pct(out.win, .5), p95: pct(out.win, .95), p99: pct(out.win, .99), longest: Math.max(...out.win), p95all: pct(out.all, .95), idleLayers, medianLayers: layers.median, p90Layers: layers.p90, maxLayers: layers.max, canvasMB: out.cb.totalMB, canvases: out.cb.list, errors: errors.slice(0, 5) });
+    results.push({ book: book.label, steps: out.steps, windowMs: Math.round(out.winMs), frames: out.win.length, p50: pct(out.win, .5), p95: pct(out.win, .95), p99: pct(out.win, .99), longest: Math.max(...out.win), p95all: pct(out.all, .95), idleLayers, medianLayers: layers.median, p90Layers: layers.p90, maxLayers: layers.max, canvasMB: out.cb.totalMB, canvases: out.cb.list, mutAll: out.mut.all, mutRig: out.mut.rig, tier: out.tier, errors: errors.slice(0, 5) });
     await ctx.close();
   }
 } catch (e) { console.error(e); exit = 2; }
@@ -63,7 +69,7 @@ if (results.length) {
     rate, runs: results.length, viewport: `${vw}x${vh}`, dpr: Number(A.dpr || 1), fromStep, book: results[0].book,
     p50: +med('p50').toFixed(1), p95: +med('p95').toFixed(1), p99: +med('p99').toFixed(1), longest: +med('longest').toFixed(1),
     p95ok: med('p95') <= 16.7, idleLayers: med('idleLayers'), medianLayers: med('medianLayers'), maxLayers: med('maxLayers'),
-    layersOk: med('idleLayers') <= 45 && med('p90Layers') <= 45, p90Layers: med('p90Layers'), layersMaxOk: med('maxLayers') <= 45, canvasMB: med('canvasMB'), canvasOk: med('canvasMB') <= 96,
+    layersOk: med('idleLayers') <= 45 && med('p90Layers') <= 45, p90Layers: med('p90Layers'), layersMaxOk: med('maxLayers') <= 45, canvasMB: med('canvasMB'), canvasOk: med('canvasMB') <= 96, mutAll: med('mutAll'), mutRig: med('mutRig'),
     perRun: results.map(({ canvases, ...x }) => x), canvases: results[0].canvases,
   };
   console.log(JSON.stringify(sum, null, 2));

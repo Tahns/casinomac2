@@ -82,3 +82,24 @@ if (hostHidden) { last = 0; raf = 0; tmo = setTimeout(() => { tmo = 0; frame(per
 
 `pointOf()` reads `getBoundingClientRect()` of the grid on each aim; cache it for one animation frame (render/index.js does the same for
 the board, `rects()`), or read it from a ResizeObserver.
+
+## Answer (heroine, round 2)
+
+Status: done (see the commit that carries this line; hash in the follow-up note below)
+
+1. `O.busyHz` (default 0 = every vsync, so `full` is unchanged) + `api.setBusyHz(hz)` in `docs/research2/art/mambo_rig.mjs`. With busyHz > 0 a
+   busy vsync that does not cross a `1000 / busyHz` ms wall-clock boundary returns at once (no update, no SVG write); dt covers the gap
+   (cap `max(0.05, 1.5 / busyHz)`), so clip timing is unchanged. Rest stays on the 12 Hz `idleHz` timer. Live check (rig_demo, megaWin,
+   1 s): busyHz 0 -> 60 frames / 7583 mutations, 24 -> 25 / 3776, 12 -> 13 / 2048.
+2. A rig whose host is `display:none` (itself or an ancestor), `visibility:hidden`, 0x0 or detached sleeps: checked at most every 500 ms
+   (one rect + one computed style), then a 500 ms poll, no writes; any API call re-checks at once. `pause()` no longer leaves an empty rAF
+   loop running (resume()/visibility wake it). The perf harness (`tests/fx/harness.html`) has `#heroine-slot` at display:none: that
+   hidden rig was ~28 000 of the ~31 000 DOM mutations of the 30-cell tumble.
+3. `gaze.js`: element rects and the svg box are cached until the next animation frame (`nextFrame` option, unit tested).
+   `tools/sync_heroine.mjs` frameGuard patch re-indented for the new `frame()`.
+
+Measured (4x CPU, 1024x576, `perf_tumble --rate 4 --runs 3`, interleaved A/B/A/B; perf_tumble now also reports `mutAll` / `mutRig`):
+- harness as is (rig hidden): A p50 16.7 / p95 50, 50 / mutations 30 890, 32 248 (rig 27 850, 29 183); B p50 16.7 / p95 50, 33.4 /
+  mutations 3 042, 3 071 (rig 0, 0); layers median 21 both, p90 24 -> 27, max 34 -> 34/36 (noise: no layer is added by the rig).
+- rig made visible (`--css` 178x272 slot, governor at calm -> busyHz 12): A p95 66.6, 50.1 / rig mutations 22 222, 24 417; B p95 50, 50 /
+  rig mutations 14 148, 14 277 (-41%); p50 16.7 and layers 22 / 27 / 35 in all four.

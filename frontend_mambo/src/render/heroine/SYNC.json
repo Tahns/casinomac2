@@ -16,8 +16,8 @@
     },
     "mambo_rig.js": {
       "source": "mambo_rig.mjs",
-      "sourceSha": "46d878b1219d56cb",
-      "shippedSha": "69816282e0ccde44",
+      "sourceSha": "916abf5bf2c31915",
+      "shippedSha": "bd1e6e526e801eea",
       "patches": [
         "osFollow",
         "frameGuard",

@@ -1,6 +1,6 @@
 // WP3 HEROINE browser acceptance (headless Chromium through playwright-core). Run: cd frontend_mambo && node tests/heroine/browser.mjs [--shots] [--report]
 // Spawns its OWN static server and mock RGS (ports 5842 / 5843, override with PORTS="a,b"), kills only those PIDs, exit code 1 on any FAIL.
-// Sections: A rig budget and soak, B fallback chain, C motion levels / hidden tab / live settings, D the real game at 4 viewports
+// Sections: A rig budget and soak, B fallback chain, C motion levels / hidden tab / live settings, D the real game at 5 viewports
 // (bounding boxes, no overlap, no scroll, no console error, perf), E readability at 100 px and the two screenshots.
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
@@ -171,7 +171,8 @@ async function harness(viewport = { width: 420, height: 620 }, opt = {}) {
   check('C1 Still: static poses only (pose swapped, no clip, no spring motion, no particle), outfit swapped without a screen', r.stillStart.reduced === true && r.still.ok === true && r.still.pose === 'bigwin' && r.still.clip === '' && r.still.frozen && r.still.particles === 0 && r.still.blast === true && r.still.pose2 === 'shock' && r.still.outfit === 'casino' && r.still.screen === 0, JSON.stringify(r.still));
   check('C2 the motion level changes live: Full runs clips with particles, Calm runs them without a jump', r.full.reduced === false && r.full.clip === 'megaWin' && r.full.particles > 0 && r.calm.reduced === false && r.calm.jump === false, JSON.stringify({ f: r.full, c: r.calm }));
 
-  // hidden tab: the rig stops advancing while document.hidden, resumes after
+  // hidden tab: the rig stops advancing while document.hidden, resumes after (a rig at rest ticks on its 12 Hz idle grid since v2 round 1:
+  // about 3.6 frames in 300 ms, so the thresholds are 3 frames, not the 60 Hz era 5)
   const h = await page.evaluate(async () => {
     const { createHeroineMascot } = window.H;
     const host = document.createElement('div'); host.style.cssText = 'position:absolute;left:10px;top:10px;width:200px;height:300px'; document.body.appendChild(host);
@@ -187,7 +188,7 @@ async function harness(viewport = { width: 420, height: 620 }, opt = {}) {
     m.destroy();
     return { running: f1 - f0, hidden: g1 - g0, resumed: k1 - g1 };
   });
-  check('C3 pause when the document is hidden: frames advance while visible, stop while hidden, resume after', h.running > 5 && h.hidden === 0 && h.resumed > 5, JSON.stringify(h));
+  check('C3 pause when the document is hidden: frames advance while visible, stop while hidden, resume after', h.running >= 3 && h.hidden === 0 && h.resumed >= 3, JSON.stringify(h));
 
   const sh = await page.evaluate(async () => {
     const { createHeroineMascot } = window.H;
@@ -205,7 +206,7 @@ async function harness(viewport = { width: 420, height: 620 }, opt = {}) {
     m.destroy(); out.gone = slot.childElementCount;
     return out;
   });
-  check('C4 the shell contract: the crop follows data-crop and the am:heroine-layout event, mode none pauses the rig, the slot holds exactly one child', sh.start === 'full' && sh.bust === 'bust' && sh.vb === '86 24 226 322' && sh.head === 'head' && sh.pausedFrames <= 1 && sh.resumedFrames > 5 && sh.only === 1 && sh.gone === 0, JSON.stringify(sh));
+  check('C4 the shell contract: the crop follows data-crop and the am:heroine-layout event, mode none pauses the rig, the slot holds exactly one child', sh.start === 'full' && sh.bust === 'bust' && sh.vb === '86 24 226 322' && sh.head === 'head' && sh.pausedFrames <= 1 && sh.resumedFrames >= 3 && sh.only === 1 && sh.gone === 0, JSON.stringify(sh));
   check('C5 no console error in the motion / pause pages', errors.length === 0, errors.join(' | ').slice(0, 200));
   await ctx.close();
 }
@@ -243,9 +244,9 @@ print(json.dumps(mask.getbbox()))`, a], { encoding: 'utf8' });
   return { l: clip.x + bb[0], t: clip.y + bb[1], r: clip.x + bb[2], b: clip.y + bb[3], w: bb[2] - bb[0], h: bb[3] - bb[1] };
 }
 
-// ------------------------------------------------------------------------------------------------ D. the real game at 4 viewports
+// ------------------------------------------------------------------------------------------------ D. the real game at 5 viewports
 const VIEWPORTS = [
-  { name: '1024x576', width: 1024, height: 576 }, { name: '800x450', width: 800, height: 450 }, { name: '400x225', width: 400, height: 225 }, { name: '425x812', width: 425, height: 812, touch: true },
+  { name: '1280x720', width: 1280, height: 720 }, { name: '1024x576', width: 1024, height: 576 }, { name: '800x450', width: 800, height: 450 }, { name: '400x225', width: 400, height: 225 }, { name: '425x812', width: 425, height: 812, touch: true },
 ];
 const liveInfo = {};
 for (const vp of VIEWPORTS) {
@@ -287,19 +288,22 @@ for (const vp of VIEWPORTS) {
     const slot = document.getElementById('heroine-slot'), m = mascotOf(slot), out = [];
     const R = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; };
     const hit = (a, b) => a.l < b.r - 0.5 && a.r > b.l + 0.5 && a.t < b.b - 0.5 && a.b > b.t + 0.5;
-    for (const line of ['LIGHTS, DOSSIER, ACTION.', 'DEFUSING!', 'SEALED ORDERS. HUSH.']) {
+    for (const line of ['LIGHTS, DOSSIER, ACTION.', 'DEFUSING!', 'SEALED ORDERS. HUSH.', 'THE HOUSE ALWAYS SETTLES ITS ACCOUNTS, DARLING. EVERY LAST CHIP.']) {
       m.say(line, 0); await new Promise((r) => setTimeout(r, 350));
       const bub = document.querySelector('.hero-bubble'), g = slot.querySelector('[id$="head-t"]');
       if (!bub || bub.hidden || !g) { out.push({ line, shown: false }); continue; }
       const b = R(bub); let h = R(g); const sv = R(slot.querySelector('svg'));
       if (slot.dataset.crop !== 'full') h = { l: Math.max(h.l, sv.l), t: Math.max(h.t, sv.t), r: Math.min(h.r, sv.r), b: Math.min(h.b, sv.b) };
       const btn = [...document.querySelectorAll('#app button, #hud-info .stat, #ledger')].filter((e) => e.getBoundingClientRect().width > 0 && !e.closest('[hidden]')).filter((e) => hit(b, R(e))).map((e) => e.id || e.className);
-      out.push({ line, shown: true, face: hit(b, h), btn });
+      // v2 round 2: the bubble rectangle stays inside the viewport ([4, innerWidth - 4] horizontally, bottom <= innerHeight - 4)
+      const inView = b.l >= 4 - 0.5 && b.r <= innerWidth - 4 + 0.5 && b.t >= 0 && b.b <= innerHeight - 4 + 0.5;
+      out.push({ line, shown: true, face: hit(b, h), btn, inView, rect: [b.l, b.t, b.r, b.b].map(Math.round) });
     }
     m.hideSay && m.hideSay();
     return out;
   });
-  check(`D5 ${vp.name}: the speech bubble never covers her face nor a button / HUD plate (${bubGeo.filter((x) => x.shown).length}/3 lines shown)`, bubGeo.every((x) => !x.shown || (!x.face && x.btn.length === 0)), JSON.stringify(bubGeo));
+  check(`D5 ${vp.name}: the speech bubble never covers her face nor a button / HUD plate (${bubGeo.filter((x) => x.shown).length}/${bubGeo.length} lines shown)`, bubGeo.every((x) => !x.shown || (!x.face && x.btn.length === 0)), JSON.stringify(bubGeo));
+  check(`D5b ${vp.name}: every shown speech bubble is inside the viewport (4 px from the left / right edges, bottom at most innerHeight - 4)`, bubGeo.every((x) => !x.shown || x.inView), JSON.stringify(bubGeo.filter((x) => x.shown).map((x) => [x.line.slice(0, 12), x.rect])));
 
   // the reactions in the live page (clips sped up with info.speed to keep the run short), live frame cost sampled every frame
   const live = await page.evaluate(async () => {

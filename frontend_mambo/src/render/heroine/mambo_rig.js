@@ -163,7 +163,7 @@ function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t 
 
 // ====================================================================== the heroine
 export function createHeroine(container, opts = {}) {
-  const O = { outfit: 'inspectrice', seed: 7, limited: 12, idleHz: 12, autoplay: true, raf: true, rim: false, lookTargets: {}, onCue: null, idle: true, size: null, crop: 'full', mirror: false, ...opts };
+  const O = { outfit: 'inspectrice', seed: 7, limited: 12, idleHz: 12, busyHz: 0, autoplay: true, raf: true, rim: false, lookTargets: {}, onCue: null, idle: true, size: null, crop: 'full', mirror: false, ...opts };
   const pre = O.idPrefix || `mambo${++UID}-`;
   const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   let reduced = O.reduced ?? !!(mq && mq.matches);
@@ -751,27 +751,51 @@ const f2 = (n) => Math.round(n * 100) / 100;
   // v2 round 1 (I3 / K5): at rest the loop ticks on a idleHz timer instead of every vsync (update + springs ran 60 times a second for a figure
   // drawn 12 times a second); anything that starts motion wakes the rAF loop again (wake() wraps the public API below)
   let tmo = 0;
+  // v2 round 2 (K5 busy frames): opts.busyHz (0 = every vsync, the default) puts the busy loop (clip, tween, particle, jump, spin) on a
+  // wall-clock grid too: a vsync that does not cross a 1000 / busyHz ms boundary does nothing at all (no update, no SVG write), so a rig on a
+  // lite / calm device costs 24 / 12 frames a second instead of 60; dt covers the gap (the fixed-step springs settle the same)
+  let busyTick = -1;
+  // a rig whose host is not displayed (display:none on it or an ancestor, visibility:hidden, a 0x0 box, detached) sleeps: checked at most
+  // every 500 ms (one rect + one computed style), it then polls on a 500 ms timer and writes nothing
+  let visCheckAt = -1e9, hostHidden = false;
+  const hostIsHidden = () => {
+    try {
+      if (!container.isConnected) return true;
+      const r = container.getBoundingClientRect();
+      if (!(r.width > 0) || !(r.height > 0)) return true;
+      return typeof getComputedStyle === 'function' && getComputedStyle(container).visibility === 'hidden';
+    } catch (e) { return false; }
+  };
   const isBusy = () => !!clipS.cur || tweens.length > 0 || fxP.length > 0 || !grounded || spinS.active || pend.gl !== null || pend.gr !== null || pend.prop !== null;
-  function wake() { if (tmo) { clearTimeout(tmo); tmo = 0; } if (!raf && O.raf && O.autoplay && !destroyed) raf = requestAnimationFrame(frame); }
+  function wake() { if (tmo) { clearTimeout(tmo); tmo = 0; } if (hostHidden) visCheckAt = -1e9; if (!raf && O.raf && O.autoplay && !destroyed && !paused) raf = requestAnimationFrame(frame); }
   function frame(now) {
     raf = 0; if (destroyed) return;
-    if (!paused) {
-      // a rest frame comes every 1000 / idleHz ms: dt covers it (busy frames keep the 0.05 s cap)
-      const dt = Math.min(isBusy() || !(O.idleHz > 0) ? 0.05 : 0.2, last ? (now - last) / 1000 : 1 / 60) * speed; last = now;
-      // at rest (no clip, tween, particle, jump or spin) the figure is drawn on the 12 fps limited-animation grid only (opts.idleHz, 0 = every
-      // frame): breathing, blinks and saccades keep their timing, the SVG is written 12 times a second instead of 60 (WP5 frame budget)
-      const t0 = performance.now();
-      try {
-        update(dt);
-        const busy = !!clipS.cur || tweens.length > 0 || fxP.length > 0 || !grounded || spinS.active;
-        const slot = O.idleHz > 0 ? Math.floor(time * O.idleHz) : -2;
-        if (busy || slot === -2 || slot !== idleSlot || !rendered) { idleSlot = slot; render(); }
-      } catch (err) { if (O.onError) { destroyed = true; try { O.onError(err); } catch (e2) { /* ignore */ } return; } throw err; }
-      const ms = performance.now() - t0;
-      stat.frames++; stat.avg += (ms - stat.avg) * 0.05; if (stat.frames > 30) stat.max = Math.max(stat.max * 0.995, ms);
-    } else last = 0;
+    // paused (api.pause, hidden page): nothing is scheduled; resume() and the visibility handler wake the loop
+    if (paused) { last = 0; return; }
+    if (O.raf && now - visCheckAt >= 500) { visCheckAt = now; hostHidden = hostIsHidden(); }
+    if (hostHidden) { last = 0; tmo = setTimeout(() => { tmo = 0; frame(performance.now()); }, 500); return; }
+    const busyNow = isBusy();
+    if (busyNow && O.busyHz > 0 && O.raf && last) {
+      const tick = Math.floor(now * O.busyHz / 1000);
+      if (tick === busyTick && rendered) { raf = requestAnimationFrame(frame); return; }
+      busyTick = tick;
+    }
+    // a rest frame comes every 1000 / idleHz ms, a capped busy frame every 1000 / busyHz ms: dt covers it (uncapped busy frames: 0.05 s)
+    const cap = !busyNow && O.idleHz > 0 ? 0.2 : busyNow && O.busyHz > 0 ? Math.max(0.05, 1.5 / O.busyHz) : 0.05;
+    const dt = Math.min(cap, last ? (now - last) / 1000 : 1 / 60) * speed; last = now;
+    // at rest (no clip, tween, particle, jump or spin) the figure is drawn on the 12 fps limited-animation grid only (opts.idleHz, 0 = every
+    // frame): breathing, blinks and saccades keep their timing, the SVG is written 12 times a second instead of 60 (WP5 frame budget)
+    const t0 = performance.now();
+    try {
+      update(dt);
+      const busy = !!clipS.cur || tweens.length > 0 || fxP.length > 0 || !grounded || spinS.active;
+      const slot = O.idleHz > 0 ? Math.floor(time * O.idleHz) : -2;
+      if (busy || slot === -2 || slot !== idleSlot || !rendered) { idleSlot = slot; render(); }
+    } catch (err) { if (O.onError) { destroyed = true; try { O.onError(err); } catch (e2) { /* ignore */ } return; } throw err; }
+    const ms = performance.now() - t0;
+    stat.frames++; stat.avg += (ms - stat.avg) * 0.05; if (stat.frames > 30) stat.max = Math.max(stat.max * 0.995, ms);
     if (!O.raf) return;
-    if (O.idleHz > 0 && !paused && !isBusy()) tmo = setTimeout(() => { tmo = 0; frame(performance.now()); }, 1000 / O.idleHz);
+    if (O.idleHz > 0 && !isBusy()) tmo = setTimeout(() => { tmo = 0; frame(performance.now()); }, 1000 / O.idleHz);
     else raf = requestAnimationFrame(frame);
   }
   const onVis = () => { if (document.hidden) { paused = true; } else { paused = false; last = 0; wake(); } };
@@ -791,7 +815,7 @@ const f2 = (n) => Math.round(n * 100) / 100;
     snap() { applyTargets(true); render(true); },
     setReduced(v) { reduced = !!v; applyTargets(true); },
     pause() { paused = true; }, resume() { paused = false; last = 0; },
-    setLimited(hz) { O.limited = hz; }, setIdleHz(hz) { O.idleHz = Math.max(0, +hz || 0); }, setIdle(b) { O.idle = !!b; }, setSpeed(v) { speed = clamp(v, 0.1, 4); },
+    setLimited(hz) { O.limited = hz; }, setIdleHz(hz) { O.idleHz = Math.max(0, +hz || 0); }, setBusyHz(hz) { O.busyHz = Math.max(0, +hz || 0); }, setIdle(b) { O.idle = !!b; }, setSpeed(v) { speed = clamp(v, 0.1, 4); },
     stats() { return { frames: stat.frames, avgMs: stat.avg, maxMs: stat.max, clip: clipS.cur ? clipS.cur.name : '' }; },
     state: () => ({ ...Object.fromEntries(NAMES.map((n, i) => [n, X[i]])), ry, sec: Object.fromEntries(Object.keys(sec).map((k) => [k, sec[k].x])) }),
     clips: () => Object.keys(clipDefs), poses: () => Object.keys(POSES), outfits: () => OUTFIT_KEYS.slice(), moods: () => Object.keys(MOODS), visemes: () => VISEME_NAMES.slice(),

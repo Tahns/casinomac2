@@ -62,3 +62,19 @@ test('createGaze: grid / spin / meter / cluster targets from real elements, fall
   assert.deepEqual(g3.targets.grid(), FALLBACK.grid);
   const g4 = createGaze({ doc: null, getBox: () => null, getViewBox: () => VB }); assert.deepEqual(g4.targets.meter(), FALLBACK.meter);
 });
+
+test('createGaze: the grid rect and the svg box are read once per frame (K5), fresh again on the next frame', () => {
+  let reads = 0, boxReads = 0, rect = R(250, 40, 580, 490);
+  const el = { getBoundingClientRect: () => { reads++; return rect; } };
+  const doc = { querySelector: (sel) => (sel === '.board-wrap' ? el : null) };
+  const frames = [];
+  const g = createGaze({ doc, getBox: () => { boxReads++; return R(6, 296, 178, 272); }, getViewBox: () => VB, nextFrame: (fn) => frames.push(fn) });
+  const a = g.targets.grid();
+  for (let i = 0; i < 5; i++) assert.deepEqual(g.targets.grid(), a);
+  g.targets.cluster(); g.point('grid');
+  assert.equal(reads, 1, 'one getBoundingClientRect of the grid in the frame'); assert.equal(boxReads, 1, 'one read of the svg box');
+  assert.equal(frames.length, 1, 'one clear scheduled');
+  rect = R(250, 300, 580, 490); frames.shift()();
+  const b = g.targets.grid();
+  assert.equal(reads, 2); assert.equal(boxReads, 2); assert.ok(b.ny > a.ny, 'the next frame sees the moved grid');
+});

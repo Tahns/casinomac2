@@ -76,3 +76,43 @@ test('fuzz with a head: the bubble rectangle never intersects the head nor an av
   }
   assert.ok(shown > 300, String(shown));
 });
+
+// v2 round 2: viewport containment ([4, innerWidth - 4] horizontally, bottom <= innerHeight - 4), shift right over free space
+import { VIEW_PAD } from '../../src/render/heroine/bubble.js';
+test('viewport: a slot hanging off the left edge or the bottom keeps the bubble 4 px inside the viewport', () => {
+  const vp = { width: 400, height: 225 }, app = { left: -30, top: 0, width: 460, height: 260 };
+  const s = slot(-40, 40, 160, 200), p = placeBubble(s, app, { h: 40 }, { viewport: vp });
+  assert.ok(p); const r = abs(p, app, 40);
+  assert.ok(r.left >= VIEW_PAD && r.left + r.width <= vp.width - VIEW_PAD, JSON.stringify(r));
+  assert.ok(r.top + r.height <= vp.height - VIEW_PAD);
+  const p2 = placeBubble(slot(4, 100, 160, 400), { left: 0, top: 0, width: 400, height: 600 }, { h: 40 }, { viewport: { width: 400, height: 300 }, head: { left: 30, top: 120, width: 90, height: 100 } });
+  assert.ok(!p2 || p2.top + 40 <= 300 - VIEW_PAD);
+});
+test('viewport: a viewport narrower than the bubble shrinks it; a taken centred spot shifts the bubble right over free space', () => {
+  const p = placeBubble(slot(0, 0, 200, 300), { left: 0, top: 0, width: 150, height: 600 }, { h: 30 }, { viewport: { width: 150, height: 600 } });
+  assert.ok(p && p.left >= VIEW_PAD && p.left + p.width <= 150 - VIEW_PAD);
+  const app = { left: 0, top: 0, width: 1024, height: 576 }, s = slot(6, 296, 178, 272), head = { left: 40, top: 300, width: 100, height: 110 };
+  const blocker = { left: 0, top: 410, width: 40, height: 80 };
+  const p0 = placeBubble(s, app, { h: 40 }, { head, viewport: { width: 1024, height: 576 } });
+  const p1 = placeBubble(s, app, { h: 40 }, { head, avoid: [blocker], viewport: { width: 1024, height: 576 } });
+  assert.ok(p0 && p1 && p1.left > p0.left && !intersects(abs(p1, app, 40), blocker) && p1.left + p1.width <= 1024 - VIEW_PAD);
+});
+test('fuzz with a viewport: always inside [4, vw - 4] x [4, vh - 4], never over the head or an avoided rectangle', () => {
+  let seed = 23; const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  let shown = 0;
+  for (let i = 0; i < 3000; i++) {
+    const vp = { width: 320 + Math.floor(rnd() * 1400), height: 200 + Math.floor(rnd() * 900) };
+    const app = { left: Math.floor(rnd() * 40) - 20, top: Math.floor(rnd() * 40) - 20, width: vp.width + 40, height: vp.height + 40 };
+    const s = slot(rnd() * vp.width * 0.6 - 60, rnd() * vp.height * 0.7, 120 + rnd() * 200, 150 + rnd() * 400);
+    const head = rnd() < 0.2 ? null : { left: s.left + rnd() * s.width * 0.3, top: s.top + rnd() * s.height * 0.5, width: s.width * (0.3 + rnd() * 0.6), height: s.height * (0.15 + rnd() * 0.5) };
+    const avoid = [{ left: rnd() * vp.width, top: rnd() * vp.height, width: 20 + rnd() * 200, height: 20 + rnd() * 80 }];
+    const h = 20 + rnd() * 70, p = placeBubble(s, app, { h }, { head, avoid: head ? avoid : [], viewport: vp });
+    if (!p) continue; shown++;
+    const r = abs(p, app, h);
+    assert.ok(r.left >= VIEW_PAD && r.left + r.width <= vp.width - VIEW_PAD, 'x ' + JSON.stringify([r, vp]));
+    assert.ok(r.top >= VIEW_PAD && r.top + r.height <= vp.height - VIEW_PAD, 'y ' + JSON.stringify([r, vp]));
+    if (head) { assert.ok(!intersects(r, head), 'head'); assert.ok(!intersects(r, avoid[0]), 'avoid'); }
+    assert.ok(p.tailX >= 14 && p.tailX <= p.width - 14);
+  }
+  assert.ok(shown > 300, String(shown));
+});

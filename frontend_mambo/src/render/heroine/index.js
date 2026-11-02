@@ -160,12 +160,20 @@ export async function createHeroineMascot(host, opts = {}) {
   function place() {
     const slot = rectOf(slotMode ? host : wrap);
     const frame = slotMode ? rectOf(app) : { left: 0, top: 0, width: win.innerWidth, height: win.innerHeight };
-    bub.style.width = bubbleWidth(slot) + 'px';
+    // v2 round 2: the bubble stays inside the viewport ([4, innerWidth - 4], bottom <= innerHeight - 4); a viewport narrower than the
+    // bubble narrows it (re-measured at that width)
+    const viewport = { width: win.innerWidth, height: win.innerHeight };
     const head = headRect(), avoid = avoidRects();
+    const tryPlace = () => {
+      bub.style.width = bubbleWidth(slot) + 'px';
+      let p = placeBubble(slot, frame, { h: bub.offsetHeight }, { head, avoid, viewport });
+      if (p && p.width !== bubbleWidth(slot)) { bub.style.width = p.width + 'px'; p = placeBubble(slot, frame, { h: bub.offsetHeight }, { head, avoid, viewport }); }
+      return p;
+    };
     // a long line that does not fit next to her face is tried once more in the compact type (smaller, tighter); then it is not shown
     bub.classList.remove('compact');
-    let pos = placeBubble(slot, frame, { h: bub.offsetHeight }, { head, avoid });
-    if (!pos) { bub.classList.add('compact'); pos = placeBubble(slot, frame, { h: bub.offsetHeight }, { head, avoid }); }
+    let pos = tryPlace();
+    if (!pos) { bub.classList.add('compact'); pos = tryPlace(); }
     if (!pos) return false;
     bub.style.left = pos.left + 'px'; bub.style.top = pos.top + 'px'; bub.style.setProperty('--tail-x', pos.tailX + 'px');
     bub.classList.toggle('tail-down', pos.tail === 'down');

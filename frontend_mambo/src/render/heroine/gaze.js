@@ -31,25 +31,39 @@ export const FALLBACK = Object.freeze({
   cluster: { nx: 1, ny: 0.12, turn: 0.75 }, player: { nx: -0.25, ny: 0.05, turn: 0.08 },
 });
 
-// a point inside an element's box, as fractions of its width / height (centre by default)
-const pointOf = (el, fx = 0.5, fy = 0.5) => {
-  if (!el || typeof el.getBoundingClientRect !== 'function') return null;
-  const r = el.getBoundingClientRect();
-  return r && r.width > 0 && r.height > 0 ? { x: r.left + r.width * fx, y: r.top + r.height * fy } : null;
+// a point inside a client rect, as fractions of its width / height (centre by default)
+const pointIn = (r, fx = 0.5, fy = 0.5) => (r && r.width > 0 && r.height > 0 ? { x: r.left + r.width * fx, y: r.top + r.height * fy } : null);
+const defaultNextFrame = () => {
+  if (typeof requestAnimationFrame === 'function') return (fn) => requestAnimationFrame(fn);
+  return (fn) => Promise.resolve().then(fn);
 };
-const centreOf = (el) => pointOf(el);
 
 /**
  * createGaze({ doc, getBox, getViewBox, mirrored }) -> { targets, setCluster, clearCluster, point }
  *   getBox(): the svg client rect (null when not drawn), getViewBox(): the current crop's viewBox array.
  *   targets: the object given to createHeroine({ lookTargets }): grid / cluster / meter / spin / player, each () => {nx,ny,turn}.
  *   setCluster({x,y}): viewport px of the last winning cluster (react('win', { at })); stale after `ttl` ms (default 6000) -> grid.
+ *   nextFrame(fn): runs fn on the next animation frame (default requestAnimationFrame, a microtask without it): the client rects read for
+ *   the aims (the grid, the button, the dial and the svg box) are cached until then, so the rig asking for its target several times a frame
+ *   (and three rigs asking at once) costs one getBoundingClientRect per element per frame (v2 round 2, K5: forced layouts in the tumble).
  */
-export function createGaze({ doc, getBox, getViewBox, mirrored = () => false, now = () => Date.now(), ttl = 6000 } = {}) {
+export function createGaze({ doc, getBox, getViewBox, mirrored = () => false, now = () => Date.now(), ttl = 6000, nextFrame = defaultNextFrame() } = {}) {
   let cluster = null, clusterAt = 0;
   const q = (sel) => { try { return doc && doc.querySelector(sel); } catch (e) { return null; } };
+  // per-frame rect cache (element -> rect, plus the svg box)
+  let rects = new Map(), box, boxRead = false, clearing = false;
+  const clear = () => { rects = new Map(); boxRead = false; box = undefined; clearing = false; };
+  const armClear = () => { if (clearing) return; clearing = true; try { nextFrame(clear); } catch (e) { clear(); } };
+  const rectOf = (el) => {
+    if (!el || typeof el.getBoundingClientRect !== 'function') return null;
+    if (rects.has(el)) return rects.get(el);
+    const r = el.getBoundingClientRect(); rects.set(el, r); armClear(); return r;
+  };
+  const boxOf = () => { if (!boxRead) { box = getBox ? getBox() : null; boxRead = true; armClear(); } return box; };
+  const pointOf = (el, fx, fy) => pointIn(rectOf(el), fx, fy);
+  const centreOf = (el) => pointOf(el);
   const aim = (pt, name) => {
-    try { const eye = eyeOnScreen(getBox && getBox(), getViewBox && getViewBox()); const l = pt && eye ? lookToward(eye, pt, mirrored()) : null; return l || FALLBACK[name]; } catch (e) { return FALLBACK[name]; }
+    try { const eye = eyeOnScreen(boxOf(), getViewBox && getViewBox()); const l = pt && eye ? lookToward(eye, pt, mirrored()) : null; return l || FALLBACK[name]; } catch (e) { return FALLBACK[name]; }
   };
   const points = {
     // she stands low in the left column: she watches the lower left part of the board (the symbols nearest to her), not its far top corner
