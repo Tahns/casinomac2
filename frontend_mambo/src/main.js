@@ -333,7 +333,8 @@ async function onUnleash() {
     if (!c2.ok) { await showMessage(t('err.insufficient', { cost: fm(c2.cost) })); return; }
     if (S.bet.cost('bonus') !== cost || !unleashOk()) return; // the stated cost must be the cost that is played
   }
-  try { if (S.renderer && S.renderer.mascot) { S.renderer.mascot.pose('plunger', 1600); S.renderer.mascot.say('mascot.fs', 2000, true); } } catch (e) { /* ignore */ }
+  // H2-11: no line at the door confirm; the renderer's fsTrigger says the chosen mission's own line (mascot.fs.<id>) a moment later
+  try { if (S.renderer && S.renderer.mascot) S.renderer.mascot.pose('plunger', 1600); } catch (e) { /* ignore */ }
   await playRound(mode);
 }
 function onAutoplayButton() {

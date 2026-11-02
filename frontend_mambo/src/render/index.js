@@ -1097,8 +1097,9 @@ export function createRenderer(rootEl) {
     hook('onFreeSpinCounter', 0, total);
     chip(chipFs, fsText(0, total), true);
     cue('fsStart');
-    // the generic "briefing time" line only for The Briefing (H2-02: it was said on Coat Check / Service Stairs rounds too)
-    if (mid === 'briefing') say('mascot.fs', 2400, true);
+    // H2-11: each mission says its own entry line (mascot.fs.<id> in en_hero.js); the generic pool is mission-neutral. The door confirm
+    // (main.js) no longer speaks, so this is the only line at the trigger
+    say(hasKey('mascot.fs.' + mid) ? 'mascot.fs.' + mid : 'mascot.fs', 2400, true);
     // H2-01 / I1: a door round skips the telegram (the mission is known and the dossier names it next). I2: a base trigger names the
     // mission of the book (look-ahead to missionAssigned) in the mission colour instead of the neutral MISSION INCOMING
     if (!door) {
@@ -1148,7 +1149,7 @@ export function createRenderer(rootEl) {
       await countBanner({ kind: 'win', plan: e.plan, amount: R, title: t('fs.end'), titleMode: 'sub', stamp: e.stamp, coins: false, rays: true, hi: true, hold: e.hold, sub: meterSub, dimAmt: .94 });
     } else {
       M.celebrated = true; M.hadResult = true;
-      cue('fsEnd'); react('end', rinfo({ level: e.level }), () => pose('celebrate')); say(hasKey('mascot.fsEnd') ? 'mascot.fsEnd' : 'mascot.big', 2400, true);
+      cue('fsEnd'); react('end', rinfo({ level: e.level }), () => pose('celebrate')); const mEnd = S.mission && S.mission.id && hasKey('mascot.fsEnd.' + S.mission.id) ? 'mascot.fsEnd.' + S.mission.id : 'mascot.fsEnd'; say(hasKey(mEnd) ? mEnd : 'mascot.big', 2400, true);
       await countBanner({ kind: 'win', plan: e.plan, amount: R, title: t('fs.end'), titleMode: 'sub', stamp: e.stamp, coins: e.level >= 2, rays: e.level >= 2, hi: e.level >= 3, hold: 2200, sub: meterSub, dimAmt: .94 });
     }
     setBonusMode(false);
