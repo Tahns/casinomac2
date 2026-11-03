@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Dossier Noir palette</title><link rel="icon" href="data:,">
+<!-- Direction C palette strip: the 9 closed tokens (every one is a heroine PAL colour), with roles and rough share of the screen. -->
+<style>
+@font-face{font-family:"Luckiest";src:url(../../../../frontend_mambo/assets/fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;background:#162338;color:#F4E8C8;font-family:"Luckiest",sans-serif}
+body{width:1280px;height:260px;padding:16px 24px;box-sizing:border-box}
+h1{margin:0 0 10px;font-size:20px;letter-spacing:2px;color:#E8A92B;font-weight:400}
+.strip{display:flex;height:150px;border:3px solid #2B1A12;border-radius:10px;overflow:hidden;box-shadow:5px 6px 0 rgba(43,26,18,.6)}
+.sw{display:flex;flex-direction:column;justify-content:flex-end;padding:8px;box-sizing:border-box;font-size:14px;letter-spacing:1px;border-right:3px solid #2B1A12}
+.sw:last-child{border-right:0}
+.sw small{font-family:Trebuchet MS,DejaVu Sans,sans-serif;font-size:11px;letter-spacing:0;opacity:.85}
+.note{margin-top:10px;font-family:Trebuchet MS,DejaVu Sans,sans-serif;font-size:12px;opacity:.75}
+</style></head><body><h1>DIRECTION C / SPY DOSSIER NOIR: CLOSED PALETTE, 9 TOKENS (ALL FROM THE HEROINE)</h1><div class="strip" id="s"></div>
+<div class="note">Shares are the target screen coverage. Shades only by overprint: ink or cream halftone dots and ink at 40-55 % (dim, shadows); no other hue may enter.</div>
+<script type="module">
+import { C, PALETTE } from './art.js';
+const share = { night: 34, navy: 14, ink: 8, cream: 16, white: 3, mustard: 12, red: 7, turq: 4, brown: 4 };
+const dark = new Set(['night', 'navy', 'ink', 'red', 'turq', 'brown']);
+document.getElementById('s').innerHTML = PALETTE.map(([k, role]) => `<div class="sw" style="flex:${Math.max(share[k], 5)};background:${C[k]};color:${dark.has(k) ? '#F4E8C8' : '#2B1A12'}">${k.toUpperCase()}<small>${C[k]}<br>${role}<br>${share[k]} %</small></div>`).join('');
+await document.fonts.load('20px Luckiest'); window.__ready = true;
+</script></body></html>

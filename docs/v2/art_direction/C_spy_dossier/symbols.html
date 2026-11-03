@@ -1,0 +1,41 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Dossier symbol sheet</title><link rel="icon" href="data:,">
+<!-- Direction C symbol sheet: the 10 symbols at 160 px and 40 px (readability), the wild and scatter in their win state, a 40 px board strip. -->
+<style>
+@font-face{font-family:"Luckiest";src:url(../../../../frontend_mambo/assets/fonts/LuckiestGuy-Regular.ttf)}
+:root{--night:#162338;--cream:#F4E8C8;--mustard:#E8A92B;--ink:#2B1A12;--red:#B8352A}
+html,body{margin:0;background:var(--night);color:var(--cream);font-family:"Luckiest",sans-serif}
+body{width:1280px;padding:22px 30px;box-sizing:border-box}
+h1{margin:0 0 4px;font-size:30px;letter-spacing:2px;color:var(--mustard);font-weight:400}
+h2{margin:18px 0 8px;font-size:17px;letter-spacing:2px;color:var(--cream);font-weight:400;opacity:.85}
+.row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.it{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;letter-spacing:1px}
+.it span{opacity:.8}
+.tier{font-size:11px;color:var(--mustard)}
+.win svg{filter:drop-shadow(0 0 6px #E8A92B) drop-shadow(0 0 16px rgba(232,169,43,.6))}
+.small{gap:10px}
+.board{display:inline-grid;grid-template-columns:repeat(6,40px);gap:2px;padding:6px;background:#0E1626;border:3px solid var(--mustard);border-radius:8px}
+.note{font-family:Trebuchet MS,DejaVu Sans,sans-serif;font-size:13px;opacity:.75;max-width:700px;line-height:1.4}
+</style></head><body>
+<div id="defs"></div>
+<h1>AGENT MAMBO / DIRECTION C: SPY DOSSIER NOIR, SYMBOLS</h1>
+<h2>160 PX: HIGH = BRASS-RIMMED EVIDENCE PHOTOS, LOW = STAMPED INDEX CARDS, SPECIALS = DIE-CUT</h2>
+<div class="row" id="big"></div>
+<h2>40 PX (READABILITY CHECK) AND WIN STATES</h2>
+<div class="row" style="gap:40px;align-items:flex-start">
+  <div><div class="row small" id="small"></div><h2>40 PX BOARD SAMPLE</h2><div class="board" id="board"></div></div>
+  <div class="row" id="wins"></div>
+</div>
+<script type="module">
+import { DEFS, symbolSVG, SYMBOL_IDS, SYMBOL_NAMES } from './art.js';
+document.getElementById('defs').innerHTML = DEFS;
+await document.fonts.load('40px Luckiest');
+const tier = (id) => id[0] === 'H' ? 'HIGH' : id[0] === 'L' ? 'LOW' : 'SPECIAL';
+document.getElementById('big').innerHTML = SYMBOL_IDS.map((id) => `<div class="it">${symbolSVG(id, 100)}<span>${id} ${SYMBOL_NAMES[id].toUpperCase()}</span><span class="tier">${tier(id)}</span></div>`).join('');
+// 160 px row for the 4 highs + specials would overflow 1280 with 10 items, so the first row is 100 px and the 160 px set follows
+document.getElementById('big').insertAdjacentHTML('afterend', `<div class="row" style="margin-top:14px">${['H1', 'H2', 'H3', 'H4', 'L1', 'L2', 'L3'].map((id) => symbolSVG(id, 160)).join('')}</div><div class="row" style="margin-top:14px">${['L4', 'W', 'S'].map((id) => symbolSVG(id, 160)).join('')}</div>`);
+document.getElementById('small').innerHTML = SYMBOL_IDS.map((id) => `<div class="it">${symbolSVG(id, 40)}<span style="font-size:10px">${id}</span></div>`).join('');
+const B = ['L1','H3','L4','S','L2','H1','L3','H2','H2','L1','H4','L4','H4','H2','W','H2','L3','L2','L2','L4','H2','L1','S','H3','H1','L3','L1','H4','L2','L1'];
+document.getElementById('board').innerHTML = B.map((id) => symbolSVG(id, 40)).join('');
+document.getElementById('wins').innerHTML = ['W', 'S'].map((id) => `<div class="it win">${symbolSVG(id, 160, true)}<span>${SYMBOL_NAMES[id].toUpperCase()} WIN STATE</span></div>`).join('');
+window.__ready = true;
+</script></body></html>

@@ -1,0 +1,98 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Dossier Noir intro</title><link rel="icon" href="data:,">
+<!-- Direction C intro splash: logo + three case-file cards (floor plans, missions / three doors, max win 5,000x) + CLICK TO CONTINUE.
+     intro.html?w=1280&h=720 (landscape) or ?w=425&h=812 (portrait: the cards stack). One hand-written SVG (art.js). -->
+<style>
+@font-face{font-family:"Luckiest";src:url(../../../../frontend_mambo/assets/fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;overflow:hidden;background:#162338}
+</style></head><body><div id="defs"></div><svg id="stage"></svg>
+<script type="module">
+import { C, DEFS, scene, logo, letter, label, rays, star4, pp, ln, ci, emblem, beam } from './art.js';
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 1280), H = +(q.get('h') || 720), portrait = H > W;
+document.body.style.cssText = `width:${W}px;height:${H}px`;
+document.getElementById('defs').innerHTML = DEFS;
+await document.fonts.load('40px Luckiest');
+const st = document.getElementById('stage'); st.setAttribute('width', W); st.setAttribute('height', H); st.setAttribute('viewBox', `0 0 ${W} ${H}`);
+const I = C.ink, f = (n) => Math.round(n * 10) / 10;
+
+// ---- one case-file card in a 300 x 400 box (local coordinates), art(x, y, w, h) draws the evidence panel
+function card(title, lines, art, o = {}) {
+  let s = '';
+  // folder back with tab, shadow
+  const folder = 'M10 40Q10 30 20 30H110L124 14H200Q208 14 210 22L214 30H280Q290 30 290 40V388Q290 398 280 398H20Q10 398 10 388Z';
+  s += `<path d="${folder}" fill="${I}" opacity=".55" transform="translate(9 12)"/>`;
+  s += `<path d="${folder}" fill="${C.cream}" stroke="${C.cream}" stroke-width="10" stroke-linejoin="round"/>`;
+  s += pp(folder, C.mustard, 4, [0, 0]) + `<path d="${folder}" fill="url(#htI)" opacity=".35"/>`;
+  s += label(o.no || 'FILE 01', 167, 30, 14, I, { ls: .1 });
+  // cream sheet
+  s += `<rect x="26" y="46" width="248" height="336" rx="5" fill="${C.cream}" stroke="${I}" stroke-width="3"/>` + `<rect x="26" y="46" width="248" height="336" rx="5" fill="${C.mustard}" opacity=".1"/>`;
+  // evidence panel with brass rim
+  s += `<rect x="40" y="60" width="220" height="196" rx="6" fill="${C.mustard}" stroke="${I}" stroke-width="3"/>`;
+  s += `<svg x="47" y="67" width="206" height="182" viewBox="0 0 206 182"><rect width="206" height="182" fill="${C.navy}"/>${art}</svg>`;
+  s += `<rect x="47" y="67" width="206" height="182" fill="none" stroke="${I}" stroke-width="2.4"/>`;
+  // paper clip
+  s += `<path d="M232 36V84Q232 94 222 94Q212 94 212 84V46Q212 40 218 40Q224 40 224 46V80" fill="none" stroke="${I}" stroke-width="7" stroke-linecap="round"/><path d="M232 36V84Q232 94 222 94Q212 94 212 84V46Q212 40 218 40Q224 40 224 46V80" fill="none" stroke="${C.mustard}" stroke-width="3.6" stroke-linecap="round"/>`;
+  // title plate (red, lettered) + caption
+  s += `<g transform="rotate(-3 150 286)"><rect x="34" y="262" width="232" height="50" rx="7" fill="${I}" opacity=".5" transform="translate(4 5)"/><rect x="34" y="262" width="232" height="50" rx="7" fill="${C.red}" stroke="${I}" stroke-width="3.4"/><rect x="40" y="268" width="220" height="38" rx="4" fill="none" stroke="${C.cream}" stroke-width="1.6" stroke-dasharray="4 3"/>`
+    + letter(title, 150, 301, o.ts || 30, C.cream, { rim: false, depth: .06, shine: false }) + `</g>`;
+  lines.forEach((t, i) => { s += label(t, 150, 338 + i * 19, 13, I, { ls: .03 }); });
+  return s;
+}
+// ---- evidence art (206 x 182)
+const blueprint = () => {
+  let s = `<rect width="206" height="182" fill="${C.navy}"/>`;
+  for (let x = 0; x < 206; x += 12) s += `<path d="M${x} 0V182" stroke="${C.cream}" stroke-width=".7" opacity=".18"/>`;
+  for (let y = 0; y < 182; y += 12) s += `<path d="M0 ${y}H206" stroke="${C.cream}" stroke-width=".7" opacity=".18"/>`;
+  // four floor plans as cell footprints (Mezzanine, Atrium, Lobby, Annex), the big one in front
+  const plan = (x, y, cs, mask, col, op = 1) => { let p = ''; mask.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === '#') p += `<rect x="${x + c * cs}" y="${y + r * cs}" width="${cs - 2}" height="${cs - 2}" rx="2" fill="${col}" opacity="${op}"/>`; })); return p; };
+  s += plan(12, 12, 9, ['.####.', '######', '######', '.####.'], C.cream, .35) + plan(146, 12, 9, ['######', '#....#', '######', '######'], C.cream, .35);
+  s += plan(12, 132, 9, ['##..##', '######', '######'], C.cream, .35) + plan(146, 128, 9, ['######', '######', '######', '######'], C.cream, .35);
+  s += `<g transform="translate(50 34)"><rect x="-6" y="-6" width="118" height="118" rx="4" fill="${C.night}" stroke="${C.cream}" stroke-width="3"/>` + plan(0, 0, 18, ['.####.', '######', '######', '######', '######', '.####.'], C.cream, .9);
+  s += `<path d="M9 99L27 81L45 81L63 63L81 63L99 27" fill="none" stroke="${C.red}" stroke-width="4" stroke-dasharray="7 5" stroke-linecap="round"/>` + `<path d="M91 19L107 35M107 19L91 35" stroke="${C.red}" stroke-width="6" stroke-linecap="round"/></g>`;
+  return s;
+};
+const doors = () => {
+  let s = `<rect width="206" height="182" fill="${C.night}"/><rect y="140" width="206" height="42" fill="${C.brown}"/><rect y="140" width="206" height="42" fill="url(#htI)"/><path d="M0 140H206" stroke="${I}" stroke-width="3"/>`;
+  s += `<rect width="206" height="140" fill="url(#htC)" opacity=".5"/>`;
+  const door = (x, col, sign, open) => {
+    let d = `<rect x="${x - 4}" y="40" width="56" height="102" rx="3" fill="${I}"/>`;
+    if (open) d += `<path d="M${x} 44H${x + 48}V140H${x}Z" fill="${C.cream}"/><path d="M${x} 140L${x - 14} 182H${x + 62}L${x + 48} 140Z" fill="${C.mustard}" opacity=".45"/>` + pp(`M${x} 44L${x + 26} 50V134L${x} 140Z`, col, 2.6);
+    else d += pp(`M${x} 44H${x + 48}V140H${x}Z`, col, 2.8) + `<rect x="${x + 7}" y="52" width="34" height="34" rx="2" fill="none" stroke="${I}" stroke-width="2" opacity=".6"/><rect x="${x + 7}" y="94" width="34" height="38" rx="2" fill="none" stroke="${I}" stroke-width="2" opacity=".6"/>` + ci(x + 40, 96, 3.4, C.mustard, ` stroke="${I}" stroke-width="1.6"`);
+    d += `<rect x="${x - 2}" y="22" width="52" height="16" rx="3" fill="${C.cream}" stroke="${I}" stroke-width="2"/>` + label(sign, x + 24, 35, 10.5, I, { ls: .04 });
+    return d;
+  };
+  s += door(10, C.red, 'STAGE', false) + door(79, C.mustard, 'COATS', true) + door(148, C.turq, 'STAIRS', false);
+  s += label('?', 103, 104, 40, C.red, { stroke: I, sw: 5 }) + star4(103, 14, 6, C.mustard);
+  return s;
+};
+const maxwin = () => {
+  let s = `<rect width="206" height="182" fill="${C.night}"/>` + rays(103, 80, 16, 180, C.mustard, .32, .1) + ci(103, 80, 70, C.mustard, ' opacity=".14"');
+  s += emblem(103, 74, 56);
+  s += pp('M8 122L26 116V150L8 156L16 138Z', C.brown, 2.6) + pp('M198 122L180 116V150L198 156L190 138Z', C.brown, 2.6);
+  s += pp('M18 112Q103 100 188 112V146Q103 134 18 146Z', C.red, 3);
+  s += letter('5,000X', 103, 141, 34, C.cream, { rim: false, depth: .06, ls: .03 });
+  s += star4(24, 30, 9) + star4(180, 40, 7) + star4(166, 14, 4.4) + star4(40, 80, 4.4, C.cream, .8);
+  return s;
+};
+
+let s = scene(W, H, portrait ? { horizon: H * .86, scale: .55, beams: [[.1, 18], [.9, -18]], seed: 3, cityH: .6 } : { horizon: H * .86, beams: [[.08, 18], [.3, -14], [.7, 14], [.92, -18]], seed: 3, moon: null, cityH: .8 });
+s += `<rect width="${W}" height="${H}" fill="${C.ink}" opacity=".25"/>`;
+const cards = [
+  ['FLOOR PLANS', ['EVERY SPIN PICKS A FLOOR:', 'MEZZANINE, ATRIUM, LOBBY, ANNEX'], blueprint(), { no: 'FILE 01', ts: 30 }],
+  ['MISSIONS', ['TOP SECRET FILES OPEN A MISSION,', 'OR CHOOSE ONE OF THREE DOORS'], doors(), { no: 'FILE 02', ts: 34 }],
+  ['MAX WIN', ['CRACK THE CASE FOR UP TO', '5,000X THE BET'], maxwin(), { no: 'FILE 03', ts: 34 }],
+];
+if (!portrait) {
+  s += `<svg x="${W / 2 - 220}" y="2" width="440" height="220" viewBox="0 0 640 320">${logo()}</svg>`;
+  const xs = [W / 2 - 470, W / 2 - 150, W / 2 + 170], ys = [252, 232, 252], rots = [-3, 0, 3];
+  cards.forEach((c, i) => { s += `<g transform="translate(${xs[i]} ${ys[i]}) rotate(${rots[i]} 150 200) scale(1)">${card(...c)}</g>`; });
+  s += letter('CLICK TO CONTINUE', W / 2, H - 22, 34, C.cream, { rim: false, ext: C.ink, depth: .07, shine: false });
+} else {
+  s += `<svg x="${W / 2 - 170}" y="4" width="340" height="170" viewBox="0 0 640 320">${logo()}</svg>`;
+  const k = .56, pos = [[W / 2 - 300 * k - 4, 190, -3], [W / 2 + 4, 190, 3], [W / 2 - 150 * k, 430, 0]];
+  cards.forEach((c, i) => { s += `<g transform="translate(${pos[i][0]} ${pos[i][1]}) rotate(${pos[i][2]} ${150 * k} ${200 * k}) scale(${k})">${card(...c)}</g>`; });
+  s += letter('TAP TO CONTINUE', W / 2, H - 26, 28, C.cream, { rim: false, depth: .07, shine: false });
+}
+st.innerHTML = s;
+window.__ready = true;
+</script></body></html>

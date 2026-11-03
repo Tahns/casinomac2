@@ -1,0 +1,36 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Dossier eye proposal</title><link rel="icon" href="data:,">
+<!-- Direction C eye proposal: the current rig face (sly mood, original PAL) next to the proposed face (face.js eyeGeom2 / browPath2,
+     palette folded into the 9 tokens). Both are the live rig with crop 'head'. -->
+<style>
+@font-face{font-family:"Luckiest";src:url(../../../../frontend_mambo/assets/fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;background:#162338;color:#F4E8C8;font-family:"Luckiest",sans-serif}
+body{width:1280px;height:620px;padding:18px 30px;box-sizing:border-box}
+h1{margin:0 0 6px;font-size:22px;letter-spacing:2px;color:#E8A92B;font-weight:400}
+.row{display:flex;gap:26px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:6px}
+.box{width:380px;height:452px;background:#27447E;border:4px solid #E8A92B;border-radius:12px;position:relative;overflow:hidden;box-shadow:6px 8px 0 rgba(43,26,18,.6)}
+.box>div{position:absolute;inset:0}
+.cap{font-size:16px;letter-spacing:1.5px}
+.cap small{display:block;font-family:Trebuchet MS,DejaVu Sans,sans-serif;font-size:12px;letter-spacing:0;opacity:.8;max-width:380px;text-align:center}
+</style></head><body><h1>HEROINE EYES: CURRENT VS PROPOSED (DRAWN FACE VARIANT, SEE FACE.JS)</h1>
+<div class="row">
+  <div class="cell"><div class="box"><div id="a"></div></div><div class="cap">CURRENT<small>half lid at rest (u 0.45-0.5) under a mustard eyeshadow plate, near-black iris, five thin lashes</small></div></div>
+  <div class="cell"><div class="box"><div id="b"></div></div><div class="cap">PROPOSED, REST<small>cat-eye almond, skin lid at u 0.86-0.92, turquoise iris + round highlight, winged liner, one brow up</small></div></div>
+  <div class="cell"><div class="box"><div id="c"></div></div><div class="cap">PROPOSED, WINK (WIN)<small>same geometry: near eye closed into a smile line, far eye open, both brows up</small></div></div>
+</div>
+<script type="module">
+import { createHeroine, MOODS } from '../../../research2/art/mambo_rig.mjs';
+import { PAL } from '../../../research2/art/mambo_art.mjs';
+import { harmoniseHeroine } from './art.js';
+import { applyFace, FACE_MOOD } from './face.js';
+await document.fonts.load('20px Luckiest');
+const make = (id, pre, mood, pose = 'idle') => { const M = createHeroine(document.getElementById(id), { outfit: 'inspectrice', raf: false, idle: false, limited: 0, seed: 7, crop: 'head', idPrefix: pre }); M.setMood(mood); M.setPose(pose, { snap: true }); M.snap(); for (let i = 0; i < 60; i++) M.step(1 / 60); return M; };
+make('a', 'a-', 'sly');
+harmoniseHeroine(PAL);
+MOODS.dossier = FACE_MOOD;
+make('b', 'b-', 'dossier'); applyFace(document.getElementById('b'), 'b-', FACE_MOOD);
+const WINK = { ...FACE_MOOD, uL: 0, uR: 0.95, joyL: 1, bLy: -6, bRy: -11, bLa: 14, bRa: 16, mouth: 'grin', lookx: -0.3 };
+MOODS.dwink = WINK;
+make('c', 'c-', 'dwink'); applyFace(document.getElementById('c'), 'c-', WINK);
+window.__ready = true;
+</script></body></html>

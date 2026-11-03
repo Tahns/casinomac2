@@ -1,0 +1,102 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Dossier Noir mock-up</title><link rel="icon" href="data:,">
+<!-- Direction C "Spy dossier noir": full game screen mock-up. mockup.html?w=1280&h=720 (landscape) or ?w=425&h=812 (portrait).
+     Scene, console frame, symbols, logo and HUD are one hand-written SVG (art.js); the heroine is the hand-drawn rig (mambo_rig.mjs),
+     inspectrice outfit, palette folded into the 9 tokens (harmoniseHeroine) and the proposed eye variant (face.js). -->
+<style>
+@font-face{font-family:"Luckiest";src:url(../../../../frontend_mambo/assets/fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;overflow:hidden;background:#162338}
+#stage{position:absolute;left:0;top:0}
+#hero{position:absolute}
+#over{position:absolute;left:0;top:0;pointer-events:none}
+.cellwin{filter:drop-shadow(0 0 5px #E8A92B) drop-shadow(0 0 12px rgba(232,169,43,.55))}
+</style></head><body><div id="defs"></div><svg id="stage"></svg><div id="hero"></div><svg id="over"></svg>
+<script type="module">
+import { beam, lamp, bulbs, C, DEFS, scene, consoleFrame, symbolInner, logo, tabPlate, spinButton, roundBtn, iconBtn, secretButton, letter, label, star4, harmoniseHeroine } from './art.js';
+import { createHeroine, POSES, MOODS } from '../../../research2/art/mambo_rig.mjs';
+import { PAL } from '../../../research2/art/mambo_art.mjs';
+import { applyFace, FACE_MOOD } from './face.js';
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 1280), H = +(q.get('h') || 720), portrait = H > W;
+document.body.style.cssText = `width:${W}px;height:${H}px`;
+document.getElementById('defs').innerHTML = DEFS;
+await document.fonts.load('40px Luckiest');
+const st = document.getElementById('stage'), ov = document.getElementById('over');
+for (const e of [st, ov]) { e.setAttribute('width', W); e.setAttribute('height', H); e.setAttribute('viewBox', `0 0 ${W} ${H}`); }
+
+// ---- layout
+const L = portrait
+  ? { cs: 62, gap: 3, x0: 0, y0: 252, t: 14, k: .55, horizon: 236 }
+  : { cs: 90, gap: 4, x0: 410, y0: 136, t: 28, k: 1, horizon: 560 };
+const gw = 6 * L.cs + 5 * L.gap, gh = 5 * L.cs + 4 * L.gap;
+if (portrait) L.x0 = (W - gw) / 2;
+const B = ['L1','H3','L4','S','L2','H1', 'L3','H2','H2','L1','H4','L4', 'H4','H2','W','H2','L3','L2', 'L2','L4','H2','L1','S','H3', 'H1','L3','L1','H4','L2','L1'];
+const WIN = new Set([7, 8, 13, 14, 15, 20]);
+
+let s = '';
+s += scene(W, H, portrait
+  ? { horizon: L.horizon, scale: .55, beams: [[.12, 18], [.6, -20], [.95, -10]], tower: null, moon: null, seed: 9, cityH: .5 }
+  : { horizon: L.horizon, beams: [[.05, 16], [.26, -24], [.97, -14], [.8, 22]], tower: [1180, 520, 1], moon: [130, 120, 62], seed: 5 });
+// ---- console frame + board (landscape: two searchlights on the frame shoulders, bulbs strung to the screen edges)
+const LX = [L.x0 - L.t + 8, L.x0 + gw + L.t - 8], LY = L.y0 - L.t - 10;
+if (!portrait) { s += beam(LX[0], LY - 30, -24, 900, 120, .1) + beam(LX[1], LY - 30, 20, 900, 120, .1); s += bulbs(-10, 70, LX[0] - 20, LY + 4, 7, 26) + bulbs(LX[1] + 20, LY + 4, W + 10, 90, 7, 26); }
+s += consoleFrame(L.x0, L.y0, gw, gh, { t: L.t, brass: portrait ? 5 : 9, k: L.k, gr: portrait ? 13 : 22, gaugesBottom: !portrait });
+if (!portrait) s += lamp(LX[0], LY, -24) + lamp(LX[1], LY, 20);
+for (let i = 0; i < 30; i++) {
+  const c = i % 6, r = Math.floor(i / 6), x = L.x0 + c * (L.cs + L.gap), y = L.y0 + r * (L.cs + L.gap), win = WIN.has(i);
+  s += `<svg x="${x}" y="${y}" width="${L.cs}" height="${L.cs}" viewBox="0 0 100 100" overflow="visible"${win ? ' class="cellwin"' : ''}>${symbolInner(B[i], win && B[i] === 'W')}${win ? '' : `<rect x="2" y="2" width="96" height="96" rx="9" fill="${C.ink}" opacity=".42"/>`}</svg>`;
+}
+// winning cluster outline: brass marquee around each winning cell
+for (const i of WIN) { const c = i % 6, r = Math.floor(i / 6), x = L.x0 + c * (L.cs + L.gap), y = L.y0 + r * (L.cs + L.gap); s += `<rect x="${x - 1}" y="${y - 1}" width="${L.cs + 2}" height="${L.cs + 2}" rx="${9 * L.cs / 100}" fill="none" stroke="${C.white}" stroke-width="${2 * L.k + .6}" stroke-dasharray="${5 * L.k} ${4 * L.k}" opacity=".9"/>`; }
+// cluster pay stamp
+{ const c = portrait ? 4.3 : 4.15, r = portrait ? 3.1 : 3.05, x = L.x0 + c * (L.cs + L.gap), y = L.y0 + r * (L.cs + L.gap), k = L.k;
+  s += `<g transform="translate(${x} ${y}) rotate(-8)"><rect x="${-70 * k}" y="${-24 * k}" width="${140 * k}" height="${48 * k}" rx="${8 * k}" fill="${C.ink}" opacity=".5" transform="translate(${4 * k} ${5 * k})"/><rect x="${-70 * k}" y="${-24 * k}" width="${140 * k}" height="${48 * k}" rx="${8 * k}" fill="${C.red}" stroke="${C.cream}" stroke-width="${4 * k}"/>`
+    + `<rect x="${-63 * k}" y="${-17 * k}" width="${126 * k}" height="${34 * k}" rx="${4 * k}" fill="none" stroke="${C.cream}" stroke-width="${1.6 * k}" stroke-dasharray="${4 * k} ${3 * k}"/>` + letter('$2.40', 0, 13 * k, 34 * k, C.cream, { rim: false, depth: .06, shine: false }) + `</g>`; }
+
+if (!portrait) {
+  // ---- logo above the frame
+  s += `<svg x="${L.x0 + gw / 2 - 290}" y="-6" width="580" height="139" viewBox="0 0 960 230">${logo('wide')}</svg>`;
+  // ---- bottom dossier tabs hanging from the frame
+  const by = L.y0 + gh + L.t - 4;
+  s += tabPlate(L.x0 + 30, by + 4, 250, 66, 'BALANCE', '$1,000.00', { vs: 28 });
+  s += tabPlate(L.x0 + gw - 280, by + 4, 250, 66, 'WIN', '$12.40', { vs: 30, vc: C.red, fill: C.cream });
+  // ---- right console: SECRET ENTRANCE, SPIN, BET
+  const rx = 1135;
+  s += secretButton(rx, 200, 190);
+  s += spinButton(rx, 410, 88);
+  s += iconBtn(rx - 92, 524, 42, 'turbo') + iconBtn(rx + 92, 524, 42, 'auto');
+  s += label('BET', rx, 570, 18, C.mustard, { ls: .12 });
+  s += label('$1.00', rx, 610, 38, C.cream, { stroke: C.ink, sw: 6 });
+  s += roundBtn(rx - 92, 597, 20, '-') + roundBtn(rx + 92, 597, 20, '+');
+  s += iconBtn(40, 676, 44, 'menu');
+} else {
+  // ---- portrait: logo top right, heroine top left standing on the frame
+  s += `<svg x="${W - 292}" y="14" width="288" height="144" viewBox="0 0 640 320">${logo()}</svg>`;
+  const by = L.y0 + gh + L.t - 2;
+  s += tabPlate(L.x0 + 4, by + 2, 182, 50, 'BALANCE', '$1,000.00', { vs: 20, k: .72 });
+  s += tabPlate(L.x0 + gw - 186, by + 2, 182, 50, 'WIN', '$12.40', { vs: 22, k: .72, vc: C.red });
+  s += spinButton(W / 2, 712, 62);
+  s += secretButton(72, 700, 118);
+  s += label('BET', W - 66, 670, 14, C.mustard, { ls: .12 });
+  s += label('$1.00', W - 66, 702, 28, C.cream, { stroke: C.ink, sw: 5 });
+  s += roundBtn(W - 106, 732, 15, '-') + roundBtn(W - 26, 732, 15, '+');
+  s += iconBtn(26, 790, 30, 'menu') + iconBtn(W / 2 - 100, 790, 30, 'turbo') + iconBtn(W / 2 + 100, 790, 30, 'auto');
+}
+st.innerHTML = s;
+
+// ---- heroine: inspectrice, palette folded into the 9 tokens, a custom "hand on the console" pose and the eye variant
+harmoniseHeroine(PAL);
+POSES.lean = { ...POSES.idle, hipX: 4, hipTilt: 3, lean: 5, sho: 4, htilt: -2, turn: 1.05,
+  arx: 288, ary: 306, arb1: 26, arb2: 6, arr: -84, gr: 'relax', alx: 136, aly: 334, alb1: 16, alb2: -8, gl: 'hip', prop: '' };
+MOODS.dossier = FACE_MOOD;
+const el = document.getElementById('hero');
+const hh = portrait ? 270 : 690, hw = hh * 400 / 600;
+const hx = portrait ? -30 : 30, hy = portrait ? L.y0 - L.t - hh * 566 / 600 + 4 : H - hh - 2;
+el.style.cssText = `left:${hx}px;top:${hy}px;width:${hw}px;height:${hh}px`;
+const M = createHeroine(el, { outfit: 'inspectrice', raf: false, idle: false, limited: 0, seed: 7, idPrefix: 'h-' });
+M.setMood('dossier'); M.setPose(portrait ? 'idle' : 'lean', { snap: true });
+M.snap(); for (let i = 0; i < 60; i++) M.step(1 / 60);
+applyFace(el, 'h-', FACE_MOOD);
+// soft rim so she sits on the night scene like a printed sticker
+el.style.filter = `drop-shadow(3px 0 0 ${C.cream}) drop-shadow(-3px 0 0 ${C.cream}) drop-shadow(0 3px 0 ${C.cream}) drop-shadow(0 -3px 0 ${C.cream}) drop-shadow(6px 8px 0 rgba(43,26,18,.55))`;
+window.__ready = true;
+</script></body></html>
