@@ -1,0 +1,52 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Atomic Lounge Symbols</title><link rel="icon" href="data:,">
+<!-- Direction B symbol sheet: the 10 symbols at 160 px and at 40 px (readability check), WILD and SCATTER in their win state, palette strip. -->
+<style>
+@font-face{font-family:"Luckiest";src:url(fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;background:#0C2A2F}
+</style></head><body><svg id="s"></svg>
+<script type="module">
+import { C, symbolDefs, symbol, SYMBOL_IDS, SYMBOL_NAMES, letters, rays } from './symbols_b.js';
+const W = 1600, H = 900, s = document.getElementById('s');
+s.setAttribute('width', W); s.setAttribute('height', H); s.setAttribute('viewBox', `0 0 ${W} ${H}`);
+await document.fonts.load('40px Luckiest');
+let o = `<defs>${symbolDefs()}<pattern id="bgd" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="9" cy="9" r="2" fill="${C.turq}" opacity=".18"/></pattern></defs>`;
+o += `<rect width="${W}" height="${H}" fill="${C.abyss}"/><rect width="${W}" height="${H}" fill="url(#bgd)"/>`;
+o += letters('ATOMIC LOUNGE  SYMBOLS', 40 + 300, 62, 40, C.goldL, C.paper, C.ink, 4);
+const lab = (t, x, y, sz = 15, col = C.cream, anc = 'middle') => `<text x="${x}" y="${y}" text-anchor="${anc}" font-family="Luckiest" font-size="${sz}" fill="${col}" letter-spacing="1">${t}</text>`;
+// row 1: 160 px
+SYMBOL_IDS.forEach((id, i) => {
+  const x = 30 + i * 155, y = 100;
+  o += symbol(id, { x, y, size: 145 });
+  o += lab(`${id} ${SYMBOL_NAMES[id].toUpperCase()}`, x + 72, y + 172, 13);
+});
+o += lab('160 PX (SHOWN 145)', 30, 300, 14, C.turq, 'start');
+// row 2: 40 px on a board strip, as in the game
+o += `<rect x="24" y="320" width="${10 * 46 + 12}" height="58" rx="10" fill="${C.ink}"/>`;
+SYMBOL_IDS.forEach((id, i) => { o += symbol(id, { x: 32 + i * 46, y: 328, size: 42 }); });
+o += lab('40 PX READABILITY STRIP', 30, 400, 14, C.turq, 'start');
+// a 6x5 board at 40 px
+const mini = ['H1','L2','H2','L4','W','L1','L3','H3','H2','H2','L2','H4','S','L1','H2','W','L3','H1','L4','H4','L2','H2','L1','S','H3','L3','L4','H1','L2','H4'];
+o += `<rect x="520" y="316" width="${6 * 42 + 16}" height="${5 * 42 + 16}" rx="12" fill="${C.gold}" stroke="${C.ink}" stroke-width="3"/><rect x="527" y="323" width="${6 * 42 + 2}" height="${5 * 42 + 2}" rx="7" fill="${C.ink}"/>`;
+mini.forEach((id, i) => { o += symbol(id, { x: 528 + (i % 6) * 42, y: 324 + Math.floor(i / 6) * 42, size: 40 }); });
+o += lab('6X5 AT 40 PX', 528, 562, 14, C.turq, 'start');
+// win states
+o += lab('WIN STATE', 880, 330, 18, C.goldL, 'start');
+o += symbol('W', { x: 880, y: 350, size: 170, win: true });
+o += symbol('S', { x: 1080, y: 350, size: 170, win: true });
+o += symbol('H2', { x: 1280, y: 350, size: 120, win: true });
+o += symbol('L3', { x: 1420, y: 350, size: 120, dim: true });
+o += lab('WIN', 1340, 492, 13); o += lab('DIMMED (NOT IN WIN)', 1480, 492, 13);
+// palette strip
+const pal = [['ink', 'INK'], ['abyss', 'ABYSS'], ['teal', 'TEAL (MOOD)'], ['turq', 'TURQUOISE'], ['gold', 'GOLD'], ['goldL', 'BULB GOLD'], ['cream', 'CREAM'], ['paper', 'PAPER'], ['brick', 'BRICK']];
+o += lab('CLOSED PALETTE · 9 SWATCHES · HEROINE COLOURS INCLUDED', 30, 620, 16, C.goldL, 'start');
+pal.forEach(([k, n], i) => {
+  const x = 30 + i * 172;
+  o += `<rect x="${x}" y="636" width="160" height="150" rx="14" fill="${C[k]}" stroke="${C.ink}" stroke-width="4"/>`;
+  o += `<rect x="${x}" y="746" width="160" height="40" rx="0" fill="${C.ink}" opacity=".85"/>`;
+  o += lab(n, x + 80, 766, 14, C.cream); o += lab(C[k].toUpperCase(), x + 80, 782, 12, C.turq);
+});
+o += lab('RATIO: TEAL + ABYSS 70 %  ·  GOLD 15 %  ·  CREAM 8 %  ·  TURQUOISE 5 %  ·  BRICK 2 % (ONE HOT ACCENT)', 30, 830, 15, C.cream, 'start');
+o += lab('ONE FONT: LUCKIEST GUY (APACHE-2.0, VENDORED IN FONTS/)', 30, 860, 13, C.turq, 'start');
+s.innerHTML = o;
+window.__ready = true;
+</script></body></html>

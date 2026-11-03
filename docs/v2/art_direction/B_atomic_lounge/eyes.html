@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Mambo Eyes Proposal</title><link rel="icon" href="data:,">
+<style>@font-face{font-family:"Luckiest";src:url(fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;background:#0C2A2F;font-family:Luckiest;color:#F4E8C8}
+.g{display:grid;grid-template-columns:repeat(4,300px);gap:16px;padding:16px 20px}
+.c{text-align:center;font-size:17px;letter-spacing:1px}.c b{color:#F8D46A;font-weight:normal}
+iframe{width:300px;height:340px;border:5px solid #2B1A12;border-radius:14px;background:#F4E8C8;display:block}
+h1{margin:16px 20px 0;font-weight:normal;font-size:26px;color:#F8D46A;letter-spacing:2px}</style></head><body>
+<h1>HEROINE EYES: CURRENT (LEFT) VS PROPOSED (RIGHT)</h1>
+<div class="g" id="g"></div>
+<script>
+const cells = [['sly', 'idle', 1], ['sly', 'idle', 0], ['happy', 'smallwin', 1], ['happy', 'smallwin', 0], ['alert', 'point', 1], ['alert', 'point', 0], ['worried', 'shrug', 1], ['worried', 'shrug', 0]];
+let n = 0;
+document.getElementById('g').innerHTML = cells.map(([m, p, old]) => `<div class="c"><iframe src="face.html?mood=${m}&pose=${p}${old ? '&eyes=old' : ''}"></iframe>${old ? 'CURRENT' : '<b>PROPOSED</b>'} · ${m.toUpperCase()}</div>`).join('');
+const fr = [...document.querySelectorAll('iframe')];
+const chk = () => { if (fr.every((f) => f.contentWindow && f.contentWindow.__ready)) window.__ready = true; else setTimeout(chk, 100); }; chk();
+</script></body></html>

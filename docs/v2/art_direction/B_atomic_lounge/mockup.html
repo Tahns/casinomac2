@@ -1,0 +1,94 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Atomic Lounge Mockup</title><link rel="icon" href="data:,">
+<!-- Direction B "Atomic Lounge" game-screen mock-up. mockup.html?w=1280&h=720 (landscape) or ?w=425&h=812 (portrait). ?eyes=old shows the current eyes.
+     100 % hand-written SVG/CSS/JS + the hand-drawn heroine rig (inspectrice). Not the game: a design target. -->
+<script>
+  // import map (must precede module scripts): the rig loads the proposed eye design unless ?eyes=old
+  if (!/[?&]eyes=old/.test(location.search)) document.write('<script type="importmap">{"imports":{"/docs/research2/art/mambo_art.mjs":"/docs/v2/art_direction/B_atomic_lounge/eyes/mambo_art_eyes.mjs"}}<\/script>');
+</script>
+<style>
+@font-face{font-family:"Luckiest";src:url(fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;overflow:hidden;background:#0C2A2F}
+svg{position:absolute;left:0;top:0}
+#hero{position:absolute;filter:drop-shadow(4px 0 0 #FFFBF0) drop-shadow(-4px 0 0 #FFFBF0) drop-shadow(0 4px 0 #FFFBF0) drop-shadow(0 -4px 0 #FFFBF0) drop-shadow(6px 8px 0 rgba(12,42,47,.55))}
+</style></head><body><svg id="bg"></svg><div id="hero"></div><svg id="fg"></svg>
+<script type="module">
+import { C, symbolDefs, symbol, letters } from './symbols_b.js';
+import { sceneDefs, stage, spotlight, drape, valance, marqueeFrame, logo, spinButton, secretButton, hudValue, chevron, iconBtn, bulbRow, sputnik, marqueeSign } from './scene_b.js';
+import { mountHeroine } from './heroine_b.js';
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || innerWidth || 1280), H = +(q.get('h') || innerHeight || 720);
+const portrait = H > W;
+const BW = portrait ? 425 : 1280, BH = portrait ? 812 : 720;
+const k = Math.max(W / BW, H / BH), ox = (W - BW * k) / 2, oy = (H - BH * k) / 2;
+document.body.style.cssText = `width:${W}px;height:${H}px`;
+for (const id of ['bg', 'fg']) { const e = document.getElementById(id); e.setAttribute('width', W); e.setAttribute('height', H); e.setAttribute('viewBox', `${-ox / k} ${-oy / k} ${W / k} ${H / k}`); }
+await document.fonts.load('40px Luckiest');
+const { ink, abyss, teal, turq, gold, goldL, cream, paper, brick } = C;
+
+// ---- the board (rows), winning cluster
+const BOARD = [
+  ['H1', 'L2', 'L1', 'H3', 'L4', 'S'],
+  ['L3', 'H4', 'H2', 'H2', 'L1', 'L2'],
+  ['L4', 'L1', 'H2', 'W', 'H2', 'H1'],
+  ['H3', 'L2', 'L3', 'H2', 'H2', 'L4'],
+  ['L1', 'H1', 'S', 'L3', 'H4', 'L2'],
+];
+const WIN = new Set(['1,2', '1,3', '2,2', '2,3', '2,4', '3,3', '3,4']);
+
+// ---- layout (base coordinates)
+const L = portrait
+  ? { cell: 58, gap: 3, gx: 31, gy: 304, floorY: 640, hero: { cx: 90, foot: 282, h: 262 }, spot: [94, 168, 148],
+      logo: [284, 34, 29], sign: [300, 274, 200, 34], spin: [212, 722, 54], secret: [72, 688, 120], bal: [74, 800], bet: [352, 712], icons: [[398, 790, 'menu'], [362, 790, 'sound']], sputs: [] }
+  : { cell: 78, gap: 4, gx: 420, gy: 150, floorY: 628, hero: { cx: 196, foot: 694, h: 640 }, spot: [205, 340, 270],
+      logo: [1098, 28, 50], sign: [664, 104, 330, 54], spin: [1100, 500, 80], secret: [1100, 330, 214], bal: [664, 690], bet: [1100, 650], icons: [[1216, 500, 'auto'], [1196, 700, 'menu'], [1238, 700, 'sound']], sputs: [[352, 66, 20], [972, 74, 17]] };
+const P = L.cell + L.gap, GW = 6 * P - L.gap, GH = 5 * P - L.gap;
+
+let b = `<defs>${symbolDefs()}${sceneDefs()}</defs>`;
+const X0 = -ox / k, Y0 = -oy / k, VW = W / k, VH = H / k;
+b += `<g transform="translate(${X0} ${Y0})">${stage(VW, VH, L.floorY - Y0, { burst: [L.gx + GW / 2 - X0, L.gy + GH / 2 - Y0, portrait ? 420 : 620], slat: portrait ? 40 : 64 })}</g>`;
+b += spotlight(L.spot[0], L.spot[1], L.spot[2], L.spot[0] + (portrait ? 40 : 80));
+for (const [x, y, r] of L.sputs) b += sputnik(x, y, r);
+// drapes + valance
+if (portrait) { b += drape(X0 - 4, X0 + 34, L.floorY, 'L', 250); b += drape(X0 + VW - 34, X0 + VW + 4, L.floorY, 'R', 250); }
+else { b += drape(X0 - 6, X0 + 120, L.floorY, 'L', 360); b += drape(X0 + VW - 110, X0 + VW + 6, L.floorY, 'R', 360); }
+b += `<g transform="translate(${X0} ${Y0})">${valance(VW, portrait ? 22 : 34, portrait ? 10 : 16)}</g>`;
+// footlights along the stage lip
+for (let x = X0 + 30; x < X0 + VW; x += portrait ? 56 : 90) b += `<path d="M${x - 16} ${L.floorY + 2}A16 12 0 0 1 ${x + 16} ${L.floorY + 2}Z" fill="${gold}" stroke="${ink}" stroke-width="3"/><circle cx="${x}" cy="${L.floorY - 2}" r="16" fill="${goldL}" opacity=".35" filter="url(#bulbGlow)"/>`;
+// marquee frame + top sign
+b += marqueeFrame(L.gx, L.gy, GW, GH, portrait ? 0.62 : 1);
+b += marqueeSign(L.sign[0], L.sign[1], L.sign[2], L.sign[3], 'WIN UP TO 5,000X', q.has('idle') ? '' : '$24.60');
+// board
+let cl = '';
+BOARD.forEach((row, r) => row.forEach((id, c) => {
+  const win = WIN.has(`${r},${c}`);
+  const x = L.gx + c * P, y = L.gy + r * P;
+  const s = symbol(id, { x, y, size: L.cell, win, dim: !win });
+  if (win) cl += s; else b += s;
+}));
+b += cl; // winning cells drawn last (halo over neighbours)
+// cluster pay bubble
+const cx = L.gx + 4.05 * P, cy = L.gy + 4.0 * P - L.gap;
+b += `<g transform="translate(${cx} ${cy}) rotate(-4)"><rect x="${-L.cell * 0.95}" y="${-L.cell * 0.32}" width="${L.cell * 1.9}" height="${L.cell * 0.64}" rx="${L.cell * 0.32}" fill="${brick}" stroke="${paper}" stroke-width="${L.cell * 0.08}"/><rect x="${-L.cell * 0.95}" y="${-L.cell * 0.32}" width="${L.cell * 1.9}" height="${L.cell * 0.64}" rx="${L.cell * 0.32}" fill="none" stroke="${ink}" stroke-width="${L.cell * 0.035}"/>`
+  + letters('+$24.60', 0, L.cell * 0.15, L.cell * 0.4, goldL, paper, ink) + `</g>`;
+document.getElementById('bg').innerHTML = b;
+
+// ---- heroine (in front of the frame, her flashlight hand reaching onto the marquee)
+const hh = L.hero.h, hw = hh * 400 / 600, hx = L.hero.cx - hw / 2, hy = L.hero.foot - hh * 566 / 600;
+const el = document.getElementById('hero');
+el.style.cssText = `left:${ox + hx * k}px;top:${oy + hy * k}px;width:${hw * k}px;height:${hh * k}px`;
+await mountHeroine(el, { pose: q.get('pose') || 'point', mood: q.get('mood') || 'happy', set: { beam: 0 } });
+
+// ---- foreground: logo + HUD
+let f = '';
+f += logo(L.logo[0], L.logo[1], L.logo[2]);
+f += secretButton(L.secret[0], L.secret[1], L.secret[2], -5);
+f += spinButton(L.spin[0], L.spin[1], L.spin[2]);
+const vs = portrait ? 20 : 32;
+f += hudValue(L.bal[0], L.bal[1], 'BALANCE', '$1,000.00', vs, 'middle');
+f += hudValue(L.bet[0], L.bet[1], 'BET', '$1.00', vs, 'middle');
+f += chevron(L.bet[0] - (portrait ? 60 : 92), L.bet[1] - vs * 0.36, portrait ? 14 : 20, -1) + chevron(L.bet[0] + (portrait ? 60 : 92), L.bet[1] - vs * 0.36, portrait ? 14 : 20, 1);
+for (const [x, y, kind] of L.icons) f += iconBtn(x, y, portrait ? 15 : (kind === 'auto' ? 20 : 16), kind);
+
+document.getElementById('fg').innerHTML = f;
+window.__ready = true;
+</script></body></html>

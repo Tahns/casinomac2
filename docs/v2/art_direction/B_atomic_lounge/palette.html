@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Atomic Lounge Palette</title><link rel="icon" href="data:,">
+<style>@font-face{font-family:"Luckiest";src:url(fonts/LuckiestGuy-Regular.ttf)} html,body{margin:0;background:#0C2A2F}</style></head><body><svg id="s"></svg>
+<script type="module">
+import { C } from './symbols_b.js';
+const W = 1200, H = 260, s = document.getElementById('s');
+s.setAttribute('width', W); s.setAttribute('height', H);
+await document.fonts.load('20px Luckiest');
+// widths proportional to the intended screen share (ratio strip), then the equal swatches
+const share = [['abyss', 34], ['teal', 36], ['gold', 12], ['goldL', 3], ['cream', 6], ['paper', 2], ['turq', 5], ['brick', 2], ['ink', 0]];
+let o = `<rect width="${W}" height="${H}" fill="${C.abyss}"/>`, x = 20;
+o += `<text x="20" y="34" font-family="Luckiest" font-size="20" fill="${C.goldL}" letter-spacing="1">ATOMIC LOUNGE · SCREEN SHARE (INK = ALL OUTLINES)</text>`;
+share.forEach(([k, p]) => { if (!p) return; const w = (W - 40) * p / 100; o += `<rect x="${x}" y="48" width="${w}" height="60" fill="${C[k]}" stroke="${C.ink}" stroke-width="4"/>`; x += w; });
+const keys = ['ink', 'abyss', 'teal', 'turq', 'gold', 'goldL', 'cream', 'paper', 'brick'];
+keys.forEach((k, i) => { const sx = 20 + i * 129; o += `<rect x="${sx}" y="128" width="117" height="76" rx="10" fill="${C[k]}" stroke="${C.ink}" stroke-width="4"/>`;
+  o += `<text x="${sx + 58}" y="226" text-anchor="middle" font-family="Luckiest" font-size="15" fill="${C.cream}">${k.toUpperCase()}</text><text x="${sx + 58}" y="246" text-anchor="middle" font-family="Luckiest" font-size="13" fill="${C.turq}">${C[k].toUpperCase()}</text>`; });
+s.innerHTML = o; window.__ready = true;
+</script></body></html>

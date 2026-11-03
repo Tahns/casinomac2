@@ -1,0 +1,104 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Atomic Lounge Intro</title><link rel="icon" href="data:,">
+<!-- Direction B intro splash: logo + 3 feature cards (floor plans / missions, three doors / max win 5,000x) + CLICK TO CONTINUE. intro.html?w=1280&h=720 -->
+<style>
+@font-face{font-family:"Luckiest";src:url(fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;overflow:hidden;background:#0C2A2F}
+svg{position:absolute;left:0;top:0}
+</style></head><body><svg id="s"></svg>
+<script type="module">
+import { C, symbolDefs, symbol, letters, rays, starPts } from './symbols_b.js';
+import { sceneDefs, stage, drape, valance, logo, bulbRow, sputnik } from './scene_b.js';
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 1280), H = +(q.get('h') || 720);
+const BW = 1280, BH = 720, k = Math.max(W / BW, H / BH), ox = (W - BW * k) / 2, oy = (H - BH * k) / 2;
+const s = document.getElementById('s');
+s.setAttribute('width', W); s.setAttribute('height', H); s.setAttribute('viewBox', `${-ox / k} ${-oy / k} ${W / k} ${H / k}`);
+await document.fonts.load('40px Luckiest');
+const { ink, abyss, teal, turq, gold, goldL, cream, paper, brick } = C;
+let o = `<defs>${symbolDefs()}${sceneDefs()}</defs>`;
+o += stage(BW, BH, 640, { burst: [640, 380, 700] });
+o += sputnik(250, 80, 18); o += sputnik(1030, 80, 18);
+o += drape(-6, 130, 640, 'L', 380); o += drape(1150, 1286, 640, 'R', 380);
+o += valance(BW, 34, 16);
+for (let x = 30; x < BW; x += 90) o += `<path d="M${x - 16} 642A16 12 0 0 1 ${x + 16} 642Z" fill="${gold}" stroke="${ink}" stroke-width="3"/><circle cx="${x}" cy="638" r="16" fill="${goldL}" opacity=".35" filter="url(#bulbGlow)"/>`;
+o += logo(640, 22, 46);
+
+// ---- feature card: gold bulb frame, teal panel with an illustration, title plate, caption
+function card(cx, cy, w, h, art, title, cap1, cap2, tilt = 0) {
+  let c = `<g transform="rotate(${tilt} ${cx} ${cy})">`;
+  const x = cx - w / 2, y = cy - h / 2;
+  c += `<rect x="${x + 8}" y="${y + 12}" width="${w}" height="${h}" rx="24" fill="${ink}" opacity=".5"/>`;
+  c += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="24" fill="${gold}" stroke="${ink}" stroke-width="5"/>`;
+  c += `<rect x="${x + 6}" y="${y + 6}" width="${w - 12}" height="${h - 12}" rx="19" fill="none" stroke="${goldL}" stroke-width="3"/>`;
+  c += bulbRow(x + 30, y + 14, x + w - 30, y + 14, 26, 4.2, 0) + bulbRow(x + 30, y + h - 14, x + w - 30, y + h - 14, 26, 4.2, 1);
+  c += `<rect x="${x + 18}" y="${y + 28}" width="${w - 36}" height="${h - 56}" rx="12" fill="${teal}" stroke="${ink}" stroke-width="4"/>`;
+  c += `<clipPath id="cc${cx}"><rect x="${x + 18}" y="${y + 28}" width="${w - 36}" height="${h - 56}" rx="12"/></clipPath><g clip-path="url(#cc${cx})">${rays(cx, y + h * 0.36, w, 22, turq, 0.55, 0)}<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#htDark)" opacity=".5"/>`;
+  c += `<rect x="${x + 18}" y="${y + h * 0.64}" width="${w - 36}" height="${h * 0.4}" fill="${abyss}" opacity=".85"/></g>`;
+  c += art(cx, y + h * 0.36, w);
+  // title plate (brick ribbon with folded tails)
+  const ty = y + h * 0.66, tw = w * 0.86, th = 46;
+  c += `<path d="M${cx - tw / 2 - 18} ${ty + 6}L${cx - tw / 2 + 6} ${ty + 6}L${cx - tw / 2 + 6} ${ty + th + 6}L${cx - tw / 2 - 18} ${ty + th + 6}L${cx - tw / 2 - 8} ${ty + th / 2 + 6}Z" fill="${brick}" stroke="${ink}" stroke-width="3.4" stroke-linejoin="round"/>`;
+  c += `<path d="M${cx + tw / 2 + 18} ${ty + 6}L${cx + tw / 2 - 6} ${ty + 6}L${cx + tw / 2 - 6} ${ty + th + 6}L${cx + tw / 2 + 18} ${ty + th + 6}L${cx + tw / 2 + 8} ${ty + th / 2 + 6}Z" fill="${brick}" stroke="${ink}" stroke-width="3.4" stroke-linejoin="round"/>`;
+  c += `<rect x="${cx - tw / 2}" y="${ty - 4}" width="${tw}" height="${th}" rx="8" fill="${brick}" stroke="${ink}" stroke-width="4"/>`;
+  c += letters(title, cx, ty + th * 0.72, title.length > 11 ? 24 : 28, goldL, paper, ink, 1);
+  c += `<text x="${cx}" y="${y + h * 0.84}" text-anchor="middle" font-family="Luckiest" font-size="17" fill="${cream}" letter-spacing="1">${cap1}</text>`;
+  c += `<text x="${cx}" y="${y + h * 0.84 + 22}" text-anchor="middle" font-family="Luckiest" font-size="17" fill="${cream}" letter-spacing="1">${cap2}</text>`;
+  return c + `</g>`;
+}
+// art 1: blueprint floor plan
+const artPlan = (cx, cy, w) => {
+  let a = `<g transform="rotate(-6 ${cx} ${cy})">`;
+  const pw = w * 0.62, ph = w * 0.44, x = cx - pw / 2, y = cy - ph / 2;
+  a += `<rect x="${x + 6}" y="${y + 8}" width="${pw}" height="${ph}" fill="${ink}" opacity=".5"/>`;
+  a += `<rect x="${x}" y="${y}" width="${pw}" height="${ph}" fill="${cream}" stroke="${ink}" stroke-width="4"/>`;
+  for (let gx = x + 12; gx < x + pw; gx += 12) a += `<path d="M${gx} ${y}V${y + ph}" stroke="${turq}" stroke-width="1" opacity=".5"/>`;
+  for (let gy = y + 12; gy < y + ph; gy += 12) a += `<path d="M${x} ${gy}H${x + pw}" stroke="${turq}" stroke-width="1" opacity=".5"/>`;
+  // rooms (walls)
+  a += `<path d="M${x + 14} ${y + 14}H${x + pw - 14}V${y + ph - 14}H${x + 14}Z M${x + pw * 0.42} ${y + 14}V${y + ph * 0.45} M${x + 14} ${y + ph * 0.58}H${x + pw * 0.3} M${x + pw * 0.42} ${y + ph * 0.62}V${y + ph - 14} M${x + pw * 0.66} ${y + ph * 0.5}H${x + pw - 14}" fill="none" stroke="${teal}" stroke-width="5" stroke-linecap="square"/>`;
+  // route + target
+  a += `<path d="M${x + 30} ${y + ph - 26}Q${x + pw * 0.36} ${y + ph * 0.5} ${x + pw * 0.55} ${y + ph * 0.72}T${x + pw - 40} ${y + 34}" fill="none" stroke="${gold}" stroke-width="4" stroke-dasharray="7 6" stroke-linecap="round"/>`;
+  a += `<path d="M${x + pw - 50} ${y + 24}l20 20M${x + pw - 30} ${y + 24}l-20 20" stroke="${brick}" stroke-width="7" stroke-linecap="round"/>`;
+  a += `<path d="M${x + pw - 12} ${y}l12 0l0 ${ph}l-12 0" fill="${gold}" stroke="${ink}" stroke-width="3"/>`;
+  a += `</g>`;
+  // little vault keyhole badge pinned on the plan
+  a += `<circle cx="${cx - w * 0.3}" cy="${cy - w * 0.2}" r="20" fill="${brick}" stroke="${ink}" stroke-width="4"/><circle cx="${cx - w * 0.3}" cy="${cy - w * 0.2 - 4}" r="5.4" fill="${paper}"/><path d="M${cx - w * 0.3 - 3.4} ${cy - w * 0.2 - 2}h6.8l2.6 12h-12z" fill="${paper}"/>`;
+  return a;
+};
+// art 2: three doors
+const artDoors = (cx, cy, w) => {
+  let a = '';
+  const cols = [brick, turq, gold], dw = w * 0.2, dh = w * 0.36;
+  [-1, 0, 1].forEach((i, n) => {
+    const x = cx + i * dw * 1.2 - dw / 2, y = cy - dh / 2 + (i === 0 ? -10 : 6);
+    a += `<rect x="${x - 6}" y="${y - 6}" width="${dw + 12}" height="${dh + 8}" rx="${dw * 0.55}" fill="${ink}"/>`;
+    a += `<path d="M${x} ${y + dh}V${y + dw / 2}A${dw / 2} ${dw / 2} 0 0 1 ${x + dw} ${y + dw / 2}V${y + dh}Z" fill="${cols[n]}" stroke="${ink}" stroke-width="4"/>`;
+    a += `<rect x="${x + dw * 0.16}" y="${y + dw * 0.5}" width="${dw * 0.68}" height="${dh * 0.3}" rx="5" fill="none" stroke="${ink}" stroke-width="2.6" opacity=".55"/>`;
+    a += `<rect x="${x + dw * 0.16}" y="${y + dh * 0.6}" width="${dw * 0.68}" height="${dh * 0.3}" rx="5" fill="none" stroke="${ink}" stroke-width="2.6" opacity=".55"/>`;
+    a += `<circle cx="${x + dw * 0.8}" cy="${y + dh * 0.56}" r="4.5" fill="${goldL}" stroke="${ink}" stroke-width="2"/>`;
+    a += letters(String(n + 1), x + dw / 2, y + dw * 0.48, 26, paper, paper, ink);
+  });
+  a += `<path d="${starPts(cx + w * 0.31, cy - w * 0.2, 14, 4, 4)}" fill="${paper}" stroke="${ink}" stroke-width="2"/>`;
+  a += `<path d="${starPts(cx - w * 0.33, cy - w * 0.17, 10, 3, 4)}" fill="${paper}" stroke="${ink}" stroke-width="2"/>`;
+  // a dossier scatter peeking
+  a += symbol('S', { x: cx + w * 0.22, y: cy + w * 0.12, size: 54 });
+  return a;
+};
+// art 3: 5,000x starburst
+const artMax = (cx, cy, w) => {
+  let a = `<path d="${starPts(cx, cy, w * 0.33, w * 0.23, 14, -90)}" fill="${goldL}" stroke="${ink}" stroke-width="5" stroke-linejoin="round"/>`;
+  a += `<path d="${starPts(cx, cy, w * 0.26, w * 0.2, 14, -77)}" fill="${gold}" stroke="${ink}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  a += `<g fill="none" stroke="${cream}" stroke-width="4"><ellipse cx="${cx}" cy="${cy}" rx="${w * 0.38}" ry="${w * 0.1}" transform="rotate(-14 ${cx} ${cy})"/></g>`;
+  a += letters('UP TO', cx, cy - 16, 22, cream, paper, ink, 1);
+  a += letters('5,000X', cx, cy + 30, 50, brick, paper, ink, 1);
+  // casino chips
+  [[-0.32, 0.2, brick], [0.33, 0.17, turq]].forEach(([dx, dy, col]) => { const x = cx + w * dx, y = cy + w * dy;
+    a += `<ellipse cx="${x}" cy="${y + 5}" rx="22" ry="9" fill="${ink}"/><ellipse cx="${x}" cy="${y}" rx="22" ry="9" fill="${col}" stroke="${ink}" stroke-width="3"/><ellipse cx="${x}" cy="${y}" rx="12" ry="4.6" fill="none" stroke="${paper}" stroke-width="2.4" stroke-dasharray="4 4"/>`; });
+  return a;
+};
+o += card(330, 420, 290, 370, artPlan, 'FLOOR PLANS', 'EVERY HEIST HAS ITS', 'OWN BOARD SHAPE', -3);
+o += card(640, 404, 310, 396, artDoors, 'MISSIONS', '3 DOSSIERS OPEN THE DOORS:', 'PICK YOUR MISSION', 0);
+o += card(950, 420, 290, 370, artMax, 'MAX WIN', 'WIN UP TO 5,000X', 'YOUR BET', 3);
+o += letters('CLICK TO CONTINUE', 640, 690, 34, paper, paper, ink, 3);
+s.innerHTML = o;
+window.__ready = true;
+</script></body></html>
