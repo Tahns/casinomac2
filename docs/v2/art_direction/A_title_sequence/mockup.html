@@ -1,0 +1,108 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Direction A mock-up</title><link rel="icon" href="data:,">
+<!-- Direction A, "1960s title sequence": full game screen mock-up. Usage: mockup.html?w=1280&h=720 (landscape) or ?w=425&h=812 (portrait).
+     100 % hand-written SVG; the heroine is the hand-drawn rig (inspectrice) with a small PAL override and the new eye patch. -->
+<style>
+@font-face{font-family:"Luckiest";src:url(../../../../frontend_mambo/assets/fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;overflow:hidden;background:#14303A}
+svg.layer{position:absolute;left:0;top:0}
+#hero{position:absolute}
+.rim{filter:drop-shadow(4px 0 0 #FFFBF0) drop-shadow(-4px 0 0 #FFFBF0) drop-shadow(0 4px 0 #FFFBF0) drop-shadow(0 -4px 0 #FFFBF0) drop-shadow(6px 8px 0 rgba(43,26,18,.55))}
+</style></head><body><svg id="bg" class="layer"></svg><div id="hero"></div><svg id="fg" class="layer"></svg>
+<script type="module">
+import { C, defs, symbolG, logo, HEROINE_PAL, patchEyes, twinkle, seed, cutRect, ln } from './art.js';
+import { sky, curtains, floor, proscenium, plinth, footlights, spinButton, roundBtn, secretButton, winPlate, label } from './scene.js';
+import { createHeroine } from '../../../research2/art/mambo_rig.mjs';
+import { PAL } from '../../../research2/art/mambo_art.mjs';
+Object.assign(PAL, HEROINE_PAL);   // harmonising override, before the rig builds its markup
+
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 1280), H = +(q.get('h') || 720), portrait = H > W;
+document.body.style.cssText = `width:${W}px;height:${H}px`;
+for (const id of ['bg', 'fg']) { const e = document.getElementById(id); e.setAttribute('width', W); e.setAttribute('height', H); e.setAttribute('viewBox', `0 0 ${W} ${H}`); }
+
+// ---- layout
+let L;
+if (!portrait) {
+  const cell = 76, gap = 4, gw = 6 * cell + 5 * gap, gh = 5 * cell + 4 * gap, gx = 468, gy = 178;
+  L = { cell, gap, gw, gh, gx, gy, k: 1, ground: 612, disc: { x: gx + gw / 2 + 40, y: 250, R: 250 }, side: 92, val: 46,
+    logo: [gx + gw / 2, 92, 0.84], hero: { h: 600, cx: 296, feet: 708 }, spin: [1136, 452, 74], secret: [1136, 236, 1.05],
+    win: [gx + gw / 2, gy + gh + 50, 1], bal: [gx + 4, 690], bet: [1136, 600] };
+} else {
+  const cell = 60, gap = 3, gw = 6 * cell + 5 * gap, gh = 5 * cell + 4 * gap, gx = (W - gw) / 2, gy = 160;
+  L = { cell, gap, gw, gh, gx, gy, k: 0.7, ground: 560, disc: { x: W / 2, y: 190, R: 190 }, side: 26, val: 30,
+    logo: [W / 2, 78, 0.52], hero: { h: 286, cx: 96, feet: 806 }, spin: [304, 716, 54], secret: [370, 596, 0.56],
+    win: [W / 2, gy + gh + 44, 0.62], bal: [14, 508], bet: [W - 14, 508] };
+}
+const { cell, gap, gx, gy, gw, gh } = L;
+
+// ---- background layer: sky, city, disc, curtains, floor, frame, board, logo
+let bg = `<defs>${defs('bg')}${defs('lg')}</defs>`;
+bg += sky(W, H, L.ground, L.disc);
+bg += floor(W, H, L.ground);
+bg += footlights(0, W, H - 2, portrait ? 0.7 : 1);
+bg += curtains(W, H, L.side, L.val, L.ground);
+bg += plinth(gx - 30 * L.k, gx + gw + 30 * L.k, gy + gh + 24 * L.k, (portrait ? 22 : 34), L.k);
+bg += proscenium(gx - 8, gy - 8, gx + gw + 8, gy + gh + 8, L.k);
+
+// ---- board: 6 x 5, one winning cluster (5 cocktails + the wild), two dossiers
+const B = [
+  ['H1', 'L2', 'H3', 'L4', 'L1', 'H4'],
+  ['L3', 'H2', 'H2', 'S', 'L2', 'H1'],
+  ['L1', 'H2', 'W', 'H2', 'H3', 'L4'],
+  ['H4', 'L4', 'H2', 'L3', 'L1', 'S'],
+  ['L2', 'H3', 'L1', 'H1', 'L4', 'L3'],
+];
+const WIN = new Set(['1,1', '1,2', '2,1', '2,2', '2,3', '3,2']);
+let board = '';
+for (let rI = 0; rI < 5; rI++) for (let c = 0; c < 6; c++) {
+  const x = gx + c * (cell + gap), y = gy + rI * (cell + gap), win = WIN.has(rI + ',' + c), id = B[rI][c];
+  board += symbolG(id, x, y, cell, win ? (id === 'W' ? 'win' : '') : (id === 'S' ? '' : 'dim'));
+}
+// win outline: one hand-cut mustard + paper contour per winning cell, twinkles
+seed(201);
+let hl = '';
+for (const key of WIN) { const [rI, c] = key.split(',').map(Number); const x = gx + c * (cell + gap), y = gy + rI * (cell + gap);
+  hl += `<path d="${cutRect(x - 1, y - 1, cell + 2, cell + 2, 0.6, 14, 2)}" fill="none" stroke="${C.paper}" stroke-width="${portrait ? 6 : 8}" stroke-linejoin="round"/>`;
+  hl += `<path d="${cutRect(x - 1, y - 1, cell + 2, cell + 2, 0.6, 14, 2)}" fill="none" stroke="${C.mustard}" stroke-width="${portrait ? 3 : 4}" stroke-linejoin="round"/>`; }
+const wx = gx + 2.5 * (cell + gap), wy = gy + 2 * (cell + gap);
+hl += twinkle(gx + 1 * (cell + gap) + 6, gy + 1 * (cell + gap) + 4, portrait ? 8 : 11, C.paper, 2) + twinkle(gx + 3 * (cell + gap) + cell - 4, gy + 2 * (cell + gap) + 6, portrait ? 7 : 9, C.paper, 2) + twinkle(gx + 2 * (cell + gap) + cell, gy + 3 * (cell + gap) + cell - 6, portrait ? 6 : 8, C.mustard, 2);
+// cluster pay tag
+const tx = gx + 3 * (cell + gap) + cell * 0.55, ty = gy + 3 * (cell + gap) + cell * 0.5;
+hl += `<g transform="translate(${tx} ${ty}) rotate(-6)"><path d="M-38 -16L40 -18L44 15L-40 17Z" fill="none" stroke="${C.paper}" stroke-width="7" stroke-linejoin="round" transform="scale(${L.k + 0.2})"/><path d="M-38 -16L40 -18L44 15L-40 17Z" fill="${C.brick}" stroke="${C.ink}" stroke-width="3" stroke-linejoin="round" transform="scale(${L.k + 0.2})"/>${label(0, 8 * (L.k + 0.2), '+$6.00', 21 * (L.k + 0.2), C.paper, 'middle', 0.14)}</g>`;
+bg += board + hl;
+bg += logo(...L.logo);
+document.getElementById('bg').innerHTML = bg;
+
+// ---- foreground HUD
+let fg = `<defs>${defs('bg')}</defs>`;
+fg += winPlate(...L.win, '$6.00');
+fg += secretButton(...L.secret);
+fg += spinButton(...L.spin);
+const [bx, by] = L.bet, bk = portrait ? 0.78 : 1;
+if (!portrait) {
+  fg += label(bx, by - 2, 'BET', 18, C.mustard, 'middle', 0.24) + label(bx, by + 34, '$1.00', 34, C.paper, 'middle', 0.2);
+  fg += roundBtn(bx - 92, by + 20, 20, '-') + roundBtn(bx + 92, by + 20, 20, '+');
+  fg += roundBtn(1236, 40, 22, 'menu') + roundBtn(1236, 452 - 40, 18, 'auto') + roundBtn(1236, 452 + 40, 18, 'bolt');
+  fg += label(L.bal[0] - 6, L.bal[1], 'BALANCE', 18, C.mustard, 'start', 0.26) + label(L.bal[0] + 104, L.bal[1] + 3, '$1,000.00', 30, C.paper, 'start', 0.2);
+} else {
+  fg += roundBtn(L.spin[0] - 84, L.spin[1] + 22, 16, '-') + roundBtn(L.spin[0] + 84, L.spin[1] + 22, 16, '+');
+  fg += roundBtn(W - 30, 26, 17, 'menu');
+  fg += label(L.bal[0], L.bal[1], 'BALANCE', 12, C.mustard, 'start', 0.26) + label(L.bal[0], L.bal[1] + 24, '$1,000.00', 21, C.paper, 'start', 0.2);
+  fg += label(L.bet[0], L.bet[1], 'BET', 12, C.mustard, 'end', 0.26) + label(L.bet[0], L.bet[1] + 24, '$1.00', 21, C.paper, 'end', 0.2);
+}
+await document.fonts.load('40px Luckiest');
+document.getElementById('fg').innerHTML = fg;
+document.getElementById('bg').innerHTML = bg;
+
+// ---- heroine (inspectrice), larger, leaning toward the frame
+const hh = L.hero.h, hw = hh * 400 / 600;
+const el = document.getElementById('hero');
+el.style.cssText = `left:${L.hero.cx - hw / 2}px;top:${L.hero.feet - hh}px;width:${hw}px;height:${hh}px`; el.classList.add('rim');
+const M = createHeroine(el, { outfit: 'inspectrice', raf: false, idle: false, limited: 0, seed: 7, idPrefix: 'mh-' });
+M.setPose(q.get('pose') || 'point', { snap: true });
+patchEyes(M, 'mh-');
+M.set({ prop: '' }, true);   // no flashlight beam across the board: the open glove rests toward the frame
+M.setMouth && M.setMouth('grin');
+M.snap(); for (let i = 0; i < 60; i++) M.step(1 / 60);
+window.__ready = true;
+</script></body></html>

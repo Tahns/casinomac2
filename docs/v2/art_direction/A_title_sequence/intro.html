@@ -1,0 +1,86 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Direction A intro</title><link rel="icon" href="data:,">
+<!-- Direction A intro splash: three lobby cards (floor plans, missions / three doors, max win 5,000x), click to continue. Usage: intro.html?w=1280&h=720 -->
+<style>
+@font-face{font-family:"Luckiest";src:url(../../../../frontend_mambo/assets/fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;overflow:hidden;background:#14303A}
+svg{position:absolute;left:0;top:0}
+</style></head><body><svg id="s"></svg>
+<script type="module">
+import { C, defs, logo, seed, cutPoly, cutRect, cutEll, sh, ln, twinkle, rays, symbolG } from './art.js';
+import { sky, curtains, floor, footlights, label } from './scene.js';
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 1280), H = +(q.get('h') || 720);
+document.body.style.cssText = `width:${W}px;height:${H}px`;
+const s = document.getElementById('s'); s.setAttribute('width', W); s.setAttribute('height', H); s.setAttribute('viewBox', `0 0 ${W} ${H}`);
+const ground = 600;
+let o = `<defs>${defs('bg')}${defs('lg')}</defs>`;
+o += sky(W, H, ground, { x: W / 2, y: 300, R: 300 });
+o += floor(W, H, ground) + footlights(0, W, H - 2) + curtains(W, H, 80, 44, ground);
+o += `<rect width="${W}" height="${H}" fill="${C.ink}" opacity=".25"/>`;
+
+// ---- lobby card: ink frame, cream paper, coloured header, illustration window, caption
+function card(cx, cy, w, h, tilt, title, titleFill, art, lines, accent) {
+  seed(Math.round(cx));
+  const x = -w / 2, y = -h / 2;
+  let g = `<path d="${cutRect(x + 10, y + 12, w, h, 1, 30, 4)}" fill="${C.ink}" opacity=".55"/>`;
+  g += `<path d="${cutRect(x - 7, y - 7, w + 14, h + 14, 1, 30, 6)}" fill="${C.paper}"/>`;
+  g += sh(cutRect(x, y, w, h, 1, 30, 4), C.cream, 3.4);
+  g += ln(cutRect(x + 10, y + 10, w - 20, h - 20, 0.6, 26, 2), 2, accent);
+  // illustration window
+  const ax = x + 20, ay = y + 20, aw = w - 40, ah = h * 0.56;
+  const cid = 'cl' + Math.round(cx); g += `<clipPath id="${cid}"><rect x="${ax}" y="${ay}" width="${aw}" height="${ah}"/></clipPath><g clip-path="url(#${cid})">${art(ax, ay, aw, ah)}</g>` + ln(cutRect(ax, ay, aw, ah, 0.6, 24, 1), 3);
+  // title plate overlapping the window bottom
+  const ty = ay + ah + 6;
+  g += sh(cutPoly([[x + 14, ty - 22], [-x - 14, ty - 26], [-x - 8, ty + 18], [x + 10, ty + 20]], 0.8), C.ink, 0);
+  g += label(0, ty + 9, title, 28, titleFill, 'middle', 0);
+  lines.forEach((t, i) => { g += `<text x="0" y="${ty + 52 + i * 22}" text-anchor="middle" font-family="Luckiest, sans-serif" font-size="16.5" letter-spacing=".6" fill="${C.ink}">${t}</text>`; });
+  return `<g transform="translate(${cx} ${cy}) rotate(${tilt})">${g}</g>`;
+}
+// art 1: FLOOR PLANS: blueprint, a board outline with cut corners, a spotlight marker
+const artPlans = (x, y, w, h) => {
+  let a = sh(cutRect(x, y, w, h, 0), C.navy, 0) + `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#bg-htBL)"/>`;
+  for (let gx = x + 14; gx < x + w; gx += 18) a += `<path d="M${gx} ${y}V${y + h}" stroke="${C.turq}" stroke-width="1.2" opacity=".7"/>`;
+  for (let gy = y + 14; gy < y + h; gy += 18) a += `<path d="M${x} ${gy}H${x + w}" stroke="${C.turq}" stroke-width="1.2" opacity=".7"/>`;
+  const c = 28, bx = x + w / 2 - 3 * c, by = y + h / 2 - 2.5 * c + 8;
+  const holes = new Set(['0,0', '5,0', '0,4', '5,4', '2,0', '3,4']);
+  for (let r = 0; r < 5; r++) for (let k = 0; k < 6; k++) if (!holes.has(k + ',' + r)) a += `<rect x="${bx + k * c + 2}" y="${by + r * c + 2}" width="${c - 4}" height="${c - 4}" fill="none" stroke="${C.paper}" stroke-width="2.4" stroke-dasharray="${r === 2 && k > 1 && k < 5 ? '0' : '5 3'}"/>`;
+  a += `<path d="M${bx + 2 * c + 2} ${by + 2 * c + 2}h${3 * c - 4}v${c - 4}h${-3 * c + 4}Z" fill="${C.mustard}" stroke="${C.ink}" stroke-width="2.4"/>`;
+  a += sh(cutPoly([[x + w - 64, y + 12], [x + w - 14, y + 10], [x + w - 12, y + 34], [x + w - 66, y + 36]], 0.5), C.cream, 2) + `<text x="${x + w - 39}" y="${y + 29}" text-anchor="middle" font-family="Luckiest" font-size="13" fill="${C.brick}">PLAN B</text>`;
+  a += twinkle(x + 26, y + h - 22, 11, C.mustard, 2);
+  return a;
+};
+// art 2: MISSIONS: three doors
+const artDoors = (x, y, w, h) => {
+  let a = sh(cutRect(x, y, w, h, 0), C.night, 0) + `<g>${rays(x + w / 2, y + h * 0.95, 10, w, 14, C.chestnut, 0, 0.5)}</g>` + `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#bg-htBL)"/>`;
+  a += `<path d="M${x} ${y + h * 0.84}H${x + w}V${y + h}H${x}Z" fill="${C.chestnut}"/>` + ln(`M${x} ${y + h * 0.84}H${x + w}`, 2.6);
+  const dw = w * 0.24, dh = h * 0.62, cols = [[C.brick, 'STAGE'], [C.turq, 'COAT'], [C.navy, 'STAIRS']];
+  cols.forEach(([col, nm], i) => { const cx = x + w * (0.2 + i * 0.3), base = y + h * 0.84, up = i === 1 ? 10 : 0;
+    a += sh(cutPoly([[cx - dw / 2 - 6, base], [cx - dw / 2 - 6, base - dh - up], [cx - dw * 0.3, base - dh - 12 - up], [cx + dw * 0.3, base - dh - 12 - up], [cx + dw / 2 + 6, base - dh - up], [cx + dw / 2 + 6, base]], 0.6), C.mustard, 2.6);
+    a += sh(cutPoly([[cx - dw / 2, base], [cx - dw / 2, base - dh + 6 - up], [cx - dw * 0.26, base - dh - 4 - up], [cx + dw * 0.26, base - dh - 4 - up], [cx + dw / 2, base - dh + 6 - up], [cx + dw / 2, base]], 0.6), col, 2.4);
+    a += `<circle cx="${cx}" cy="${base - dh * 0.45 - up}" r="5.4" fill="${C.cream}" stroke="${C.ink}" stroke-width="2"/><path d="M${cx - 2} ${base - dh * 0.45 - up}L${cx + 2} ${base - dh * 0.45 - up}L${cx + 3} ${base - dh * 0.45 + 7 - up}L${cx - 3} ${base - dh * 0.45 + 7 - up}Z" fill="${C.ink}"/>`;
+    a += `<text x="${cx}" y="${base - dh * 0.72 - up}" text-anchor="middle" font-family="Luckiest" font-size="11" fill="${C.paper}" stroke="${C.ink}" stroke-width="2.4" paint-order="stroke">${nm}</text>`;
+  });
+  a += symbolG('S', x + 8, y + 8, 46) + twinkle(x + w - 20, y + 22, 9, C.paper, 2);
+  return a;
+};
+// art 3: MAX WIN: lettered 5,000X on a sunburst
+const artMax = (x, y, w, h) => {
+  let a = sh(cutRect(x, y, w, h, 0), C.brick, 0) + `<g>${rays(x + w / 2, y + h / 2, 10, w, 18, C.mustard, 0, 0.45)}</g><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#bg-ht)" opacity=".5"/>`;
+  a += sh(cutEll(x + w / 2, y + h / 2, h * 0.36, h * 0.36, 1), C.night, 3);
+  const t = (txt, yy, size, fill) => { const at = `x="${x + w / 2}" y="${yy}" text-anchor="middle" font-family="Luckiest" font-size="${size}" letter-spacing="${size * 0.03}"`;
+    return `<text ${at} fill="${C.ink}" stroke="${C.ink}" stroke-width="${size * 0.2}" stroke-linejoin="round" transform="translate(3 4)">${txt}</text><text ${at} fill="${C.ink}" stroke="${C.paper}" stroke-width="${size * 0.2}" stroke-linejoin="round" paint-order="stroke">${txt}</text><text ${at} fill="${fill}" stroke="${C.ink}" stroke-width="${size * 0.09}" stroke-linejoin="round" paint-order="stroke">${txt}</text>`; };
+  a += t('UP TO', y + h * 0.42, 26, C.paper) + t('5,000X', y + h * 0.7, 46, C.mustard);
+  a += twinkle(x + 24, y + 24, 10, C.paper, 2) + twinkle(x + w - 26, y + h - 26, 12, C.paper, 2);
+  return a;
+};
+await document.fonts.load('40px Luckiest');
+o += logo(W / 2, 112, 0.95);
+const cw = 280, ch = 380, cy = 404;
+o += card(W / 2 - 340, cy + 14, cw, ch, -3, 'FLOOR PLANS', C.mustard, artPlans, ['EVERY SPIN PLAYS ON ONE', 'FLOOR PLAN, SHOWN BEFORE', 'THE SYMBOLS LAND'], C.navy);
+o += card(W / 2 + 340, cy + 14, cw, ch, 3, 'MAX WIN', C.mustard, artMax, ['WIN UP TO 5,000X', 'YOUR BET'], C.brick);
+o += card(W / 2, cy, cw + 20, ch + 16, 0, 'MISSIONS', C.mustard, artDoors, ['4 OR MORE DOSSIERS OPEN', 'THE FREE SPINS: THREE DOORS,', 'THREE MISSIONS'], C.turq);
+seed(9);
+o += `<g>${label(W / 2, H - 34, 'CLICK TO CONTINUE', 34, C.paper, 'middle', 0.2)}</g>` + twinkle(W / 2 - 196, H - 46, 10, C.mustard, 2) + twinkle(W / 2 + 196, H - 46, 10, C.mustard, 2);
+s.innerHTML = o;
+window.__ready = true;
+</script></body></html>

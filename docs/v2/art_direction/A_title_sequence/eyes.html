@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Heroine eye proposal</title><link rel="icon" href="data:,">
+<style>
+@font-face{font-family:"Luckiest";src:url(../../../../frontend_mambo/assets/fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;background:#14303A;color:#F4E8C8;font-family:Luckiest,sans-serif}
+body{width:1000px;height:420px;display:flex;gap:30px;justify-content:center;align-items:flex-start;padding-top:18px;box-sizing:border-box}
+.c{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:18px}
+.h{width:300px;height:340px;background:#F4E8C8;border:4px solid #2B1A12;border-radius:6px}
+small{font-size:12px;color:#7FC4BC;max-width:300px;text-align:center}
+</style></head><body>
+<div class="c"><div class="h" id="a"></div>BEFORE (current rig, sly)<small>half lid, all-dark iris, yellow lid fill</small></div>
+<div class="c"><div class="h" id="b"></div>AFTER (proposal, rest)<small>open eye, turquoise iris, small pupil, big highlight, brow does the sly</small></div>
+<div class="c"><div class="h" id="d"></div>AFTER, wink on a win<small>same eye, one-eye joy squint + raised brow</small></div>
+<script type="module">
+import { HEROINE_PAL, patchEyes } from './art.js';
+import { createHeroine } from '../../../research2/art/mambo_rig.mjs';
+import { PAL } from '../../../research2/art/mambo_art.mjs';
+const before = createHeroine(document.getElementById('a'), { outfit: 'inspectrice', raf: false, idle: false, limited: 0, seed: 7, crop: 'head', idPrefix: 'ea-' });
+before.setPose('idle', { snap: true }); before.snap(); for (let i = 0; i < 40; i++) before.step(1 / 60);
+Object.assign(PAL, HEROINE_PAL);
+const after = createHeroine(document.getElementById('b'), { outfit: 'inspectrice', raf: false, idle: false, limited: 0, seed: 7, crop: 'head', idPrefix: 'eb-' });
+after.setPose('idle', { snap: true }); patchEyes(after, 'eb-'); after.setMouth('grin'); after.snap(); for (let i = 0; i < 40; i++) after.step(1 / 60);
+const w = createHeroine(document.getElementById('d'), { outfit: 'inspectrice', raf: false, idle: false, limited: 0, seed: 7, crop: 'head', idPrefix: 'ed-' });
+w.setPose('idle', { snap: true }); patchEyes(w, 'ed-'); w.set({ uL: 0.06, joyL: 1, lowL: 0.7, bLy: 4, bRy: -12, bRa: 15 }, true); w.setMouth('grin'); w.snap(); for (let i = 0; i < 40; i++) w.step(1 / 60);
+// proposal for the rig: the lower almond outline fades with joy (otherwise a closed happy eye still shows a full circle)
+{ const g = w.svg.querySelector('#ed-eye-l-s'); const paths = [...g.children].filter((e) => e.tagName === 'path'); paths[1].setAttribute('opacity', '0'); paths[0].setAttribute('opacity', '0'); }
+window.__ready = true;
+</script></body></html>

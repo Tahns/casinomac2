@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Direction A palette</title><link rel="icon" href="data:,">
+<style>
+@font-face{font-family:"Luckiest";src:url(../../../../frontend_mambo/assets/fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;background:#2B1A12;font-family:Luckiest,sans-serif}
+body{width:1350px;height:200px;display:flex}
+.sw{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:12px;font-size:16px;letter-spacing:.5px;border-right:3px solid #2B1A12}
+.sw small{font-size:11px}
+</style></head><body id="p">
+<script type="module">
+import { PALETTE } from './art.js';
+await document.fonts.load('20px Luckiest');
+document.getElementById('p').innerHTML = PALETTE.map(([n, c, u]) => `<div class="sw" style="background:${c};color:${['cream','paper','mustard'].includes(n) ? '#2B1A12' : '#FFFBF0'}">${n.toUpperCase()}<br>${c}<br><small>${u}</small></div>`).join('');
+window.__ready = true;
+</script></body></html>

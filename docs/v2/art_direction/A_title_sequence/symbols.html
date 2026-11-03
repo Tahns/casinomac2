@@ -1,0 +1,36 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Direction A symbols</title><link rel="icon" href="data:,">
+<style>
+@font-face{font-family:"Luckiest";src:url(../../../../frontend_mambo/assets/fonts/LuckiestGuy-Regular.ttf)}
+html,body{margin:0;background:#14303A;color:#F4E8C8;font-family:Luckiest,sans-serif}
+body{width:1600px;padding:28px 36px;box-sizing:border-box}
+h1{margin:0 0 6px;font-size:34px;color:#E8A92B;letter-spacing:1px;-webkit-text-stroke:1.5px #2B1A12;paint-order:stroke}
+h2{margin:20px 0 10px;font-size:20px;color:#F4E8C8;letter-spacing:1px}
+.row{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap}
+.cell{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:14px;letter-spacing:.5px}
+.small{display:flex;gap:4px;padding:10px;background:#2B1A12;border-radius:4px}
+.small.lt{background:#F4E8C8}
+.pal{display:flex;gap:0;margin-top:8px}
+.sw{width:150px;height:92px;display:flex;flex-direction:column;justify-content:flex-end;padding:8px;box-sizing:border-box;font-size:14px;border:3px solid #2B1A12;margin-right:-3px}
+.tier{font-size:13px;color:#7FC4BC;margin-left:6px}
+</style></head><body>
+<h1>Direction A: 1960s title sequence, symbol sheet</h1>
+<h2>160 px <span class="tier">high = full-colour cards, low = cream cards, special = night card + sunburst + lettered plate</span></h2>
+<div class="row" id="big"></div>
+<h2>40 px readability check (on the board backing and on cream)</h2>
+<div class="row"><div class="small" id="s40"></div><div class="small lt" id="s40b"></div><div class="small" id="s28"></div></div>
+<h2>Win state (wild, scatter) and dimmed non-winning cell</h2>
+<div class="row" id="win"></div>
+<h2>Closed palette (9)</h2>
+<div class="pal" id="pal"></div>
+<script type="module">
+import { symbolSVG, SYMBOLS, SYMBOL_NAMES, PALETTE } from './art.js';
+await document.fonts.load('40px Luckiest');
+const big = document.getElementById('big');
+big.innerHTML = SYMBOLS.map((id) => `<div class="cell">${symbolSVG(id, 136)}<span>${id} ${SYMBOL_NAMES[id]}</span></div>`).join('');
+document.getElementById('s40').innerHTML = SYMBOLS.map((id) => symbolSVG(id, 40)).join('');
+document.getElementById('s40b').innerHTML = SYMBOLS.map((id) => symbolSVG(id, 40)).join('');
+document.getElementById('s28').innerHTML = ['H1','L1','H2','L3','W','S'].map((id) => symbolSVG(id, 28)).join('');
+document.getElementById('win').innerHTML = [['W', 'win'], ['S', 'win'], ['W', ''], ['S', ''], ['H2', 'dim'], ['L2', 'dim']].map(([id, st]) => `<div class="cell">${symbolSVG(id, 160, st)}<span>${id} ${st || 'idle'}</span></div>`).join('');
+document.getElementById('pal').innerHTML = PALETTE.map(([n, c, u]) => `<div class="sw" style="background:${c};color:${['cream','paper','mustard'].includes(n) ? '#2B1A12' : '#FFFBF0'}">${n}<br>${c}<br><span style="font-size:11px">${u}</span></div>`).join('');
+window.__ready = true;
+</script></body></html>
